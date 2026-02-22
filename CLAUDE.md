@@ -162,10 +162,11 @@ These six features define vibe-seed's competitive advantage. Reference `.notes/k
 Before claiming a ticket:
 
 1. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
-2. **DDD Alignment** — Does the ticket respect bounded context boundaries?
-3. **Ubiquitous Language** — Do class/method names match domain language?
-4. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented
-5. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
+2. **PRD Traceability** — Run `/prd-traceability <id>` to cross-reference the ticket's deliverables/AC against PRD capabilities. Ripple review catches *freshness* (did something change?), but not *completeness* (was something missing from the start). The capability map in `.claude/commands/prd-traceability.md` maps each PRD P0/P1 item to bounded contexts and expected ticket scope.
+3. **DDD Alignment** — Does the ticket respect bounded context boundaries?
+4. **Ubiquitous Language** — Do class/method names match domain language?
+5. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented
+6. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
 
 Update via `bd update <id> --description` if incomplete.
 
