@@ -66,6 +66,7 @@ These are complementary. Ripple review won't catch a capability that was missing
 | C18 | Knowledge base (RLM) | Knowledge Base | Addressable docs, DDD patterns, tool conventions |
 | C19 | Doc maintenance commands | Knowledge Base | `vs doc-health`, `vs doc-review` |
 | C20 | Ticket freshness & ripple review | Ticket Freshness | Close → flag → context diff → review flow |
+| C25 | Template-enforced ticket creation | Ticket Pipeline + Tool Translation + Ticket Freshness | Every ticket created (manual or generated) MUST use beads templates; generated CLAUDE.md enforces this in grooming checklist step 1 and after-close protocol step 2. Tickets: k7m.12 (after-close protocol design), k7m.20 (generated tickets use templates), k7m.21 (generated CLAUDE.md includes enforcement) |
 
 ### P1 Capability → Expected Ticket Scope
 

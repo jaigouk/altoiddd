@@ -124,7 +124,7 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **DDD question framework** — Structured questions for domain stories, ubiquitous language, bounded contexts, aggregate design
 - [ ] **Artifact generation** — Generate PRD, DDD.md, ARCHITECTURE.md from guided answers
 - [ ] **Agent personas** — Developer, researcher, tech-lead, PM, QA, security agents with DDD awareness
-- [ ] **Beads integration** — Epic/spike/ticket templates enforcing DDD+TDD+SOLID
+- [ ] **Beads integration** — Epic/spike/ticket templates enforcing DDD+TDD+SOLID. Every ticket created — whether manually or via `vs generate tickets` — MUST use the appropriate beads template (ticket template for tasks/features, spike template for research). Generated CLAUDE.md must enforce template compliance as step 1 of the grooming checklist. After-close protocol must require follow-up tickets to include template-formatted descriptions (never empty).
 - [ ] **Quality gates** — ruff + mypy + pytest enforced before ticket closure
 - [ ] **Architecture fitness function generation** — Generate executable architecture tests (import-linter contracts, pytestarch rules) from bounded context map. Enforce layer boundaries, dependency direction, aggregate isolation. Tests run as part of quality gates.
 - [ ] **Domain story to ticket pipeline** — Auto-generate dependency-ordered beads epics from DDD artifacts. Tickets include TDD phases, SOLID mapping, acceptance criteria from domain invariants. Preview before creation (human-in-the-loop).

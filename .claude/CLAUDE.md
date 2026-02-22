@@ -24,6 +24,13 @@ bin/bd-ripple <id>               # Flag dependents after close (ripple review)
 bd query label=review_needed     # See tickets needing review
 bd update <id> --remove-label review_needed  # Clear flag after review
 bd sync                          # Sync with git
+
+# After-close protocol (run automatically, don't wait for user to ask):
+# 1. Ripple review: bin/bd-ripple <id> → review flagged tickets → fix → clear labels
+# 2. Follow-up tickets: if closing produced new work, create tickets WITH descriptions
+#    using beads-ticket-template.md or beads-spike-template.md — NEVER empty descriptions
+# 3. Groom next: bd ready → pick next ticket → run grooming checklist (§ Ticket Grooming Checklist)
+# 4. Report: present grooming results + ask user if they want to start
 ```
 
 ## Development Rules
@@ -34,6 +41,7 @@ bd sync                          # Sync with git
 - **No personal info** — No real names, emails, paths, or hardware specs in code
 - **Do not commit/push** without explicit user permission
 - **Do not proceed** to next ticket without explicit user permission
+- **Dogfooding rule** — When you encounter a process problem (missing templates, broken workflow, enforcement gap), fix it for yourself AND capture it as a ticket. Use PRD traceability to find the related ticket, or create a new one. If the problem affects users, update the PRD.
 
 ## Project Lifecycle
 
@@ -108,12 +116,16 @@ src/
 
 Before claiming a ticket:
 
-1. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
-2. **PRD Traceability** — Run `/prd-traceability <id>` to cross-reference the ticket's deliverables/AC against PRD capabilities. Ripple review catches *freshness* (did something change?), but not *completeness* (was something missing from the start). The capability map in `.claude/commands/prd-traceability.md` maps each PRD P0/P1 item to bounded contexts and expected ticket scope.
-3. **DDD Alignment** — Does the ticket respect bounded context boundaries?
-4. **Ubiquitous Language** — Do class/method names match domain language?
-5. **TDD & SOLID Compliance** — RED/GREEN/REFACTOR phases documented
-6. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
+1. **Template Compliance** — Description MUST follow the appropriate beads template:
+   - Tasks/Features → `docs/beads_templates/beads-ticket-template.md` (Goal, DDD Alignment, Design, SOLID Mapping, TDD Workflow, Steps, AC, Edge Cases, Quality Gates)
+   - Spikes → `docs/beads_templates/beads-spike-template.md` (Research Question, Timebox, Background, Investigation Approach, Expected Deliverables)
+   - If the description is missing or doesn't follow the template, populate it BEFORE any other grooming step.
+2. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
+3. **PRD Traceability** — Run `/prd-traceability <id>` to cross-reference the ticket's deliverables/AC against PRD capabilities. Ripple review catches *freshness* (did something change?), but not *completeness* (was something missing from the start). The capability map in `.claude/commands/prd-traceability.md` maps each PRD P0/P1 item to bounded contexts and expected ticket scope.
+4. **DDD Alignment** — Does the ticket respect bounded context boundaries?
+5. **Ubiquitous Language** — Do class/method names match domain language?
+6. **TDD & SOLID Compliance** — RED/GREEN/REFACTOR phases documented
+7. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
 
 If incomplete, update via `bd update <id> --description` before claiming.
 
