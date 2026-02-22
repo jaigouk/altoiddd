@@ -28,6 +28,9 @@ bd ready                         # Find available work
 bd show <id>                     # View details
 bd update <id> --status in_progress
 bd close <id>
+bin/bd-ripple <id>               # Flag dependents after close (ripple review)
+bd query label=review_needed     # See tickets needing review
+bd update <id> --remove-label review_needed  # Clear flag after review
 bd sync                          # Sync with git
 ```
 
@@ -158,7 +161,7 @@ These six features define vibe-seed's competitive advantage. Reference `.notes/k
 
 Before claiming a ticket:
 
-1. **Freshness Check** — Has any dependency been completed since this ticket was last reviewed? If `review_needed` is flagged, read the completed dependency's output first. Present suggested updates to the user for approval before starting work. Clear the flag after review.
+1. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
 2. **DDD Alignment** — Does the ticket respect bounded context boundaries?
 3. **Ubiquitous Language** — Do class/method names match domain language?
 4. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented

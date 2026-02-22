@@ -18,6 +18,8 @@ Why? Because the AI jumped straight to writing code without understanding:
 - Which parts are complex and which are simple
 - Where the boundaries should be so changes don't break everything
 
+And even when you _do_ plan, **your plans go stale.** You finish researching one piece and the findings change everything else — but nobody updates the other tasks. Your team (human or AI) starts work based on outdated context, and the problems compound.
+
 The result: you ship fast, then spend months fixing things — or throw it away and start over.
 
 ## What vibe-seed Does
@@ -40,6 +42,7 @@ Then you hand it to Cursor, Claude Code, or any AI tool — and it builds **with
 | Change one thing, break five others | Changes stay contained in their area                  |
 | No tests until something breaks     | Tests are defined before code is written              |
 | Rewrite every few months            | Built to last from day one                            |
+| Finish one task, others go stale    | Completing work auto-flags what needs review          |
 | Works with one AI tool              | Works with Cursor, Claude Code, Antigravity, OpenCode |
 
 ## Three Commands. That's It.
@@ -76,9 +79,15 @@ Configures your AI tool with your specific rules and language
      |
      v
 Your AI tool builds it — correctly, within guardrails
+     |
+     v
+Task completed? vibe-seed flags affected tasks for review
+     |
+     v
+Your plan stays fresh — no stale context, no outdated assumptions
 ```
 
-## Five Things That Make vibe-seed Different
+## Six Things That Make vibe-seed Different
 
 ### 1. It Asks Before It Builds
 
@@ -103,7 +112,22 @@ No guessing. No jumping ahead. Just follow the list.
 
 vibe-seed is not another AI coding tool. It's the **prep work** for the tool you already use. It generates configuration files in your tool's native format — so Claude Code, Cursor, or any other tool understands your project's rules from the start.
 
-### 5. It Can Fix Messy Projects Too
+### 5. Your Tasks Never Go Stale
+
+This is the one nobody else does. **When you complete a task, vibe-seed automatically flags every related task that might be affected.**
+
+Here's the problem: you finish a research spike and discover the architecture needs to change. But five other tasks were written assuming the old architecture. Every project management tool (Jira, Linear, GitHub) only detects staleness by _time_ — "this ticket hasn't been touched in 30 days." None of them detect staleness by _event_ — "the thing this ticket depends on just changed."
+
+vibe-seed does. When a task closes, it:
+
+- Traverses the dependency graph to find affected open tasks
+- Records _what changed_ (the context diff) so reviewers know what's different
+- Flags those tasks as needing review
+- Shows you exactly what might need updating and lets you decide
+
+No more starting work based on outdated assumptions. No more discovering mid-sprint that the plan changed three tickets ago.
+
+### 6. It Can Fix Messy Projects Too
 
 Already have a codebase that's become hard to change? `vs init --existing` analyzes what you have, identifies the problems, and creates a step-by-step migration plan — all on a separate branch. **Your existing code is never touched until you approve every change.**
 

@@ -20,6 +20,9 @@ bd ready                         # Find available work
 bd show <id>                     # View details
 bd update <id> --status in_progress
 bd close <id>
+bin/bd-ripple <id>               # Flag dependents after close (ripple review)
+bd query label=review_needed     # See tickets needing review
+bd update <id> --remove-label review_needed  # Clear flag after review
 bd sync                          # Sync with git
 ```
 
@@ -103,12 +106,13 @@ src/
 
 ### Ticket Grooming Checklist
 
-When asked to "groom a ticket", verify before claiming:
+Before claiming a ticket:
 
-1. **DDD Alignment** — Does the ticket respect bounded context boundaries?
-2. **Ubiquitous Language** — Do class/method names match domain language?
-3. **TDD & SOLID Compliance** — RED/GREEN/REFACTOR phases documented
-4. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
+1. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
+2. **DDD Alignment** — Does the ticket respect bounded context boundaries?
+3. **Ubiquitous Language** — Do class/method names match domain language?
+4. **TDD & SOLID Compliance** — RED/GREEN/REFACTOR phases documented
+5. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
 
 If incomplete, update via `bd update <id> --description` before claiming.
 
