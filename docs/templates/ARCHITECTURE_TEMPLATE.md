@@ -32,10 +32,10 @@ List the guiding principles for architectural decisions:
 
 ### Component Summary
 
-| Component | Responsibility | Bounded Context |
-|-----------|---------------|-----------------|
-| [Component 1] | What it does | Which DDD context it belongs to |
-| [Component 2] | What it does | Which DDD context it belongs to |
+| Component     | Responsibility | Bounded Context                 |
+| ------------- | -------------- | ------------------------------- |
+| [Component 1] | What it does   | Which DDD context it belongs to |
+| [Component 2] | What it does   | Which DDD context it belongs to |
 
 ## 3. Layer Architecture
 
@@ -43,28 +43,28 @@ Following Hexagonal / Clean Architecture aligned with DDD:
 
 ```
 ┌─────────────────────────────────────────────┐
-│              Infrastructure                  │
+│              Infrastructure                 │
 │  ┌───────────────────────────────────────┐  │
-│  │           Application                  │  │
+│  │           Application                 │  │
 │  │  ┌───────────────────────────────┐    │  │
-│  │  │         Domain                 │    │  │
-│  │  │  (Entities, Value Objects,     │    │  │
-│  │  │   Aggregates, Domain Services, │    │  │
-│  │  │   Domain Events)               │    │  │
+│  │  │         Domain                │    │  │
+│  │  │  (Entities, Value Objects,    │    │  │
+│  │  │   Aggregates, Domain Services,│    │  │
+│  │  │   Domain Events)              │    │  │
 │  │  └───────────────────────────────┘    │  │
 │  │  (Commands, Queries, Ports)           │  │
 │  └───────────────────────────────────────┘  │
-│  (Persistence, Messaging, External APIs)     │
+│  (Persistence, Messaging, External APIs)    │
 └─────────────────────────────────────────────┘
 ```
 
 ### Layer Rules
 
-| Layer | Can Depend On | Cannot Depend On |
-|-------|--------------|------------------|
-| Domain | Nothing (pure Python) | Application, Infrastructure, frameworks |
-| Application | Domain, Ports (interfaces) | Infrastructure, frameworks |
-| Infrastructure | Application, Domain | — (outermost layer) |
+| Layer          | Can Depend On              | Cannot Depend On                        |
+| -------------- | -------------------------- | --------------------------------------- |
+| Domain         | Nothing (pure Python)      | Application, Infrastructure, frameworks |
+| Application    | Domain, Ports (interfaces) | Infrastructure, frameworks              |
+| Infrastructure | Application, Domain        | — (outermost layer)                     |
 
 ### Source Layout
 
@@ -88,28 +88,28 @@ src/
 
 How bounded contexts communicate (from `docs/DDD.md` context map):
 
-| From Context | To Context | Mechanism | Data Format |
-|-------------|-----------|-----------|-------------|
-| [Context A] | [Context B] | [Events / API / Shared DB] | [Format] |
+| From Context | To Context  | Mechanism                  | Data Format |
+| ------------ | ----------- | -------------------------- | ----------- |
+| [Context A]  | [Context B] | [Events / API / Shared DB] | [Format]    |
 
 ## 5. Data Model
 
 ### Aggregates and Storage
 
-| Aggregate | Storage | Rationale |
-|-----------|---------|-----------|
+| Aggregate     | Storage                    | Rationale        |
+| ------------- | -------------------------- | ---------------- |
 | [Aggregate 1] | [PostgreSQL / SQLite / KV] | Why this storage |
 
 ### Key Entities
 
-| Entity | Attributes | Aggregate |
-|--------|-----------|-----------|
+| Entity     | Attributes | Aggregate       |
+| ---------- | ---------- | --------------- |
 | [Entity 1] | Key fields | Which aggregate |
 
 ## 6. External Integrations
 
-| Integration | Purpose | Protocol | Auth |
-|------------|---------|----------|------|
+| Integration | Purpose      | Protocol          | Auth            |
+| ----------- | ------------ | ----------------- | --------------- |
 | [Service 1] | What it does | REST / gRPC / etc | API key / OAuth |
 
 ## 7. Security
@@ -122,30 +122,30 @@ How bounded contexts communicate (from `docs/DDD.md` context map):
 
 ### Security Measures
 
-| Concern | Mitigation |
-|---------|------------|
+| Concern          | Mitigation |
+| ---------------- | ---------- |
 | Input validation | [Approach] |
-| Authentication | [Approach] |
-| Authorization | [Approach] |
-| Data protection | [Approach] |
+| Authentication   | [Approach] |
+| Authorization    | [Approach] |
+| Data protection  | [Approach] |
 
 ## 8. Deployment
 
 <!-- CUSTOMIZE: Fill in your deployment approach -->
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Runtime | Python 3.12 | Project standard |
-| Package manager | uv | Speed, reproducibility |
-| [Other] | [Choice] | [Why] |
+| Aspect          | Choice      | Rationale              |
+| --------------- | ----------- | ---------------------- |
+| Runtime         | Python 3.12 | Project standard       |
+| Package manager | uv          | Speed, reproducibility |
+| [Other]         | [Choice]    | [Why]                  |
 
 ## 9. Constraints & Budgets
 
 From `docs/PRD.md`:
 
-| Resource | Limit | Rationale |
-|----------|-------|-----------|
-| [Resource 1] | [Limit] | [Why] |
+| Resource     | Limit   | Rationale |
+| ------------ | ------- | --------- |
+| [Resource 1] | [Limit] | [Why]     |
 
 ## 10. Open Architecture Decisions
 
@@ -156,6 +156,6 @@ Decisions that need spikes before committing:
 
 ## 11. Architecture Decision Records
 
-| ADR | Decision | Status |
-|-----|----------|--------|
-| ADR-001 | [Title] | Proposed / Accepted / Superseded |
+| ADR     | Decision | Status                           |
+| ------- | -------- | -------------------------------- |
+| ADR-001 | [Title]  | Proposed / Accepted / Superseded |
