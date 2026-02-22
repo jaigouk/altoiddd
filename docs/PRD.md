@@ -94,6 +94,21 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 4. Domain stories capture the real workflow before any code is written
 5. Output is handed to a developer or AI tool with the domain model already defined
 
+### Scenario 6: Ticket Freshness & Ripple Review
+
+**As a** Solo Developer or Team Lead, **I want** open tickets to be flagged when a completed spike or task changes their context, **so that** I never start work based on stale assumptions.
+
+**Flow:**
+1. Developer closes a spike (e.g., k7m.9 competitive research)
+2. vibe-seed identifies all open tickets that depend on or are siblings of the closed ticket
+3. Flagged tickets are marked `review_needed` with a context summary of what changed
+4. When a human or AI agent picks up a flagged ticket, it sees the flag and context diff
+5. Agent presents suggested updates to the user for approval before starting work
+6. User approves, modifies, or dismisses the suggestions
+7. Flag is cleared and `last_reviewed` is updated
+
+**Key principle:** The system flags and suggests; the human decides. No automatic ticket rewrites.
+
 ## 5. Capabilities
 
 ### Must Have (P0)
@@ -117,6 +132,7 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **Multi-tool support** — Generate domain-aware configs for Claude Code, Cursor, Antigravity, OpenCode from a single domain model. Configs contain ubiquitous language, bounded context rules, and agent personas tuned to the project.
 - [ ] **Knowledge base (RLM)** — Addressable docs for DDD patterns, coding tool conventions
 - [ ] **Doc maintenance commands** — Slash commands for doc health, architecture lookup, knowledge refresh (like doc-health, architecture-docs, owasp-docs in Tachikoma)
+- [ ] **Ticket freshness & ripple review** — When a ticket closes, traverse the dependency graph and flag open dependents/siblings with `review_needed`. Record a context summary of what the closed ticket produced. `vs ticket-health` reports flagged tickets. Agents picking up flagged tickets must present suggested updates to the user before starting work. Two-tier ticket generation: near-term tickets get full AC, far-term tickets are stubs until promoted. (See Scenario 6)
 
 ### Should Have (P1)
 
@@ -300,6 +316,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | Quality gate enforcement | 100% | No ticket closed without passing gates |
 | Architecture test generation | 100% of bounded contexts | Every context has at least one fitness function test |
 | Ticket pipeline accuracy | Zero manual reordering | Generated dependency order matches actual build order |
+| Ticket freshness | Zero stale starts | No ticket claimed as in_progress while `review_needed` is set without reviewing first |
 
 ## 9. Risks & Unknowns
 
@@ -311,6 +328,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | MCP server adds complexity | Low | Medium | Spike first, implement only if justified |
 | import-linter API too limited for generation | Medium | Medium | Spike k7m.10; fallback to pytestarch .py generation |
 | Kiro (AWS) adds DDD support | Low | High | Ship first, establish community, local-first advantage |
+| Ticket context decay (AI implements stale specs) | High | High | Ripple review flags dependents on close; freshness check before claiming |
 
 ### Open Questions (need spikes)
 
@@ -332,4 +350,4 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | Phase 4: Multi-Tool | Config generation for Claude Code, Cursor, Antigravity, OpenCode |
 | Phase 5: MCP Server | MCP tools exposing same core as CLI |
 | Phase 6: Rescue Mode | `vs init --existing` with structural migration |
-| Phase 7: Doc Maintenance | `vs doc-health`, drift detection, maintenance registry |
+| Phase 7: Ticket & Doc Health | `vs ticket-health`, `vs doc-health`, drift detection, ripple review, maintenance registry |

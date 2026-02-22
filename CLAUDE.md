@@ -110,7 +110,7 @@ When editing template files, remember they are generic. No vibe-seed-specific re
 | Document                             | Purpose                                 | Status                        |
 | ------------------------------------ | --------------------------------------- | ----------------------------- |
 | `README.md`                          | Public-facing description               | Done                          |
-| `docs/PRD.md`                        | Product requirements                    | Draft, pending review (k7m.6) |
+| `docs/PRD.md`                        | Product requirements                    | Approved                      |
 | `.notes/killer-features-analysis.md` | Competitive analysis, 6 killer features | Done                          |
 | `docs/spikes/ddd_reference.md`       | DDD pragmatic guide                     | Done                          |
 | `docs/templates/`                    | PRD, DDD Story, Architecture templates  | Done                          |
@@ -118,10 +118,14 @@ When editing template files, remember they are generic. No vibe-seed-specific re
 ## Current Epic: Phase 1 Foundation (vibe-seed-k7m)
 
 ```
-k7m.9 (killer features) → k7m.6 (PRD review) → k7m.5 (DDD) → k7m.7 (Architecture)
-k7m.1 (KB spike) ──────────────────────────────────────────────→ k7m.7
-k7m.4 (CLI+MCP spike) ─────────────────────────────────────────→ k7m.7
-k7m.2, k7m.3, k7m.8 — independent, ready anytime
+k7m.9 (killer features) ✓ → k7m.6 (PRD review) ✓ → k7m.5 (DDD) → k7m.7 (Architecture)
+k7m.2 (DDD questions) ────────────────────────────→ k7m.5        ↑
+k7m.1 (KB spike) ─────────────────────────────────────────────────┤
+k7m.3 (multi-tool) ───────────────────────────────────────────────┤
+k7m.4 (CLI+MCP) ──────────────────────────────────────────────────┤
+k7m.10 (fitness function design) ──────────────────────────────────┤
+k7m.11 (ticket pipeline design) ───────────────────────────────────┘
+k7m.8 (gap analysis) — independent
 ```
 
 Run `bd ready` to see what's available. Run `bd show <id>` for ticket details.
@@ -136,6 +140,7 @@ These six features define vibe-seed's competitive advantage. Reference `.notes/k
 4. **Tool-Native Context Translation** — One domain model → native configs per AI tool
 5. **Complexity Budget** — Core/Supporting/Generic classification enforced in tickets and tests
 6. **Living Knowledge Base** — Versioned, drift-detecting knowledge in `.vibe-seed/`
+7. **Ticket Freshness & Ripple Review** — Event-driven staleness detection; flag dependents on close, context diff for agents, human approves updates
 
 ## Workflow
 
@@ -153,10 +158,11 @@ These six features define vibe-seed's competitive advantage. Reference `.notes/k
 
 Before claiming a ticket:
 
-1. **DDD Alignment** — Does the ticket respect bounded context boundaries?
-2. **Ubiquitous Language** — Do class/method names match domain language?
-3. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented
-4. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
+1. **Freshness Check** — Has any dependency been completed since this ticket was last reviewed? If `review_needed` is flagged, read the completed dependency's output first. Present suggested updates to the user for approval before starting work. Clear the flag after review.
+2. **DDD Alignment** — Does the ticket respect bounded context boundaries?
+3. **Ubiquitous Language** — Do class/method names match domain language?
+4. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented
+5. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
 
 Update via `bd update <id> --description` if incomplete.
 
