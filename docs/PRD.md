@@ -1,18 +1,18 @@
 ---
 last_reviewed: 2026-02-22
 owner: product
-status: draft
+status: approved
 ---
 
 # Product Requirements Document: vibe-seed
 
 ## 1. Problem Statement
 
-Developers starting new "vibe coding" projects with AI assistants face a recurring problem: they jump straight from idea to code, skipping domain discovery, architecture planning, and structured issue tracking. This leads to projects with wrong abstractions, anemic domain models, and ad-hoc workflows. The project conventions, agent profiles, CI configuration, and beads templates need to be recreated from scratch each time. Different AI coding tools (Claude Code, Cursor, Antigravity, OpenCode) have different configuration formats, making it harder to maintain consistency.
+People with software ideas — developers, product owners, domain experts — face a recurring problem: the jump from idea to code skips domain discovery, architecture planning, and structured issue tracking. Developers using AI assistants build fast but with wrong abstractions, anemic domain models, and ad-hoc workflows. Non-coders with domain knowledge have no way to capture it in a form that developers or AI tools can act on. The project conventions, agent profiles, CI configuration, and beads templates need to be recreated from scratch each time. Different AI coding tools (Claude Code, Cursor, Antigravity, OpenCode) have different configuration formats, making it harder to maintain consistency.
 
 ## 2. Vision
 
-A developer describes their project idea in 4-5 sentences. vibe-seed guides them through a structured conversation — asking the right DDD and Domain Storytelling questions — and progressively generates PRD, domain model, bounded contexts, architecture, and beads ticket structure. The generated project works immediately with their AI coding tool of choice, includes agent personas that understand DDD/TDD/SOLID, and has a knowledge base that keeps guidance current.
+Someone with an idea — a developer, product owner, or domain expert — describes it in 4-5 sentences. vibe-seed guides them through a structured conversation — asking the right DDD and Domain Storytelling questions in plain language — and progressively generates PRD, domain model, bounded contexts, architecture, and beads ticket structure. The generated project works immediately with an AI coding tool of choice, includes agent personas that understand DDD/TDD/SOLID, and has a knowledge base that keeps guidance current. Non-coders get structured handoff artifacts; developers get actionable tickets.
 
 ## 3. Users & Personas
 
@@ -21,6 +21,8 @@ A developer describes their project idea in 4-5 sentences. vibe-seed guides them
 | Solo Developer | Individual building a Python project with AI assistance | Turn an idea into a well-structured project without manual scaffolding |
 | Team Lead | Person setting up conventions for a small team | Consistent project structure, enforced quality gates, shared agent profiles |
 | AI Tool Switcher | Developer using multiple AI coding tools | Same project structure and conventions regardless of tool |
+| Product Owner | Non-coder who defines what to build but not how | Turn product vision into structured requirements and tickets that developers can execute, without needing to understand DDD or architecture |
+| Domain Expert | HR, sales, ops person who spotted a problem worth solving | Describe the problem in business language and get a properly structured project handed off to a developer or AI coding tool |
 
 ## 4. User Scenarios
 
@@ -70,6 +72,28 @@ A developer describes their project idea in 4-5 sentences. vibe-seed guides them
 3. Agent personas and commands adapt to each tool's format
 4. Quality gates and beads workflow remain identical
 
+### Scenario 4: Product Owner Handoff
+
+**As a** Product Owner, **I want to** describe my product vision and have vibe-seed produce structured requirements and tickets, **so that** I can hand off to developers with clear scope and priorities.
+
+**Flow:**
+1. PO writes a 4-5 sentence product vision in README
+2. vibe-seed asks guided questions in business language (no DDD jargon)
+3. Answers are translated into PRD, domain model, and beads tickets
+4. PO reviews generated tickets — acceptance criteria are in business terms
+5. Developer picks up tickets with architecture already decided
+
+### Scenario 5: Domain Expert Idea Capture
+
+**As a** Domain Expert (HR, sales, ops), **I want to** describe a problem I see in my work and get a project started, **so that** my domain knowledge is captured before a developer or AI tool starts building.
+
+**Flow:**
+1. Domain expert describes the problem in plain business language
+2. vibe-seed asks clarifying questions using the expert's own terminology
+3. Ubiquitous language glossary is built from the expert's words — not invented by developers
+4. Domain stories capture the real workflow before any code is written
+5. Output is handed to a developer or AI tool with the domain model already defined
+
 ## 5. Capabilities
 
 ### Must Have (P0)
@@ -79,7 +103,7 @@ A developer describes their project idea in 4-5 sentences. vibe-seed guides them
 - [ ] **`.vibe-seed/` project directory** — Per-project state, knowledge base, and doc maintenance config (see section 5.1)
 - [ ] **`vs init` with preview** — Show exactly what will be installed/copied, require user confirmation before any action
 - [ ] **Global settings detection** — Detect tool global configs (`~/.claude/`, `~/.cursor/`, etc.), report conflicts with local settings, let user choose resolution per conflict
-- [ ] **Existing project adoption (`vs init --existing`)** — Branch-based gap analysis and scaffolding for existing projects (see Scenario 2)
+- [ ] **Existing project adoption (`vs init --existing`)** — Branch-based scaffolding for existing projects: gap report, missing artifact generation, agent profile adaptation (see Scenario 2). Basic structural overlay only; smart migration is P1.
 - [ ] **Gap analysis** — Scan existing project, compare against full vibe-seed structure, report what's missing/conflicting
 - [ ] **Guided project bootstrap** — Conversational flow from README idea to full project structure
 - [ ] **DDD question framework** — Structured questions for domain stories, ubiquitous language, bounded contexts, aggregate design
@@ -87,13 +111,18 @@ A developer describes their project idea in 4-5 sentences. vibe-seed guides them
 - [ ] **Agent personas** — Developer, researcher, tech-lead, PM, QA, security agents with DDD awareness
 - [ ] **Beads integration** — Epic/spike/ticket templates enforcing DDD+TDD+SOLID
 - [ ] **Quality gates** — ruff + mypy + pytest enforced before ticket closure
+- [ ] **Architecture fitness function generation** — Generate executable architecture tests (import-linter contracts, pytestarch rules) from bounded context map. Enforce layer boundaries, dependency direction, aggregate isolation. Tests run as part of quality gates.
+- [ ] **Domain story to ticket pipeline** — Auto-generate dependency-ordered beads epics from DDD artifacts. Tickets include TDD phases, SOLID mapping, acceptance criteria from domain invariants. Preview before creation (human-in-the-loop).
+- [ ] **Complexity budget** — Classify subdomains as Core/Supporting/Generic during DDD discovery. Core gets full DDD treatment, Supporting gets simple services, Generic gets CRUD/library recommendations. Budget enforced in tickets and fitness functions.
+- [ ] **Multi-tool support** — Generate domain-aware configs for Claude Code, Cursor, Antigravity, OpenCode from a single domain model. Configs contain ubiquitous language, bounded context rules, and agent personas tuned to the project.
 - [ ] **Knowledge base (RLM)** — Addressable docs for DDD patterns, coding tool conventions
 - [ ] **Doc maintenance commands** — Slash commands for doc health, architecture lookup, knowledge refresh (like doc-health, architecture-docs, owasp-docs in Tachikoma)
 
 ### Should Have (P1)
 
-- [ ] **Multi-tool support** — Generate configs for Claude Code, Cursor, Antigravity, OpenCode
+- [ ] **Rescue mode (`vs init --existing`) structural migration** — Beyond scaffolding overlay: scan for implicit bounded contexts, identify anemic models, generate migration tickets with before/after test verification
 - [ ] **Tool knowledge versioning** — Maintain current + 3 previous major versions per tool
+- [ ] **Knowledge base drift detection** — Detect tool convention changes between versions, flag stale architecture docs vs actual code structure, suggest updates
 - [ ] **Spike workflow** — Guided spike creation with clear output goals → ADR docs
 
 ### Nice to Have (P2)
@@ -269,6 +298,8 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | Projects using correct lifecycle | 100% | All have PRD + DDD + ARCH before code |
 | Knowledge base coverage | 4 tools | Claude Code, Cursor, Antigravity, OpenCode docs present |
 | Quality gate enforcement | 100% | No ticket closed without passing gates |
+| Architecture test generation | 100% of bounded contexts | Every context has at least one fitness function test |
+| Ticket pipeline accuracy | Zero manual reordering | Generated dependency order matches actual build order |
 
 ## 9. Risks & Unknowns
 
@@ -278,6 +309,8 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | DDD questions too abstract for beginners | Medium | High | Provide concrete examples per question |
 | Guided flow feels too rigid | Medium | Medium | Allow skipping with explicit acknowledgment |
 | MCP server adds complexity | Low | Medium | Spike first, implement only if justified |
+| import-linter API too limited for generation | Medium | Medium | Spike k7m.10; fallback to pytestarch .py generation |
+| Kiro (AWS) adds DDD support | Low | High | Ship first, establish community, local-first advantage |
 
 ### Open Questions (need spikes)
 
@@ -285,15 +318,18 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 - [ ] **Spike: CLI + MCP design** — Command tree for `vs`, MCP tool schemas, shared application core
 - [ ] **Spike: Knowledge base structure** — How to organize `.vibe-seed/knowledge/` with RLM addressability and version tracking?
 - [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Antigravity, OpenCode? How similar/different?
-- [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts?
+- [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts? Includes complexity budget classification (Core/Supporting/Generic).
+- [ ] **Spike: Fitness function generation** — How to map bounded context map to import-linter TOML / pytestarch tests? (k7m.10)
+- [ ] **Spike: Ticket pipeline** — How to auto-generate ordered beads tickets from DDD artifacts? (k7m.11)
 
 ## 10. Timeline
 
 | Phase | Deliverable |
 |-------|-------------|
 | Phase 1: Foundation | PRD + DDD + Architecture for vibe-seed itself |
-| Phase 2: Core CLI | `vs init` + `vs guide` + artifact generation |
-| Phase 3: Knowledge Base | `.vibe-seed/knowledge/` with RLM docs for DDD + tool conventions |
-| Phase 4: MCP Server | MCP tools exposing same core as CLI |
-| Phase 5: Multi-Tool | Config generation for Claude Code, Cursor, Antigravity, OpenCode |
-| Phase 6: Doc Maintenance | `vs doc-health`, `vs doc-review`, maintenance registry |
+| Phase 2: Core CLI | `vs init` + guided DDD questions + artifact generation |
+| Phase 3: Fitness & Tickets | Architecture fitness function generation + ticket pipeline + complexity budget |
+| Phase 4: Multi-Tool | Config generation for Claude Code, Cursor, Antigravity, OpenCode |
+| Phase 5: MCP Server | MCP tools exposing same core as CLI |
+| Phase 6: Rescue Mode | `vs init --existing` with structural migration |
+| Phase 7: Doc Maintenance | `vs doc-health`, drift detection, maintenance registry |

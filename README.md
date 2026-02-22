@@ -1,12 +1,14 @@
 # vibe-seed
 
+![vibe-seed logo](docs/assets/logo.png)
+
 **Your AI builds apps fast. vibe-seed makes sure they don't fall apart.**
 
 ---
 
 ## The Problem Everyone Has
 
-AI coding tools (Cursor, Claude Code, Bolt, Copilot) are amazing at writing code. You type "build me an invoice app" and get a working prototype in minutes.
+AI coding tools (Cursor, Claude Code, OpenCode, Antigravity) are amazing at writing code. You type "build me an invoice app" and get a working prototype in minutes.
 
 But here's what nobody tells you: **that prototype becomes unmaintainable within weeks.**
 
