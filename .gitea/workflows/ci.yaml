@@ -61,6 +61,34 @@ jobs:
             --cov=src --cov-report=term-missing \
             --cov-fail-under=80
 
+  pip-audit:
+    name: Python Dependency Audit
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: https://github.com/actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup uv
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          if ! command -v uv &> /dev/null; then
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+          fi
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Export requirements and audit
+        run: |
+          uv pip compile pyproject.toml -o requirements.txt
+          pip-audit -r requirements.txt --strict --progress-spinner=off
+
   security:
     name: Security Scan (Trivy)
     needs: test

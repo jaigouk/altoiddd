@@ -13,6 +13,10 @@ bd create "Task title" --parent <epic-id>
 > **Before Starting:** Always groom the ticket first. Ensure the goal is clear,
 > acceptance criteria are testable, and steps are well-defined before assigning work.
 
+> **Freshness:** If this ticket has a `review_needed` label, read the ripple comments
+> (`bd comments <id>`) before starting work. Present review results to the user and
+> clear the flag before claiming the ticket.
+
 ## Goal / Problem
 
 Describe the user/system problem and the outcome needed.

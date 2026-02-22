@@ -25,15 +25,57 @@ bd query label=review_needed     # See tickets needing review
 bd update <id> --remove-label review_needed  # Clear flag after review
 bd sync                          # Sync with git
 
-# After-close protocol (run automatically, don't wait for user to ask):
-# 1. Ripple review: bin/bd-ripple <id> → review flagged tickets → fix → clear labels
-# 2. Follow-up tickets: if closing produced new work, create tickets WITH descriptions
-#    using beads-ticket-template.md or beads-spike-template.md — NEVER empty descriptions
-#    IMPORTANT: Set formal deps with `bd dep add <ticket> <depends-on>` — text in
-#    descriptions is invisible to bd blocked/bd ready/ripple review
-# 3. Groom next: bd ready → pick next ticket → run grooming checklist (§ Ticket Grooming Checklist)
-# 4. Report: present grooming results + ask user if they want to start
 ```
+
+## After-Close Protocol
+
+After every `bd close <id>`, run these steps automatically. Do not wait for the user to ask.
+
+### 1. Ripple Review
+```bash
+bin/bd-ripple <closed-id> "<what this ticket produced>"
+```
+This flags open dependents and siblings with `review_needed` and adds a context diff comment.
+
+### 2. Review Flagged Tickets
+```bash
+bd query label=review_needed
+```
+For each flagged ticket:
+1. Read the ripple comments: `bd comments <id>`
+2. Compare the ticket's description and AC against the new context
+3. Draft suggested updates (or "no changes needed")
+4. **Present suggestions to the user for approval** -- never auto-update
+5. If approved: apply updates, then clear the flag:
+   ```bash
+   bd update <id> --description "<updated description>"
+   bd label remove <id> review_needed
+   bd comments add <id> "**Reviewed:** <date>\n**Triggered by:** \`<closed-id>\`\n**Verdict:** <updated|unchanged|dismissed>\n**Changes:** <summary>"
+   ```
+
+### 3. Follow-Up Tickets
+If closing produced new work:
+1. Create tickets using the appropriate template (never empty descriptions):
+   - Tasks/Features: `docs/beads_templates/beads-ticket-template.md`
+   - Spikes: `docs/beads_templates/beads-spike-template.md`
+   - Far-term stubs: `docs/beads_templates/beads-stub-template.md`
+2. Set formal dependencies: `bd dep add <new-id> <depends-on-id>`
+3. Verify with `bd blocked` that the graph is correct
+
+### 4. Groom Next Ticket
+```bash
+bd ready
+```
+Pick the highest-priority ready ticket and run the full grooming checklist:
+1. **Template compliance** -- description follows the beads template
+2. **Freshness check** -- `bd label list <id>` for `review_needed`
+3. **PRD traceability** -- `/prd-traceability <id>` to verify capability coverage
+4. **DDD alignment** -- bounded context boundaries respected
+5. **Ubiquitous language** -- terms match `docs/DDD.md` glossary
+6. **TDD & SOLID** -- RED/GREEN/REFACTOR phases documented
+7. **Acceptance criteria** -- testable checkboxes, edge cases, coverage >= 80%
+
+Present grooming results and ask the user if they want to start the ticket.
 
 ## Development Rules
 

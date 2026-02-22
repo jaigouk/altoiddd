@@ -50,8 +50,21 @@ if [[ -z "$CONTEXT" ]]; then
     CONTEXT=$(echo "$TICKET_JSON" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)[0]
-print(data.get('close_reason', '') or 'Ticket closed (no close reason provided)')
+reason = data.get('close_reason', '') or ''
+print(reason)
 ")
+fi
+
+# Enforce non-empty context (DDD invariant #1: every ripple must have a context diff)
+if [[ -z "$CONTEXT" || "$CONTEXT" == "Closed" ]]; then
+    echo "Error: Non-empty context summary required for ripple review."
+    echo ""
+    echo "Provide context as the second argument:"
+    echo "  bin/bd-ripple $TICKET_ID \"<what this ticket produced>\""
+    echo ""
+    echo "Or close with a reason first:"
+    echo "  bd close $TICKET_ID --reason \"<what changed>\""
+    exit 1
 fi
 
 TITLE=$(echo "$TICKET_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['title'])")
@@ -97,6 +110,20 @@ for dep in data.get('dependents', []):
 while IFS= read -r dep; do
     [[ -n "$dep" ]] && TO_FLAG+=("$dep")
 done <<< "$DEPENDENTS"
+
+# 3. Open related tickets (bidirectional related_to links)
+RELATED=$(echo "$TICKET_JSON" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)[0]
+for dep in data.get('dependencies', []) + data.get('dependents', []):
+    dep_type = dep.get('dependency_type', dep.get('type', ''))
+    if dep_type == 'related' and dep.get('status', 'open') in ('open', 'in_progress'):
+        print(dep['id'])
+" 2>/dev/null || true)
+
+while IFS= read -r rel; do
+    [[ -n "$rel" ]] && TO_FLAG+=("$rel")
+done <<< "$RELATED"
 
 # Deduplicate
 readarray -t TO_FLAG < <(printf '%s\n' "${TO_FLAG[@]}" | sort -u)
