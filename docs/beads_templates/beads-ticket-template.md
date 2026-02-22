@@ -148,3 +148,8 @@ Do **not** add AI attribution trailers to commit messages.
 
 - Risk 1
 - Dependency 1
+
+> **IMPORTANT:** Dependencies listed here are documentation only. You MUST also set
+> formal dependencies with `bd dep add <this-ticket> <depends-on>` so that
+> `bd blocked` / `bd ready` / ripple review can see them. Text-only deps are invisible
+> to the dependency graph.

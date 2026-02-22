@@ -29,6 +29,8 @@ bd sync                          # Sync with git
 # 1. Ripple review: bin/bd-ripple <id> → review flagged tickets → fix → clear labels
 # 2. Follow-up tickets: if closing produced new work, create tickets WITH descriptions
 #    using beads-ticket-template.md or beads-spike-template.md — NEVER empty descriptions
+#    IMPORTANT: Set formal deps with `bd dep add <ticket> <depends-on>` — text in
+#    descriptions is invisible to bd blocked/bd ready/ripple review
 # 3. Groom next: bd ready → pick next ticket → run grooming checklist (§ Ticket Grooming Checklist)
 # 4. Report: present grooming results + ask user if they want to start
 ```

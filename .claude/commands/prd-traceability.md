@@ -60,7 +60,7 @@ These are complementary. Ripple review won't catch a capability that was missing
 | C12 | Beads integration | Ticket Pipeline | Epic/spike/ticket templates |
 | C13 | Quality gates | Architecture Testing | ruff + mypy + pytest enforcement |
 | C14 | Fitness function generation | Architecture Testing | import-linter + pytestarch from bounded context map |
-| C15 | Domain story to ticket pipeline | Ticket Pipeline | DDD artifacts → ordered beads tickets |
+| C15 | Domain story to ticket pipeline | Ticket Pipeline | DDD artifacts → ordered beads tickets with formal `bd dep add` (not text-only deps) |
 | C16 | Complexity budget | Domain Model | Core/Supporting/Generic classification + treatment levels |
 | C17 | Multi-tool support | Tool Translation | Claude Code, Cursor, Antigravity, OpenCode configs |
 | C18 | Knowledge base (RLM) | Knowledge Base | Addressable docs, DDD patterns, tool conventions |
