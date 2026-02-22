@@ -1,67 +1,153 @@
-[project]
-name = "my-project"
-version = "0.1.0"
-description = "A new project scaffolded from vibe-seed"
-requires-python = ">=3.12"
-dependencies = []
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=6.0",
-    "pytest-asyncio>=0.24",
-    "ruff>=0.9",
-    "mypy>=1.14",
-]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[project]
+name = "vibe-seed"
+version = "0.1.0"
+description = "Guided project bootstrapper enforcing DDD + TDD + SOLID before AI coding tools write code"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+keywords = [
+    "ddd",
+    "tdd",
+    "solid",
+    "project-bootstrap",
+    "ai-coding",
+    "domain-driven-design",
+    "vibe-coding",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/jaigouk/vibe-seed"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-# ── Ruff ──────────────────────────────────────────────────────
+# ── Dependency Groups ────────────────────────────────────────
+[dependency-groups]
+dev = [
+    "pytest>=8.0,<10.0",
+    "pytest-cov>=6.0,<8.0",
+    "pytest-asyncio>=0.24,<2.0",
+    "pytest-timeout>=2.3,<3.0",
+    "mypy>=1.14,<2.0",
+    "ruff>=0.9,<1.0",
+]
+
+# ── Ruff ─────────────────────────────────────────────────────
 [tool.ruff]
 target-version = "py312"
-line-length = 100
+line-length = 99
 src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # pyflakes
-    "I",      # isort
-    "N",      # pep8-naming
-    "UP",     # pyupgrade
-    "S",      # bandit (security)
-    "B",      # bugbear
-    "SIM",    # simplify
-    "RUF",    # ruff-specific
+    # Core
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "W",  # pycodestyle warnings
+    "I",  # isort (import ordering)
+    "UP", # pyupgrade (modern Python)
+    # Bug prevention
+    "B",     # flake8-bugbear (common bugs)
+    "SIM",   # flake8-simplify
+    "ASYNC", # flake8-async (async correctness)
+    "PERF",  # perflint (performance anti-patterns)
+    "FURB",  # refurb (modern idioms)
+    # SOLID: Single Responsibility
+    "C90", # mccabe complexity (functions doing too much)
+    "PLR", # pylint refactor (too many args/returns/branches)
+    # SOLID: Dependency Inversion + Liskov
+    "TCH", # type-checking imports
+    "ANN", # type annotations (enables DI contracts)
+    # Security
+    "S", # flake8-bandit
+    # Code quality
+    "RUF", # ruff-specific rules
+    "N",   # pep8-naming conventions
+    "ARG", # unused arguments (dead code)
+    "RET", # flake8-return (clean return patterns)
+    "PIE", # flake8-pie (misc lints)
+    "RSE", # flake8-raise (exception best practices)
+    "T20", # flake8-print (no print in production)
+    "PT",  # pytest style (test quality)
+    "FLY", # flynt (f-string conversion)
 ]
 ignore = [
-    "S101",   # assert used (fine in tests)
+    "PLR2004", # magic-value-comparison (too many false positives)
+    "S101",    # assert (needed in tests, fine for domain invariants)
+    "ANN401",  # Any type (sometimes necessary for generic wrappers)
+    "ARG001",  # unused-function-argument (fixtures, mocks)
+    "ARG002",  # unused-method-argument (ABC/Protocol overrides)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert is the whole point of tests
+    "S105",    # hardcoded passwords in test fixtures are fine
+    "S108",    # /tmp usage in tests is fine
+    "ANN",     # don't require annotations in tests
+    "ARG",     # unused args common in fixtures
+    "PLR2004", # magic values fine in test assertions
+    "PLR0913", # many args fine in test helpers
+    "RUF012",  # mutable class defaults in test classes
+    "T20",     # print in tests is fine for debugging
+    "PT012",   # multi-statement pytest.raises blocks
+]
+"bin/*" = [
+    "T20", # shell scripts use print
+    "ANN", # no annotations in scripts
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 
-# ── Mypy ──────────────────────────────────────────────────────
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 7
+max-returns = 6
+max-branches = 12
+
+# ── Mypy ─────────────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.12"
 strict = true
-warn_return_any = true
-warn_unused_configs = true
+python_version = "3.12"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
 
-# ── Pytest ────────────────────────────────────────────────────
+# ── Pytest ───────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
+markers = [
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow-running",
+]
+
+# ── Coverage ─────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 80
