@@ -125,11 +125,16 @@ while IFS= read -r rel; do
     [[ -n "$rel" ]] && TO_FLAG+=("$rel")
 done <<< "$RELATED"
 
-# Deduplicate
-readarray -t TO_FLAG < <(printf '%s\n' "${TO_FLAG[@]}" | sort -u)
+# Deduplicate (guard: printf on empty array emits a newline → sort -u keeps it as empty string)
+if [[ ${#TO_FLAG[@]} -gt 0 ]]; then
+    readarray -t TO_FLAG < <(printf '%s\n' "${TO_FLAG[@]}" | grep -v '^$' | sort -u)
+fi
 
 if [[ ${#TO_FLAG[@]} -eq 0 ]]; then
-    echo "No open siblings or dependents found for $TICKET_ID. Nothing to flag."
+    echo "No open siblings or dependents found for $TICKET_ID."
+    echo ""
+    echo "Hint: If this ticket belongs to an epic, ensure formal dependencies exist"
+    echo "      (bd dep add <dependent> $TICKET_ID) so ripple can traverse the graph."
     exit 0
 fi
 

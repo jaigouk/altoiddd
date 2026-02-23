@@ -20,34 +20,34 @@ status: draft
 
 1. **Domain purity** -- Domain layer has zero external dependencies. No frameworks, no
    I/O, no file access. Business logic is expressed purely in Python data structures
-   and functions. *(Source: DDD.md layer rules; PRD section 6)*
+   and functions. _(Source: DDD.md layer rules; PRD section 6)_
 
 2. **Local-first** -- Everything runs locally. No cloud dependencies, no paid APIs for
-   core functionality, no network calls during bootstrap. *(Source: PRD section 6,
-   budget/resource constraints)*
+   core functionality, no network calls during bootstrap. _(Source: PRD section 6,
+   budget/resource constraints)_
 
 3. **Preview before action** -- All file operations, ticket creation, and config
    generation show a preview and require explicit user confirmation before writing
-   anything. *(Source: PRD section 5.2, DDD.md Story 1 steps 4/18, Story 4 step 6,
-   Story 5 steps 9-10)*
+   anything. _(Source: PRD section 5.2, DDD.md Story 1 steps 4/18, Story 4 step 6,
+   Story 5 steps 9-10)_
 
 4. **DDD alignment** -- Architecture follows bounded context boundaries from `docs/DDD.md`.
    Each bounded context gets its own module namespace. Cross-context communication uses
-   domain events or explicit ports, never direct imports. *(Source: DDD.md section 4
-   context map)*
+   domain events or explicit ports, never direct imports. _(Source: DDD.md section 4
+   context map)_
 
 5. **Testability** -- Every component is testable in isolation with dependency injection.
    Application layer depends on port interfaces (Protocols), not concrete implementations.
-   *(Source: PRD section 5 P0 quality gates)*
+   _(Source: PRD section 5 P0 quality gates)_
 
 6. **Complexity budget enforcement** -- Architecture treatment level (hexagonal, layered,
    ACL wrapper) is determined by subdomain classification (Core, Supporting, Generic), not
    by developer preference. Core gets the full DDD treatment; Generic gets a thin wrapper.
-   *(Source: DDD.md section 3 complexity budget)*
+   _(Source: DDD.md section 3 complexity budget)_
 
 7. **Human-in-the-loop** -- The system flags, suggests, and previews. Humans decide. No
    automatic ticket rewrites, no automatic code generation, no silent file creation.
-   *(Source: PRD section 4 scenario 6, DDD.md Story 3 steps 9-10)*
+   _(Source: PRD section 4 scenario 6, DDD.md Story 3 steps 9-10)_
 
 ## 2. System Overview
 
@@ -72,11 +72,11 @@ status: draft
          Domain Layer   Infrastructure   .alty/
          (Pure Python)    Adapters       (Project State)
               |              |               |
-     +--------+--------+    |    +-----------+-----------+
-     | Guided Discovery |    |    | domain-model.yaml    |
-     | Domain Model     |    |    | config.toml          |
-     | Arch Testing     |    |    | knowledge/           |
-     | Ticket Pipeline  |    |    | maintenance/         |
+     +--------+--------+     |    +-----------+---------+
+     | Guided Discovery |    |    | domain-model.yaml   |
+     | Domain Model     |    |    | config.toml         |
+     | Arch Testing     |    |    | knowledge/          |
+     | Ticket Pipeline  |    |    | maintenance/        |
      | Ticket Freshness |    |    +---------------------+
      | Tool Translation |    |
      | Knowledge Base   |    +--- File I/O, Beads CLI,
@@ -87,58 +87,58 @@ status: draft
 
 ### Component Summary
 
-| Component | Responsibility | Bounded Context | Classification |
-|-----------|---------------|-----------------|----------------|
-| `vs` CLI | Parse commands, format output, delegate to ports | CLI Framework | Generic |
-| `alty-mcp` MCP server | Expose tools/resources over stdio, delegate to ports | MCP Framework | Generic |
-| 13 Application Ports | Define interfaces between adapters and domain | (cross-cutting) | -- |
-| DiscoverySession | 10-question DDD flow, persona detection, playback | Guided Discovery | Core |
-| DomainModel | Domain stories, ubiquitous language, bounded contexts | Domain Model | Core |
-| FitnessTestSuite | Generate import-linter + pytestarch from context map | Architecture Testing | Core |
-| TicketPlan | Dependency-ordered ticket generation with 3-tier detail | Ticket Pipeline | Core |
-| RippleReview | Event-driven freshness flagging on ticket close | Ticket Freshness | Core |
-| ToolConfig | Domain model to tool-native config translation | Tool Translation | Supporting |
-| KnowledgeEntry | RLM-addressable docs, TOML-based tool conventions | Knowledge Base | Supporting |
-| BootstrapSession | Orchestrate `alty init` flow | Bootstrap | Supporting |
-| GapAnalysis | Scan existing projects, generate migration plans | Rescue | Supporting |
-| FileScaffoldService | Render templates, write files with safety rules | File Generation | Generic |
-| Composition Root | Wire ports to implementations at startup | (infrastructure) | -- |
+| Component             | Responsibility                                          | Bounded Context      | Classification |
+| --------------------- | ------------------------------------------------------- | -------------------- | -------------- |
+| `vs` CLI              | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
+| `alty-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
+| 13 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
+| DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
+| DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
+| FitnessTestSuite      | Generate import-linter + pytestarch from context map    | Architecture Testing | Core           |
+| TicketPlan            | Dependency-ordered ticket generation with 3-tier detail | Ticket Pipeline      | Core           |
+| RippleReview          | Event-driven freshness flagging on ticket close         | Ticket Freshness     | Core           |
+| ToolConfig            | Domain model to tool-native config translation          | Tool Translation     | Supporting     |
+| KnowledgeEntry        | RLM-addressable docs, TOML-based tool conventions       | Knowledge Base       | Supporting     |
+| BootstrapSession      | Orchestrate `alty init` flow                            | Bootstrap            | Supporting     |
+| GapAnalysis           | Scan existing projects, generate migration plans        | Rescue               | Supporting     |
+| FileScaffoldService   | Render templates, write files with safety rules         | File Generation      | Generic        |
+| Composition Root      | Wire ports to implementations at startup                | (infrastructure)     | --             |
 
 ## 3. Layer Architecture
 
 Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 
 ```
-+-----------------------------------------------------------------------+
-|                        Infrastructure                                  |
-|  +-------------------------------------------------------------------+|
++----------------------------------------------------------------------+
+|                         Infrastructure                               |
+|  +------------------------------------------------------------------+|
 |  |  CLI Adapter (Typer)  |  MCP Adapter (FastMCP)  |  File I/O      ||
-|  |  Beads CLI Adapter    |  Git Adapter             |  Template Eng. ||
-|  +-------------------------------------------------------------------+|
-|  +-------------------------------------------------------------------+|
-|  |                     Application Layer                              ||
-|  |  +---------------------------------------------------------------+||
-|  |  |  Commands (write operations)                                  |||
-|  |  |  Queries (read operations)                                    |||
-|  |  |  Ports (13 Protocol interfaces)                               |||
-|  |  +---------------------------------------------------------------+||
-|  |  +---------------------------------------------------------------+||
-|  |  |                     Domain Layer                               |||
-|  |  |  Models: Entities, Value Objects, Aggregates                  |||
-|  |  |  Services: Stateless domain operations                        |||
-|  |  |  Events: Domain events (DiscoveryCompleted, etc.)             |||
-|  |  +---------------------------------------------------------------+||
-|  +-------------------------------------------------------------------+|
-+-----------------------------------------------------------------------+
+|  |  Beads CLI Adapter    |  Git Adapter            |  Template Eng. ||
+|  +------------------------------------------------------------------+|
+|  +------------------------------------------------------------------+|
+|  |                      Application Layer                           ||
+|  |  +--------------------------------------------------------------+||
+|  |  |  Commands (write operations)                                 |||
+|  |  |  Queries (read operations)                                   |||
+|  |  |  Ports (13 Protocol interfaces)                              |||
+|  |  +--------------------------------------------------------------+||
+|  |  +--------------------------------------------------------------+||
+|  |  |                      Domain Layer                            |||
+|  |  |  Models: Entities, Value Objects, Aggregates                 |||
+|  |  |  Services: Stateless domain operations                       |||
+|  |  |  Events: Domain events (DiscoveryCompleted, etc.)            |||
+|  |  +--------------------------------------------------------------+||
+|  +------------------------------------------------------------------+|
++----------------------------------------------------------------------+
 ```
 
 ### Layer Rules
 
-| Layer | Can Depend On | Cannot Depend On | Enforced By |
-|-------|--------------|------------------|-------------|
-| Domain | Nothing (pure Python stdlib only) | Application, Infrastructure, any framework | import-linter `forbidden` + pytestarch `Rule` |
-| Application | Domain, Ports (interfaces only) | Infrastructure, frameworks | import-linter `layers` contract |
-| Infrastructure | Application, Domain | -- (outermost layer) | -- |
+| Layer          | Can Depend On                     | Cannot Depend On                           | Enforced By                                   |
+| -------------- | --------------------------------- | ------------------------------------------ | --------------------------------------------- |
+| Domain         | Nothing (pure Python stdlib only) | Application, Infrastructure, any framework | import-linter `forbidden` + pytestarch `Rule` |
+| Application    | Domain, Ports (interfaces only)   | Infrastructure, frameworks                 | import-linter `layers` contract               |
+| Infrastructure | Application, Domain               | -- (outermost layer)                       | --                                            |
 
 ### Source Layout
 
@@ -239,13 +239,13 @@ src/
 
 The complexity budget (DDD.md section 3) determines the architecture approach per subdomain:
 
-| Classification | Architecture | Testing Target | Fitness Strictness | Ticket Detail | Subdomains |
-|---------------|-------------|----------------|-------------------|---------------|------------|
-| **Core** | Hexagonal (Ports and Adapters) | >= 90% domain, >= 80% overall | All 4 contract types | FULL (AC, TDD, SOLID, edge cases) | Guided Discovery, Architecture Testing, Ticket Pipeline, Ticket Freshness |
-| **Supporting** | Simple layered | >= 80% | layers + forbidden | STANDARD (AC, basic tests) | Tool Translation, Knowledge Base, Rescue, Bootstrap |
-| **Generic** | ACL wrapper | >= 60% boundary | Single forbidden (ACL) | STUB (integrate + verify boundary) | File Generation, CLI Framework, MCP Framework |
+| Classification | Architecture                   | Testing Target                | Fitness Strictness     | Ticket Detail                      | Subdomains                                                                |
+| -------------- | ------------------------------ | ----------------------------- | ---------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| **Core**       | Hexagonal (Ports and Adapters) | >= 90% domain, >= 80% overall | All 4 contract types   | FULL (AC, TDD, SOLID, edge cases)  | Guided Discovery, Architecture Testing, Ticket Pipeline, Ticket Freshness |
+| **Supporting** | Simple layered                 | >= 80%                        | layers + forbidden     | STANDARD (AC, basic tests)         | Tool Translation, Knowledge Base, Rescue, Bootstrap                       |
+| **Generic**    | ACL wrapper                    | >= 60% boundary               | Single forbidden (ACL) | STUB (integrate + verify boundary) | File Generation, CLI Framework, MCP Framework                             |
 
-*(Source: DDD.md section 3 complexity budget; PRD section 5 P0 complexity budget)*
+_(Source: DDD.md section 3 complexity budget; PRD section 5 P0 complexity budget)_
 
 ## 4. Bounded Context Integration
 
@@ -265,20 +265,20 @@ How bounded contexts communicate, from `docs/DDD.md` section 4 context map:
 [Rescue] --- Orchestrates ----> [Bootstrap] (reuses scaffolding flow)
 ```
 
-| Upstream Context | Downstream Context | Integration Pattern | Data Format |
-|-----------------|-------------------|---------------------|-------------|
-| Guided Discovery | Domain Model | Domain Event (DiscoveryCompleted) | In-memory event object |
-| Domain Model | Architecture Testing | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
-| Domain Model | Ticket Pipeline | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
-| Domain Model | Tool Translation | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
-| Knowledge Base | Tool Translation | Query (lookup) | TOML entries via KnowledgeLookupPort |
-| Ticket Pipeline | Beads (external) | ACL (subprocess) | `bd create` + `bd dep add` CLI commands |
-| Beads (external) | Ticket Freshness | ACL + Domain Event | `bd show --json` parsed by ACL adapter |
-| Architecture Testing | File Generation | ACL | File write via FileScaffoldService |
-| Tool Translation | File Generation | ACL | File write via FileScaffoldService |
-| Bootstrap | All Core/Supporting | Orchestration | Application-layer command dispatch |
+| Upstream Context     | Downstream Context   | Integration Pattern                 | Data Format                             |
+| -------------------- | -------------------- | ----------------------------------- | --------------------------------------- |
+| Guided Discovery     | Domain Model         | Domain Event (DiscoveryCompleted)   | In-memory event object                  |
+| Domain Model         | Architecture Testing | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
+| Domain Model         | Ticket Pipeline      | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
+| Domain Model         | Tool Translation     | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
+| Knowledge Base       | Tool Translation     | Query (lookup)                      | TOML entries via KnowledgeLookupPort    |
+| Ticket Pipeline      | Beads (external)     | ACL (subprocess)                    | `bd create` + `bd dep add` CLI commands |
+| Beads (external)     | Ticket Freshness     | ACL + Domain Event                  | `bd show --json` parsed by ACL adapter  |
+| Architecture Testing | File Generation      | ACL                                 | File write via FileScaffoldService      |
+| Tool Translation     | File Generation      | ACL                                 | File write via FileScaffoldService      |
+| Bootstrap            | All Core/Supporting  | Orchestration                       | Application-layer command dispatch      |
 
-*(Source: DDD.md section 4 context map; CLI+MCP design spike section 4)*
+_(Source: DDD.md section 4 context map; CLI+MCP design spike section 4)_
 
 ### Event Flow: End-to-End Bootstrap
 
@@ -311,17 +311,17 @@ Each step shows a preview and waits for user approval before proceeding.
 
 ### Aggregates and Storage
 
-| Aggregate | Storage | Rationale |
-|-----------|---------|-----------|
-| DiscoverySession | In-memory (session duration) | Stateful conversation; persisted only when complete |
-| DomainModel | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans |
-| FitnessTestSuite | In-memory during generation | Output written to `pyproject.toml` + `tests/architecture/` |
-| TicketPlan | In-memory during generation | Output written to Beads via `bd create` subprocess |
-| RippleReview | Beads labels + comments | Uses existing beads features; no custom storage needed |
-| ToolConfig | In-memory during generation | Output written to `.claude/`, `.cursor/`, etc. |
-| KnowledgeEntry | `.alty/knowledge/` directory tree | TOML for tool conventions, Markdown for DDD/convention refs |
-| BootstrapSession | In-memory (session duration) | Orchestration state; no persistence needed |
-| GapAnalysis | In-memory during scan | Output is a gap report shown to user |
+| Aggregate        | Storage                                   | Rationale                                                   |
+| ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| DiscoverySession | In-memory (session duration)              | Stateful conversation; persisted only when complete         |
+| DomainModel      | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
+| FitnessTestSuite | In-memory during generation               | Output written to `pyproject.toml` + `tests/architecture/`  |
+| TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
+| RippleReview     | Beads labels + comments                   | Uses existing beads features; no custom storage needed      |
+| ToolConfig       | In-memory during generation               | Output written to `.claude/`, `.cursor/`, etc.              |
+| KnowledgeEntry   | `.alty/knowledge/` directory tree         | TOML for tool conventions, Markdown for DDD/convention refs |
+| BootstrapSession | In-memory (session duration)              | Orchestration state; no persistence needed                  |
+| GapAnalysis      | In-memory during scan                     | Output is a gap report shown to user                        |
 
 ### Shared YAML IR: `.alty/domain-model.yaml`
 
@@ -336,7 +336,7 @@ and consumed by:
 - **Tool Translation** -- reads `terms`, `bounded_contexts`, and `subdomains` to
   generate domain-aware configs for AI coding tools
 
-*(Source: ticket pipeline spike section 1; fitness function spike section 2)*
+_(Source: ticket pipeline spike section 1; fitness function spike section 2)_
 
 #### Schema Summary
 
@@ -346,26 +346,26 @@ version: "1.0"
 project_name: "example-project"
 generated_at: "2026-02-23T10:00:00Z"
 
-terms:                          # Ubiquitous language glossary
+terms: # Ubiquitous language glossary
   - term: "Order"
     definition: "A customer's request to purchase items"
     context: "Order Management"
 
-subdomains:                     # Complexity budget
+subdomains: # Complexity budget
   - name: "Order Management"
-    classification: core        # core | supporting | generic
+    classification: core # core | supporting | generic
     rationale: "..."
     treatment:
-      architecture: hexagonal   # hexagonal | layered | acl_wrapper
-      testing: comprehensive    # comprehensive | standard | boundary
+      architecture: hexagonal # hexagonal | layered | acl_wrapper
+      testing: comprehensive # comprehensive | standard | boundary
       fitness_functions: strict # strict | moderate | minimal
-      ticket_detail: full       # full | standard | stub
+      ticket_detail: full # full | standard | stub
 
-bounded_contexts:               # Context map
+bounded_contexts: # Context map
   - name: "Order Management"
     subdomain: "Order Management"
     responsibility: "..."
-    aggregates:                 # Only required for Core
+    aggregates: # Only required for Core
       - name: "Order"
         root: "Order"
         entities: ["OrderItem"]
@@ -381,19 +381,19 @@ bounded_contexts:               # Context map
         type: "domain_event"
         event: "OrderPlaced"
 
-context_map:                    # Explicit relationships
+context_map: # Explicit relationships
   - upstream: "Order Management"
     downstream: "Fulfillment"
     pattern: "domain_events"
 
-domain_stories:                 # For PRD traceability
+domain_stories: # For PRD traceability
   - name: "Place Order"
     steps: [...]
     bounded_contexts: ["Order Management"]
     prd_capabilities: ["C1", "C3"]
 ```
 
-*(Source: ticket pipeline spike section 1 schema; fitness function spike section 2 schema)*
+_(Source: ticket pipeline spike section 1 schema; fitness function spike section 2 schema)_
 
 #### Bounded Context Map Schema (for Fitness Functions)
 
@@ -402,8 +402,8 @@ The fitness function generator uses a subset of the same YAML with additional fi
 ```yaml
 project:
   name: "myproject"
-  root_package: "myproject"       # Python package name (import-linter root_package)
-  src_path: "src"                 # Relative path to source root (pytestarch scanner)
+  root_package: "myproject" # Python package name (import-linter root_package)
+  src_path: "src" # Relative path to source root (pytestarch scanner)
 
 bounded_contexts:
   - name: "Guided Discovery"
@@ -418,25 +418,25 @@ bounded_contexts:
         via: "infrastructure.events.discovery_completed"
 ```
 
-*(Source: fitness function spike section 2)*
+_(Source: fitness function spike section 2)_
 
 ### Key Entities
 
-| Entity | Key Attributes | Aggregate |
-|--------|---------------|-----------|
-| DiscoverySession | persona, register, current_phase, answers, playbacks | DiscoverySession |
-| Question | id, phase, technical_text, non_technical_text | DiscoverySession |
-| DomainStory | name, steps (actor/action/work_object), bounded_contexts | DomainModel |
-| BoundedContextMap | contexts, relationships | DomainModel |
-| AggregateDesign | root, entities, value_objects, invariants, commands, events | DomainModel |
-| Contract | name, type (layers/forbidden/independence/acyclic_siblings), modules | FitnessTestSuite |
-| ArchRule | name, type, subject_modules, forbidden_modules, test_class | FitnessTestSuite |
-| GeneratedEpic | bounded_context, subdomain_classification, tickets | TicketPlan |
-| GeneratedTicket | title, detail_level, aggregate_name, intra_deps, cross_deps | TicketPlan |
-| ContextDiff | closed_ticket_id, summary text | RippleReview |
-| FreshnessFlag | ticket_id, triggering_ticket_id, context | RippleReview |
-| KnowledgeEntry | category, tool, topic, version, content (TOML/Markdown) | KnowledgeEntry |
-| ToolAdapter | tool_name, config_format, output_paths | ToolConfig |
+| Entity            | Key Attributes                                                       | Aggregate        |
+| ----------------- | -------------------------------------------------------------------- | ---------------- |
+| DiscoverySession  | persona, register, current_phase, answers, playbacks                 | DiscoverySession |
+| Question          | id, phase, technical_text, non_technical_text                        | DiscoverySession |
+| DomainStory       | name, steps (actor/action/work_object), bounded_contexts             | DomainModel      |
+| BoundedContextMap | contexts, relationships                                              | DomainModel      |
+| AggregateDesign   | root, entities, value_objects, invariants, commands, events          | DomainModel      |
+| Contract          | name, type (layers/forbidden/independence/acyclic_siblings), modules | FitnessTestSuite |
+| ArchRule          | name, type, subject_modules, forbidden_modules, test_class           | FitnessTestSuite |
+| GeneratedEpic     | bounded_context, subdomain_classification, tickets                   | TicketPlan       |
+| GeneratedTicket   | title, detail_level, aggregate_name, intra_deps, cross_deps          | TicketPlan       |
+| ContextDiff       | closed_ticket_id, summary text                                       | RippleReview     |
+| FreshnessFlag     | ticket_id, triggering_ticket_id, context                             | RippleReview     |
+| KnowledgeEntry    | category, tool, topic, version, content (TOML/Markdown)              | KnowledgeEntry   |
+| ToolAdapter       | tool_name, config_format, output_paths                               | ToolConfig       |
 
 ## 6. CLI and MCP Interfaces
 
@@ -478,24 +478,24 @@ vs
 
 ### 6.2 Command to Port Mapping
 
-| Command | Bounded Context | Port (Protocol) | Aggregate |
-|---------|----------------|-----------------|-----------|
-| `alty init` | Bootstrap | `BootstrapPort` | BootstrapSession |
-| `alty init --existing` | Rescue (via Bootstrap) | `RescuePort` | GapAnalysis |
-| `alty guide` | Guided Discovery | `DiscoveryPort` | DiscoverySession |
-| `alty generate artifacts` | Domain Model | `ArtifactGenerationPort` | DomainModel |
-| `alty generate fitness` | Architecture Testing | `FitnessGenerationPort` | FitnessTestSuite |
-| `alty generate tickets` | Ticket Pipeline | `TicketGenerationPort` | TicketPlan |
-| `alty generate configs` | Tool Translation | `ConfigGenerationPort` | ToolConfig |
-| `alty detect` | Bootstrap | `ToolDetectionPort` | (part of BootstrapSession) |
-| `alty check` | Architecture Testing | `QualityGatePort` | (orchestration) |
-| `alty kb <topic>` | Knowledge Base | `KnowledgeLookupPort` | KnowledgeEntry |
-| `alty doc-health` | Knowledge Base | `DocHealthPort` | (query) |
-| `alty doc-review` | Knowledge Base | `DocReviewPort` | (command) |
-| `alty ticket-health` | Ticket Freshness | `TicketHealthPort` | (query) |
-| `alty persona` | Tool Translation | `PersonaPort` | ToolConfig |
+| Command                   | Bounded Context        | Port (Protocol)          | Aggregate                  |
+| ------------------------- | ---------------------- | ------------------------ | -------------------------- |
+| `alty init`               | Bootstrap              | `BootstrapPort`          | BootstrapSession           |
+| `alty init --existing`    | Rescue (via Bootstrap) | `RescuePort`             | GapAnalysis                |
+| `alty guide`              | Guided Discovery       | `DiscoveryPort`          | DiscoverySession           |
+| `alty generate artifacts` | Domain Model           | `ArtifactGenerationPort` | DomainModel                |
+| `alty generate fitness`   | Architecture Testing   | `FitnessGenerationPort`  | FitnessTestSuite           |
+| `alty generate tickets`   | Ticket Pipeline        | `TicketGenerationPort`   | TicketPlan                 |
+| `alty generate configs`   | Tool Translation       | `ConfigGenerationPort`   | ToolConfig                 |
+| `alty detect`             | Bootstrap              | `ToolDetectionPort`      | (part of BootstrapSession) |
+| `alty check`              | Architecture Testing   | `QualityGatePort`        | (orchestration)            |
+| `alty kb <topic>`         | Knowledge Base         | `KnowledgeLookupPort`    | KnowledgeEntry             |
+| `alty doc-health`         | Knowledge Base         | `DocHealthPort`          | (query)                    |
+| `alty doc-review`         | Knowledge Base         | `DocReviewPort`          | (command)                  |
+| `alty ticket-health`      | Ticket Freshness       | `TicketHealthPort`       | (query)                    |
+| `alty persona`            | Tool Translation       | `PersonaPort`            | ToolConfig                 |
 
-*(Source: CLI+MCP design spike section 2)*
+_(Source: CLI+MCP design spike section 2)_
 
 ### 6.3 CLI Entry Points
 
@@ -513,34 +513,34 @@ Tools handle write operations; resources handle read-only queries.
 
 **MCP Tools:**
 
-| Tool Name | CLI Equivalent | Parameters |
-|-----------|---------------|------------|
-| `init_project` | `alty init` | `project_dir: str, existing: bool = False` |
-| `guide_ddd` | `alty guide` | `project_dir: str, quick: bool = False` |
-| `generate_artifacts` | `alty generate artifacts` | `project_dir: str, artifact_type: str` |
-| `generate_fitness` | `alty generate fitness` | `project_dir: str` |
-| `generate_tickets` | `alty generate tickets` | `project_dir: str, preview: bool = True` |
-| `generate_configs` | `alty generate configs` | `project_dir: str, tools: list[str]` |
-| `detect_tools` | `alty detect` | `project_dir: str` |
-| `check_quality` | `alty check` | `project_dir: str, gates: list[str]` |
-| `doc_health` | `alty doc-health` | `project_dir: str` |
-| `ticket_health` | `alty ticket-health` | `project_dir: str` |
+| Tool Name            | CLI Equivalent            | Parameters                                 |
+| -------------------- | ------------------------- | ------------------------------------------ |
+| `init_project`       | `alty init`               | `project_dir: str, existing: bool = False` |
+| `guide_ddd`          | `alty guide`              | `project_dir: str, quick: bool = False`    |
+| `generate_artifacts` | `alty generate artifacts` | `project_dir: str, artifact_type: str`     |
+| `generate_fitness`   | `alty generate fitness`   | `project_dir: str`                         |
+| `generate_tickets`   | `alty generate tickets`   | `project_dir: str, preview: bool = True`   |
+| `generate_configs`   | `alty generate configs`   | `project_dir: str, tools: list[str]`       |
+| `detect_tools`       | `alty detect`             | `project_dir: str`                         |
+| `check_quality`      | `alty check`              | `project_dir: str, gates: list[str]`       |
+| `doc_health`         | `alty doc-health`         | `project_dir: str`                         |
+| `ticket_health`      | `alty ticket-health`      | `project_dir: str`                         |
 
 **MCP Resources:**
 
-| Resource URI | Description | Data Source |
-|-------------|-------------|-------------|
-| `alty://knowledge/tools/{tool}/{subtopic}` | AI tool conventions | `.alty/knowledge/tools/` |
-| `alty://knowledge/ddd/{topic}` | DDD patterns/references | `.alty/knowledge/ddd/` |
-| `alty://knowledge/conventions/{topic}` | TDD/SOLID/quality gate refs | `.alty/knowledge/conventions/` |
-| `alty://knowledge/cross-tool/{topic}` | Cross-tool mappings | `.alty/knowledge/cross-tool/` |
-| `alty://project/{dir}/domain-model` | Current DDD.md | `docs/DDD.md` |
-| `alty://project/{dir}/architecture` | Current ARCHITECTURE.md | `docs/ARCHITECTURE.md` |
-| `alty://tickets/ready` | Tickets in ready state | beads `bd ready` |
-| `alty://tickets/{id}` | Single ticket details | beads `bd show` |
-| `alty://personas/{name}` | Agent persona definition | Generated persona files |
+| Resource URI                               | Description                 | Data Source                    |
+| ------------------------------------------ | --------------------------- | ------------------------------ |
+| `alty://knowledge/tools/{tool}/{subtopic}` | AI tool conventions         | `.alty/knowledge/tools/`       |
+| `alty://knowledge/ddd/{topic}`             | DDD patterns/references     | `.alty/knowledge/ddd/`         |
+| `alty://knowledge/conventions/{topic}`     | TDD/SOLID/quality gate refs | `.alty/knowledge/conventions/` |
+| `alty://knowledge/cross-tool/{topic}`      | Cross-tool mappings         | `.alty/knowledge/cross-tool/`  |
+| `alty://project/{dir}/domain-model`        | Current DDD.md              | `docs/DDD.md`                  |
+| `alty://project/{dir}/architecture`        | Current ARCHITECTURE.md     | `docs/ARCHITECTURE.md`         |
+| `alty://tickets/ready`                     | Tickets in ready state      | beads `bd ready`               |
+| `alty://tickets/{id}`                      | Single ticket details       | beads `bd show`                |
+| `alty://personas/{name}`                   | Agent persona definition    | Generated persona files        |
 
-*(Source: CLI+MCP design spike sections 3-4; MCP SDK spike)*
+_(Source: CLI+MCP design spike sections 3-4; MCP SDK spike)_
 
 ### 6.5 Shared Application Core
 
@@ -556,6 +556,7 @@ MCP (FastMCP) --+           |
 ```
 
 **Rules:**
+
 - CLI/MCP adapters ONLY import from `application.ports` and `application.commands/queries`
 - Application layer ONLY imports from `domain` and `ports` (interfaces)
 - Domain layer has ZERO external dependencies
@@ -583,21 +584,21 @@ def create_app() -> AppContext:
 Both CLI (`main.py`) and MCP (`server.py`) call `create_app()` at startup to get the
 same wired application context.
 
-*(Source: CLI+MCP design spike sections 4, 7)*
+_(Source: CLI+MCP design spike sections 4, 7)_
 
 ### 6.6 Persona-Aware Output
 
 The CLI adapts output based on the detected persona:
 
-| Persona | Register | Output Style |
-|---------|----------|-------------|
-| Solo Developer | Technical | Full DDD terms, aggregate names, code references |
-| Team Lead | Technical | DDD terms + team conventions emphasis |
-| AI Tool Switcher | Technical | Tool-specific output, config differences |
-| Product Owner | Non-technical | Business language, outcome-focused, no DDD jargon |
-| Domain Expert | Non-technical | Domain language, story-focused, familiar terminology |
+| Persona          | Register      | Output Style                                         |
+| ---------------- | ------------- | ---------------------------------------------------- |
+| Solo Developer   | Technical     | Full DDD terms, aggregate names, code references     |
+| Team Lead        | Technical     | DDD terms + team conventions emphasis                |
+| AI Tool Switcher | Technical     | Tool-specific output, config differences             |
+| Product Owner    | Non-technical | Business language, outcome-focused, no DDD jargon    |
+| Domain Expert    | Non-technical | Domain language, story-focused, familiar terminology |
 
-*(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)*
+_(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)_
 
 ## 7. Killer Feature Architectures
 
@@ -633,11 +634,11 @@ pyproject.toml) tests/architecture/*.py)
 
 #### Contract Generation by Classification
 
-| Classification | import-linter Contracts | pytestarch Rules |
-|---------------|------------------------|------------------|
-| **Core** | layers + forbidden (cross-context) + forbidden (domain purity) + independence (aggregates) + acyclic_siblings | LayeredArchitecture + cross-context boundary + domain purity + per-aggregate isolation |
-| **Supporting** | layers + forbidden (cross-context) | LayeredArchitecture + cross-context boundary |
-| **Generic** | forbidden (ACL boundary from all domain layers) | Single Rule: domain cannot import generic directly |
+| Classification | import-linter Contracts                                                                                       | pytestarch Rules                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Core**       | layers + forbidden (cross-context) + forbidden (domain purity) + independence (aggregates) + acyclic_siblings | LayeredArchitecture + cross-context boundary + domain purity + per-aggregate isolation |
+| **Supporting** | layers + forbidden (cross-context)                                                                            | LayeredArchitecture + cross-context boundary                                           |
+| **Generic**    | forbidden (ACL boundary from all domain layers)                                                               | Single Rule: domain cannot import generic directly                                     |
 
 #### Invariant Enforcement (at generation time, not runtime)
 
@@ -656,7 +657,7 @@ file is written (fail-fast design).
 - ~35 pytestarch tests across `tests/architecture/test_*.py` files
 - Shared `tests/architecture/conftest.py` with session-scoped `EvaluableArchitecture` fixture
 
-*(Source: fitness function spike sections 3, 4, 6, 7)*
+_(Source: fitness function spike sections 3, 4, 6, 7)_
 
 ### 7.2 Domain Story to Ticket Pipeline
 
@@ -691,17 +692,18 @@ file is written (fail-fast design).
 
 #### Ticket Detail Levels
 
-| Level | Classification | Content | Ticket Count |
-|-------|---------------|---------|-------------|
-| **FULL** | Core | AC, TDD phases (RED/GREEN/REFACTOR), SOLID mapping, edge cases, design section, invariants | 1 per aggregate + 1 per command group + 1 per integration |
-| **STANDARD** | Supporting | AC, basic tests, service implementation | 1 per major responsibility + 1 per integration |
-| **STUB** | Generic | One-sentence goal, ACL integration step, boundary test | 1 per BC |
+| Level        | Classification | Content                                                                                    | Ticket Count                                              |
+| ------------ | -------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| **FULL**     | Core           | AC, TDD phases (RED/GREEN/REFACTOR), SOLID mapping, edge cases, design section, invariants | 1 per aggregate + 1 per command group + 1 per integration |
+| **STANDARD** | Supporting     | AC, basic tests, service implementation                                                    | 1 per major responsibility + 1 per integration            |
+| **STUB**     | Generic        | One-sentence goal, ACL integration step, boundary test                                     | 1 per BC                                                  |
 
 #### Beads Integration
 
 Decision: Use `bd create` + `bd dep add` via subprocess (not JSONL generation).
 
 Rationale:
+
 1. Beads is an external system with an ACL boundary -- use the official CLI interface
 2. `bd create --body-file` avoids shell escaping issues with complex Markdown
 3. Formal `bd dep add` is the ONLY reliable way to create traversable dependencies
@@ -722,7 +724,7 @@ class BeadsWriterPort(Protocol):
     def get_ready(self) -> list[str]: ...
 ```
 
-*(Source: ticket pipeline spike sections 2, 4, 5, 9)*
+_(Source: ticket pipeline spike sections 2, 4, 5, 9)_
 
 ### 7.3 Complexity Budget Engine
 
@@ -765,15 +767,15 @@ Level      Level     Level
 
 #### Treatment Level Mapping
 
-| Aspect | Core | Supporting | Generic |
-|--------|------|------------|---------|
-| Architecture | Hexagonal | Simple layered | ACL wrapper |
-| Testing target | >= 90% domain, >= 80% overall | >= 80% | >= 60% boundary |
-| Fitness functions | strict (4 contract types) | moderate (layers + forbidden) | minimal (1 forbidden) |
-| Ticket detail | FULL | STANDARD | STUB |
-| Domain model | Rich (aggregates, invariants, events) | Service-oriented | Adapter only |
+| Aspect            | Core                                  | Supporting                    | Generic               |
+| ----------------- | ------------------------------------- | ----------------------------- | --------------------- |
+| Architecture      | Hexagonal                             | Simple layered                | ACL wrapper           |
+| Testing target    | >= 90% domain, >= 80% overall         | >= 80%                        | >= 60% boundary       |
+| Fitness functions | strict (4 contract types)             | moderate (layers + forbidden) | minimal (1 forbidden) |
+| Ticket detail     | FULL                                  | STANDARD                      | STUB                  |
+| Domain model      | Rich (aggregates, invariants, events) | Service-oriented              | Adapter only          |
 
-*(Source: DDD.md section 3; fitness function spike section 3)*
+_(Source: DDD.md section 3; fitness function spike section 3)_
 
 ### 7.4 Tool-Native Context Translation
 
@@ -782,12 +784,12 @@ Level      Level     Level
 
 #### Supported Tools
 
-| Tool | Config Dir | Agent Format | Instructions Format | Global Config |
-|------|-----------|-------------|--------------------|--------------|
-| Claude Code 2.1.x | `.claude/` | Markdown + YAML frontmatter (`.claude/agents/`) | Markdown (CLAUDE.md, rules/) | `~/.claude/` (file-based) |
-| Cursor 2.5.x | `.cursor/` | N/A (rules only) | MDC (`.cursor/rules/*.mdc`) + AGENTS.md | SQLite DB (detect only) |
-| Roo Code 3.38.x | `.roo/` | YAML (`.roomodes`) | Markdown (`.roo/rules/`) + AGENTS.md | `~/.roo/` (file-based) |
-| OpenCode (latest) | `.opencode/` | Markdown + YAML frontmatter (`.opencode/agents/`) | Markdown (AGENTS.md, rules/) | `~/.config/opencode/` (file-based) |
+| Tool              | Config Dir   | Agent Format                                      | Instructions Format                     | Global Config                      |
+| ----------------- | ------------ | ------------------------------------------------- | --------------------------------------- | ---------------------------------- |
+| Claude Code 2.1.x | `.claude/`   | Markdown + YAML frontmatter (`.claude/agents/`)   | Markdown (CLAUDE.md, rules/)            | `~/.claude/` (file-based)          |
+| Cursor 2.5.x      | `.cursor/`   | N/A (rules only)                                  | MDC (`.cursor/rules/*.mdc`) + AGENTS.md | SQLite DB (detect only)            |
+| Roo Code 3.38.x   | `.roo/`      | YAML (`.roomodes`)                                | Markdown (`.roo/rules/`) + AGENTS.md    | `~/.roo/` (file-based)             |
+| OpenCode (latest) | `.opencode/` | Markdown + YAML frontmatter (`.opencode/agents/`) | Markdown (AGENTS.md, rules/)            | `~/.config/opencode/` (file-based) |
 
 #### Cross-Tool Bridge: AGENTS.md
 
@@ -801,23 +803,23 @@ configs (for tools that support richer features like agents, modes, skills).
 
 From `.alty/knowledge/cross-tool/generation-matrix.toml`:
 
-| Output | Claude Code | Cursor | Roo Code | OpenCode |
-|--------|------------|--------|----------|----------|
-| Project instructions | `.claude/CLAUDE.md` | `AGENTS.md` | `AGENTS.md` | `AGENTS.md` |
-| Agent personas | `.claude/agents/{persona}.md` | `.cursor/rules/{topic}.mdc` | `.roomodes` + `.roo/rules-{slug}/` | `.opencode/agents/{persona}.md` |
-| Settings | `.claude/settings.json` | -- | -- | `opencode.json` |
-| Rules | `.claude/rules/` | `.cursor/rules/` | `.roo/rules/` | `.opencode/rules/` |
-| Commands | `.claude/commands/` | -- | -- | `.opencode/commands/` |
-| MCP config | `.mcp.json` | -- | -- | `opencode.json` |
-| Gitignore entries | `settings.local.json`, `CLAUDE.local.md` | -- | -- | -- |
+| Output               | Claude Code                              | Cursor                      | Roo Code                           | OpenCode                        |
+| -------------------- | ---------------------------------------- | --------------------------- | ---------------------------------- | ------------------------------- |
+| Project instructions | `.claude/CLAUDE.md`                      | `AGENTS.md`                 | `AGENTS.md`                        | `AGENTS.md`                     |
+| Agent personas       | `.claude/agents/{persona}.md`            | `.cursor/rules/{topic}.mdc` | `.roomodes` + `.roo/rules-{slug}/` | `.opencode/agents/{persona}.md` |
+| Settings             | `.claude/settings.json`                  | --                          | --                                 | `opencode.json`                 |
+| Rules                | `.claude/rules/`                         | `.cursor/rules/`            | `.roo/rules/`                      | `.opencode/rules/`              |
+| Commands             | `.claude/commands/`                      | --                          | --                                 | `.opencode/commands/`           |
+| MCP config           | `.mcp.json`                              | --                          | --                                 | `opencode.json`                 |
+| Gitignore entries    | `settings.local.json`, `CLAUDE.local.md` | --                          | --                                 | --                              |
 
 #### Concept Mapping
 
-| Concept | Claude Code | Cursor | Roo Code | OpenCode |
-|---------|------------|--------|----------|----------|
-| Persona/Agent | Subagent | Rule file | Mode | Agent |
-| Global instructions | `~/.claude/CLAUDE.md` | User Rules (SQLite) | `~/.roo/rules/` | `~/.config/opencode/AGENTS.md` |
-| Project instructions | `.claude/CLAUDE.md` + rules/ | `.cursor/rules/*.mdc` | `.roo/rules/` | `AGENTS.md` + rules/ |
+| Concept              | Claude Code                  | Cursor                | Roo Code        | OpenCode                       |
+| -------------------- | ---------------------------- | --------------------- | --------------- | ------------------------------ |
+| Persona/Agent        | Subagent                     | Rule file             | Mode            | Agent                          |
+| Global instructions  | `~/.claude/CLAUDE.md`        | User Rules (SQLite)   | `~/.roo/rules/` | `~/.config/opencode/AGENTS.md` |
+| Project instructions | `.claude/CLAUDE.md` + rules/ | `.cursor/rules/*.mdc` | `.roo/rules/`   | `AGENTS.md` + rules/           |
 
 #### Limitations
 
@@ -826,7 +828,7 @@ From `.alty/knowledge/cross-tool/generation-matrix.toml`:
   SQLite queries. `alty detect` warns users to check manually.
 - **No agent/persona concept in Cursor** -- personas encoded as rule files instead.
 
-*(Source: knowledge base spike sections 1-4, 9)*
+_(Source: knowledge base spike sections 1-4, 9)_
 
 ### 7.5 Rescue Mode (Existing Project Adoption)
 
@@ -862,15 +864,15 @@ alty init --existing
 
 #### Branch Safety Rules
 
-| Rule | Enforcement |
-|------|------------|
-| Never overwrite existing files | Skip if target exists |
-| Clean git tree required | `git status --porcelain` check before any operation |
-| All changes on branch | `git checkout -b alty/init` |
-| Never merge for user | User reviews diff and merges manually |
-| Zero test regression | Run existing test suite after scaffolding; roll back on failure |
+| Rule                           | Enforcement                                                     |
+| ------------------------------ | --------------------------------------------------------------- |
+| Never overwrite existing files | Skip if target exists                                           |
+| Clean git tree required        | `git status --porcelain` check before any operation             |
+| All changes on branch          | `git checkout -b alty/init`                                     |
+| Never merge for user           | User reviews diff and merges manually                           |
+| Zero test regression           | Run existing test suite after scaffolding; roll back on failure |
 
-*(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety rules)*
+_(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety rules)_
 
 ### 7.6 Living Knowledge Base
 
@@ -958,12 +960,12 @@ def _resolve_path(self, category: str, topic: str, version: str) -> Path:
 
 Track major version series (not every patch). Current + 3 previous major versions per tool.
 
-| Tool | Current | Prev 1 | Prev 2 | Prev 3 |
-|------|---------|--------|--------|--------|
-| Claude Code | 2.1.x | 2.0.x | 1.x | -- |
-| Cursor | 2.5.x | 2.4.x | 2.0.x | 1.7.x |
-| Roo Code | 3.38.x | 3.22.x | 2.2.x | -- |
-| OpenCode | latest | -- | -- | -- |
+| Tool        | Current | Prev 1 | Prev 2 | Prev 3 |
+| ----------- | ------- | ------ | ------ | ------ |
+| Claude Code | 2.1.x   | 2.0.x  | 1.x    | --     |
+| Cursor      | 2.5.x   | 2.4.x  | 2.0.x  | 1.7.x  |
+| Roo Code    | 3.38.x  | 3.22.x | 2.2.x  | --     |
+| OpenCode    | latest  | --     | --     | --     |
 
 #### TOML for Tool Knowledge, Markdown for Reference
 
@@ -989,7 +991,7 @@ schema_version = 1
 `alty doc-health --knowledge` compares these fields against installed tool versions
 (from `alty detect`) to report stale entries.
 
-*(Source: knowledge base spike sections 4-7)*
+_(Source: knowledge base spike sections 4-7)_
 
 ### 7.7 Ticket Freshness and Ripple Review
 
@@ -1000,13 +1002,13 @@ schema_version = 1
 
 Beads v0.55.4 has a fixed schema. All freshness metadata uses native features:
 
-| Concept | Beads Mechanism | Format |
-|---------|----------------|--------|
-| review_needed flag | `bd label add <id> review_needed` | Label |
-| Triggering ticket | Comment text | `**Triggered by:** \`<closed-id>\`` |
-| Context diff | Comment body | Structured Markdown with review checklist |
-| last_reviewed | Comment prefix | `**Reviewed:** <ISO-date> by <actor>` |
-| Flag stacking | Multiple comments | Each closure adds a new comment |
+| Concept            | Beads Mechanism                   | Format                                    |
+| ------------------ | --------------------------------- | ----------------------------------------- |
+| review_needed flag | `bd label add <id> review_needed` | Label                                     |
+| Triggering ticket  | Comment text                      | `**Triggered by:** \`<closed-id>\``       |
+| Context diff       | Comment body                      | Structured Markdown with review checklist |
+| last_reviewed      | Comment prefix                    | `**Reviewed:** <ISO-date> by <actor>`     |
+| Flag stacking      | Multiple comments                 | Each closure adds a new comment           |
 
 #### Ripple Review Traversal
 
@@ -1054,10 +1056,10 @@ Read-only freshness report via `TicketHealthPort`:
 
 #### Two-Tier Ticket Generation
 
-| Tier | Criteria | Detail Level |
-|------|----------|-------------|
-| Near-term | Depth <= 2 hops from root, or Core subdomain | FULL |
-| Far-term | Depth > 2, Supporting or Generic | STANDARD or STUB |
+| Tier      | Criteria                                     | Detail Level     |
+| --------- | -------------------------------------------- | ---------------- |
+| Near-term | Depth <= 2 hops from root, or Core subdomain | FULL             |
+| Far-term  | Depth > 2, Supporting or Generic             | STANDARD or STUB |
 
 Stub tickets are promoted to full detail when their blockers are resolved (detected by
 ripple review, executed by agent during grooming).
@@ -1069,7 +1071,7 @@ ripple review, executed by agent during grooming).
 3. Flag stacking (label is idempotent; comments accumulate)
 4. No auto-clear (explicit human review required)
 
-*(Source: ripple review spike sections 1-6)*
+_(Source: ripple review spike sections 1-6)_
 
 ## 8. `.alty/` Project Directory
 
@@ -1093,23 +1095,23 @@ Every project initialized with `alty init` gets this directory:
     +-- doc-registry.toml         # Which docs to track, owners, review intervals
 ```
 
-*(Source: PRD section 5.1; knowledge base spike section 4)*
+_(Source: PRD section 5.1; knowledge base spike section 4)_
 
 ## 9. External Integrations
 
-| Integration | Purpose | Protocol | Auth | Bounded Context |
-|-------------|---------|----------|------|-----------------|
-| Beads (`bd` CLI) | Issue tracking: create/read/update tickets, dependencies, labels | subprocess CLI calls | None (local) | Ticket Pipeline, Ticket Freshness |
-| Git | Branch management for rescue mode; status checks | subprocess (`git`) | None (local) | Rescue, Bootstrap |
-| ruff | Python linting quality gate | subprocess | None (local) | Architecture Testing (QualityGatePort) |
-| mypy | Type checking quality gate | subprocess | None (local) | Architecture Testing (QualityGatePort) |
-| pytest | Test execution quality gate | subprocess | None (local) | Architecture Testing (QualityGatePort) |
-| import-linter | Architecture fitness function execution | subprocess (`lint-imports`) | None (local) | Architecture Testing |
-| pytestarch | Architecture fitness function execution | pytest (in-process) | None (local) | Architecture Testing |
+| Integration      | Purpose                                                          | Protocol                    | Auth         | Bounded Context                        |
+| ---------------- | ---------------------------------------------------------------- | --------------------------- | ------------ | -------------------------------------- |
+| Beads (`bd` CLI) | Issue tracking: create/read/update tickets, dependencies, labels | subprocess CLI calls        | None (local) | Ticket Pipeline, Ticket Freshness      |
+| Git              | Branch management for rescue mode; status checks                 | subprocess (`git`)          | None (local) | Rescue, Bootstrap                      |
+| ruff             | Python linting quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| mypy             | Type checking quality gate                                       | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| pytest           | Test execution quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| import-linter    | Architecture fitness function execution                          | subprocess (`lint-imports`) | None (local) | Architecture Testing                   |
+| pytestarch       | Architecture fitness function execution                          | pytest (in-process)         | None (local) | Architecture Testing                   |
 
 All integrations are local. No network calls, no cloud dependencies, no paid APIs.
 
-*(Source: PRD section 6 constraints; CLI+MCP design spike section 2)*
+_(Source: PRD section 6 constraints; CLI+MCP design spike section 2)_
 
 ## 10. Security
 
@@ -1127,30 +1129,30 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 
 ### Security Measures
 
-| Concern | Mitigation |
-|---------|-----------|
-| Input validation | All user input (README content, question answers, persona selection) validated by Pydantic models in the domain layer before processing |
-| File safety | Never overwrite existing files. Conflict rename: `filename_alty.md`. Preview all writes. Explicit confirm before any action. *(PRD section 6 file safety rules)* |
-| Subprocess injection | All subprocess calls use list-form arguments (not shell=True). Ticket content written to temp files via `--body-file`, never passed as shell arguments. *(ticket pipeline spike section 4)* |
-| Branch safety | `alty init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. *(PRD section 4 scenario 2)* |
-| No silent installs | Tool installation (beads, trivy, shannon) is optional and shown separately in preview. *(PRD section 5.2)* |
-| Global config detection | `alty detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. *(PRD section 5.2.1)* |
-| No secrets in generated files | Generated configs contain project structure and domain terms, not API keys, passwords, or personal information. |
-| No network access | All operations are local-only. No cloud dependencies, no phone-home, no telemetry. *(PRD section 6 budget constraints)* |
+| Concern                       | Mitigation                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Input validation              | All user input (README content, question answers, persona selection) validated by Pydantic models in the domain layer before processing                                                     |
+| File safety                   | Never overwrite existing files. Conflict rename: `filename_alty.md`. Preview all writes. Explicit confirm before any action. _(PRD section 6 file safety rules)_                            |
+| Subprocess injection          | All subprocess calls use list-form arguments (not shell=True). Ticket content written to temp files via `--body-file`, never passed as shell arguments. _(ticket pipeline spike section 4)_ |
+| Branch safety                 | `alty init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. _(PRD section 4 scenario 2)_     |
+| No silent installs            | Tool installation (beads, trivy, shannon) is optional and shown separately in preview. _(PRD section 5.2)_                                                                                  |
+| Global config detection       | `alty detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. _(PRD section 5.2.1)_                             |
+| No secrets in generated files | Generated configs contain project structure and domain terms, not API keys, passwords, or personal information.                                                                             |
+| No network access             | All operations are local-only. No cloud dependencies, no phone-home, no telemetry. _(PRD section 6 budget constraints)_                                                                     |
 
 ## 11. Deployment
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Runtime | Python 3.12+ | Target audience and our own stack *(PRD section 6)* |
-| Package manager | uv | Speed, reproducibility, modern standard *(PRD section 6)* |
-| CLI framework | Typer 0.24.1 (MIT) | Type hints = CLI interface; Rich bundled; CliRunner for testing *(CLI framework spike ADR)* |
-| MCP framework | `mcp` SDK 1.26.0 (MIT), pin `>=1.26,<2.0` | Official SDK; FastMCP API; stdio transport *(MCP SDK spike ADR)* |
-| Architecture testing | import-linter 2.10 (BSD-2) + pytestarch 4.0.1 (Apache-2.0) | Complementary coverage: TOML config + Python tests *(fitness function spike ADR)* |
-| TOML editing | tomlkit (MIT) | Round-trip preservation of existing pyproject.toml formatting *(fitness function spike section 8)* |
-| Issue tracking | Beads v0.55.4+ | Git-native, works offline, embedded Dolt backend |
-| Distribution | PyPI package | `uv tool install alty` or `pip install alty` |
-| Entry points | `vs` (CLI) + `alty-mcp` (MCP server) | Both defined in `pyproject.toml [project.scripts]` |
+| Aspect               | Choice                                                     | Rationale                                                                                          |
+| -------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Runtime              | Python 3.12+                                               | Target audience and our own stack _(PRD section 6)_                                                |
+| Package manager      | uv                                                         | Speed, reproducibility, modern standard _(PRD section 6)_                                          |
+| CLI framework        | Typer 0.24.1 (MIT)                                         | Type hints = CLI interface; Rich bundled; CliRunner for testing _(CLI framework spike ADR)_        |
+| MCP framework        | `mcp` SDK 1.26.0 (MIT), pin `>=1.26,<2.0`                  | Official SDK; FastMCP API; stdio transport _(MCP SDK spike ADR)_                                   |
+| Architecture testing | import-linter 2.10 (BSD-2) + pytestarch 4.0.1 (Apache-2.0) | Complementary coverage: TOML config + Python tests _(fitness function spike ADR)_                  |
+| TOML editing         | tomlkit (MIT)                                              | Round-trip preservation of existing pyproject.toml formatting _(fitness function spike section 8)_ |
+| Issue tracking       | Beads v0.55.4+                                             | Git-native, works offline, embedded Dolt backend                                                   |
+| Distribution         | PyPI package                                               | `uv tool install alty` or `pip install alty`                                                       |
+| Entry points         | `vs` (CLI) + `alty-mcp` (MCP server)                       | Both defined in `pyproject.toml [project.scripts]`                                                 |
 
 ### Dependencies
 
@@ -1180,55 +1182,55 @@ dev = [
 
 From `docs/PRD.md` section 6:
 
-| Resource | Limit | Rationale |
-|----------|-------|-----------|
-| Bootstrap time | < 30 minutes | From README to first beads ticket *(PRD section 8)* |
-| Knowledge freshness | < 90 days stale | Per-doc `next_review_date` in TOML metadata *(PRD NFR)* |
-| Tool coverage | 4 tools | Claude Code, Cursor, Roo Code, OpenCode *(PRD NFR)* |
-| Cloud dependencies | Zero | Everything runs locally *(PRD section 6)* |
-| Paid API dependencies | Zero | Core functionality requires no paid services *(PRD section 6)* |
-| Python version | 3.12+ | Target audience stack *(PRD section 6)* |
-| File safety | Never overwrite, preview first, explicit confirm | 9 file safety rules *(PRD section 6)* |
-| Test regression | Zero on `alty init --existing` | Hard gate, no exceptions *(PRD section 6)* |
+| Resource              | Limit                                            | Rationale                                                      |
+| --------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
+| Bootstrap time        | < 30 minutes                                     | From README to first beads ticket _(PRD section 8)_            |
+| Knowledge freshness   | < 90 days stale                                  | Per-doc `next_review_date` in TOML metadata _(PRD NFR)_        |
+| Tool coverage         | 4 tools                                          | Claude Code, Cursor, Roo Code, OpenCode _(PRD NFR)_            |
+| Cloud dependencies    | Zero                                             | Everything runs locally _(PRD section 6)_                      |
+| Paid API dependencies | Zero                                             | Core functionality requires no paid services _(PRD section 6)_ |
+| Python version        | 3.12+                                            | Target audience stack _(PRD section 6)_                        |
+| File safety           | Never overwrite, preview first, explicit confirm | 9 file safety rules _(PRD section 6)_                          |
+| Test regression       | Zero on `alty init --existing`                   | Hard gate, no exceptions _(PRD section 6)_                     |
 
 ## 13. Architecture Decision Records
 
-| ADR | Decision | Status | Source |
-|-----|----------|--------|--------|
-| ADR-001 | CLI framework: Typer 0.24.1 (MIT) over Click and argparse | Accepted | `docs/research/20260222_cli_framework_comparison.md` |
-| ADR-002 | MCP framework: official `mcp` SDK v1.26.0 (MIT) with FastMCP, pin `>=1.26,<2.0` | Accepted | `docs/research/20260222_mcp_server_python_sdk.md` |
-| ADR-003 | Architecture testing: hybrid import-linter TOML + pytestarch Python tests | Accepted | `docs/research/20260223_fitness_function_design.md` section 5 |
-| ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human) | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
-| ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation) | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4 |
-| ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes) | Accepted | `docs/research/20260223_ripple_review_design.md` section 1 |
-| ADR-007 | Shared YAML IR at `.alty/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1 |
-| ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3 |
-| ADR-009 | TOML editing: tomlkit for round-trip pyproject.toml preservation | Accepted | `docs/research/20260223_fitness_function_design.md` section 8 |
-| ADR-010 | 13 application-layer ports (Protocols) shared between CLI and MCP | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4 |
-| ADR-011 | Composition root at `src/infrastructure/composition.py` | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4 |
-| ADR-012 | MCP server is an infrastructure adapter, not a bounded context | Accepted | `docs/research/20260222_cli_mcp_design.md` section 7 |
+| ADR     | Decision                                                                                       | Status   | Source                                                          |
+| ------- | ---------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------- |
+| ADR-001 | CLI framework: Typer 0.24.1 (MIT) over Click and argparse                                      | Accepted | `docs/research/20260222_cli_framework_comparison.md`            |
+| ADR-002 | MCP framework: official `mcp` SDK v1.26.0 (MIT) with FastMCP, pin `>=1.26,<2.0`                | Accepted | `docs/research/20260222_mcp_server_python_sdk.md`               |
+| ADR-003 | Architecture testing: hybrid import-linter TOML + pytestarch Python tests                      | Accepted | `docs/research/20260223_fitness_function_design.md` section 5   |
+| ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human)      | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
+| ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation)              | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4    |
+| ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes)          | Accepted | `docs/research/20260223_ripple_review_design.md` section 1      |
+| ADR-007 | Shared YAML IR at `.alty/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
+| ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs                           | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3  |
+| ADR-009 | TOML editing: tomlkit for round-trip pyproject.toml preservation                               | Accepted | `docs/research/20260223_fitness_function_design.md` section 8   |
+| ADR-010 | 13 application-layer ports (Protocols) shared between CLI and MCP                              | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
+| ADR-011 | Composition root at `src/infrastructure/composition.py`                                        | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
+| ADR-012 | MCP server is an infrastructure adapter, not a bounded context                                 | Accepted | `docs/research/20260222_cli_mcp_design.md` section 7            |
 
 ## 14. Open Architecture Decisions
 
 Decisions resolved by spikes but requiring validation during implementation:
 
 - [ ] **pytestarch module resolution** -- `pytestarch` resolves modules relative to the scan
-  path. If `src_path = "src"`, modules may be `src.myproject.domain` not `myproject.domain`.
-  Verify correct path convention during implementation. *(fitness function spike section 9)*
+      path. If `src_path = "src"`, modules may be `src.myproject.domain` not `myproject.domain`.
+      Verify correct path convention during implementation. _(fitness function spike section 9)_
 
 - [ ] **Import-linter `include_external_packages`** -- Should domain purity contracts
-  default to `include_external_packages = true` to catch framework imports (django,
-  sqlalchemy)? Likely yes, but needs implementation validation. *(fitness function spike
-  section 9)*
+      default to `include_external_packages = true` to catch framework imports (django,
+      sqlalchemy)? Likely yes, but needs implementation validation. _(fitness function spike
+      section 9)_
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
-  tests. Regeneration should preserve user-added items. Design a `# alty:generated`
-  marker convention. *(fitness function spike section 9)*
+      tests. Regeneration should preserve user-added items. Design a `# alty:generated`
+      marker convention. _(fitness function spike section 9)_
 
 - [ ] **Guided DDD flow over MCP (stateful sessions)** -- The 10-question flow is stateful.
-  MCP tools are normally stateless request/response. Options: stateful server context,
-  context passing, MCP prompts. *(CLI+MCP design spike section 9, risk #5)*
+      MCP tools are normally stateless request/response. Options: stateful server context,
+      context passing, MCP prompts. _(CLI+MCP design spike section 9, risk #5)_
 
 - [ ] **Knowledge base maintenance burden** -- 4 tools x ~7 topics x 4 versions = ~112
-  TOML files. Start with `current/` only; add historical versions only on breaking changes.
-  *(knowledge base spike section 10 risk)*
+      TOML files. Start with `current/` only; add historical versions only on breaking changes.
+      _(knowledge base spike section 10 risk)_

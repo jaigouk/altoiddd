@@ -1093,7 +1093,29 @@ the template.
 
 Source: [Cruft GitHub](https://github.com/cruft/cruft)
 
-### 11.4 alty Differentiators
+### 11.4 Classical Scaffolding Tools (Patterns Worth Adopting)
+
+**Django `inspectdb`** generates Python models from an existing database schema,
+marking them as auto-generated and requiring manual cleanup. alty adopts this
+"generate-then-refine" pattern in P1 domain language detection (Section 7):
+extract candidates, present for human confirmation, refine.
+Source: [Django legacy databases docs](https://docs.djangoproject.com/en/6.0/howto/legacy-databases/)
+
+**Rails `rails new --skip-*`** uses selective scaffolding flags (skip-git,
+skip-test, skip-bundle) to avoid generating files the project already has. alty
+achieves the same effect via gap categories: COMPLIANT items are automatically
+skipped, no flags needed.
+Source: [Rails guides](https://guides.rubyonrails.org/getting_started.html)
+
+**Yeoman generators** have built-in per-file conflict resolution -- when a
+generated file conflicts with an existing one, it prompts: overwrite, skip,
+show diff, or force. alty uses a stricter policy: never overwrite, create
+`_alty` suffixed copies for conflicts (PRD section 6 file safety rules).
+This is safer for AI-tool-assisted workflows where the human may not be
+watching every prompt.
+Source: [Yeoman docs](https://yeoman.io/learning/)
+
+### 11.5 alty Differentiators
 
 | Feature | Spec-Kit | BMAD | Cruft | alty |
 |---------|----------|------|-------|-----------|
@@ -1197,3 +1219,6 @@ Separation of concerns makes rollback clean and debugging straightforward.
 - [BMAD Method brownfield development](https://deepwiki.com/bmad-code-org/BMAD-METHOD/3.5-brownfield-development)
 - [Cruft -- update existing projects from cookiecutter templates](https://github.com/cruft/cruft)
 - [Python testing guide -- Real Python](https://realpython.com/python-testing/)
+- [Django legacy databases / inspectdb](https://docs.djangoproject.com/en/6.0/howto/legacy-databases/)
+- [Yeoman -- web scaffolding tool](https://yeoman.io/learning/)
+- [Rails guides -- getting started](https://guides.rubyonrails.org/getting_started.html)
