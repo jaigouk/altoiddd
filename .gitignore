@@ -45,8 +45,7 @@ uv.lock
 .claude/projects/*/memory/
 .claude/agent-memory/
 
-# Research output (keep .gitkeep, track actual reports)
-# docs/research/ — no longer ignored; reports are referenced by tickets
+*.jsonl.bak 
 
 # Environment
 .env

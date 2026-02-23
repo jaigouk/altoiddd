@@ -1,6 +1,6 @@
 # Beads (bd) Internal Knowledge Reference
 
-> **Version**: v0.55.4 | **Backend**: Embedded Dolt | **Prefix**: `vibe-seed-k7m`
+> **Version**: v0.55.4 | **Backend**: Embedded Dolt | **Prefix**: `alty-k7m`
 > **Source**: Distilled from [github.com/steveyegge/beads](https://github.com/steveyegge/beads) docs
 
 ## Architecture Overview

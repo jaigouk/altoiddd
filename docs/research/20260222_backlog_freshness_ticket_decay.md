@@ -16,13 +16,13 @@ process to prevent this ticket decay without creating bureaucratic overhead?
 
 ## Context
 
-This research is directly relevant to two areas of vibe-seed:
+This research is directly relevant to two areas of alty:
 
 1. **Ticket pipeline generation** — The PRD requires auto-generating dependency-ordered beads
    tickets from DDD artifacts (PRD section 5, P0 capability "Domain story to ticket pipeline").
    Generated tickets must remain valid as spikes complete and findings accumulate.
 
-2. **`vs doc-health` and maintenance philosophy** — The PRD explicitly requires detecting
+2. **`alty doc-health` and maintenance philosophy** — The PRD explicitly requires detecting
    staleness in docs and tickets (section 5.3). This research informs how that detection
    and refresh cycle should work.
 
@@ -96,9 +96,9 @@ The Shape Up mechanism is radical simplicity: keep the backlog near-empty. Only 
 pitches exist at any time, so the problem of stale tickets is structurally prevented by
 volume. A team of 3-8 people betting on 6-week cycles simply cannot accumulate 50 stale tickets.
 
-### Applicability to vibe-seed
+### Applicability to alty
 
-vibe-seed generates backlogs with potentially 20-50 tickets from DDD artifacts. Shape Up's
+alty generates backlogs with potentially 20-50 tickets from DDD artifacts. Shape Up's
 anti-backlog approach doesn't translate directly, but the principle "don't update tickets in
 place when context changes — regen from current facts" is useful for the ticket pipeline
 design.
@@ -148,7 +148,7 @@ exceeds its age threshold, it must be re-evaluated before it can be pulled into 
 Source: [Kanban Tool — WIP Limits](https://kanbantool.com/kanban-wip-limits)
 Source: [ProKanban — WIP: What It Is, What It Isn't](https://www.prokanban.org/blog/wip-what-it-is-what-it-isnt-and-why-it-still-matters)
 
-### Applicability to vibe-seed
+### Applicability to alty
 
 The "age policy" concept is directly applicable. A beads ticket older than N days since its
 parent spike completed could be automatically flagged as requiring re-review before work begins.
@@ -365,10 +365,10 @@ dependency**, not time-based inactivity.
 ### Principle 3: Lightweight Freshness Metadata
 
 Each ticket carries a `last_reviewed` date (analogous to the `last_reviewed` field in
-vibe-seed's doc registry). When a spike or epic completes, all open sibling tickets in
+alty's doc registry). When a spike or epic completes, all open sibling tickets in
 the same epic receive a `review_needed: true` flag.
 
-A `vs ticket-health` command (or integration with `vs doc-health`) surfaces tickets
+A `alty ticket-health` command (or integration with `alty doc-health`) surfaces tickets
 where:
 - `review_needed: true` (completion event triggered a review flag)
 - `last_reviewed` is older than the `created_at` date of a dependency's completion
@@ -388,9 +388,9 @@ maintaining stale specifications.
 
 ---
 
-## 9. Recommended Pattern for vibe-seed
+## 9. Recommended Pattern for alty
 
-Based on the research, the recommended minimal process for vibe-seed's ticket lifecycle is:
+Based on the research, the recommended minimal process for alty's ticket lifecycle is:
 
 ### At Ticket Creation (domain story pipeline)
 
@@ -426,7 +426,7 @@ with one step:
 ### Cadence (Kanban-inspired)
 
 - **On-demand**: Freshness check at ticket pick-up (before claiming in_progress). Zero overhead.
-- **Weekly**: `vs ticket-health` run shows count of `review_needed` tickets and oldest
+- **Weekly**: `alty ticket-health` run shows count of `review_needed` tickets and oldest
   `last_reviewed` dates. No action required unless count > 3 or oldest > 14 days.
 - **Per epic completion**: Targeted refinement session for the N tickets flagged by the
   completion event. Should take 15-30 minutes maximum.
@@ -435,7 +435,7 @@ with one step:
 
 ## 10. What No Tool Does Today (Gap Analysis)
 
-| Capability | Jira | Linear | Kiro | Shape Up | vibe-seed (proposed) |
+| Capability | Jira | Linear | Kiro | Shape Up | alty (proposed) |
 |-----------|------|--------|------|----------|----------------------|
 | Time-based staleness detection | Yes (activity) | Yes (activity) | No | N/A | Partial (`last_reviewed`) |
 | Event-based staleness (dependency completion) | Manual (automation rules) | No | No (within spec only) | No | Yes (proposed ripple review) |

@@ -1,4 +1,4 @@
-# CI workflow for vibe-seed
+# CI workflow for alty
 name: CI
 
 on:

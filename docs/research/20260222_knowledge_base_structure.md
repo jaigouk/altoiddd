@@ -3,7 +3,7 @@ last_reviewed: 2026-02-22
 owner: architecture
 status: complete
 type: spike
-ticket: vibe-seed-k7m.1
+ticket: alty-k7m.1
 ---
 
 # Knowledge Base Structure for Tool Conventions
@@ -175,10 +175,10 @@ alwaysApply: false
 **Key fields:** description, globs (file pattern for activation), alwaysApply (bool).
 When `alwaysApply: false`, the AI decides whether to activate based on description.
 
-#### Notable limitations for vibe-seed
+#### Notable limitations for alty
 
 - No subagent/agent concept (uses rules, not personas)
-- Global config is SQLite, not file-based -- vibe-seed cannot generate global config
+- Global config is SQLite, not file-based -- alty cannot generate global config
 - AGENTS.md support provides a cross-tool bridge
 
 **Sources:**
@@ -395,10 +395,10 @@ The `instructions` field supports glob patterns and URLs:
 | OpenCode | macOS/Linux | `~/.config/opencode/` | Config, agents, modes, AGENTS.md | Project `opencode.json` / `.opencode/` overrides |
 | OpenCode | Windows | `%APPDATA%/opencode/` (assumed, follows XDG) | Same | Same |
 
-### Implications for `vs detect`
+### Implications for `alty detect`
 
-1. Claude Code and Roo Code have **file-based** global configs that vibe-seed can detect and compare.
-2. Cursor has **SQLite-based** global config -- vibe-seed can detect the DB file exists but
+1. Claude Code and Roo Code have **file-based** global configs that alty can detect and compare.
+2. Cursor has **SQLite-based** global config -- alty can detect the DB file exists but
    cannot easily read/compare settings without SQLite queries. Best approach: detect presence only,
    warn user to check manually.
 3. OpenCode has **file-based** global configs, similar to Claude Code.
@@ -432,7 +432,7 @@ The `instructions` field supports glob patterns and URLs:
 AGENTS.md is an emerging standard (stewarded by Agentic AI Foundation under Linux Foundation).
 Supported by: Cursor, Roo Code, OpenCode (native), Claude Code (not natively -- uses CLAUDE.md).
 
-**Implication for vibe-seed:** Generate both `AGENTS.md` and tool-specific configs. AGENTS.md
+**Implication for alty:** Generate both `AGENTS.md` and tool-specific configs. AGENTS.md
 serves as the common denominator. Tool-specific configs add persona/agent definitions that
 AGENTS.md cannot express.
 
@@ -448,7 +448,7 @@ AGENTS.md cannot express.
 
 ---
 
-## 4. Proposed `.vibe-seed/knowledge/` Directory Structure
+## 4. Proposed `.alty/knowledge/` Directory Structure
 
 ### Design Principles
 
@@ -460,7 +460,7 @@ AGENTS.md cannot express.
 ### Directory Layout
 
 ```
-.vibe-seed/knowledge/
+.alty/knowledge/
   _index.toml                          # Master index for RLM O(1) lookup
   tools/
     claude-code/
@@ -516,7 +516,7 @@ AGENTS.md cannot express.
   cross-tool/
     agents-md.toml                     # AGENTS.md cross-tool standard
     concept-mapping.toml               # How concepts map across tools (agent = mode = subagent)
-    generation-matrix.toml             # What vibe-seed generates per tool
+    generation-matrix.toml             # What alty generates per tool
   ddd/
     tactical-patterns.md               # Entities, VOs, Aggregates, etc.
     strategic-patterns.md              # Bounded Contexts, Context Maps
@@ -542,7 +542,7 @@ TOML is used for tool conventions (machine + human consumption).
 ### `current/` Alias Strategy
 
 The `current/` directory is a **symlink or copy** of the latest tracked version.
-- On `vs init`, files are copied from `current/` into the project.
+- On `alty init`, files are copied from `current/` into the project.
 - `KnowledgeLookupPort` resolves `tool=claude-code, version=current` to the actual version.
 - When a new version is tracked, `current/` is updated and drift detection compares old vs new.
 
@@ -561,10 +561,10 @@ Every knowledge entry is addressable by a triple:
 Mapped to the URI scheme from k7m.4:
 
 ```
-vibeseed://knowledge/tools/{tool}/{subtopic}?version={version}
-vibeseed://knowledge/ddd/{topic}
-vibeseed://knowledge/conventions/{topic}
-vibeseed://knowledge/cross-tool/{topic}
+alty://knowledge/tools/{tool}/{subtopic}?version={version}
+alty://knowledge/ddd/{topic}
+alty://knowledge/conventions/{topic}
+alty://knowledge/cross-tool/{topic}
 ```
 
 ### KnowledgeLookupPort Resolution
@@ -603,16 +603,16 @@ This is O(1) -- a direct path construction, no glob, no search, no index scan ne
 ### CLI Usage
 
 ```bash
-vs kb tools/claude-code/agent-format              # Current version
-vs kb tools/claude-code/agent-format --version v2.0  # Specific version
-vs kb ddd/aggregates                               # DDD reference
-vs kb cross-tool/concept-mapping                   # Cross-tool mappings
+alty kb tools/claude-code/agent-format              # Current version
+alty kb tools/claude-code/agent-format --version v2.0  # Specific version
+alty kb ddd/aggregates                               # DDD reference
+alty kb cross-tool/concept-mapping                   # Cross-tool mappings
 ```
 
 ### MCP Resource Resolution
 
 ```python
-@mcp.resource("vibeseed://knowledge/tools/{tool}/{subtopic}")
+@mcp.resource("alty://knowledge/tools/{tool}/{subtopic}")
 def get_tool_knowledge(tool: str, subtopic: str) -> str:
     entry = knowledge_port.lookup("tools", f"{tool}/{subtopic}")
     return entry.to_json()
@@ -715,16 +715,16 @@ The `DriftReport` value object (from DDD.md) uses these fields to detect stalene
 | Signal | Source | Detection Method |
 |--------|--------|-----------------|
 | **Time-based staleness** | `last_verified` + `next_review_date` | `now > next_review_date` |
-| **Version mismatch** | `verified_against` vs installed tool version | Compare with `vs detect` output |
+| **Version mismatch** | `verified_against` vs installed tool version | Compare with `alty detect` output |
 | **Changelog delta** | `changelog_url` | Future: fetch and diff (P2 auto-update) |
 | **Confidence decay** | `confidence` | `low` entries flagged sooner |
 | **Deprecation** | `deprecated` flag | Immediate alert if tool uses deprecated convention |
 | **Schema migration** | `schema_version` | Flag entries with outdated schema format |
 
-### `vs doc-health` Integration
+### `alty doc-health` Integration
 
 ```bash
-vs doc-health --knowledge
+alty doc-health --knowledge
 
 Knowledge Base Health Report:
   claude-code/current:
@@ -742,7 +742,7 @@ Knowledge Base Health Report:
 ### Drift Detection Data Flow
 
 ```
-vs detect (installed tools + versions)
+alty detect (installed tools + versions)
     |
     v
 KnowledgeLookupPort.list_tools() -> tracked tools + verified_against
@@ -754,7 +754,7 @@ DriftDetector.compare(installed_versions, tracked_versions)
 DriftReport (list of stale/mismatched/deprecated entries)
     |
     v
-vs doc-health --knowledge (human-readable report)
+alty doc-health --knowledge (human-readable report)
 ```
 
 ---
@@ -830,7 +830,7 @@ Follow DDD layer rules. Domain has ZERO external dependencies.
 last_verified = "2026-02-22"
 schema_version = 1
 
-# What vibe-seed generates per tool
+# What alty generates per tool
 [claude_code]
 project_instructions = ".claude/CLAUDE.md"
 agents = ".claude/agents/{persona}.md"
@@ -882,7 +882,7 @@ Use the **TOML-based versioned directory structure** described in Section 4 with
 
 - **RLM O(1) lookup**: Path construction from `(category, tool, topic, version)` is deterministic.
   No search, no index scan. Aligns with KnowledgeLookupPort from k7m.4.
-- **Drift detection ready**: Every entry carries verification metadata. `vs doc-health --knowledge`
+- **Drift detection ready**: Every entry carries verification metadata. `alty doc-health --knowledge`
   can report staleness without any external service.
 - **Version tracking**: `current/` + versioned dirs supports the PRD requirement of
   current + 3 previous major versions per tool.
@@ -910,17 +910,17 @@ A single large index file with all tool conventions was considered but rejected 
 
 | # | Title | Type | Bounded Context | Priority | Description |
 |---|-------|------|----------------|----------|-------------|
-| 1 | Implement `.vibe-seed/knowledge/` directory scaffolding | Task | Knowledge Base | P0 | Create the directory structure, `_index.toml`, and `_meta.toml` files for all 4 tools. Initial content for `current/` version of each tool. |
+| 1 | Implement `.alty/knowledge/` directory scaffolding | Task | Knowledge Base | P0 | Create the directory structure, `_index.toml`, and `_meta.toml` files for all 4 tools. Initial content for `current/` version of each tool. |
 | 2 | Implement `KnowledgeLookupPort` and `FileKnowledgeService` | Task | Knowledge Base | P0 | Port protocol + file-based implementation. O(1) path resolution. TOML parsing. |
 | 3 | Populate Claude Code knowledge entries | Task | Knowledge Base | P0 | All 7 topics for claude-code `current/` version based on this research. |
 | 4 | Populate Cursor knowledge entries | Task | Knowledge Base | P0 | All topics for cursor `current/` version. |
 | 5 | Populate Roo Code knowledge entries | Task | Knowledge Base | P0 | All topics for roo-code `current/` version. |
 | 6 | Populate OpenCode knowledge entries | Task | Knowledge Base | P0 | All topics for opencode `current/` version. |
 | 7 | Populate cross-tool knowledge entries | Task | Knowledge Base | P0 | concept-mapping.toml, generation-matrix.toml, agents-md.toml. |
-| 8 | Implement `vs kb` CLI command | Task | CLI Framework | P0 | Wire `vs kb <topic>` to KnowledgeLookupPort. Rich output for terminal. |
-| 9 | Implement drift detection metadata validation | Task | Knowledge Base | P1 | `vs doc-health --knowledge` reads `[_meta]` sections, compares with `vs detect` output. |
+| 8 | Implement `alty kb` CLI command | Task | CLI Framework | P0 | Wire `alty kb <topic>` to KnowledgeLookupPort. Rich output for terminal. |
+| 9 | Implement drift detection metadata validation | Task | Knowledge Base | P1 | `alty doc-health --knowledge` reads `[_meta]` sections, compares with `alty detect` output. |
 | 10 | Add version history tracking for tools | Task | Knowledge Base | P1 | Add `v2.0/` etc. dirs for Claude Code and Cursor where breaking changes are documented. |
-| 11 | Implement MCP resource for knowledge lookup | Task | MCP Framework | P1 | Wire `vibeseed://knowledge/*` MCP resources to KnowledgeLookupPort. |
+| 11 | Implement MCP resource for knowledge lookup | Task | MCP Framework | P1 | Wire `alty://knowledge/*` MCP resources to KnowledgeLookupPort. |
 
 ---
 

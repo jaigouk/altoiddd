@@ -294,7 +294,7 @@ These elements translate well to text-based AI interaction:
 5. **No chaotic exploration** -- Replace with guided sequential elicitation
 6. **No sticky-note sorting** -- AI organizes artifacts automatically from answers
 
-### 4.4 Recommended Hybrid Approach for vibe-seed
+### 4.4 Recommended Hybrid Approach for alty
 
 Combine Domain Storytelling's concrete-scenario focus with Event Storming's artifact taxonomy:
 
@@ -437,7 +437,7 @@ A 2025 paper in IJCSE ("Designing Scalable Multi-Agent AI Systems: Leveraging Do
 4. Project scaffold integration
 5. Local-first operation
 
-This is the white space vibe-seed fills. The question framework designed in Section 5 would be novel.
+This is the white space alty fills. The question framework designed in Section 5 would be novel.
 
 ---
 
@@ -464,7 +464,7 @@ This is the white space vibe-seed fills. The question framework designed in Sect
 
 ---
 
-## 8. Recommendations for vibe-seed
+## 8. Recommendations for alty
 
 ### 8.1 Adopt the Hybrid Approach
 

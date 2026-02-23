@@ -1,8 +1,6 @@
-# vibe-seed
+# alty-cli
 
-![vibe-seed logo](docs/assets/logo.png)
-
-**Your AI builds apps fast. vibe-seed makes sure they don't fall apart.**
+**Your AI builds apps fast. alty makes sure they don't fall apart.**
 
 ---
 
@@ -22,9 +20,9 @@ And even when you _do_ plan, **your plans go stale.** You finish researching one
 
 The result: you ship fast, then spend months fixing things — or throw it away and start over.
 
-## What vibe-seed Does
+## What alty Does
 
-vibe-seed is the **planning step that happens before coding starts.** Think of it as hiring a senior architect who:
+alty is the **planning step that happens before coding starts.** Think of it as hiring a senior architect who:
 
 1. **Listens to your idea** — You describe what you want in 4-5 plain sentences
 2. **Asks the right questions** — Not "what framework?" but "what does your business do? what are the rules? what changes often?"
@@ -36,7 +34,7 @@ Then you hand it to Cursor, Claude Code, or any AI tool — and it builds **with
 
 ## Why This Matters
 
-| Without vibe-seed                   | With vibe-seed                                        |
+| Without alty                        | With alty                                             |
 | ----------------------------------- | ----------------------------------------------------- |
 | AI guesses at structure             | Structure is planned from your actual business        |
 | Change one thing, break five others | Changes stay contained in their area                  |
@@ -49,16 +47,16 @@ Then you hand it to Cursor, Claude Code, or any AI tool — and it builds **with
 
 ```bash
 # Starting a new project
-vs init
+alty init
 
 # Already have a project that's gotten messy? Apply structure to it
-vs init --existing
+alty init --existing
 
 # Check if your documentation is still accurate
-vs doc-health
+alty doc-health
 ```
 
-**`vs init` guides you through everything.** It shows you what it will do, asks you to confirm, and never touches files without your permission.
+**`alty init` guides you through everything.** It shows you what it will do, asks you to confirm, and never touches files without your permission.
 
 ## How It Works (The Simple Version)
 
@@ -66,7 +64,7 @@ vs doc-health
 Your idea (a few sentences)
      |
      v
-vibe-seed asks questions about your business
+alty asks questions about your business
      |
      v
 Creates a blueprint: what belongs together, what stays separate
@@ -81,21 +79,21 @@ Configures your AI tool with your specific rules and language
 Your AI tool builds it — correctly, within guardrails
      |
      v
-Task completed? vibe-seed flags affected tasks for review
+Task completed? alty flags affected tasks for review
      |
      v
 Your plan stays fresh — no stale context, no outdated assumptions
 ```
 
-## Six Things That Make vibe-seed Different
+## Six Things That Make alty Different
 
 ### 1. It Asks Before It Builds
 
-Every other tool starts writing code immediately. vibe-seed starts by understanding your business. The 20 minutes of questions saves you 20 hours of rewrites.
+Every other tool starts writing code immediately. alty starts by understanding your business. The 20 minutes of questions saves you 20 hours of rewrites.
 
 ### 2. The Guardrails Are Automatic
 
-vibe-seed doesn't just write rules in a document — it creates **automated tests** that catch mistakes. If anyone (human or AI) writes code that crosses a boundary, the test fails. Your architecture enforces itself.
+alty doesn't just write rules in a document — it creates **automated tests** that catch mistakes. If anyone (human or AI) writes code that crosses a boundary, the test fails. Your architecture enforces itself.
 
 ### 3. It Tells You What to Build Next
 
@@ -110,15 +108,15 @@ No guessing. No jumping ahead. Just follow the list.
 
 ### 4. It Works With Your AI Tool, Not Instead of It
 
-vibe-seed is not another AI coding tool. It's the **prep work** for the tool you already use. It generates configuration files in your tool's native format — so Claude Code, Cursor, or any other tool understands your project's rules from the start.
+alty is not another AI coding tool. It's the **prep work** for the tool you already use. It generates configuration files in your tool's native format — so Claude Code, Cursor, or any other tool understands your project's rules from the start.
 
 ### 5. Your Tasks Never Go Stale
 
-This is the one nobody else does. **When you complete a task, vibe-seed automatically flags every related task that might be affected.**
+This is the one nobody else does. **When you complete a task, alty automatically flags every related task that might be affected.**
 
 Here's the problem: you finish a research spike and discover the architecture needs to change. But five other tasks were written assuming the old architecture. Every project management tool (Jira, Linear, GitHub) only detects staleness by _time_ — "this ticket hasn't been touched in 30 days." None of them detect staleness by _event_ — "the thing this ticket depends on just changed."
 
-vibe-seed does. When a task closes, it:
+alty does. When a task closes, it:
 
 - Traverses the dependency graph to find affected open tasks
 - Records _what changed_ (the context diff) so reviewers know what's different
@@ -129,7 +127,7 @@ No more starting work based on outdated assumptions. No more discovering mid-spr
 
 ### 6. It Can Fix Messy Projects Too
 
-Already have a codebase that's become hard to change? `vs init --existing` analyzes what you have, identifies the problems, and creates a step-by-step migration plan — all on a separate branch. **Your existing code is never touched until you approve every change.**
+Already have a codebase that's become hard to change? `alty init --existing` analyzes what you have, identifies the problems, and creates a step-by-step migration plan — all on a separate branch. **Your existing code is never touched until you approve every change.**
 
 ## Safety Promises
 

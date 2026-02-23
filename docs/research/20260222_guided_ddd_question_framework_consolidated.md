@@ -2,7 +2,7 @@
 last_reviewed: 2026-02-22
 owner: researcher
 status: complete
-spike: vibe-seed-k7m.2
+spike: alty-k7m.2
 ---
 
 # Guided DDD Question Framework — Consolidated Research Report

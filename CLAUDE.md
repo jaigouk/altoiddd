@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working on the vibe-seed project itself.
+This file provides guidance to Claude Code when working on the alty project itself.
 
 ## Project Overview
 
-vibe-seed is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Antigravity, and OpenCode.
+alty is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Antigravity, and OpenCode.
 
-**Key interfaces:** CLI (`bin/vs`) and MCP server (planned).
+**Key interfaces:** CLI (`bin/alty`) and MCP server (planned).
 
 ## Quick Reference
 
@@ -17,11 +17,11 @@ uv run mypy .                    # Type check
 uv run pytest                    # Tests
 
 # CLI testing
-bin/vs help                      # Show commands
-bin/vs version                   # Show version
-bin/vs init                      # Test new project flow
-bin/vs init --existing           # Test existing project flow
-bin/vs doc-health                # Test doc health check
+bin/alty help                     # Show commands
+bin/alty version                  # Show version
+bin/alty init                     # Test new project flow
+bin/alty init --existing          # Test existing project flow
+bin/alty doc-health               # Test doc health check
 
 # Issue tracking (Beads)
 bd ready                         # Find available work
@@ -94,7 +94,7 @@ Present grooming results and ask the user if they want to start the ticket.
 - **Do not proceed** to next ticket without explicit user permission
 - **Dogfooding rule** — When we encounter a process problem (missing templates, broken workflow, enforcement gap), fix it for ourselves AND for the product. Update the relevant ticket via `/prd-traceability` to find it, or create a new ticket if none exists. Our users will hit the same problem — the PRD must capture it as a capability.
 
-## What vibe-seed IS and IS NOT
+## What alty IS and IS NOT
 
 **IS:** The architect that runs before builders. It produces blueprints, guardrails, and structured tickets for AI coding tools to execute.
 
@@ -118,8 +118,8 @@ This project follows its own process. Do NOT skip steps:
 ### Project Structure
 
 ```
-vibe-seed/
-├── bin/vs                       # CLI entry point (bash)
+alty/
+├── bin/alty                      # CLI entry point (bash)
 ├── src/
 │   ├── domain/                  # Core business logic (NO external deps)
 │   │   ├── models/              # Entities, Value Objects, Aggregates
@@ -155,10 +155,10 @@ vibe-seed/
 
 ### Two Kinds of Files
 
-1. **vibe-seed's own code** — `src/`, `tests/`, `bin/vs` — the tool itself
+1. **alty's own code** — `src/`, `tests/`, `bin/alty` — the tool itself
 2. **Template files** — `.claude/`, `docs/templates/`, `docs/beads_templates/` — files that get copied into bootstrapped projects
 
-When editing template files, remember they are generic. No vibe-seed-specific references.
+When editing template files, remember they are generic. No alty-specific references.
 
 ## Key Documents
 
@@ -170,7 +170,7 @@ When editing template files, remember they are generic. No vibe-seed-specific re
 | `docs/spikes/ddd_reference.md`       | DDD pragmatic guide                     | Done                          |
 | `docs/templates/`                    | PRD, DDD Story, Architecture templates  | Done                          |
 
-## Current Epic: Phase 1 Foundation (vibe-seed-k7m)
+## Current Epic: Phase 1 Foundation (alty-k7m)
 
 ```
 k7m.9 (killer features) ✓ → k7m.6 (PRD review) ✓ → k7m.5 (DDD) ✓ → k7m.7 (Architecture)
@@ -188,14 +188,14 @@ Run `bd ready` to see what's available. Run `bd show <id>` for ticket details.
 
 ## Killer Features (Differentiators)
 
-These six features define vibe-seed's competitive advantage. Reference `.notes/killer-features-analysis.md` for full details.
+These six features define alty's competitive advantage. Reference `.notes/killer-features-analysis.md` for full details.
 
 1. **Architecture Fitness Functions** — Executable boundary tests from domain model
 2. **Domain Story → Ticket Pipeline** — Auto-generate ordered beads tickets from DDD
-3. **Rescue Mode** — `vs init --existing` with structural migration, not just overlay
+3. **Rescue Mode** — `alty init --existing` with structural migration, not just overlay
 4. **Tool-Native Context Translation** — One domain model → native configs per AI tool
 5. **Complexity Budget** — Core/Supporting/Generic classification enforced in tickets and tests
-6. **Living Knowledge Base** — Versioned, drift-detecting knowledge in `.vibe-seed/`
+6. **Living Knowledge Base** — Versioned, drift-detecting knowledge in `.alty/`
 7. **Ticket Freshness & Ripple Review** — Event-driven staleness detection; flag dependents on close, context diff for agents, human approves updates
 
 ## Workflow

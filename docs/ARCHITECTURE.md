@@ -4,7 +4,7 @@ owner: architecture
 status: draft
 ---
 
-# Architecture: vibe-seed
+# Architecture: alty
 
 > **Prerequisites:** This document was written AFTER `docs/PRD.md` (approved 2026-02-22)
 > and `docs/DDD.md` (9 bounded contexts, 5 aggregates, 10 subdomains). Architecture
@@ -59,7 +59,7 @@ status: draft
                              |
                   +----------+----------+
                   |                     |
-              CLI (vs)           MCP Server (vs-mcp)
+              CLI (vs)           MCP Server (alty-mcp)
              [Typer 0.24.1]     [FastMCP 1.26.0]
                   |                     |
                   +----------+----------+
@@ -69,7 +69,7 @@ status: draft
                              |
               +--------------+---------------+
               |              |               |
-         Domain Layer   Infrastructure   .vibe-seed/
+         Domain Layer   Infrastructure   .alty/
          (Pure Python)    Adapters       (Project State)
               |              |               |
      +--------+--------+    |    +-----------+-----------+
@@ -90,7 +90,7 @@ status: draft
 | Component | Responsibility | Bounded Context | Classification |
 |-----------|---------------|-----------------|----------------|
 | `vs` CLI | Parse commands, format output, delegate to ports | CLI Framework | Generic |
-| `vs-mcp` MCP server | Expose tools/resources over stdio, delegate to ports | MCP Framework | Generic |
+| `alty-mcp` MCP server | Expose tools/resources over stdio, delegate to ports | MCP Framework | Generic |
 | 13 Application Ports | Define interfaces between adapters and domain | (cross-cutting) | -- |
 | DiscoverySession | 10-question DDD flow, persona detection, playback | Guided Discovery | Core |
 | DomainModel | Domain stories, ubiquitous language, bounded contexts | Domain Model | Core |
@@ -99,7 +99,7 @@ status: draft
 | RippleReview | Event-driven freshness flagging on ticket close | Ticket Freshness | Core |
 | ToolConfig | Domain model to tool-native config translation | Tool Translation | Supporting |
 | KnowledgeEntry | RLM-addressable docs, TOML-based tool conventions | Knowledge Base | Supporting |
-| BootstrapSession | Orchestrate `vs init` flow | Bootstrap | Supporting |
+| BootstrapSession | Orchestrate `alty init` flow | Bootstrap | Supporting |
 | GapAnalysis | Scan existing projects, generate migration plans | Rescue | Supporting |
 | FileScaffoldService | Render templates, write files with safety rules | File Generation | Generic |
 | Composition Root | Wire ports to implementations at startup | (infrastructure) | -- |
@@ -209,15 +209,15 @@ src/
 +-- infrastructure/
     +-- cli/
     |   +-- main.py                 # Typer app, subcommand groups
-    |   +-- init_cmd.py             # vs init
-    |   +-- guide_cmd.py            # vs guide
-    |   +-- generate_cmd.py         # vs generate {artifacts,fitness,tickets,configs}
-    |   +-- detect_cmd.py           # vs detect
-    |   +-- check_cmd.py            # vs check
-    |   +-- kb_cmd.py               # vs kb <topic>
-    |   +-- doc_health_cmd.py       # vs doc-health
-    |   +-- ticket_health_cmd.py    # vs ticket-health
-    |   +-- persona_cmd.py          # vs persona {list,generate}
+    |   +-- init_cmd.py             # alty init
+    |   +-- guide_cmd.py            # alty guide
+    |   +-- generate_cmd.py         # alty generate {artifacts,fitness,tickets,configs}
+    |   +-- detect_cmd.py           # alty detect
+    |   +-- check_cmd.py            # alty check
+    |   +-- kb_cmd.py               # alty kb <topic>
+    |   +-- doc_health_cmd.py       # alty doc-health
+    |   +-- ticket_health_cmd.py    # alty ticket-health
+    |   +-- persona_cmd.py          # alty persona {list,generate}
     +-- mcp/
     |   +-- server.py               # FastMCP server, tool/resource registration
     |   +-- tools.py                # MCP tool implementations
@@ -268,9 +268,9 @@ How bounded contexts communicate, from `docs/DDD.md` section 4 context map:
 | Upstream Context | Downstream Context | Integration Pattern | Data Format |
 |-----------------|-------------------|---------------------|-------------|
 | Guided Discovery | Domain Model | Domain Event (DiscoveryCompleted) | In-memory event object |
-| Domain Model | Architecture Testing | Domain Event (DomainModelGenerated) | `.vibe-seed/domain-model.yaml` |
-| Domain Model | Ticket Pipeline | Domain Event (DomainModelGenerated) | `.vibe-seed/domain-model.yaml` |
-| Domain Model | Tool Translation | Domain Event (DomainModelGenerated) | `.vibe-seed/domain-model.yaml` |
+| Domain Model | Architecture Testing | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
+| Domain Model | Ticket Pipeline | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
+| Domain Model | Tool Translation | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml` |
 | Knowledge Base | Tool Translation | Query (lookup) | TOML entries via KnowledgeLookupPort |
 | Ticket Pipeline | Beads (external) | ACL (subprocess) | `bd create` + `bd dep add` CLI commands |
 | Beads (external) | Ticket Freshness | ACL + Domain Event | `bd show --json` parsed by ACL adapter |
@@ -282,7 +282,7 @@ How bounded contexts communicate, from `docs/DDD.md` section 4 context map:
 
 ### Event Flow: End-to-End Bootstrap
 
-The complete `vs init` flow crosses all bounded contexts in this order:
+The complete `alty init` flow crosses all bounded contexts in this order:
 
 ```
 1. Bootstrap      -> detect installed tools (ToolDetectionPort)
@@ -290,7 +290,7 @@ The complete `vs init` flow crosses all bounded contexts in this order:
 3. Guided Discovery -> 10-question DDD flow (DiscoveryPort)
    emits: DiscoveryCompleted
 4. Domain Model   -> generate DDD artifacts (ArtifactGenerationPort)
-   writes: docs/DDD.md + .vibe-seed/domain-model.yaml
+   writes: docs/DDD.md + .alty/domain-model.yaml
    emits: DomainModelGenerated
 5. Architecture Testing -> generate fitness functions (FitnessGenerationPort)
    writes: pyproject.toml [tool.importlinter] + tests/architecture/*.py
@@ -314,19 +314,19 @@ Each step shows a preview and waits for user approval before proceeding.
 | Aggregate | Storage | Rationale |
 |-----------|---------|-----------|
 | DiscoverySession | In-memory (session duration) | Stateful conversation; persisted only when complete |
-| DomainModel | `.vibe-seed/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans |
+| DomainModel | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans |
 | FitnessTestSuite | In-memory during generation | Output written to `pyproject.toml` + `tests/architecture/` |
 | TicketPlan | In-memory during generation | Output written to Beads via `bd create` subprocess |
 | RippleReview | Beads labels + comments | Uses existing beads features; no custom storage needed |
 | ToolConfig | In-memory during generation | Output written to `.claude/`, `.cursor/`, etc. |
-| KnowledgeEntry | `.vibe-seed/knowledge/` directory tree | TOML for tool conventions, Markdown for DDD/convention refs |
+| KnowledgeEntry | `.alty/knowledge/` directory tree | TOML for tool conventions, Markdown for DDD/convention refs |
 | BootstrapSession | In-memory (session duration) | Orchestration state; no persistence needed |
 | GapAnalysis | In-memory during scan | Output is a gap report shown to user |
 
-### Shared YAML IR: `.vibe-seed/domain-model.yaml`
+### Shared YAML IR: `.alty/domain-model.yaml`
 
 The domain model YAML is the central intermediate representation consumed by multiple
-downstream generators. It is produced by `vs generate artifacts` (Domain Model context)
+downstream generators. It is produced by `alty generate artifacts` (Domain Model context)
 and consumed by:
 
 - **Architecture Testing** -- reads `bounded_contexts` and `subdomains` to generate
@@ -341,7 +341,7 @@ and consumed by:
 #### Schema Summary
 
 ```yaml
-# .vibe-seed/domain-model.yaml
+# .alty/domain-model.yaml
 version: "1.0"
 project_name: "example-project"
 generated_at: "2026-02-23T10:00:00Z"
@@ -465,7 +465,7 @@ vs
 |   +-- --tests                   # pytest
 |   +-- --fitness                 # import-linter + pytestarch
 +-- kb                            # Knowledge Base -> RLM lookup
-|   +-- <topic>                   # e.g., vs kb ddd/aggregate
+|   +-- <topic>                   # e.g., alty kb ddd/aggregate
 +-- doc-health                    # Knowledge Base -> freshness report
 +-- doc-review                    # Knowledge Base -> mark docs as reviewed
 +-- ticket-health                 # Ticket Freshness -> review_needed report
@@ -480,20 +480,20 @@ vs
 
 | Command | Bounded Context | Port (Protocol) | Aggregate |
 |---------|----------------|-----------------|-----------|
-| `vs init` | Bootstrap | `BootstrapPort` | BootstrapSession |
-| `vs init --existing` | Rescue (via Bootstrap) | `RescuePort` | GapAnalysis |
-| `vs guide` | Guided Discovery | `DiscoveryPort` | DiscoverySession |
-| `vs generate artifacts` | Domain Model | `ArtifactGenerationPort` | DomainModel |
-| `vs generate fitness` | Architecture Testing | `FitnessGenerationPort` | FitnessTestSuite |
-| `vs generate tickets` | Ticket Pipeline | `TicketGenerationPort` | TicketPlan |
-| `vs generate configs` | Tool Translation | `ConfigGenerationPort` | ToolConfig |
-| `vs detect` | Bootstrap | `ToolDetectionPort` | (part of BootstrapSession) |
-| `vs check` | Architecture Testing | `QualityGatePort` | (orchestration) |
-| `vs kb <topic>` | Knowledge Base | `KnowledgeLookupPort` | KnowledgeEntry |
-| `vs doc-health` | Knowledge Base | `DocHealthPort` | (query) |
-| `vs doc-review` | Knowledge Base | `DocReviewPort` | (command) |
-| `vs ticket-health` | Ticket Freshness | `TicketHealthPort` | (query) |
-| `vs persona` | Tool Translation | `PersonaPort` | ToolConfig |
+| `alty init` | Bootstrap | `BootstrapPort` | BootstrapSession |
+| `alty init --existing` | Rescue (via Bootstrap) | `RescuePort` | GapAnalysis |
+| `alty guide` | Guided Discovery | `DiscoveryPort` | DiscoverySession |
+| `alty generate artifacts` | Domain Model | `ArtifactGenerationPort` | DomainModel |
+| `alty generate fitness` | Architecture Testing | `FitnessGenerationPort` | FitnessTestSuite |
+| `alty generate tickets` | Ticket Pipeline | `TicketGenerationPort` | TicketPlan |
+| `alty generate configs` | Tool Translation | `ConfigGenerationPort` | ToolConfig |
+| `alty detect` | Bootstrap | `ToolDetectionPort` | (part of BootstrapSession) |
+| `alty check` | Architecture Testing | `QualityGatePort` | (orchestration) |
+| `alty kb <topic>` | Knowledge Base | `KnowledgeLookupPort` | KnowledgeEntry |
+| `alty doc-health` | Knowledge Base | `DocHealthPort` | (query) |
+| `alty doc-review` | Knowledge Base | `DocReviewPort` | (command) |
+| `alty ticket-health` | Ticket Freshness | `TicketHealthPort` | (query) |
+| `alty persona` | Tool Translation | `PersonaPort` | ToolConfig |
 
 *(Source: CLI+MCP design spike section 2)*
 
@@ -502,8 +502,8 @@ vs
 ```toml
 # pyproject.toml
 [project.scripts]
-vs = "src.infrastructure.cli.main:app"
-vs-mcp = "src.infrastructure.mcp.server:main"
+alty = "src.infrastructure.cli.main:app"
+alty-mcp = "src.infrastructure.mcp.server:main"
 ```
 
 ### 6.4 MCP Server
@@ -515,30 +515,30 @@ Tools handle write operations; resources handle read-only queries.
 
 | Tool Name | CLI Equivalent | Parameters |
 |-----------|---------------|------------|
-| `init_project` | `vs init` | `project_dir: str, existing: bool = False` |
-| `guide_ddd` | `vs guide` | `project_dir: str, quick: bool = False` |
-| `generate_artifacts` | `vs generate artifacts` | `project_dir: str, artifact_type: str` |
-| `generate_fitness` | `vs generate fitness` | `project_dir: str` |
-| `generate_tickets` | `vs generate tickets` | `project_dir: str, preview: bool = True` |
-| `generate_configs` | `vs generate configs` | `project_dir: str, tools: list[str]` |
-| `detect_tools` | `vs detect` | `project_dir: str` |
-| `check_quality` | `vs check` | `project_dir: str, gates: list[str]` |
-| `doc_health` | `vs doc-health` | `project_dir: str` |
-| `ticket_health` | `vs ticket-health` | `project_dir: str` |
+| `init_project` | `alty init` | `project_dir: str, existing: bool = False` |
+| `guide_ddd` | `alty guide` | `project_dir: str, quick: bool = False` |
+| `generate_artifacts` | `alty generate artifacts` | `project_dir: str, artifact_type: str` |
+| `generate_fitness` | `alty generate fitness` | `project_dir: str` |
+| `generate_tickets` | `alty generate tickets` | `project_dir: str, preview: bool = True` |
+| `generate_configs` | `alty generate configs` | `project_dir: str, tools: list[str]` |
+| `detect_tools` | `alty detect` | `project_dir: str` |
+| `check_quality` | `alty check` | `project_dir: str, gates: list[str]` |
+| `doc_health` | `alty doc-health` | `project_dir: str` |
+| `ticket_health` | `alty ticket-health` | `project_dir: str` |
 
 **MCP Resources:**
 
 | Resource URI | Description | Data Source |
 |-------------|-------------|-------------|
-| `vibeseed://knowledge/tools/{tool}/{subtopic}` | AI tool conventions | `.vibe-seed/knowledge/tools/` |
-| `vibeseed://knowledge/ddd/{topic}` | DDD patterns/references | `.vibe-seed/knowledge/ddd/` |
-| `vibeseed://knowledge/conventions/{topic}` | TDD/SOLID/quality gate refs | `.vibe-seed/knowledge/conventions/` |
-| `vibeseed://knowledge/cross-tool/{topic}` | Cross-tool mappings | `.vibe-seed/knowledge/cross-tool/` |
-| `vibeseed://project/{dir}/domain-model` | Current DDD.md | `docs/DDD.md` |
-| `vibeseed://project/{dir}/architecture` | Current ARCHITECTURE.md | `docs/ARCHITECTURE.md` |
-| `vibeseed://tickets/ready` | Tickets in ready state | beads `bd ready` |
-| `vibeseed://tickets/{id}` | Single ticket details | beads `bd show` |
-| `vibeseed://personas/{name}` | Agent persona definition | Generated persona files |
+| `alty://knowledge/tools/{tool}/{subtopic}` | AI tool conventions | `.alty/knowledge/tools/` |
+| `alty://knowledge/ddd/{topic}` | DDD patterns/references | `.alty/knowledge/ddd/` |
+| `alty://knowledge/conventions/{topic}` | TDD/SOLID/quality gate refs | `.alty/knowledge/conventions/` |
+| `alty://knowledge/cross-tool/{topic}` | Cross-tool mappings | `.alty/knowledge/cross-tool/` |
+| `alty://project/{dir}/domain-model` | Current DDD.md | `docs/DDD.md` |
+| `alty://project/{dir}/architecture` | Current ARCHITECTURE.md | `docs/ARCHITECTURE.md` |
+| `alty://tickets/ready` | Tickets in ready state | beads `bd ready` |
+| `alty://tickets/{id}` | Single ticket details | beads `bd show` |
+| `alty://personas/{name}` | Agent persona definition | Generated persona files |
 
 *(Source: CLI+MCP design spike sections 3-4; MCP SDK spike)*
 
@@ -567,7 +567,7 @@ MCP (FastMCP) --+           |
 # src/infrastructure/composition.py
 def create_app() -> AppContext:
     """Wire all ports to their implementations."""
-    knowledge_service = FileKnowledgeService(Path(".vibe-seed/knowledge"))
+    knowledge_service = FileKnowledgeService(Path(".alty/knowledge"))
     scaffold_service = FileScaffoldService()
     beads_service = BeadsCliWriter()
     # ... wire all ports
@@ -610,7 +610,7 @@ The CLI adapts output based on the detected persona:
 #### Pipeline
 
 ```
-.vibe-seed/domain-model.yaml (bounded_contexts section)
+.alty/domain-model.yaml (bounded_contexts section)
         |
         v
 BoundedContextMapParser (Infrastructure: YAML reader)
@@ -666,7 +666,7 @@ file is written (fail-fast design).
 #### Pipeline
 
 ```
-.vibe-seed/domain-model.yaml
+.alty/domain-model.yaml
         |
 [1. Parse and Validate]     -- Pydantic models in domain layer
         |
@@ -740,7 +740,7 @@ classify_subdomain(name, classification, rationale)
   -> SubdomainClassification value object
         |
         v
-.vibe-seed/domain-model.yaml (subdomains[].treatment)
+.alty/domain-model.yaml (subdomains[].treatment)
         |
    +----+----+----+
    |         |         |
@@ -799,7 +799,7 @@ configs (for tools that support richer features like agents, modes, skills).
 
 #### Generation Matrix
 
-From `.vibe-seed/knowledge/cross-tool/generation-matrix.toml`:
+From `.alty/knowledge/cross-tool/generation-matrix.toml`:
 
 | Output | Claude Code | Cursor | Roo Code | OpenCode |
 |--------|------------|--------|----------|----------|
@@ -821,9 +821,9 @@ From `.vibe-seed/knowledge/cross-tool/generation-matrix.toml`:
 
 #### Limitations
 
-- **Cursor global config is SQLite** -- vibe-seed cannot generate or compare global
+- **Cursor global config is SQLite** -- alty cannot generate or compare global
   config files for Cursor. Can detect the DB file exists but cannot read settings without
-  SQLite queries. `vs detect` warns users to check manually.
+  SQLite queries. `alty detect` warns users to check manually.
 - **No agent/persona concept in Cursor** -- personas encoded as rule files instead.
 
 *(Source: knowledge base spike sections 1-4, 9)*
@@ -836,11 +836,11 @@ From `.vibe-seed/knowledge/cross-tool/generation-matrix.toml`:
 #### Pipeline
 
 ```
-vs init --existing
+alty init --existing
         |
 [1. Verify clean git tree]     -- abort if dirty
         |
-[2. Create branch]             -- vibe-seed/init (abort if exists)
+[2. Create branch]             -- alty/init (abort if exists)
         |
 [3. Scan existing project]     -- code, docs, configs, folder structure
         |
@@ -866,7 +866,7 @@ vs init --existing
 |------|------------|
 | Never overwrite existing files | Skip if target exists |
 | Clean git tree required | `git status --porcelain` check before any operation |
-| All changes on branch | `git checkout -b vibe-seed/init` |
+| All changes on branch | `git checkout -b alty/init` |
 | Never merge for user | User reviews diff and merges manually |
 | Zero test regression | Run existing test suite after scaffolding; roll back on failure |
 
@@ -874,13 +874,13 @@ vs init --existing
 
 ### 7.6 Living Knowledge Base
 
-**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `.vibe-seed/` directory
+**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `.alty/` directory
 **Spike source:** `docs/research/20260222_knowledge_base_structure.md`
 
 #### Directory Structure
 
 ```
-.vibe-seed/knowledge/
+.alty/knowledge/
   _index.toml                     # Master index for RLM O(1) lookup
   tools/
     claude-code/
@@ -922,7 +922,7 @@ vs init --existing
   cross-tool/
     agents-md.toml                # AGENTS.md cross-tool standard
     concept-mapping.toml          # How concepts map across tools
-    generation-matrix.toml        # What vibe-seed generates per tool
+    generation-matrix.toml        # What alty generates per tool
   ddd/
     tactical-patterns.md          # Entities, VOs, Aggregates
     strategic-patterns.md         # Bounded Contexts, Context Maps
@@ -939,7 +939,7 @@ vs init --existing
 Every knowledge entry is addressable by a deterministic path:
 
 ```
-vibeseed://knowledge/{category}/{tool_or_topic}/{subtopic}?version={version}
+alty://knowledge/{category}/{tool_or_topic}/{subtopic}?version={version}
 ```
 
 Resolution is O(1) -- direct path construction, no search, no index scan:
@@ -986,8 +986,8 @@ next_review_date = "2026-05-22"    # 90-day freshness window (PRD NFR)
 schema_version = 1
 ```
 
-`vs doc-health --knowledge` compares these fields against installed tool versions
-(from `vs detect`) to report stale entries.
+`alty doc-health --knowledge` compares these fields against installed tool versions
+(from `alty detect`) to report stale entries.
 
 *(Source: knowledge base spike sections 4-7)*
 
@@ -1043,7 +1043,7 @@ Step 4: Groom Next
   -> present results, ask user if ready to start
 ```
 
-#### `vs ticket-health` Report
+#### `alty ticket-health` Report
 
 Read-only freshness report via `TicketHealthPort`:
 
@@ -1071,13 +1071,13 @@ ripple review, executed by agent during grooming).
 
 *(Source: ripple review spike sections 1-6)*
 
-## 8. `.vibe-seed/` Project Directory
+## 8. `.alty/` Project Directory
 
-Every project initialized with `vs init` gets this directory:
+Every project initialized with `alty init` gets this directory:
 
 ```
-.vibe-seed/
-+-- config.toml                   # Project-specific vibe-seed settings
+.alty/
++-- config.toml                   # Project-specific alty settings
 +-- domain-model.yaml             # Machine-readable DDD IR (generated)
 +-- knowledge/                    # RLM-addressable knowledge base (copied from seed)
 |   +-- _index.toml               # Master index
@@ -1130,11 +1130,11 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | Concern | Mitigation |
 |---------|-----------|
 | Input validation | All user input (README content, question answers, persona selection) validated by Pydantic models in the domain layer before processing |
-| File safety | Never overwrite existing files. Conflict rename: `filename_vibe_seed.md`. Preview all writes. Explicit confirm before any action. *(PRD section 6 file safety rules)* |
+| File safety | Never overwrite existing files. Conflict rename: `filename_alty.md`. Preview all writes. Explicit confirm before any action. *(PRD section 6 file safety rules)* |
 | Subprocess injection | All subprocess calls use list-form arguments (not shell=True). Ticket content written to temp files via `--body-file`, never passed as shell arguments. *(ticket pipeline spike section 4)* |
-| Branch safety | `vs init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. *(PRD section 4 scenario 2)* |
+| Branch safety | `alty init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. *(PRD section 4 scenario 2)* |
 | No silent installs | Tool installation (beads, trivy, shannon) is optional and shown separately in preview. *(PRD section 5.2)* |
-| Global config detection | `vs detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. *(PRD section 5.2.1)* |
+| Global config detection | `alty detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. *(PRD section 5.2.1)* |
 | No secrets in generated files | Generated configs contain project structure and domain terms, not API keys, passwords, or personal information. |
 | No network access | All operations are local-only. No cloud dependencies, no phone-home, no telemetry. *(PRD section 6 budget constraints)* |
 
@@ -1149,8 +1149,8 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | Architecture testing | import-linter 2.10 (BSD-2) + pytestarch 4.0.1 (Apache-2.0) | Complementary coverage: TOML config + Python tests *(fitness function spike ADR)* |
 | TOML editing | tomlkit (MIT) | Round-trip preservation of existing pyproject.toml formatting *(fitness function spike section 8)* |
 | Issue tracking | Beads v0.55.4+ | Git-native, works offline, embedded Dolt backend |
-| Distribution | PyPI package | `uv tool install vibe-seed` or `pip install vibe-seed` |
-| Entry points | `vs` (CLI) + `vs-mcp` (MCP server) | Both defined in `pyproject.toml [project.scripts]` |
+| Distribution | PyPI package | `uv tool install alty` or `pip install alty` |
+| Entry points | `vs` (CLI) + `alty-mcp` (MCP server) | Both defined in `pyproject.toml [project.scripts]` |
 
 ### Dependencies
 
@@ -1189,7 +1189,7 @@ From `docs/PRD.md` section 6:
 | Paid API dependencies | Zero | Core functionality requires no paid services *(PRD section 6)* |
 | Python version | 3.12+ | Target audience stack *(PRD section 6)* |
 | File safety | Never overwrite, preview first, explicit confirm | 9 file safety rules *(PRD section 6)* |
-| Test regression | Zero on `vs init --existing` | Hard gate, no exceptions *(PRD section 6)* |
+| Test regression | Zero on `alty init --existing` | Hard gate, no exceptions *(PRD section 6)* |
 
 ## 13. Architecture Decision Records
 
@@ -1201,7 +1201,7 @@ From `docs/PRD.md` section 6:
 | ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human) | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
 | ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation) | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4 |
 | ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes) | Accepted | `docs/research/20260223_ripple_review_design.md` section 1 |
-| ADR-007 | Shared YAML IR at `.vibe-seed/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1 |
+| ADR-007 | Shared YAML IR at `.alty/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1 |
 | ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3 |
 | ADR-009 | TOML editing: tomlkit for round-trip pyproject.toml preservation | Accepted | `docs/research/20260223_fitness_function_design.md` section 8 |
 | ADR-010 | 13 application-layer ports (Protocols) shared between CLI and MCP | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4 |
@@ -1222,7 +1222,7 @@ Decisions resolved by spikes but requiring validation during implementation:
   section 9)*
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
-  tests. Regeneration should preserve user-added items. Design a `# vibe-seed:generated`
+  tests. Regeneration should preserve user-added items. Design a `# alty:generated`
   marker convention. *(fitness function spike section 9)*
 
 - [ ] **Guided DDD flow over MCP (stateful sessions)** -- The 10-question flow is stateful.

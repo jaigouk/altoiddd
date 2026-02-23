@@ -10,8 +10,8 @@ set -euo pipefail
 #   bd-ripple <closed-ticket-id> [context summary]
 #
 # Examples:
-#   bd-ripple vibe-seed-k7m.9 "Research found 4+1 feature strategy; P0 features changed"
-#   bd-ripple vibe-seed-k7m.9   # uses close_reason as context
+#   bd-ripple alty-k7m.9 "Research found 4+1 feature strategy; P0 features changed"
+#   bd-ripple alty-k7m.9   # uses close_reason as context
 #
 # What it does:
 #   1. Reads the closed ticket's close_reason (or uses provided summary)

@@ -146,7 +146,7 @@ All three tools are **prompt-to-deployment** platforms. Their shared output patt
 - **Traceability:** Every generated line of code links back to its originating specification. This is a major differentiator for compliance and code review.
 - **DDD support:** Not explicitly mentioned. Architecture is spec-driven, not domain-model-driven. No bounded contexts, no ubiquitous language tooling.
 - **Architecture support:** Strongest of all tools researched — generates design docs, explicitly captures technical decisions, and enforces spec-before-code discipline.
-- **Gap vs. vibe-seed:** Kiro is AWS-native and proprietary. It targets the spec-driven workflow but does not address DDD, domain storytelling, or the structured question framework that vibe-seed envisions. No local-first option.
+- **Gap vs. alty:** Kiro is AWS-native and proprietary. It targets the spec-driven workflow but does not address DDD, domain storytelling, or the structured question framework that alty envisions. No local-first option.
 - **Sources:** [kiro.dev](https://kiro.dev/); [InfoQ — Beyond Vibe Coding: Amazon Kiro](https://www.infoq.com/news/2025/08/aws-kiro-spec-driven-agent/); [AWS re:Post Kiro article](https://repost.aws/articles/AROjWKtr5RTjy6T2HbFJD_Mw/)
 
 ### 4.2 GitHub Spec Kit (Released September 2025)
@@ -163,7 +163,7 @@ All three tools are **prompt-to-deployment** platforms. Their shared output patt
 - **Agent support:** Template packages for GitHub Copilot, Claude Code, Gemini CLI, Cursor, and Windsurf.
 - **DDD support:** None explicitly. No domain modeling, no bounded contexts, no ubiquitous language tooling. Spec-driven, not domain-driven.
 - **Architecture support:** Strong for explicit technical decisions and planning before code — but no enforcement mechanism and no domain discovery.
-- **Gap vs. vibe-seed:** GitHub Spec Kit scaffolds specifications and plans but does not guide users through domain discovery or generate DDD artifacts. It is also not a CLI tool with ongoing project management (like `vs doc-health`). It is experimental ("still in the learning phase").
+- **Gap vs. alty:** GitHub Spec Kit scaffolds specifications and plans but does not guide users through domain discovery or generate DDD artifacts. It is also not a CLI tool with ongoing project management (like `alty doc-health`). It is experimental ("still in the learning phase").
 - **Sources:** [GitHub spec-kit repository](https://github.com/github/spec-kit); [Microsoft Developer blog](https://developer.microsoft.com/blog/spec-driven-development-spec-kit); [Visual Studio Magazine](https://visualstudiomagazine.com/articles/2025/09/03/github-open-sources-kit-for-spec-driven-ai-development.aspx)
 
 ### 4.3 BMAD Method (v6, Released February 2026)
@@ -181,17 +181,17 @@ All three tools are **prompt-to-deployment** platforms. Their shared output patt
 - **DDD support:** Not explicitly mentioned. The workflow produces architecture docs and structured plans, but there is no evidence of domain storytelling, bounded context generation, or ubiquitous language tooling.
 - **Architecture support:** Strongest of the open-source options. The documented workflow explicitly enforces "PRD before code" and "architecture before implementation." Agents are role-specialized.
 - **Scale:** Designed for larger, complex projects with "scale-domain-adaptive planning that adjusts depth based on project complexity."
-- **Gap vs. vibe-seed:**
+- **Gap vs. alty:**
   - No domain storytelling or DDD-specific question framework
   - No per-project knowledge base or doc maintenance pattern
   - No multi-tool AI config generation (Claude Code, Cursor, etc.)
-  - No local-first CLI (`vs init`, `vs guide`) for human interaction
-  - Requires Node.js, not Python — different ecosystem than vibe-seed's target audience
+  - No local-first CLI (`alty init`, `alty guide`) for human interaction
+  - Requires Node.js, not Python — different ecosystem than alty's target audience
 - **Sources:** [GitHub BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD); [BMAD docs site](https://docs.bmad-method.org/)
 
 ### 4.4 Qlerify
 
-- **What it is:** Commercial AI-powered DDD modeling tool. The closest existing tool to what vibe-seed aims for.
+- **What it is:** Commercial AI-powered DDD modeling tool. The closest existing tool to what alty aims for.
 - **What it generates:**
   - Domain models from text prompts with bounded contexts, aggregates, domain events
   - Context Map showing relationships between bounded contexts
@@ -200,7 +200,7 @@ All three tools are **prompt-to-deployment** platforms. Their shared output patt
   - Unit test code (generated from the DDD model)
   - Event Storming visualization (actors, commands, aggregates, domain events, data collections)
 - **DDD support:** **Explicit and deep.** This is the only tool researched that directly produces DDD artifacts from prompts.
-- **Gap vs. vibe-seed:**
+- **Gap vs. alty:**
   - Commercial/SaaS — not local-first or open-source
   - Web-based modeling tool, not a CLI project scaffolder
   - No integration with AI coding tools (Claude Code, Cursor, etc.)
@@ -216,7 +216,7 @@ All three tools are **prompt-to-deployment** platforms. Their shared output patt
 - **IDE support:** Eclipse plugin, VS Code extension, standalone Java library.
 - **What it generates:** Context maps from CML files, architectural refactoring suggestions, service decomposition plans.
 - **AI integration:** None — this is a pre-AI-era DDD modeling tool. No conversational interface, no AI-assisted domain discovery.
-- **Gap vs. vibe-seed:** Manual DSL-based tool with no AI guidance, no conversational discovery, no project scaffolding, no agent profiles.
+- **Gap vs. alty:** Manual DSL-based tool with no AI guidance, no conversational discovery, no project scaffolding, no agent profiles.
 - **Sources:** [contextmapper.org](https://contextmapper.org/); [GitHub ContextMapper/context-mapper-dsl](https://github.com/ContextMapper/context-mapper-dsl)
 
 ---
@@ -244,9 +244,9 @@ This section documents the scale of the problem that structured tooling needs to
 
 ## 6. Gap Analysis: What No Existing Tool Does
 
-The following table maps the vibe-seed PRD capabilities against what each tool covers:
+The following table maps the alty PRD capabilities against what each tool covers:
 
-| Capability | Lovable | Bolt.new | v0 | GPT-Eng. | Kiro | GitHub Spec Kit | BMAD | Qlerify | ContextMapper | **vibe-seed vision** |
+| Capability | Lovable | Bolt.new | v0 | GPT-Eng. | Kiro | GitHub Spec Kit | BMAD | Qlerify | ContextMapper | **alty vision** |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Guided domain discovery (questions) | No | No | No | No | No | No | No | Partial | No | **Yes (P0)** |
 | DDD question framework | No | No | No | No | No | No | No | No | No | **Yes (P0)** |
@@ -267,7 +267,7 @@ The following table maps the vibe-seed PRD capabilities against what each tool c
 | Existing project adoption | No | No | No | No | Partial | No | No | No | No | **Yes (P0, `--existing`)** |
 | License | Proprietary | Proprietary | Proprietary | MIT | Proprietary | MIT | MIT | Proprietary | Apache 2.0 | MIT/Apache |
 
-### The Specific Gaps vibe-seed Fills
+### The Specific Gaps alty Fills
 
 **Gap 1: Domain discovery before code.** No tool researched guides users through a conversational domain discovery process — asking about actors, events, ubiquitous language, and bounded contexts — before any code or architecture is produced. Kiro gets closest with spec-to-design-doc generation, but it still starts from a technical prompt, not domain storytelling.
 
@@ -275,26 +275,26 @@ The following table maps the vibe-seed PRD capabilities against what each tool c
 
 **Gap 3: Python/uv project structure.** All vibe coding tools target React/TypeScript/Node.js. None produce Python project scaffolding with DDD layer structure, uv package management, or Python-specific quality gates (ruff, mypy, pytest).
 
-**Gap 4: AI tool-agnostic agent profiles.** GitHub Spec Kit provides agent templates for multiple tools (Claude Code, Cursor, Gemini CLI, etc.) but they are generic, not DDD-aware and not domain-customized. vibe-seed generates DDD-aware agent personas tailored to the specific project's ubiquitous language.
+**Gap 4: AI tool-agnostic agent profiles.** GitHub Spec Kit provides agent templates for multiple tools (Claude Code, Cursor, Gemini CLI, etc.) but they are generic, not DDD-aware and not domain-customized. alty generates DDD-aware agent personas tailored to the specific project's ubiquitous language.
 
 **Gap 5: Ongoing doc maintenance.** No tool tracks documentation freshness, enforces review cadences, or provides slash commands for doc health. All tools produce artifacts at project creation and then leave maintenance to the developer.
 
-**Gap 6: Existing project adoption.** No tool provides a safe, branch-based gap analysis and scaffolding workflow for existing projects. Kiro partially addresses this with codebase scanning, but not with the safety guarantees (clean tree, zero test regression, branch isolation) in the vibe-seed PRD.
+**Gap 6: Existing project adoption.** No tool provides a safe, branch-based gap analysis and scaffolding workflow for existing projects. Kiro partially addresses this with codebase scanning, but not with the safety guarantees (clean tree, zero test regression, branch isolation) in the alty PRD.
 
-**Gap 7: Local-first, no cloud dependency.** Kiro, Lovable, Bolt, v0, and Qlerify are all cloud/SaaS products. BMAD and GitHub Spec Kit are local, but require Node.js. vibe-seed is a Python tool with a hard constraint of no paid APIs and no cloud dependency for core functionality.
+**Gap 7: Local-first, no cloud dependency.** Kiro, Lovable, Bolt, v0, and Qlerify are all cloud/SaaS products. BMAD and GitHub Spec Kit are local, but require Node.js. alty is a Python tool with a hard constraint of no paid APIs and no cloud dependency for core functionality.
 
 ---
 
 ## 7. Emerging Patterns Worth Watching
 
 ### Spec-Driven Development (SDD)
-The industry is converging around "spec first, code second" as the antidote to vibe coding. Key players: Kiro, GitHub Spec Kit, BMAD, and the community-developed GSD and Ralph Loop frameworks. The Thoughtworks Technology Radar has flagged SDD as a significant emerging practice for 2025. vibe-seed should position itself as "DDD-first spec-driven development" — stronger than generic SDD by adding domain modeling and bounded context discipline.
+The industry is converging around "spec first, code second" as the antidote to vibe coding. Key players: Kiro, GitHub Spec Kit, BMAD, and the community-developed GSD and Ralph Loop frameworks. The Thoughtworks Technology Radar has flagged SDD as a significant emerging practice for 2025. alty should position itself as "DDD-first spec-driven development" — stronger than generic SDD by adding domain modeling and bounded context discipline.
 
 ### "Vibe ADR" / Architecture Decision Records in AI Workflows
-An emerging pattern (tracked in Medium and DevOps AI publications, 2025) is using AI to generate Architecture Decision Records as part of the development loop. vibe-seed could differentiate by generating ADR stubs as part of the architecture phase.
+An emerging pattern (tracked in Medium and DevOps AI publications, 2025) is using AI to generate Architecture Decision Records as part of the development loop. alty could differentiate by generating ADR stubs as part of the architecture phase.
 
 ### Generative AI for DDD (Academic Research, January 2026)
-A preprint (arXiv 2601.20909, January 2026) "Leveraging Generative AI for Enhancing Domain-Driven Software Design" demonstrates that LLMs can produce syntactically correct DDD metamodel JSON objects from prompts. This validates the technical feasibility of vibe-seed's DDD artifact generation approach.
+A preprint (arXiv 2601.20909, January 2026) "Leveraging Generative AI for Enhancing Domain-Driven Software Design" demonstrates that LLMs can produce syntactically correct DDD metamodel JSON objects from prompts. This validates the technical feasibility of alty's DDD artifact generation approach.
 - **Source:** [arXiv 2601.20909](https://arxiv.org/abs/2601.20909)
 
 ---
@@ -303,7 +303,7 @@ A preprint (arXiv 2601.20909, January 2026) "Leveraging Generative AI for Enhanc
 
 The closest competitors and their key differentiators:
 
-| Competitor | Closest to vibe-seed In | Missing vs. vibe-seed |
+| Competitor | Closest to alty In | Missing vs. alty |
 |---|---|---|
 | **Kiro** (AWS) | Architecture discipline, spec-to-design workflow | Proprietary, AWS-only, no DDD, no Python, no local-first |
 | **GitHub Spec Kit** | Multi-tool agent templates, open-source | No DDD, no domain discovery, no Python, no ongoing maintenance |
@@ -317,14 +317,14 @@ The closest competitors and their key differentiators:
 
 ## 9. Recommendation
 
-vibe-seed addresses a **real and growing gap** that no current tool fills. The market validation is strong:
+alty addresses a **real and growing gap** that no current tool fills. The market validation is strong:
 
 1. The technical debt crisis from undisciplined AI coding is empirically documented and industry-acknowledged.
 2. The "2026 reset toward architecture" is an industry consensus trend.
 3. Spec-driven tools (Kiro, GitHub Spec Kit, BMAD) are gaining traction but none address DDD specifically.
 4. Qlerify proves demand for AI-assisted DDD tooling exists but leaves the Python developer workflow entirely unserved.
 
-**The strongest differentiators for vibe-seed to emphasize:**
+**The strongest differentiators for alty to emphasize:**
 - Domain storytelling and DDD questions first (no other tool does this)
 - Python/uv ecosystem (underserved by all vibe coding tools)
 - Local-first with no cloud dependency (unique constraint, strong privacy/security story)

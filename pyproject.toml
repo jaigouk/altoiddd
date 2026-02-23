@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "vibe-seed"
+name = "alty"
 version = "0.1.0"
-description = "Guided project bootstrapper enforcing DDD + TDD + SOLID before AI coding tools write code"
+description = "The AI architect for vibe coding — guided project bootstrapper enforcing DDD + TDD + SOLID"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -17,6 +17,7 @@ keywords = [
     "ai-coding",
     "domain-driven-design",
     "vibe-coding",
+    "alty",
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -28,7 +29,7 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/jaigouk/vibe-seed"
+Repository = "https://git.alty.ai/jaigouk/alty"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

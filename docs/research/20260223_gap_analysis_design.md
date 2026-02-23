@@ -3,19 +3,19 @@ last_reviewed: 2026-02-23
 owner: researcher
 status: complete
 type: spike
-ticket: vibe-seed-k7m.8
+ticket: alty-k7m.8
 ---
 
 # Gap Analysis Design for Existing Projects
 
-> **Spike:** k7m.8 -- Design how `vs init --existing` analyzes an existing project and produces a gap report
+> **Spike:** k7m.8 -- Design how `alty init --existing` analyzes an existing project and produces a gap report
 > **Timebox:** 3 hours
 > **Date:** 2026-02-23
 > **Status:** Final
 
 ## Summary
 
-This document defines the gap analysis system for `vs init --existing`. It covers
+This document defines the gap analysis system for `alty init --existing`. It covers
 what a fully-seeded project looks like (the golden state), what to scan, how to
 categorize gaps, how to present results to different personas, and how to safely
 apply changes with test verification and rollback. P0 (basic scaffold overlay) and
@@ -48,10 +48,10 @@ Every item below is checked during gap analysis. Items are grouped by scan categ
 
 | Path | Purpose | Check Type |
 |------|---------|------------|
-| `.vibe-seed/config.toml` | vibe-seed project config | File exists |
-| `.vibe-seed/knowledge/` | RLM-addressable knowledge base | Directory exists |
-| `.vibe-seed/maintenance/doc-registry.toml` | Doc review tracking | File exists |
-| `.gitignore` | Contains vibe-seed + Python entries | Content check |
+| `.alty/config.toml` | alty project config | File exists |
+| `.alty/knowledge/` | RLM-addressable knowledge base | Directory exists |
+| `.alty/maintenance/doc-registry.toml` | Doc review tracking | File exists |
+| `.gitignore` | Contains alty + Python entries | Content check |
 | `.python-version` | Python 3.12+ declared | File exists + version check |
 | `pyproject.toml` | Project metadata + tool config | File exists + content check |
 
@@ -149,7 +149,7 @@ Phase 2: File Structure Scan (~0.2s)
 Phase 3: Config Content Scan (~0.3s)
   - pyproject.toml: check tool sections (ruff, mypy, pytest)
   - .gitignore: check for required entries
-  - Global settings: check for conflicts (same as vs init)
+  - Global settings: check for conflicts (same as alty init)
 
 Phase 4: Documentation Scan (~0.5s)
   - Frontmatter in docs/*.md: last_reviewed, owner, status
@@ -188,7 +188,7 @@ Every item in the golden state manifest gets exactly one classification.
 | **Compliant** | `OK` | Item exists and matches golden state | No action |
 | **Missing** | `MISSING` | Item does not exist at all | Create during scaffolding |
 | **Partial** | `PARTIAL` | Item exists but incomplete (e.g., pyproject.toml without ruff config) | Suggest additions, do not overwrite |
-| **Conflicting** | `CONFLICT` | Item exists but differs from golden state (e.g., different CLAUDE.md) | Create `_vibe_seed` suffixed copy |
+| **Conflicting** | `CONFLICT` | Item exists but differs from golden state (e.g., different CLAUDE.md) | Create `_alty` suffixed copy |
 | **Incompatible** | `INCOMPAT` | Item exists and is structurally incompatible (e.g., flat `src/` layout vs DDD layers) | Report only; suggest migration (P1) |
 
 ### 3.2 Category Resolution Rules
@@ -222,7 +222,7 @@ Not all MISSING items are equal. Priority is assigned based on the layer:
 
 | Layer | Priority | Rationale |
 |-------|----------|-----------|
-| Infrastructure (.vibe-seed/, .gitignore) | P0 | Needed for vibe-seed to function |
+| Infrastructure (.alty/, .gitignore) | P0 | Needed for alty to function |
 | Documentation (PRD, DDD, ARCHITECTURE) | P0 | Foundation for everything else |
 | Source structure (DDD layers) | P1 | Existing code may use different layout |
 | Tool configs (.claude/, .cursor/) | P0 | Low risk, high value |
@@ -236,10 +236,10 @@ Not all MISSING items are equal. Priority is assigned based on the layer:
 ### 4.1 Terminal Output (Primary)
 
 The gap report is shown before any changes are made. It follows the same
-preview-then-confirm pattern as `vs init`.
+preview-then-confirm pattern as `alty init`.
 
 ```
-vs init --existing: project-name
+alty init --existing: project-name
 ========================================
 
 Environment:
@@ -269,10 +269,10 @@ Tool Configs:                                        [0/3 configured]
   MISSING  .claude/commands/ (slash commands)
   CONFLICT .cursor/mcp.json (exists, no context7 entry)
 
-vibe-seed Config:                                    [0/3 present]
-  MISSING  .vibe-seed/config.toml
-  MISSING  .vibe-seed/knowledge/
-  MISSING  .vibe-seed/maintenance/doc-registry.toml
+alty Config:                                    [0/3 present]
+  MISSING  .alty/config.toml
+  MISSING  .alty/knowledge/
+  MISSING  .alty/maintenance/doc-registry.toml
 
 Quality Gates:
   PARTIAL  pyproject.toml: pytest configured, ruff and mypy missing
@@ -298,13 +298,13 @@ detection has occurred -- `--existing` typically runs before guided discovery).
 - Technical details: config sections, version numbers, directory listings
 - Shows every item in the golden state checklist
 
-**Product Owner (`vs init --existing --persona po`):**
+**Product Owner (`alty init --existing --persona po`):**
 - High-level health score: "Your project is 22% ready for structured development"
 - Category counts only, no file paths
 - Business-language summary: "Missing: product requirements document, domain model, architecture documentation"
 - No DDD jargon: "bounded context" becomes "separate business area"
 
-**Team Lead (`vs init --existing --persona lead`):**
+**Team Lead (`alty init --existing --persona lead`):**
 - Category counts with file paths for MISSING and CONFLICT only
 - Convention compliance summary: "Quality gates: 1/3 configured"
 - Emphasis on team impact: "6 agent personas will be added for consistent AI tool behavior"
@@ -335,7 +335,7 @@ What needs attention:
   - Source code uses a different organization than recommended
     (this is OK -- we will add new folders alongside existing ones)
 
-Next steps after applying vibe-seed:
+Next steps after applying alty:
   1. Work with a developer to create a PRD from your product vision
   2. Answer domain discovery questions to capture your business knowledge
   3. Review and approve generated documentation
@@ -343,12 +343,12 @@ Next steps after applying vibe-seed:
 
 ### 4.4 Markdown Report (Optional)
 
-`vs init --existing --report` writes the gap report to
-`docs/gap-analysis-report.md` on the `vibe-seed/init` branch. This report
+`alty init --existing --report` writes the gap report to
+`docs/gap-analysis-report.md` on the `alty/init` branch. This report
 persists as a record of the project's initial state and is useful for:
 
 - Team review before merging the branch
-- Tracking progress over time (re-run `vs init --existing --report` to compare)
+- Tracking progress over time (re-run `alty init --existing --report` to compare)
 - P1 migration planning (identifies structural issues)
 
 The Markdown report includes everything from the developer terminal view plus
@@ -356,7 +356,7 @@ a machine-readable YAML frontmatter block:
 
 ```yaml
 ---
-generated_by: vibe-seed
+generated_by: alty
 version: 0.1.0
 date: 2026-02-23
 project: project-name
@@ -377,13 +377,13 @@ gaps:
 ### 5.1 Full Lifecycle
 
 ```
-User runs: vs init --existing
+User runs: alty init --existing
   |
   v
 [Pre-flight checks]
   - Is this a git repo? (abort if not)
   - Is working tree clean? (abort if dirty)
-  - Does vibe-seed/init branch exist? (abort if yes, suggest --force-branch)
+  - Does alty/init branch exist? (abort if yes, suggest --force-branch)
   |
   v
 [Environment scan] -- read-only, no git operations
@@ -397,20 +397,20 @@ User runs: vs init --existing
   v
 [Show gap report + proposed changes] -- preview
   - Terminal output (persona-adapted)
-  - "Create branch 'vibe-seed/init' and apply these changes? [y/N]"
+  - "Create branch 'alty/init' and apply these changes? [y/N]"
   |
   v
 [User confirms]
   |
   v
 [Create branch]
-  - git checkout -b vibe-seed/init
+  - git checkout -b alty/init
   - Record original branch name for rollback
   |
   v
 [Apply scaffolding] -- write operations
   - Create MISSING files
-  - Create _vibe_seed copies for CONFLICT files
+  - Create _alty copies for CONFLICT files
   - Add config sections for PARTIAL items (append, never overwrite)
   - Skip COMPLIANT and INCOMPATIBLE items
   |
@@ -430,14 +430,14 @@ User runs: vs init --existing
   v
 [Commit scaffolding to branch]
   - git add (specific files, not -A)
-  - git commit -m "chore: apply vibe-seed scaffolding"
+  - git commit -m "chore: apply alty scaffolding"
   |
   v
 [Show summary]
   - Files created/modified count
-  - How to review: git diff original...vibe-seed/init
-  - How to merge: git checkout original && git merge vibe-seed/init
-  - How to discard: git checkout original && git branch -D vibe-seed/init
+  - How to review: git diff original...alty/init
+  - How to merge: git checkout original && git merge alty/init
+  - How to discard: git checkout original && git branch -D alty/init
 ```
 
 ### 5.2 Rollback Mechanism
@@ -450,7 +450,7 @@ Rollback happens when:
 ```bash
 rollback() {
     local original_branch="$1"
-    local init_branch="vibe-seed/init"
+    local init_branch="alty/init"
 
     # Discard all changes on the branch
     git checkout -- .
@@ -468,19 +468,19 @@ rollback() {
 
 Key safety properties:
 - Original branch is NEVER modified
-- All changes are on `vibe-seed/init` only
+- All changes are on `alty/init` only
 - Rollback deletes the entire branch (clean slate)
 - No partial state: either all scaffolding applies or none does
 
 ### 5.3 Force-Branch Option
 
-If `vibe-seed/init` already exists (from a previous aborted attempt):
+If `alty/init` already exists (from a previous aborted attempt):
 
 ```
-vs init --existing --force-branch
+alty init --existing --force-branch
 ```
 
-This deletes the existing `vibe-seed/init` branch and creates a fresh one.
+This deletes the existing `alty/init` branch and creates a fresh one.
 Without `--force-branch`, the command aborts with a message explaining the
 situation.
 
@@ -643,7 +643,7 @@ def verify_no_regressions(
 
 ### 6.5 Pytest-Specific Optimizations
 
-Since pytest is the dominant Python test runner (and vibe-seed's target), the
+Since pytest is the dominant Python test runner (and alty's target), the
 verification step uses pytest-specific flags when pytest is detected:
 
 ```bash
@@ -738,7 +738,7 @@ Terms from README:
 ```
 
 The user confirms or edits. Confirmed terms seed the guided discovery session
-(`vs guide`) that follows the gap analysis.
+(`alty guide`) that follows the gap analysis.
 
 ### 7.5 Infrastructure vs Domain Heuristics
 
@@ -766,14 +766,14 @@ FRAMEWORK_CLASSES = {
 
 ### 8.1 P0: Basic Scaffold Overlay (Phase 6 deliverable)
 
-**Principle:** Add vibe-seed scaffolding ALONGSIDE existing code. Never move,
+**Principle:** Add alty scaffolding ALONGSIDE existing code. Never move,
 rename, or restructure existing files.
 
 **What P0 does:**
 
 | Action | Details |
 |--------|---------|
-| Create `.vibe-seed/` directory | Config, knowledge base, maintenance tracking |
+| Create `.alty/` directory | Config, knowledge base, maintenance tracking |
 | Create missing docs | Templates for PRD, DDD, ARCHITECTURE (empty stubs with frontmatter) |
 | Create DDD directory structure | `src/domain/`, `src/application/`, `src/infrastructure/` -- ALONGSIDE existing dirs |
 | Create test directory structure | `tests/domain/`, etc. -- ALONGSIDE existing test dirs |
@@ -861,13 +861,13 @@ Epic: Structural Migration (project-name)
 The implementation plan is:
 
 ```
-P0 (vs init --existing)
+P0 (alty init --existing)
   Input:  Existing project
-  Output: Scaffolded project with vibe-seed overlay
+  Output: Scaffolded project with alty overlay
   Safety: Branch + preview + test verification + rollback
   User:   Reviews branch diff, merges manually
 
-P1 (vs migrate) -- future command, not part of --existing
+P1 (alty migrate) -- future command, not part of --existing
   Input:  P0-scaffolded project + confirmed domain language
   Output: Migration tickets in Beads
   Safety: Each ticket is a separate PR with its own test verification
@@ -885,14 +885,14 @@ that describe the migrations. The actual migration is done by the developer
 ### 9.1 Alignment with Ticket Pipeline (k7m.11)
 
 Migration tickets from P1 are structurally identical to tickets generated by
-`vs generate tickets`. They use the same FULL/STANDARD/STUB templates
+`alty generate tickets`. They use the same FULL/STANDARD/STUB templates
 (source: `docs/research/20260223_ticket_pipeline_design.md` Section 3).
 
 The difference is the input source:
 
 | Pipeline | Input | Output |
 |----------|-------|--------|
-| `vs generate tickets` | `.vibe-seed/domain-model.yaml` (from DDD discovery) | New project tickets |
+| `alty generate tickets` | `.alty/domain-model.yaml` (from DDD discovery) | New project tickets |
 | P1 migration | `GapAnalysis` + confirmed domain language | Migration tickets |
 
 ### 9.2 Two-Tier Rules for Migration
@@ -1053,7 +1053,7 @@ class RescuePort(Protocol):
         ...
 
     def rollback(self, project_dir: str, original_branch: str) -> None:
-        """Roll back all changes and delete vibe-seed/init branch."""
+        """Roll back all changes and delete alty/init branch."""
         ...
 ```
 
@@ -1093,9 +1093,9 @@ the template.
 
 Source: [Cruft GitHub](https://github.com/cruft/cruft)
 
-### 11.4 vibe-seed Differentiators
+### 11.4 alty Differentiators
 
-| Feature | Spec-Kit | BMAD | Cruft | vibe-seed |
+| Feature | Spec-Kit | BMAD | Cruft | alty |
 |---------|----------|------|-------|-----------|
 | Gap analysis report | No | No | No | Yes |
 | Branch safety | No | No | No | Yes (hard gate) |
@@ -1105,7 +1105,7 @@ Source: [Cruft GitHub](https://github.com/cruft/cruft)
 | Migration ticket generation | No | PRD generation | No | Yes (P1, two-tier) |
 | Rollback on failure | No | No | Template rollback | Full branch rollback |
 
-vibe-seed's key differentiator is the combination of gap analysis + test
+alty's key differentiator is the combination of gap analysis + test
 verification + branch safety + persona-adapted output. No competitor has all
 four.
 
@@ -1143,7 +1143,7 @@ These tickets would be created for the Phase 6 implementation:
 | 8 | Implement scaffolder (apply changes based on GapAnalysis) | Task | FULL | 1, 4, 7 |
 | 9 | Implement gap report formatter (terminal output, persona-adapted) | Task | STANDARD | 1, 4 |
 | 10 | Implement Markdown report generation (--report flag) | Task | STUB | 9 |
-| 11 | Wire `vs init --existing` CLI command (Typer adapter) | Task | STUB | 3, 4, 6, 7, 8, 9 |
+| 11 | Wire `alty init --existing` CLI command (Typer adapter) | Task | STUB | 3, 4, 6, 7, 8, 9 |
 | 12 | Integration tests: full --existing workflow end-to-end | Task | FULL | 11 |
 
 ### P1 Tickets (Structural Migration -- deferred)
@@ -1154,7 +1154,7 @@ These tickets would be created for the Phase 6 implementation:
 | 14 | Implement bounded context candidate detection | Task | STANDARD | 13 |
 | 15 | Implement anemic model detection heuristics | Task | STANDARD | 13 |
 | 16 | Implement migration ticket generation (FULL/STANDARD/STUB templates) | Task | FULL | 14, 15 |
-| 17 | Wire `vs migrate` CLI command | Task | STUB | 16 |
+| 17 | Wire `alty migrate` CLI command | Task | STUB | 16 |
 
 ---
 
@@ -1187,12 +1187,12 @@ Separation of concerns makes rollback clean and debugging straightforward.
 
 ## Sources
 
-- vibe-seed PRD: `docs/PRD.md` (Section 4 Scenario 2, Section 5 P0 C6/C7, P1 C21, Section 6 File Safety Rules)
-- vibe-seed DDD: `docs/DDD.md` (Section 4 Rescue bounded context, Section 3 subdomain classification)
+- alty PRD: `docs/PRD.md` (Section 4 Scenario 2, Section 5 P0 C6/C7, P1 C21, Section 6 File Safety Rules)
+- alty DDD: `docs/DDD.md` (Section 4 Rescue bounded context, Section 3 subdomain classification)
 - CLI/MCP design: `docs/research/20260222_cli_mcp_design.md` (Section 2 command tree, RescuePort)
 - Ticket pipeline design: `docs/research/20260223_ticket_pipeline_design.md` (Section 3 FULL/STANDARD/STUB templates, Section 4 BeadsWriterPort)
 - Ripple review design: `docs/research/20260223_ripple_review_design.md` (Section 1 context diff format)
-- Existing `vs init --existing` implementation: `bin/vs` (lines 673-806)
+- Existing `alty init --existing` implementation: `bin/alty` (lines 673-806)
 - [Spec-Kit brownfield bootstrap proposal](https://github.com/github/spec-kit/issues/1436)
 - [BMAD Method brownfield development](https://deepwiki.com/bmad-code-org/BMAD-METHOD/3.5-brownfield-development)
 - [Cruft -- update existing projects from cookiecutter templates](https://github.com/cruft/cruft)
