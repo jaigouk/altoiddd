@@ -31,7 +31,10 @@ bd close <id>
 bin/bd-ripple <id>               # Flag dependents after close (ripple review)
 bd query label=review_needed     # See tickets needing review
 bd update <id> --remove-label review_needed  # Clear flag after review
-bd sync                          # Sync with git
+bd label add <id> <label>        # Add label to issue
+bd label remove <id> <label>     # Remove label from issue
+bd export                        # Export Dolt DB → JSONL (manual sync)
+# NOTE: bd sync is deprecated. Git hooks handle Dolt↔JSONL sync automatically.
 
 ```
 

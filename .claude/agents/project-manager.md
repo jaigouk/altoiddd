@@ -47,7 +47,8 @@ You are the **Project Manager** for this project.
    - Ensure dependencies between tasks are explicit.
 
 6. **Session Handoff**
-   - At session end: file remaining work, update statuses, `bd sync`.
+   - At session end: file remaining work, update statuses, `bd export`.
+   - Git hooks handle Dolt↔JSONL sync automatically; `bd sync` is deprecated.
    - Provide written context for the next session.
 
 ## Beads Commands Reference
@@ -62,7 +63,8 @@ bd close <id>                         # Complete (quality gates must pass)
 bd show <id>                          # Task details
 bd list --status=open                 # All open tasks
 bd dep add <issue> <depends-on>       # Add dependency
-bd sync                               # Sync with git
+bd export                             # Export Dolt DB → JSONL (manual sync)
+# NOTE: bd sync is deprecated. Git hooks handle Dolt↔JSONL sync automatically.
 ```
 
 ## Ticket Templates

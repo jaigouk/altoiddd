@@ -410,7 +410,7 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd sync               # Sync with git
+bd export             # Export Dolt DB → JSONL (manual sync)
 ```
 
 ## Project Lifecycle
@@ -663,7 +663,7 @@ setup_beads() {
     # Run doctor
     if ! bd doctor 2>&1 | tail -1 | grep -q '0 issue'; then
         echo "Y" | bd doctor --fix 2>&1 | tail -3
-        bd sync 2>/dev/null || true
+        bd export 2>/dev/null || true
     fi
 }
 

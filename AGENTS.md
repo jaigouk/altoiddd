@@ -9,7 +9,8 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd sync               # Sync with git
+bd export             # Export Dolt DB → JSONL (if needed manually)
+# NOTE: Git hooks handle Dolt↔JSONL sync automatically. bd sync is deprecated.
 ```
 
 ## Landing the Plane (Session Completion)
@@ -24,7 +25,9 @@ bd sync               # Sync with git
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bd export              # Export Dolt DB → JSONL
+   git add .beads/issues.jsonl
+   git commit -m "chore: export beads"  # If JSONL changed
    git push
    git status  # MUST show "up to date with origin"
    ```
