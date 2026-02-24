@@ -1,0 +1,31 @@
+# Cursor .gitignore Patterns
+# What to .gitignore for Cursor projects.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.5"
+changelog_url = "https://www.cursor.com/changelog"
+source_urls = ["https://docs.cursor.com/context/rules"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[patterns]
+description = "Cursor has no local-only config files that need gitignoring. The .cursor/ directory and all its contents are intended to be committed to version control."
+gitignore_entries = []
+
+[committed]
+description = "All Cursor configuration files are designed to be shared with the team via version control."
+files = [
+    ".cursor/rules/*.mdc",
+    "AGENTS.md",
+    ".cursorrules",
+]
+
+[notes]
+no_local_overrides = "Unlike Claude Code (which has .local.md and settings.local.json for personal overrides), Cursor has no local-only project config files. Personal preferences are stored in global SQLite, not in the project directory."
+vs_claude_code = "Claude Code requires gitignoring CLAUDE.local.md and settings.local.json. Cursor requires no such patterns."
+clean_directory = "The .cursor/ directory is fully committable. No generated files, caches, or personal state is stored there."

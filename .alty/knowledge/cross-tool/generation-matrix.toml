@@ -1,0 +1,48 @@
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "all tools current versions"
+changelog_url = ""
+source_urls = []
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[matrix]
+description = "Defines what configuration files alty generates for each supported tool"
+
+[claude_code]
+project_instructions = ".claude/CLAUDE.md"
+agents = ".claude/agents/{persona}.md"
+settings = ".claude/settings.json"
+rules = ".claude/rules/"
+commands = ".claude/commands/"
+mcp_config = ".mcp.json"
+gitignore_entries = [
+    ".claude/settings.local.json",
+    ".claude/CLAUDE.local.md",
+    ".claude/agent-memory-local/",
+]
+
+[cursor]
+project_instructions = "AGENTS.md"
+rules = ".cursor/rules/{topic}.mdc"
+gitignore_entries = []
+notes = "No agent/persona generation — personas encoded as rule files"
+
+[roo_code]
+project_instructions = "AGENTS.md"
+modes = ".roomodes"
+mode_rules = ".roo/rules-{mode-slug}/"
+shared_rules = ".roo/rules/"
+gitignore_entries = []
+
+[opencode]
+project_instructions = "AGENTS.md"
+agents = ".opencode/agents/{persona}.md"
+modes = ".opencode/modes/{mode}.md"
+config = "opencode.json"
+rules = ".opencode/rules/"
+gitignore_entries = []

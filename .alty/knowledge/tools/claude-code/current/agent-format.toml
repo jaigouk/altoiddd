@@ -1,0 +1,79 @@
+# Claude Code Agent/Subagent Definition Format
+# Describes how to define custom agents using markdown files with YAML frontmatter.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/sub-agents"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file_extension = ".md"
+uses_frontmatter = true
+frontmatter_format = "yaml"
+location_project = ".claude/agents/"
+location_global = "~/.claude/agents/"
+description = "Each .md file in the agents directory defines one subagent. The filename (without extension) becomes the agent name used in tool calls."
+
+[required_fields]
+name = { type = "string", pattern = "^[a-z0-9-]+$", description = "Agent identifier. Must be lowercase alphanumeric with hyphens only." }
+description = { type = "string", description = "Short description shown when listing available agents." }
+
+[optional_fields]
+tools = { type = "list[string]", description = "Allowlist of tools this agent can use. If omitted, agent inherits default tool access." }
+disallowedTools = { type = "list[string]", description = "Denylist of tools this agent cannot use. Takes precedence over tools allowlist." }
+model = { type = "enum", values = ["sonnet", "opus", "haiku", "inherit"], default = "inherit", description = "Which model the agent uses. 'inherit' uses the parent session's model." }
+permissionMode = { type = "enum", values = ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"], default = "default", description = "Controls how the agent handles permission prompts." }
+maxTurns = { type = "integer", description = "Maximum number of tool-use turns before the agent stops. Prevents runaway agents." }
+skills = { type = "list[string]", description = "List of skill names this agent has access to." }
+mcpServers = { type = "list[string|object]", description = "MCP servers available to this agent. Can be server names (strings) or full config objects." }
+hooks = { type = "object", description = "Lifecycle hooks for this agent (e.g., PreToolUse, PostToolUse)." }
+memory = { type = "enum", values = ["user", "project", "local"], default = "project", description = "Where this agent stores persistent memory. 'user' = global, 'project' = shared, 'local' = gitignored." }
+background = { type = "boolean", default = false, description = "If true, agent runs in the background without blocking the main session." }
+isolation = { type = "enum", values = ["worktree"], description = "If set to 'worktree', agent operates in a separate git worktree to avoid conflicts." }
+
+[body]
+description = "Markdown content after the YAML frontmatter becomes the agent's system prompt. This is where you define the agent's persona, responsibilities, constraints, and working style."
+format = "markdown"
+
+[example]
+content = """
+---
+name: researcher
+description: Investigates libraries, patterns, and technical questions
+model: inherit
+tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Task
+disallowedTools:
+  - Edit
+  - Write
+maxTurns: 50
+memory: project
+---
+
+You are a **Researcher** agent. Your job is to investigate technical questions,
+evaluate libraries, and produce structured research reports.
+
+## Responsibilities
+
+1. Read documentation and source code to answer research questions.
+2. Produce findings in a structured format with evidence.
+3. Never modify project files -- you are read-only.
+
+## Output Format
+
+Always structure your findings as:
+- **Question**: What was asked
+- **Findings**: What you discovered (with sources)
+- **Recommendation**: Your assessment
+"""

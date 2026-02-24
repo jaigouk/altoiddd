@@ -1,0 +1,43 @@
+# OpenCode Global Configuration Paths
+# Describes global config directory structure and environment variables.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/config"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[paths.global_dir]
+path = "~/.config/opencode/"
+description = "Root directory for user-level global configuration. Applied to all projects unless overridden by project-level config."
+
+[global_structure]
+"opencode.json" = "Global settings file. Lowest precedence among config layers (after remote config)."
+"AGENTS.md" = "Global instructions file. Loaded for all projects. Equivalent to Claude Code's ~/.claude/CLAUDE.md."
+"agents/" = "Global agent definitions. Available in all projects. .md files with YAML frontmatter."
+"modes/" = "Global mode definitions. Available in all projects. .md files with YAML frontmatter."
+
+[fallback]
+file = "~/.claude/CLAUDE.md"
+description = "For backward compatibility, if no global AGENTS.md exists, OpenCode will look for ~/.claude/CLAUDE.md as a fallback instructions source."
+
+[env_vars]
+OPENCODE_CONFIG = "Path to an alternate config file. Overrides global config but is overridden by project config."
+OPENCODE_CONFIG_CONTENT = "JSON string injected at runtime. Highest precedence of all config layers. Useful for CI/CD or ephemeral overrides."
+
+[example]
+global_tree = """
+~/.config/opencode/
+  opencode.json       # Global defaults (provider keys, preferred model)
+  AGENTS.md           # Global instructions (coding standards, conventions)
+  agents/
+    researcher.md     # Global agent available in all projects
+  modes/
+    review.md         # Global mode available in all projects
+"""

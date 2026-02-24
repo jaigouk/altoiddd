@@ -1,0 +1,44 @@
+# Claude Code .gitignore Patterns
+# Defines which Claude Code files should be gitignored vs committed.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/overview"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[patterns]
+description = "Files and directories that MUST be gitignored. These contain personal preferences or sensitive data."
+entries = [
+    ".claude/settings.local.json",
+    ".claude/CLAUDE.local.md",
+    ".claude/agent-memory-local/",
+]
+
+[committed]
+description = "Files and directories that SHOULD be committed to version control. These are shared team configuration."
+entries = [
+    ".claude/CLAUDE.md",
+    ".claude/settings.json",
+    ".claude/agents/",
+    ".claude/rules/",
+    ".claude/commands/",
+    ".claude/skills/",
+    ".claude/.mcp.json",
+    ".claude/agent-memory/",
+]
+
+[example]
+description = "Gitignore snippet for Claude Code files"
+content = """
+# Claude Code - personal/local files (do not commit)
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+.claude/agent-memory-local/
+"""

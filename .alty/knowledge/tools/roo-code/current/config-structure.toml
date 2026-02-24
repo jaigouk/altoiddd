@@ -1,0 +1,42 @@
+# Roo Code Configuration Structure
+# Describes the .roo/ directory layout and config precedence.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v3.38"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.roo.vet/configuration/settings"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[project_structure]
+# All paths relative to project root under .roo/
+"rules/*.md" = "Shared rules loaded for ALL modes. Markdown or plain text files with instructions."
+"rules/*.txt" = "Shared rules loaded for ALL modes. Plain text alternative to markdown."
+"rules-code/" = "Mode-specific rules for the built-in Code mode. Files loaded only when Code mode is active."
+"rules-architect/" = "Mode-specific rules for the built-in Architect mode. Files loaded only when Architect mode is active."
+"rules-debug/" = "Mode-specific rules for the built-in Debug mode. Files loaded only when Debug mode is active."
+"rules-docs-writer/" = "Mode-specific rules for a custom Docs Writer mode. Directory name matches mode slug."
+"modes/*.yaml" = "Custom mode definitions. Alternative to .roomodes file in project root."
+"skills/" = "Project-level skills. Reusable capability definitions scoped to this project."
+
+[root_files]
+".roomodes" = "Custom mode definitions in YAML or JSON format. Defines agent personas with role definitions, instructions, and permission groups."
+".roorules" = "Global rules file. Fallback if .roo/rules/ directory is absent. Plain markdown or text."
+".roorules-{modeSlug}" = "Per-mode rules file. Fallback if .roo/rules-{slug}/ directory is absent. Replace {modeSlug} with the mode's slug."
+"AGENTS.md" = "Cross-tool agent standard. Supported by Roo Code alongside other AI coding tools."
+
+[config_precedence]
+description = "Configuration is resolved from highest to lowest precedence. Higher precedence wins on conflict."
+order = [
+    "1. Project .roo/rules-{slug}/ — mode-specific directory rules (highest precedence)",
+    "2. Project .roorules-{slug} — per-mode file fallback (used only if directory absent)",
+    "3. Project .roomodes — custom mode definitions",
+    "4. Global ~/.roo/rules-{slug}/ — global mode-specific rules",
+    "5. Global custom modes — stored in VS Code global state (not file-based)",
+    "6. Built-in modes — code, architect, debug, ask (lowest precedence)",
+]

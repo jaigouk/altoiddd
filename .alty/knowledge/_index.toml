@@ -1,0 +1,50 @@
+[_meta]
+schema_version = 1
+last_updated = "2026-02-22"
+purpose = "Master index for O(1) RLM lookups across all knowledge entries"
+
+[categories]
+tools = "AI coding tool conventions (Claude Code, Cursor, Roo Code, OpenCode)"
+ddd = "Domain-Driven Design reference material"
+conventions = "Project conventions (TDD, SOLID, Quality Gates)"
+cross_tool = "Cross-tool concepts and generation mappings"
+
+[[entries]]
+category = "tools"
+tool = "claude-code"
+topics = ["config-structure", "agent-format", "settings-format", "rules-format", "commands-format", "mcp-config", "global-paths", "gitignore-patterns"]
+versions = ["v2.1"]
+current_version = "v2.1"
+
+[[entries]]
+category = "tools"
+tool = "cursor"
+topics = ["config-structure", "rules-format", "agents-md-support", "global-paths", "gitignore-patterns"]
+versions = ["v2.5"]
+current_version = "v2.5"
+
+[[entries]]
+category = "tools"
+tool = "roo-code"
+topics = ["config-structure", "mode-format", "rules-format", "global-paths", "gitignore-patterns"]
+versions = ["v3.38"]
+current_version = "v3.38"
+
+[[entries]]
+category = "tools"
+tool = "opencode"
+topics = ["config-structure", "agent-format", "mode-format", "rules-format", "opencode-json-schema", "global-paths", "gitignore-patterns"]
+versions = ["latest"]
+current_version = "latest"
+
+[[entries]]
+category = "cross_tool"
+topics = ["agents-md", "concept-mapping", "generation-matrix"]
+
+[[entries]]
+category = "ddd"
+topics = ["tactical-patterns", "strategic-patterns", "event-storming", "domain-storytelling"]
+
+[[entries]]
+category = "conventions"
+topics = ["tdd", "solid", "quality-gates"]

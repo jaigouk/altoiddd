@@ -1,0 +1,68 @@
+# OpenCode Agent Definition Format
+# Describes how to define custom agents using markdown files with YAML frontmatter.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/agents"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file_extension = ".md"
+uses_frontmatter = true
+frontmatter_format = "yaml"
+location_project = ".opencode/agents/"
+location_global = "~/.config/opencode/agents/"
+description = "Each .md file in the agents directory defines one agent. The filename (without extension) becomes the agent identifier."
+
+[fields]
+description = { type = "string", description = "Short description of the agent's purpose. Shown when listing available agents." }
+mode = { type = "enum", values = ["primary", "subagent", "all"], description = "Execution mode. 'primary' is the main agent, 'subagent' runs as a child of the main session, 'all' makes the agent available in both contexts." }
+model = { type = "string", description = "Model identifier in provider/model format. Example: 'anthropic/claude-sonnet-4-20250514'." }
+temperature = { type = "float", description = "Sampling temperature for the agent's model. Lower values produce more deterministic output." }
+top_p = { type = "float", description = "Alternative to temperature. Controls diversity via nucleus sampling." }
+steps = { type = "integer", description = "Maximum number of agentic iterations before stopping. Prevents runaway agents." }
+color = { type = "string", description = "Visual color for this agent in the UI. Hex color or theme color name." }
+permission = { type = "object", description = "Access permission overrides for this agent." }
+
+[fields.tools]
+type = "object"
+description = "Object controlling which tool categories the agent can use."
+write = { type = "boolean", description = "Whether the agent can create new files." }
+edit = { type = "boolean", description = "Whether the agent can modify existing files." }
+bash = { type = "boolean", description = "Whether the agent can execute shell commands." }
+read = { type = "boolean", description = "Whether the agent can read files." }
+
+[body]
+description = "Markdown content after the YAML frontmatter becomes the agent's system prompt. Define persona, responsibilities, constraints, and output format here."
+format = "markdown"
+
+[example]
+content = """
+---
+description: Reviews code for quality and best practices
+mode: subagent
+model: anthropic/claude-sonnet-4-20250514
+temperature: 0.1
+tools:
+  write: false
+  edit: false
+  bash: true
+  read: true
+---
+
+You are in code review mode. Focus on code quality, security, and best practices.
+
+## Responsibilities
+
+1. Read source code and tests to identify quality issues.
+2. Check for security vulnerabilities and anti-patterns.
+3. Suggest improvements with concrete examples.
+4. Never modify files directly -- report findings only.
+"""

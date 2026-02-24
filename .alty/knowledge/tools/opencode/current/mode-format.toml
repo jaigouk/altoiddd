@@ -1,0 +1,59 @@
+# OpenCode Mode Definition Format
+# Describes how to define custom modes using markdown files with YAML frontmatter.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/modes"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file_extension = ".md"
+uses_frontmatter = true
+frontmatter_format = "yaml"
+location_project = ".opencode/modes/"
+location_global = "~/.config/opencode/modes/"
+description = "Each .md file in the modes directory defines one mode. Modes configure the model, temperature, and available tools for a particular workflow. The filename (without extension) becomes the mode name."
+
+[fields]
+model = { type = "string", description = "Model identifier in provider/model format. Example: 'anthropic/claude-sonnet-4-20250514'." }
+temperature = { type = "float", description = "Sampling temperature. Lower values (0.0-0.3) for precise tasks, higher (0.5-1.0) for creative tasks." }
+
+[fields.tools]
+type = "object"
+description = "Object controlling which tool categories are available in this mode."
+bash = { type = "boolean", description = "Whether shell command execution is available." }
+edit = { type = "boolean", description = "Whether file editing is available." }
+write = { type = "boolean", description = "Whether file creation is available." }
+read = { type = "boolean", description = "Whether file reading is available." }
+
+[body]
+description = "Markdown content after the YAML frontmatter becomes the mode's system instructions. These instructions are active whenever the mode is selected."
+format = "markdown"
+
+[example]
+content = """
+---
+model: anthropic/claude-sonnet-4-20250514
+temperature: 0.3
+tools:
+  bash: true
+  edit: true
+  write: true
+  read: true
+---
+
+Custom build mode. You have full tool access for implementation tasks.
+
+## Guidelines
+
+- Follow TDD: write tests before implementation.
+- Use type annotations on all functions.
+- Run linting and tests before reporting completion.
+"""

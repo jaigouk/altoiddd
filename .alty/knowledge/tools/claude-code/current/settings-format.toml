@@ -1,0 +1,74 @@
+# Claude Code Settings.json Format
+# Schema reference for .claude/settings.json and related settings files.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/settings"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file = "settings.json"
+schema_url = "https://json.schemastore.org/claude-code-settings.json"
+description = "JSON file controlling permissions, model selection, hooks, and other Claude Code behavior. Located at .claude/settings.json (team), .claude/settings.local.json (personal), or ~/.claude/settings.json (global)."
+
+[sections.permissions]
+description = "Controls which tool operations are allowed, require approval, or are denied."
+allow = "List of tool+pattern strings that are always permitted without prompting (e.g., 'Bash(git status)', 'Read')."
+ask = "List of tool+pattern strings that require user approval each time."
+deny = "List of tool+pattern strings that are always blocked."
+
+[sections.model]
+description = "Override the default model for this project. Accepts model identifiers like 'sonnet', 'opus', 'haiku', or full model IDs."
+
+[sections.env]
+description = "Environment variables to set for all tool executions. Object of key-value string pairs."
+
+[sections.outputStyle]
+description = "Controls output formatting. Options include 'concise', 'verbose', 'markdown'."
+
+[sections.sandbox]
+description = "Sandbox configuration for tool execution. Controls filesystem isolation."
+
+[sections.hooks]
+description = "Lifecycle hooks that run at specific points. Keys are event names (PreToolUse, PostToolUse, Notification, Stop), values are arrays of hook definitions with command and optional pattern/matcher fields."
+
+[example]
+content = """
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run mypy*)",
+      "Bash(uv run pytest*)",
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push*)"
+    ]
+  },
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "echo 'Running bash command'"
+      }
+    ]
+  }
+}
+"""

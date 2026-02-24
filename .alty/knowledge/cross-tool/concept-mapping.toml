@@ -1,0 +1,63 @@
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "all tools current versions"
+changelog_url = ""
+source_urls = []
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[concept_map]
+description = "Maps equivalent concepts across AI coding tools"
+
+[concept_map.persona_agent]
+description = "Agent/persona definitions — how each tool represents specialized AI roles"
+claude_code = { mechanism = "Subagent", path = ".claude/agents/*.md", format = "Markdown + YAML frontmatter" }
+cursor = { mechanism = "Rule file", path = ".cursor/rules/*.mdc", format = "MDC (Markdown + YAML frontmatter)", notes = "No agent concept — personas encoded as contextual rules" }
+roo_code = { mechanism = "Mode", path = ".roomodes", format = "YAML or JSON", notes = "Modes define role + tool permissions" }
+opencode = { mechanism = "Agent", path = ".opencode/agents/*.md", format = "Markdown + YAML frontmatter" }
+
+[concept_map.global_instructions]
+description = "User-wide instructions applied to all projects"
+claude_code = { path = "~/.claude/CLAUDE.md", format = "Markdown" }
+cursor = { path = "SQLite (state.vscdb)", format = "SQLite key: aicontext.personalContext", notes = "Not file-based — alty cannot generate" }
+roo_code = { path = "~/.roo/rules/", format = "Markdown" }
+opencode = { path = "~/.config/opencode/AGENTS.md", format = "Markdown" }
+
+[concept_map.project_instructions]
+description = "Project-scoped instructions and rules"
+claude_code = { path = ".claude/CLAUDE.md + .claude/rules/", format = "Markdown" }
+cursor = { path = ".cursor/rules/*.mdc", format = "MDC" }
+roo_code = { path = ".roo/rules/ + .roorules", format = "Markdown" }
+opencode = { path = "AGENTS.md + .opencode/rules/", format = "Markdown" }
+
+[concept_map.tool_permissions]
+description = "How each tool controls which operations the AI can perform"
+claude_code = { mechanism = "settings.json permissions", format = "JSON allow/ask/deny lists" }
+cursor = { mechanism = "Built-in per mode", format = "Not user-configurable" }
+roo_code = { mechanism = "Mode groups", format = "YAML groups: [read, edit, command, mcp]" }
+opencode = { mechanism = "opencode.json tools", format = "JSON tool booleans" }
+
+[concept_map.model_selection]
+description = "How each tool selects which AI model to use"
+claude_code = { mechanism = "settings.json model field", notes = "Per-agent model override via frontmatter" }
+cursor = { mechanism = "UI setting", notes = "Not file-configurable" }
+roo_code = { mechanism = "Per-mode in .roomodes", notes = "Can vary by mode" }
+opencode = { mechanism = "opencode.json model field", notes = "Per-agent model override via frontmatter" }
+
+[concept_map.config_directory]
+description = "Primary project configuration directory"
+claude_code = ".claude/"
+cursor = ".cursor/"
+roo_code = ".roo/"
+opencode = ".opencode/"
+
+[concept_map.agents_md_support]
+description = "Support for the cross-tool AGENTS.md standard"
+claude_code = { supported = false, notes = "Uses CLAUDE.md natively. AGENTS.md is silently ignored even if present. Generate CLAUDE.md for Claude Code and AGENTS.md for other tools in mixed-tool projects." }
+cursor = { supported = true }
+roo_code = { supported = true }
+opencode = { supported = true, fallback = "CLAUDE.md" }

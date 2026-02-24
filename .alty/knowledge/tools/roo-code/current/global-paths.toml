@@ -1,0 +1,28 @@
+# Roo Code Global Configuration Paths
+# Describes user-level global config directory and structure.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v3.38"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.roo.vet/configuration/settings"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[paths]
+global_dir = "~/.roo/"
+description = "User-level global configuration directory. Rules and skills defined here apply to all projects unless overridden by project-level config."
+
+[global_structure]
+"rules/" = "Global shared rules. Loaded for all modes across all projects. Lower precedence than project-level .roo/rules/."
+"rules-{slug}/" = "Global mode-specific rules. Loaded for the matching mode across all projects. Lower precedence than project-level .roo/rules-{slug}/."
+"skills/" = "Global skills. Reusable capability definitions available across all projects."
+
+[notes]
+custom_modes = "Global custom modes are stored in VS Code global state (not file-based). They are managed through the VS Code settings UI or command palette, not through files in ~/.roo/."
+precedence = "Project-level configuration always takes precedence over global configuration. Global rules are loaded only when no project-level equivalent exists."
+creation = "The ~/.roo/ directory is not created automatically. Users must create it manually to use global configuration."

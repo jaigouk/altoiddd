@@ -1,0 +1,20 @@
+[tool]
+name = "roo-code"
+display_name = "Roo Code"
+vendor = "RooVet"
+license = "Apache-2.0"
+homepage = "https://roo.vet"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+schema_url = ""
+
+[versions]
+current = "v3.38"
+tracked = ["v3.38"]
+deprecated = []
+
+[versions.v3_38]
+version_range = ">=3.38.0"
+release_date = "2026-01"
+end_of_support = ""
+breaking_changes = "Custom modes via .roomodes YAML, skills support"
+last_verified = "2026-02-22"

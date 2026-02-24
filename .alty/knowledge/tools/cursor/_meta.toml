@@ -1,0 +1,20 @@
+[tool]
+name = "cursor"
+display_name = "Cursor"
+vendor = "Anysphere"
+license = "Proprietary"
+homepage = "https://www.cursor.com"
+changelog_url = "https://www.cursor.com/changelog"
+schema_url = ""
+
+[versions]
+current = "v2.5"
+tracked = ["v2.5"]
+deprecated = []
+
+[versions.v2_5]
+version_range = ">=2.5.0"
+release_date = "2026-01"
+end_of_support = ""
+breaking_changes = "AGENTS.md support, improved .mdc rule system"
+last_verified = "2026-02-22"

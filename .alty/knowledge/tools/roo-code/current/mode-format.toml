@@ -1,0 +1,64 @@
+# Roo Code Mode Definition Format
+# Describes the .roomodes file structure and custom mode configuration.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v3.38"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.roo.vet/features/custom-modes"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file = ".roomodes"
+formats = ["yaml", "json"]
+location = "project root"
+description = "Defines custom modes under a top-level `customModes` key. Each mode is a list entry with slug, name, role definition, and permission groups."
+
+[fields]
+slug = "string, kebab-case identifier. Used to reference the mode and to match rules directories (e.g., .roo/rules-{slug}/)."
+name = "string, human-readable display name shown in the mode selector."
+description = "string, short one-line description of the mode's purpose."
+roleDefinition = "string, multiline. The system prompt that defines the agent's persona, expertise, and behavioral constraints."
+whenToUse = "string, guidance for when this mode should be selected. Displayed in mode picker."
+customInstructions = "string, multiline. Additional instructions appended to the role definition. Good for project-specific rules."
+groups = "list of permission group strings. Controls what the mode can do: read, edit, command, mcp."
+
+[fields.groups_detail]
+read = "Can read files and directories in the workspace."
+edit = "Can create and modify files."
+command = "Can execute terminal commands."
+mcp = "Can use MCP (Model Context Protocol) servers."
+
+[built_in_modes]
+code = "General-purpose coding mode. Has read, edit, command, and mcp permissions. Default mode for implementation tasks."
+architect = "High-level design mode. Has read and mcp permissions only. Cannot edit files or run commands. Use for planning and architecture discussions."
+debug = "Debugging and troubleshooting mode. Has read, edit, command, and mcp permissions. Focused on diagnosing and fixing issues."
+ask = "Question-answering mode. Has read and mcp permissions only. Cannot edit files or run commands. Use for exploratory questions about the codebase."
+
+[example]
+description = "Complete .roomodes YAML example defining a DDD Developer mode."
+content = """
+customModes:
+  - slug: ddd-developer
+    name: DDD Developer
+    description: TDD developer for DDD-structured Python projects
+    roleDefinition: |
+      You are a developer agent specializing in Domain-Driven Design.
+      You follow Red/Green/Refactor TDD strictly and enforce SOLID principles.
+      Domain logic belongs in src/domain/ with zero external dependencies.
+    whenToUse: Use for all implementation tasks following DDD and TDD workflow.
+    customInstructions: |
+      Use ubiquitous language from docs/DDD.md.
+      Write failing tests first, then minimal implementation.
+      Never leak domain logic into infrastructure layers.
+    groups:
+      - read
+      - edit
+      - command
+      - mcp
+"""

@@ -1,0 +1,47 @@
+# Claude Code Configuration Structure
+# Describes the .claude/ directory layout and config file locations.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/overview"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[project_structure]
+# All paths relative to project root under .claude/
+"CLAUDE.md" = "Project memory and instructions. Committed to version control. Auto-loaded by Claude Code on every session."
+"CLAUDE.local.md" = "Personal project memory. Gitignored. Same format as CLAUDE.md but not shared with team."
+"settings.json" = "Team-shared settings (permissions, model, hooks). Committed to version control."
+"settings.local.json" = "Personal project settings. Gitignored. Overrides settings.json for local preferences."
+".mcp.json" = "Project-scoped MCP server configuration. Defines which MCP servers are available in this project."
+"agents/*.md" = "Custom subagent definitions. Markdown files with YAML frontmatter. Each file defines one agent."
+"agent-memory/<agent-name>/MEMORY.md" = "Persistent subagent memory scoped to this project. Created automatically when agents use memory."
+"agent-memory-local/" = "Personal subagent memory. Gitignored. Not shared with team."
+"rules/*.md" = "Additional instruction files. Plain markdown, auto-loaded on every session alongside CLAUDE.md."
+"commands/*.md" = "Project slash commands. Filename becomes /command-name. Content is the prompt template."
+"skills/" = "Project skills. Each subdirectory contains a SKILL.md that defines a reusable capability."
+
+[global_structure]
+# All paths relative to ~/.claude/
+"CLAUDE.md" = "Global memory and instructions. Applied to all projects for this user."
+"settings.json" = "Global user settings. Lowest precedence for settings."
+".mcp.json" = "Global MCP server configuration. Available in all projects."
+"agents/*.md" = "Global agent definitions. Available in all projects."
+"commands/*.md" = "Global slash commands. Available in all projects."
+"agent-memory/<agent-name>/MEMORY.md" = "Global subagent memory. Shared across all projects."
+
+[config_precedence]
+description = "Settings are merged in order from highest to lowest precedence. Higher precedence wins on conflict."
+order = [
+    "1. Managed settings (managed-settings.json) — enterprise/system-level, cannot be overridden",
+    "2. Command line arguments — flags passed to claude invocation",
+    "3. .claude/settings.local.json — project personal settings (gitignored)",
+    "4. .claude/settings.json — project team settings (committed)",
+    "5. ~/.claude/settings.json — user global settings (lowest precedence)",
+]

@@ -1,0 +1,41 @@
+# Claude Code Global Configuration Paths
+# Describes where global config files live on each operating system.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/overview"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[paths.macos]
+global_dir = "~/.claude/"
+managed = "/Library/Application Support/ClaudeCode/managed-settings.json"
+description = "macOS stores global config in the home directory. Managed settings are in the system Application Support folder (requires admin privileges to modify)."
+
+[paths.linux]
+global_dir = "~/.claude/"
+managed = "/etc/claude-code/managed-settings.json"
+description = "Linux stores global config in the home directory. Managed settings are in /etc (requires root privileges to modify)."
+
+[paths.windows]
+global_dir = "~/.claude/"
+managed = "C:\\Program Files\\ClaudeCode\\managed-settings.json"
+description = "Windows stores global config in the user home directory. Managed settings are in Program Files (requires admin privileges to modify)."
+
+[global_structure]
+description = "Files and directories under ~/.claude/ that apply to all projects."
+"CLAUDE.md" = "Global instructions loaded in every session."
+"settings.json" = "Global settings (lowest precedence in settings hierarchy)."
+".mcp.json" = "Global MCP server definitions available in all projects."
+"agents/*.md" = "Global agent definitions available in all projects."
+"commands/*.md" = "Global slash commands available in all projects."
+"agent-memory/" = "Global agent memory, shared across all projects."
+"projects/" = "Per-project memory and settings keyed by project path."
+"credentials.json" = "Authentication credentials (auto-managed, never edit manually)."
+"statsig/" = "Feature flag and analytics cache (auto-managed)."

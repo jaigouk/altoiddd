@@ -1,0 +1,32 @@
+# Roo Code .gitignore Patterns
+# Describes what should and should not be version-controlled.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v3.38"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.roo.vet/configuration/settings"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[patterns]
+description = "Roo Code has no local-only config files. All project configuration is intended to be version-controlled and shared with the team."
+gitignore_entries = []
+
+[committed]
+description = "All Roo Code project configuration files should be committed to version control."
+files = [
+    ".roomodes — custom mode definitions (YAML or JSON)",
+    ".roo/ — project rules, mode-specific rules, skills",
+    ".roorules — global rules fallback (if used instead of .roo/rules/)",
+    ".roorules-{slug} — per-mode rules fallback (if used instead of .roo/rules-{slug}/)",
+    "AGENTS.md — cross-tool agent standard",
+]
+
+[notes]
+description = "Roo Code has no local-only configuration mechanism. Unlike tools that provide .local variants for personal settings, all Roo Code config is shared. Personal preferences are managed through VS Code user settings or the global ~/.roo/ directory, which lives outside the project and is never committed."
+contrast_with_claude_code = "Claude Code provides .local.md and settings.local.json for gitignored personal config. Roo Code does not have this pattern — all project config is team-shared."

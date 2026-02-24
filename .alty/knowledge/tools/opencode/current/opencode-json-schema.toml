@@ -1,0 +1,63 @@
+# OpenCode JSON Configuration Schema
+# Reference for the opencode.json / opencode.jsonc project configuration file.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/config"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file = "opencode.json"
+alt = "opencode.jsonc"
+schema_url = "https://opencode.ai/config.json"
+description = "Main configuration file placed at the project root. JSONC (JSON with comments) is also accepted. The schema URL can be referenced with $schema for editor autocompletion."
+
+[sections]
+provider = "LLM provider configuration (API keys, base URLs, custom headers)."
+model = "Primary model identifier in provider/model format."
+small_model = "Secondary model for lightweight tasks (summarization, compaction)."
+tui = "Terminal UI settings (theme, layout, keybinds display)."
+server = "Server mode configuration for headless/API usage."
+tools = "Tool-level configuration and overrides."
+agent = "Agent definitions inline (alternative to .opencode/agents/ files)."
+default_agent = "Which agent to use by default when none is specified."
+share = "Configuration for sharing sessions and conversations."
+command = "Custom slash command definitions."
+keybinds = "Keyboard shortcut overrides for the TUI."
+formatter = "Code formatter configuration (e.g., prettier, black)."
+permission = "Permission and approval settings for tool usage."
+compaction = "Context window compaction strategy and thresholds."
+watcher = "File watcher settings for auto-reloading config changes."
+mcp = "MCP (Model Context Protocol) server definitions."
+plugin = "Plugin loading and configuration."
+instructions = "Array of glob patterns and URLs for additional instruction files."
+
+[example]
+content = """
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "anthropic": {
+      "api_key": "env:ANTHROPIC_API_KEY"
+    }
+  },
+  "model": "anthropic/claude-sonnet-4-20250514",
+  "small_model": "anthropic/claude-haiku-3-20250401",
+  "instructions": [
+    "docs/CONVENTIONS.md"
+  ],
+  "mcp": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@context7/mcp"]
+    }
+  }
+}
+"""

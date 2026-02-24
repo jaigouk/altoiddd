@@ -1,0 +1,55 @@
+# OpenCode Rules and Instructions Format
+# Describes how project rules and instructions are loaded.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/config"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[project_rules]
+location = ".opencode/rules/*.md"
+format = "markdown"
+description = "Plain markdown files in the rules directory. All .md files are auto-loaded as additional instructions on every session. No frontmatter required."
+
+[global_rules]
+location = "~/.config/opencode/AGENTS.md"
+format = "markdown"
+description = "Global instructions file applied to all projects. Equivalent to Claude Code's global CLAUDE.md."
+
+[fallback]
+file = "CLAUDE.md"
+description = "If no AGENTS.md exists at the project root, OpenCode falls back to loading CLAUDE.md for backward compatibility with Claude Code projects."
+precedence = "AGENTS.md takes priority over CLAUDE.md when both exist."
+
+[instructions_field]
+location = "opencode.json"
+field = "instructions"
+description = "The 'instructions' field in opencode.json accepts an array of glob patterns and URLs. Matched files are loaded as additional instructions."
+
+[instructions_field.example]
+config = """
+{
+  "instructions": [
+    "docs/CONVENTIONS.md",
+    "docs/rules/*.md",
+    "https://example.com/team-rules.md"
+  ]
+}
+"""
+
+[example]
+rules_file = """
+# Python Conventions
+
+- Use type annotations on all public functions.
+- Follow PEP 8 naming: snake_case for functions, PascalCase for classes.
+- Prefer composition over inheritance.
+- No mutable default arguments.
+"""

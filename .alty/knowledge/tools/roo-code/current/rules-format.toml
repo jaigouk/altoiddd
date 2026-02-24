@@ -1,0 +1,68 @@
+# Roo Code Rules and Instructions Format
+# Describes how shared and mode-specific rules are structured and loaded.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v3.38"
+changelog_url = "https://github.com/RooVetGit/Roo-Code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.roo.vet/features/custom-rules"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[shared_rules]
+path = ".roo/rules/"
+extensions = ["*.md", "*.txt"]
+description = "Rules placed in .roo/rules/ are loaded for ALL modes. Every markdown or text file in this directory is concatenated and injected into the system prompt regardless of which mode is active."
+use_case = "Project-wide conventions: coding standards, commit message format, naming conventions, quality gates."
+
+[mode_rules]
+path_pattern = ".roo/rules-{slug}/"
+extensions = ["*.md", "*.txt"]
+description = "Rules placed in .roo/rules-{slug}/ are loaded ONLY when the matching mode is active. The {slug} must match the mode's slug exactly (kebab-case)."
+use_case = "Mode-specific instructions: architect mode gets design constraints, code mode gets implementation rules, debug mode gets diagnostic procedures."
+examples = [
+    ".roo/rules-code/tdd-workflow.md",
+    ".roo/rules-architect/design-principles.md",
+    ".roo/rules-debug/diagnostic-steps.md",
+    ".roo/rules-ddd-developer/domain-rules.md",
+]
+
+[legacy_rules]
+".roorules" = "Global rules fallback file in project root. Used only if .roo/rules/ directory is absent. Plain markdown or text."
+".roorules-{slug}" = "Per-mode rules fallback file in project root. Used only if .roo/rules-{slug}/ directory is absent. Replace {slug} with mode slug."
+note = "Legacy files are simple single-file alternatives. The directory-based approach (.roo/rules/) is preferred for organizing multiple rule files."
+
+[format]
+description = "Rules files are plain markdown or plain text. No special syntax required. Content is injected directly into the system prompt."
+markdown_support = true
+plain_text_support = true
+max_files = "No hard limit. All files in the directory are loaded and concatenated."
+
+[loading_order]
+description = "Directory-based rules take precedence over file-based rules. If a directory exists, the corresponding fallback file is ignored."
+rules = [
+    "1. If .roo/rules/ exists, .roorules file is ignored",
+    "2. If .roo/rules-{slug}/ exists, .roorules-{slug} file is ignored",
+    "3. Within a directory, files are loaded in alphabetical order",
+    "4. Shared rules (.roo/rules/) are loaded before mode-specific rules (.roo/rules-{slug}/)",
+]
+
+[example]
+description = "Example .roo/rules/ directory with shared and mode-specific rules."
+content = """
+.roo/
+  rules/
+    01-coding-standards.md     # Loaded for all modes
+    02-git-conventions.md      # Loaded for all modes
+  rules-code/
+    tdd-workflow.md            # Loaded only in Code mode
+    solid-principles.md        # Loaded only in Code mode
+  rules-architect/
+    design-constraints.md      # Loaded only in Architect mode
+  rules-ddd-developer/
+    domain-rules.md            # Loaded only in custom DDD Developer mode
+"""

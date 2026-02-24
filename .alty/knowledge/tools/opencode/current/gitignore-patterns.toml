@@ -1,0 +1,31 @@
+# OpenCode Gitignore Patterns
+# Describes what should and should not be committed to version control.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "latest"
+changelog_url = "https://github.com/sst/opencode/blob/dev/CHANGELOG.md"
+source_urls = ["https://opencode.ai/docs/config"]
+confidence = "medium"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[committed]
+description = "These files and directories are intended to be committed to version control. They define shared project configuration."
+files = [
+    "opencode.json -- Main project config (or opencode.jsonc)",
+    ".opencode/ -- All subdirectories: agents, modes, rules, commands, tools, skills, plugins, themes",
+    "AGENTS.md -- Project-level instructions",
+]
+
+[patterns]
+description = "OpenCode has no local-only config files by default. Unlike Claude Code (which has settings.local.json and CLAUDE.local.md), OpenCode does not generate gitignored files in normal usage."
+gitignore_entries = []
+
+[notes]
+no_local_files = "OpenCode does not have a local-only config file equivalent. All .opencode/ contents and opencode.json are designed to be shared via version control."
+api_keys = "API keys should be stored in environment variables, not in opencode.json. Use the 'env:VARIABLE_NAME' syntax in provider configuration to reference environment variables."
+env_override = "The OPENCODE_CONFIG_CONTENT environment variable can inject ephemeral config at runtime without creating any files, making it suitable for CI/CD pipelines."
