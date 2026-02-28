@@ -26,7 +26,12 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Code Generators",
 ]
-dependencies = []
+dependencies = [
+    "typer>=0.24,<1.0",
+]
+
+[project.scripts]
+alty = "src.infrastructure.cli.main:app"
 
 [project.urls]
 Repository = "https://git.alty.ai/jaigouk/alty"
