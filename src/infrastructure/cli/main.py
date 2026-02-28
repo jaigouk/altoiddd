@@ -38,13 +38,46 @@ def init() -> None:
 @app.command()
 def guide() -> None:
     """Run the 10-question guided DDD discovery flow."""
-    typer.echo("alty guide: not yet implemented")
+    from src.application.commands.discovery_handler import DiscoveryHandler
+
+    handler = DiscoveryHandler()
+    session = handler.start_session(readme_content="")
+    typer.echo(f"alty guide: session started ({session.session_id})")
 
 
 @app.command()
-def detect() -> None:
+def detect(
+    project_dir: str = typer.Argument(
+        ".",
+        help="Project directory to scan (defaults to current directory).",
+    ),
+) -> None:
     """Scan for installed AI coding tools and global settings."""
-    typer.echo("alty detect: not yet implemented")
+    from pathlib import Path
+
+    from src.application.commands.detection_handler import DetectionHandler
+    from src.domain.models.detection_result import ConflictSeverity
+    from src.infrastructure.external.filesystem_tool_scanner import FilesystemToolScanner
+
+    resolved_dir = Path(project_dir).resolve()
+    scanner = FilesystemToolScanner()
+    handler = DetectionHandler(tool_detection=scanner)
+    result = handler.detect(resolved_dir)
+
+    if not result.detected_tools:
+        typer.echo("No AI coding tools detected.")
+        return
+
+    typer.echo("Detected AI coding tools:")
+    for tool in result.detected_tools:
+        config_info = f" ({tool.config_path})" if tool.config_path else ""
+        typer.echo(f"  - {tool.name}{config_info}")
+
+    if result.conflicts:
+        typer.echo("\nConfiguration conflicts:")
+        for conflict in result.conflicts:
+            severity = result.severity_map.get(conflict, ConflictSeverity.WARNING)
+            typer.echo(f"  [{severity.value.upper()}] {conflict}")
 
 
 @app.command()
