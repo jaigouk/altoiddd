@@ -91,9 +91,7 @@ class TestTomlParsing:
         data = tomllib.loads(toml_file.read_text())
         assert isinstance(data, dict)
 
-    @pytest.mark.parametrize(
-        "toml_file", _all_cross_tool_toml_files(), ids=_toml_id
-    )
+    @pytest.mark.parametrize("toml_file", _all_cross_tool_toml_files(), ids=_toml_id)
     def test_cross_tool_toml_parses(self, toml_file: Path) -> None:
         data = tomllib.loads(toml_file.read_text())
         assert isinstance(data, dict)
@@ -124,9 +122,7 @@ class TestMetaSections:
         missing = REQUIRED_META_FIELDS - set(meta.keys())
         assert not missing, f"{toml_file.name} [_meta] missing fields: {missing}"
 
-    @pytest.mark.parametrize(
-        "toml_file", _all_cross_tool_toml_files(), ids=_toml_id
-    )
+    @pytest.mark.parametrize("toml_file", _all_cross_tool_toml_files(), ids=_toml_id)
     def test_cross_tool_entry_has_meta(self, toml_file: Path) -> None:
         data = tomllib.loads(toml_file.read_text())
         assert "_meta" in data, f"{toml_file.name} missing [_meta] section"
@@ -237,9 +233,6 @@ class TestNoOrphanFiles:
             for topic in entry["topics"]:
                 indexed.add(f"{tool}/current/{topic}.toml")
 
-        actual = {
-            str(p.relative_to(TOOLS_DIR))
-            for p in TOOLS_DIR.glob("*/current/*.toml")
-        }
+        actual = {str(p.relative_to(TOOLS_DIR)) for p in TOOLS_DIR.glob("*/current/*.toml")}
         orphans = actual - indexed
         assert not orphans, f"Orphan files not in _index.toml: {orphans}"

@@ -100,9 +100,7 @@ class TestGenerateSubcommands:
     @pytest.mark.parametrize("subcommand", SUBCOMMANDS)
     def test_generate_help_lists_subcommand(self, subcommand):
         result = runner.invoke(app, ["generate", "--help"])
-        assert subcommand in result.output, (
-            f"'{subcommand}' not found in generate help output"
-        )
+        assert subcommand in result.output, f"'{subcommand}' not found in generate help output"
 
     @pytest.mark.parametrize("subcommand", SUBCOMMANDS)
     def test_generate_stub_exits_cleanly(self, subcommand):
