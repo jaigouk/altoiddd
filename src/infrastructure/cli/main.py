@@ -30,9 +30,35 @@ app.add_typer(persona.app, name="persona")
 
 
 @app.command()
-def init() -> None:
+def init(
+    existing: bool = typer.Option(False, "--existing", help="Rescue an existing project."),
+) -> None:
     """Bootstrap a new project from a README idea."""
-    typer.echo("alty init: not yet implemented")
+    if existing:
+        from pathlib import Path
+
+        from src.application.commands.rescue_handler import RescueHandler
+        from src.domain.models.errors import InvariantViolationError
+        from src.infrastructure.git.git_ops_adapter import GitOpsAdapter
+        from src.infrastructure.scanner.project_scanner import ProjectScanner
+
+        scanner = ProjectScanner()
+        git_ops = GitOpsAdapter()
+        handler = RescueHandler(project_scan=scanner, git_ops=git_ops)
+        project_dir = Path.cwd()
+        try:
+            analysis = handler.rescue(project_dir)
+            if not analysis.gaps:
+                typer.echo("No gaps found -- project already follows alty conventions.")
+                return
+            typer.echo(f"Found {len(analysis.gaps)} gap(s):")
+            for gap in analysis.gaps:
+                typer.echo(f"  [{gap.gap_type.value}] {gap.path}: {gap.description}")
+        except InvariantViolationError as e:
+            typer.echo(f"Rescue failed: {e}", err=True)
+            raise typer.Exit(code=1) from None
+    else:
+        typer.echo("alty init: not yet implemented")
 
 
 @app.command()

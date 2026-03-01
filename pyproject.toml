@@ -28,10 +28,12 @@ classifiers = [
 ]
 dependencies = [
     "typer>=0.24,<1.0",
+    "mcp>=1.26,<2.0",
 ]
 
 [project.scripts]
 alty = "src.infrastructure.cli.main:app"
+alty-mcp = "src.infrastructure.mcp.server:main"
 
 [project.urls]
 Repository = "https://git.alty.ai/jaigouk/alty"
