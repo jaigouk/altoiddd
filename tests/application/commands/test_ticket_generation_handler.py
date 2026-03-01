@@ -129,10 +129,12 @@ class TestBuildPreview:
             TicketGenerationHandler,
         )
 
-        model = _make_model([
-            ("Orders", SubdomainClassification.CORE),
-            ("Logging", SubdomainClassification.GENERIC),
-        ])
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Logging", SubdomainClassification.GENERIC),
+            ]
+        )
         writer = FakeFileWriter()
         handler = TicketGenerationHandler(writer=writer)
         preview = handler.build_preview(model)
@@ -215,10 +217,12 @@ class TestApproveAndWrite:
             TicketGenerationHandler,
         )
 
-        model = _make_model([
-            ("Orders", SubdomainClassification.CORE),
-            ("Logging", SubdomainClassification.GENERIC),
-        ])
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Logging", SubdomainClassification.GENERIC),
+            ]
+        )
         writer = FakeFileWriter()
         handler = TicketGenerationHandler(writer=writer)
         preview = handler.build_preview(model)

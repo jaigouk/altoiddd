@@ -57,6 +57,34 @@ class TestDiscoveryHandlerAnswerQuestion:
             handler.answer_question("nonexistent-id", "Q1", "Answer")
 
 
+class TestDiscoveryHandlerSkipQuestion:
+    def test_skip_question_returns_updated_session(self):
+        handler = DiscoveryHandler()
+        session = handler.start_session("Idea")
+        handler.detect_persona(session.session_id, "1")
+        result = handler.skip_question(session.session_id, "Q1", "Not relevant")
+        assert result.status == DiscoveryStatus.PERSONA_DETECTED
+
+    def test_skip_question_not_found_raises(self):
+        handler = DiscoveryHandler()
+        with pytest.raises(SessionNotFoundError):
+            handler.skip_question("nonexistent-id", "Q1", "Reason")
+
+    def test_skip_question_empty_reason_raises(self):
+        handler = DiscoveryHandler()
+        session = handler.start_session("Idea")
+        handler.detect_persona(session.session_id, "1")
+        with pytest.raises(ValueError, match="empty"):
+            handler.skip_question(session.session_id, "Q1", "")
+
+    def test_skip_question_unknown_question_raises(self):
+        handler = DiscoveryHandler()
+        session = handler.start_session("Idea")
+        handler.detect_persona(session.session_id, "1")
+        with pytest.raises(ValueError, match="Unknown"):
+            handler.skip_question(session.session_id, "Q999", "Reason")
+
+
 class TestDiscoveryHandlerConfirmPlayback:
     def test_confirm_playback_returns_updated_session(self):
         handler = DiscoveryHandler()
@@ -99,3 +127,51 @@ class TestDiscoveryHandlerComplete:
         handler = DiscoveryHandler()
         with pytest.raises(SessionNotFoundError):
             handler.complete("nonexistent-id")
+
+
+class TestDiscoveryHandlerConfirmPlaybackPositional:
+    """confirm_playback must accept `confirmed` as a positional argument."""
+
+    def test_confirm_playback_positional_arg(self):
+        handler = DiscoveryHandler()
+        session = handler.start_session("Idea")
+        handler.detect_persona(session.session_id, "1")
+        handler.answer_question(session.session_id, "Q1", "Users")
+        handler.answer_question(session.session_id, "Q2", "Entities")
+        handler.answer_question(session.session_id, "Q3", "Use case")
+        # confirmed as positional, not keyword-only
+        result = handler.confirm_playback(session.session_id, True)
+        assert result.status == DiscoveryStatus.ANSWERING
+
+
+class TestDiscoveryHandlerPortCompliance:
+    """Verify DiscoveryHandler structurally matches DiscoveryPort."""
+
+    def test_handler_has_skip_question(self):
+        handler = DiscoveryHandler()
+        assert hasattr(handler, "skip_question")
+        assert callable(handler.skip_question)
+
+    def test_handler_answer_question_takes_question_id(self):
+        import inspect
+
+        sig = inspect.signature(DiscoveryHandler.answer_question)
+        params = list(sig.parameters.keys())
+        assert "question_id" in params
+        assert "answer" in params
+
+    def test_handler_start_session_returns_session(self):
+        handler = DiscoveryHandler()
+        from src.domain.models.discovery_session import DiscoverySession
+
+        result = handler.start_session("Idea")
+        assert isinstance(result, DiscoverySession)
+
+    def test_handler_skip_question_returns_session(self):
+        handler = DiscoveryHandler()
+        from src.domain.models.discovery_session import DiscoverySession
+
+        session = handler.start_session("Idea")
+        handler.detect_persona(session.session_id, "1")
+        result = handler.skip_question(session.session_id, "Q1", "Not needed")
+        assert isinstance(result, DiscoverySession)

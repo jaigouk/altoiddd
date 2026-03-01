@@ -41,8 +41,7 @@ def _make_discovery_event(
             Answer(
                 question_id="Q10",
                 response_text=(
-                    "Sales is core competitive advantage,"
-                    " Inventory is supporting necessary"
+                    "Sales is core competitive advantage, Inventory is supporting necessary"
                 ),
             ),
         )
@@ -51,9 +50,7 @@ def _make_discovery_event(
         persona=Persona.DEVELOPER,
         register=Register.TECHNICAL,
         answers=answers,
-        playback_confirmations=(
-            Playback(summary_text="Playback 1", confirmed=True),
-        ),
+        playback_confirmations=(Playback(summary_text="Playback 1", confirmed=True),),
     )
 
 
@@ -265,10 +262,7 @@ class TestWriteArtifacts:
         preview = handler.build_preview(event)
         handler.write_artifacts(preview, Path("/tmp/out"))
 
-        contents = {
-            c[0][0].name: c[0][1]
-            for c in writer.write_file.call_args_list
-        }
+        contents = {c[0][0].name: c[0][1] for c in writer.write_file.call_args_list}
         assert contents["PRD.md"] == "PRD body"
         assert contents["DDD.md"] == "DDD body"
         assert contents["ARCHITECTURE.md"] == "ARCH body"

@@ -35,19 +35,11 @@ def _make_valid_model() -> DomainModel:
     )
 
     # Bounded contexts with classification.
-    model.add_bounded_context(
-        BoundedContext(name="Sales", responsibility="Manages orders")
-    )
-    model.classify_subdomain(
-        "Sales", SubdomainClassification.CORE, "Competitive advantage"
-    )
+    model.add_bounded_context(BoundedContext(name="Sales", responsibility="Manages orders"))
+    model.classify_subdomain("Sales", SubdomainClassification.CORE, "Competitive advantage")
 
-    model.add_bounded_context(
-        BoundedContext(name="Shipping", responsibility="Manages shipments")
-    )
-    model.classify_subdomain(
-        "Shipping", SubdomainClassification.SUPPORTING, "Necessary plumbing"
-    )
+    model.add_bounded_context(BoundedContext(name="Shipping", responsibility="Manages shipments"))
+    model.classify_subdomain("Shipping", SubdomainClassification.SUPPORTING, "Necessary plumbing")
 
     # Terms that appear in the story text.
     model.add_term("Order", "A customer purchase", "Sales", ("Q2",))
@@ -64,12 +56,8 @@ def _make_valid_model() -> DomainModel:
     )
 
     # Bidirectional relationship.
-    model.add_context_relationship(
-        ContextRelationship("Sales", "Shipping", "Domain Events")
-    )
-    model.add_context_relationship(
-        ContextRelationship("Shipping", "Sales", "Query")
-    )
+    model.add_context_relationship(ContextRelationship("Sales", "Shipping", "Domain Events"))
+    model.add_context_relationship(ContextRelationship("Shipping", "Sales", "Query"))
 
     return model
 
@@ -90,27 +78,21 @@ class TestCreateDomainModel:
 class TestAddDomainStory:
     def test_add_story(self) -> None:
         model = DomainModel()
-        story = DomainStory(
-            name="Test", actors=("A",), trigger="T", steps=("S",)
-        )
+        story = DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",))
         model.add_domain_story(story)
         assert len(model.domain_stories) == 1
         assert model.domain_stories[0].name == "Test"
 
     def test_duplicate_story_raises(self) -> None:
         model = DomainModel()
-        story = DomainStory(
-            name="Test", actors=("A",), trigger="T", steps=("S",)
-        )
+        story = DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",))
         model.add_domain_story(story)
         with pytest.raises(DuplicateStoryError, match="'Test' already exists"):
             model.add_domain_story(story)
 
     def test_duplicate_case_insensitive(self) -> None:
         model = DomainModel()
-        model.add_domain_story(
-            DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",))
-        )
+        model.add_domain_story(DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",)))
         with pytest.raises(DuplicateStoryError):
             model.add_domain_story(
                 DomainStory(name="test", actors=("B",), trigger="T2", steps=("S2",))
@@ -119,9 +101,7 @@ class TestAddDomainStory:
     def test_empty_name_raises(self) -> None:
         model = DomainModel()
         with pytest.raises(ValueError, match="Story name cannot be empty"):
-            model.add_domain_story(
-                DomainStory(name="", actors=("A",), trigger="T", steps=("S",))
-            )
+            model.add_domain_story(DomainStory(name="", actors=("A",), trigger="T", steps=("S",)))
 
 
 class TestAddBoundedContext:
@@ -133,28 +113,20 @@ class TestAddBoundedContext:
 
     def test_duplicate_context_raises(self) -> None:
         model = DomainModel()
-        model.add_bounded_context(
-            BoundedContext(name="Sales", responsibility="Orders")
-        )
+        model.add_bounded_context(BoundedContext(name="Sales", responsibility="Orders"))
         with pytest.raises(ValueError, match="'Sales' already exists"):
-            model.add_bounded_context(
-                BoundedContext(name="Sales", responsibility="Other")
-            )
+            model.add_bounded_context(BoundedContext(name="Sales", responsibility="Other"))
 
     def test_empty_name_raises(self) -> None:
         model = DomainModel()
         with pytest.raises(ValueError, match="Context name cannot be empty"):
-            model.add_bounded_context(
-                BoundedContext(name="", responsibility="X")
-            )
+            model.add_bounded_context(BoundedContext(name="", responsibility="X"))
 
 
 class TestClassifySubdomain:
     def test_classify(self) -> None:
         model = DomainModel()
-        model.add_bounded_context(
-            BoundedContext(name="Sales", responsibility="Orders")
-        )
+        model.add_bounded_context(BoundedContext(name="Sales", responsibility="Orders"))
         model.classify_subdomain("Sales", SubdomainClassification.CORE, "Key value")
         assert model.bounded_contexts[0].classification == SubdomainClassification.CORE
 
@@ -167,25 +139,19 @@ class TestClassifySubdomain:
 class TestDesignAggregate:
     def test_add_aggregate(self) -> None:
         model = DomainModel()
-        agg = AggregateDesign(
-            name="OrderAgg", context_name="Sales", root_entity="Order"
-        )
+        agg = AggregateDesign(name="OrderAgg", context_name="Sales", root_entity="Order")
         model.design_aggregate(agg)
         assert len(model.aggregate_designs) == 1
 
     def test_empty_name_raises(self) -> None:
         model = DomainModel()
         with pytest.raises(ValueError, match="Aggregate name cannot be empty"):
-            model.design_aggregate(
-                AggregateDesign(name="", context_name="Sales", root_entity="X")
-            )
+            model.design_aggregate(AggregateDesign(name="", context_name="Sales", root_entity="X"))
 
     def test_empty_context_raises(self) -> None:
         model = DomainModel()
         with pytest.raises(ValueError, match="context name cannot be empty"):
-            model.design_aggregate(
-                AggregateDesign(name="Agg", context_name="", root_entity="X")
-            )
+            model.design_aggregate(AggregateDesign(name="Agg", context_name="", root_entity="X"))
 
 
 class TestAddContextRelationship:
@@ -198,9 +164,7 @@ class TestAddContextRelationship:
     def test_empty_upstream_raises(self) -> None:
         model = DomainModel()
         with pytest.raises(ValueError, match="cannot be empty"):
-            model.add_context_relationship(
-                ContextRelationship("", "B", "Events")
-            )
+            model.add_context_relationship(ContextRelationship("", "B", "Events"))
 
 
 class TestFinalizeInvariant1TermsInStories:
@@ -229,12 +193,8 @@ class TestFinalizeInvariant2ContextClassification:
 
     def test_unclassified_context_raises(self) -> None:
         model = _make_valid_model()
-        model.add_bounded_context(
-            BoundedContext(name="Unclassified", responsibility="Test")
-        )
-        with pytest.raises(
-            InvariantViolationError, match="'Unclassified' has no classification"
-        ):
+        model.add_bounded_context(BoundedContext(name="Unclassified", responsibility="Test"))
+        with pytest.raises(InvariantViolationError, match="'Unclassified' has no classification"):
             model.finalize()
 
 
@@ -255,9 +215,7 @@ class TestFinalizeInvariant3CoreAggregates:
                 steps=("Actor does discovery",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Discovery", responsibility="Guides")
-        )
+        model.add_bounded_context(BoundedContext(name="Discovery", responsibility="Guides"))
         model.classify_subdomain("Discovery", SubdomainClassification.CORE)
         model.add_term("Discovery", "The process", "Discovery")
         with pytest.raises(
@@ -275,13 +233,9 @@ class TestRelationshipsAccepted:
 
     def test_unidirectional_passes(self) -> None:
         model = _make_valid_model()
-        model.add_bounded_context(
-            BoundedContext(name="Billing", responsibility="Bills")
-        )
+        model.add_bounded_context(BoundedContext(name="Billing", responsibility="Bills"))
         model.classify_subdomain("Billing", SubdomainClassification.GENERIC)
-        model.add_context_relationship(
-            ContextRelationship("Sales", "Billing", "Events")
-        )
+        model.add_context_relationship(ContextRelationship("Sales", "Billing", "Events"))
         model.finalize()  # One-way is now valid.
 
 
@@ -328,18 +282,14 @@ class TestFinalizeEmitsEvent:
 class TestDefensiveCopies:
     def test_stories_defensive_copy(self) -> None:
         model = DomainModel()
-        model.add_domain_story(
-            DomainStory(name="S", actors=("A",), trigger="T", steps=("S",))
-        )
+        model.add_domain_story(DomainStory(name="S", actors=("A",), trigger="T", steps=("S",)))
         s1 = model.domain_stories
         s2 = model.domain_stories
         assert s1 is not s2
 
     def test_contexts_defensive_copy(self) -> None:
         model = DomainModel()
-        model.add_bounded_context(
-            BoundedContext(name="Ctx", responsibility="Test")
-        )
+        model.add_bounded_context(BoundedContext(name="Ctx", responsibility="Test"))
         c1 = model.bounded_contexts
         c2 = model.bounded_contexts
         assert c1 is not c2
@@ -374,19 +324,11 @@ def _make_valid_model_without_relationships() -> DomainModel:
         )
     )
 
-    model.add_bounded_context(
-        BoundedContext(name="Sales", responsibility="Manages orders")
-    )
-    model.classify_subdomain(
-        "Sales", SubdomainClassification.CORE, "Competitive advantage"
-    )
+    model.add_bounded_context(BoundedContext(name="Sales", responsibility="Manages orders"))
+    model.classify_subdomain("Sales", SubdomainClassification.CORE, "Competitive advantage")
 
-    model.add_bounded_context(
-        BoundedContext(name="Shipping", responsibility="Manages shipments")
-    )
-    model.classify_subdomain(
-        "Shipping", SubdomainClassification.SUPPORTING, "Necessary plumbing"
-    )
+    model.add_bounded_context(BoundedContext(name="Shipping", responsibility="Manages shipments"))
+    model.classify_subdomain("Shipping", SubdomainClassification.SUPPORTING, "Necessary plumbing")
 
     model.add_term("Order", "A customer purchase", "Sales", ("Q2",))
     model.add_term("Shipment", "A delivery package", "Shipping", ("Q2",))
@@ -470,9 +412,7 @@ class TestRelaxedRelationships:
 
     def test_unidirectional_passes_finalize(self) -> None:
         model = _make_valid_model_without_relationships()
-        model.add_context_relationship(
-            ContextRelationship("Sales", "Shipping", "Domain Events")
-        )
+        model.add_context_relationship(ContextRelationship("Sales", "Shipping", "Domain Events"))
         model.finalize()  # Must NOT raise.
         assert len(model.events) >= 1
 
@@ -512,9 +452,7 @@ class TestWordBoundaryTermMatching:
                 steps=("Operator processes work",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Ops", responsibility="Operations")
-        )
+        model.add_bounded_context(BoundedContext(name="Ops", responsibility="Operations"))
         model.classify_subdomain("Ops", SubdomainClassification.SUPPORTING)
         # "Or" should NOT match "Operator" with word boundary.
         model.add_term("Or", "Logical operator concept", "Ops")
@@ -531,9 +469,7 @@ class TestWordBoundaryTermMatching:
                 steps=("Customer creates Order",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Sales", responsibility="Handles orders")
-        )
+        model.add_bounded_context(BoundedContext(name="Sales", responsibility="Handles orders"))
         model.classify_subdomain("Sales", SubdomainClassification.SUPPORTING)
         model.add_term("Order", "A purchase", "Sales")
         model.finalize()  # "Order" is a whole word in steps.
@@ -548,9 +484,7 @@ class TestWordBoundaryTermMatching:
                 steps=("User submits",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Sales", responsibility="Orders")
-        )
+        model.add_bounded_context(BoundedContext(name="Sales", responsibility="Orders"))
         model.classify_subdomain("Sales", SubdomainClassification.SUPPORTING)
         model.add_term("Order", "A purchase", "Sales")
         model.finalize()  # "Order" at start of story name.
@@ -565,9 +499,7 @@ class TestWordBoundaryTermMatching:
                 steps=("System processes sales order",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Sales", responsibility="Orders")
-        )
+        model.add_bounded_context(BoundedContext(name="Sales", responsibility="Orders"))
         model.classify_subdomain("Sales", SubdomainClassification.SUPPORTING)
         model.add_term("Sales Order", "A customer order", "Sales")
         model.finalize()  # "sales order" appears as a phrase.
@@ -583,9 +515,7 @@ class TestWordBoundaryTermMatching:
                 observations=("System creates Invoice",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Billing", responsibility="Invoicing")
-        )
+        model.add_bounded_context(BoundedContext(name="Billing", responsibility="Invoicing"))
         model.classify_subdomain("Billing", SubdomainClassification.SUPPORTING)
         model.add_term("Invoice", "A bill", "Billing")
         model.finalize()  # "Invoice" found in observations.
@@ -600,9 +530,7 @@ class TestWordBoundaryTermMatching:
                 steps=("Admin reviews",),
             )
         )
-        model.add_bounded_context(
-            BoundedContext(name="Mgmt", responsibility="Management")
-        )
+        model.add_bounded_context(BoundedContext(name="Mgmt", responsibility="Management"))
         model.classify_subdomain("Mgmt", SubdomainClassification.SUPPORTING)
         model.add_term("Admin", "An administrator", "Mgmt")
         model.finalize()  # "Admin" found in actors.
@@ -614,41 +542,29 @@ class TestDuplicateAggregateDesign:
     def test_duplicate_name_same_context_raises(self) -> None:
         model = DomainModel()
         model.design_aggregate(
-            AggregateDesign(
-                name="OrderAgg", context_name="Sales", root_entity="Order"
-            )
+            AggregateDesign(name="OrderAgg", context_name="Sales", root_entity="Order")
         )
         with pytest.raises(ValueError, match=r"'OrderAgg'.*already exists"):
             model.design_aggregate(
-                AggregateDesign(
-                    name="OrderAgg", context_name="Sales", root_entity="Other"
-                )
+                AggregateDesign(name="OrderAgg", context_name="Sales", root_entity="Other")
             )
 
     def test_same_name_different_context_allowed(self) -> None:
         model = DomainModel()
         model.design_aggregate(
-            AggregateDesign(
-                name="RootAgg", context_name="Sales", root_entity="Order"
-            )
+            AggregateDesign(name="RootAgg", context_name="Sales", root_entity="Order")
         )
         model.design_aggregate(
-            AggregateDesign(
-                name="RootAgg", context_name="Shipping", root_entity="Shipment"
-            )
+            AggregateDesign(name="RootAgg", context_name="Shipping", root_entity="Shipment")
         )
         assert len(model.aggregate_designs) == 2
 
     def test_duplicate_case_insensitive(self) -> None:
         model = DomainModel()
         model.design_aggregate(
-            AggregateDesign(
-                name="OrderAgg", context_name="Sales", root_entity="Order"
-            )
+            AggregateDesign(name="OrderAgg", context_name="Sales", root_entity="Order")
         )
         with pytest.raises(ValueError, match="already exists"):
             model.design_aggregate(
-                AggregateDesign(
-                    name="orderagg", context_name="sales", root_entity="Other"
-                )
+                AggregateDesign(name="orderagg", context_name="sales", root_entity="Other")
             )

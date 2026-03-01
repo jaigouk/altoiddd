@@ -143,9 +143,7 @@ class TicketPlan:
                     context_name=bc.name,
                     root_entity=bc.name,
                 )
-                stub_description = TicketDetailRenderer.render(
-                    stub_agg, TicketDetailLevel.STUB
-                )
+                stub_description = TicketDetailRenderer.render(stub_agg, TicketDetailLevel.STUB)
                 self._tickets.append(
                     GeneratedTicket(
                         ticket_id=str(uuid.uuid4()),
@@ -191,15 +189,11 @@ class TicketPlan:
             msg = "No plan generated yet -- call generate_plan() first"
             raise InvariantViolationError(msg)
 
-        full_count = sum(
-            1 for t in self._tickets if t.detail_level == TicketDetailLevel.FULL
-        )
+        full_count = sum(1 for t in self._tickets if t.detail_level == TicketDetailLevel.FULL)
         standard_count = sum(
             1 for t in self._tickets if t.detail_level == TicketDetailLevel.STANDARD
         )
-        stub_count = sum(
-            1 for t in self._tickets if t.detail_level == TicketDetailLevel.STUB
-        )
+        stub_count = sum(1 for t in self._tickets if t.detail_level == TicketDetailLevel.STUB)
 
         lines: list[str] = [
             f"Ticket Plan: {self.plan_id}",
@@ -213,8 +207,7 @@ class TicketPlan:
             epic_tickets = [t for t in self._tickets if t.epic_id == epic.epic_id]
             lines.append(f"  {epic.title} ({epic.classification.value.upper()}):")
             lines.extend(
-                f"    - [{ticket.detail_level.value}] {ticket.title}"
-                for ticket in epic_tickets
+                f"    - [{ticket.detail_level.value}] {ticket.title}" for ticket in epic_tickets
             )
             lines.append("")
 
@@ -244,9 +237,7 @@ class TicketPlan:
                     context_name=ticket.bounded_context_name,
                     root_entity=ticket.aggregate_name,
                 )
-                new_description = TicketDetailRenderer.render(
-                    agg, TicketDetailLevel.FULL
-                )
+                new_description = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
                 self._tickets[i] = GeneratedTicket(
                     ticket_id=ticket.ticket_id,
                     title=ticket.title,
@@ -295,9 +286,7 @@ class TicketPlan:
                 msg = f"Unknown ticket IDs: {', '.join(sorted(unknown))}"
                 raise InvariantViolationError(msg)
             final_approved = approved_ids
-            final_dismissed = tuple(
-                tid for tid in all_ids if tid not in set(approved_ids)
-            )
+            final_dismissed = tuple(tid for tid in all_ids if tid not in set(approved_ids))
 
         self._approved = True
 
@@ -325,9 +314,7 @@ class TicketPlan:
         # Build a map of context name -> list of ticket IDs
         tickets_by_context: dict[str, list[str]] = {}
         for ticket in self._tickets:
-            tickets_by_context.setdefault(
-                ticket.bounded_context_name, []
-            ).append(ticket.ticket_id)
+            tickets_by_context.setdefault(ticket.bounded_context_name, []).append(ticket.ticket_id)
 
         # For each downstream context, make its tickets depend on upstream tickets
         updated_tickets: list[GeneratedTicket] = []

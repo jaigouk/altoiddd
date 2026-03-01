@@ -17,3 +17,7 @@ class InvariantViolationError(DomainError):
 
 class DuplicateStoryError(DomainError):
     """Raised when adding a domain story with a name that already exists."""
+
+
+class SessionNotFoundError(DomainError):
+    """Raised when a session_id does not match any active session."""

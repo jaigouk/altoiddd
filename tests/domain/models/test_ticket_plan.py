@@ -112,10 +112,13 @@ class TestEmptyPlan:
 
 class TestOneEpicPerBC:
     def test_generate_one_epic_per_bc(self):
-        model = _make_model([
-            ("Orders", SubdomainClassification.CORE),
-            ("Shipping", SubdomainClassification.SUPPORTING),
-        ], aggregates={"Shipping": ["ShipmentRoot"]})
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Shipping", SubdomainClassification.SUPPORTING),
+            ],
+            aggregates={"Shipping": ["ShipmentRoot"]},
+        )
 
         plan = TicketPlan()
         plan.generate_plan(model)
@@ -169,10 +172,12 @@ class TestDetailLevelMapping:
 
 class TestPreview:
     def test_preview_shows_summary(self):
-        model = _make_model([
-            ("Orders", SubdomainClassification.CORE),
-            ("Logging", SubdomainClassification.GENERIC),
-        ])
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Logging", SubdomainClassification.GENERIC),
+            ]
+        )
         plan = TicketPlan()
         plan.generate_plan(model)
 
@@ -249,10 +254,12 @@ class TestApprove:
         assert event.dismissed_ticket_ids == ()
 
     def test_approve_subset(self):
-        model = _make_model([
-            ("Orders", SubdomainClassification.CORE),
-            ("Logging", SubdomainClassification.GENERIC),
-        ])
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Logging", SubdomainClassification.GENERIC),
+            ]
+        )
         plan = TicketPlan()
         plan.generate_plan(model)
 

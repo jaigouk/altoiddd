@@ -146,9 +146,7 @@ class TestGapAnalysisCreatePlan:
 
     def test_gap_analysis_create_plan_wrong_state_raises(self) -> None:
         analysis = GapAnalysis(project_dir=Path("/tmp/proj"))
-        with pytest.raises(
-            InvariantViolationError, match="Cannot create plan in scanning state"
-        ):
+        with pytest.raises(InvariantViolationError, match="Cannot create plan in scanning state"):
             analysis.create_plan(_make_plan())
 
 

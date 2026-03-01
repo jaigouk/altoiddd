@@ -45,9 +45,7 @@ class TestDocRegistryEntry:
         assert entry.review_interval_days == 30
 
     def test_doc_registry_entry_custom_values(self) -> None:
-        entry = DocRegistryEntry(
-            path="docs/DDD.md", owner="team-lead", review_interval_days=14
-        )
+        entry = DocRegistryEntry(path="docs/DDD.md", owner="team-lead", review_interval_days=14)
         assert entry.path == "docs/DDD.md"
         assert entry.owner == "team-lead"
         assert entry.review_interval_days == 14

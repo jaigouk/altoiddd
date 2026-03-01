@@ -96,9 +96,7 @@ class TestHasPerContextDefinitions:
         # Bypass add_term validation to simulate a term with empty definition.
         from src.domain.models.ubiquitous_language import TermEntry
 
-        ul._terms.append(
-            TermEntry(term="Config", definition="", context_name="Tool Translation")
-        )
+        ul._terms.append(TermEntry(term="Config", definition="", context_name="Tool Translation"))
         assert ul.has_per_context_definitions("Config") is False
 
 

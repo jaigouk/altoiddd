@@ -235,9 +235,7 @@ class FitnessTestSuite:
                 lines.append("]")
                 if c.forbidden_modules:
                     lines.append("forbidden_modules = [")
-                    lines.extend(
-                        f'  "{m}",' for m in c.forbidden_modules
-                    )
+                    lines.extend(f'  "{m}",' for m in c.forbidden_modules)
                     lines.append("]")
             elif c.contract_type == ContractType.INDEPENDENCE:
                 lines.append("modules = [")
@@ -313,9 +311,7 @@ class FitnessTestSuite:
                 outside the expected prefix for its bounded context.
         """
         for contract in self._contracts:
-            expected_prefix = (
-                f"{self.root_package}.{_snake_case(contract.context_name)}"
-            )
+            expected_prefix = f"{self.root_package}.{_snake_case(contract.context_name)}"
             for module in contract.modules:
                 if not module.startswith(expected_prefix):
                     msg = (

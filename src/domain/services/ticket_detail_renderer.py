@@ -91,10 +91,7 @@ class TicketDetailRenderer:
         """Render STUB detail: minimal placeholder for Generic subdomains."""
         lines: list[str] = [
             "## Goal",
-            (
-                f"Integrate `{aggregate.context_name}` boundary "
-                f"for `{aggregate.name}`."
-            ),
+            (f"Integrate `{aggregate.context_name}` boundary for `{aggregate.name}`."),
             "",
             "## Acceptance Criteria",
             "- [ ] Boundary test passes",
@@ -122,9 +119,7 @@ def _render_ddd_alignment_section(aggregate: AggregateDesign) -> str:
         f"- **Aggregate Root:** {aggregate.root_entity}",
     ]
     if aggregate.contained_objects:
-        lines.append(
-            f"- **Contained Objects:** {', '.join(aggregate.contained_objects)}"
-        )
+        lines.append(f"- **Contained Objects:** {', '.join(aggregate.contained_objects)}")
     lines.append("")
     return "\n".join(lines)
 
@@ -149,15 +144,17 @@ def _render_design_section(aggregate: AggregateDesign) -> str:
 
 def _render_solid_section(aggregate: AggregateDesign) -> str:
     """Render the SOLID Mapping section."""
-    return "\n".join([
-        "## SOLID Mapping",
-        f"- **S:** `{aggregate.name}` owns {aggregate.context_name} logic only",
-        "- **O:** Extend via new commands/events, not modification",
-        "- **L:** Subtypes honor aggregate contract",
-        "- **I:** Focused repository interface for this aggregate",
-        "- **D:** Depend on ports, not infrastructure",
-        "",
-    ])
+    return "\n".join(
+        [
+            "## SOLID Mapping",
+            f"- **S:** `{aggregate.name}` owns {aggregate.context_name} logic only",
+            "- **O:** Extend via new commands/events, not modification",
+            "- **L:** Subtypes honor aggregate contract",
+            "- **I:** Focused repository interface for this aggregate",
+            "- **D:** Depend on ports, not infrastructure",
+            "",
+        ]
+    )
 
 
 def _render_tdd_section() -> str:
@@ -172,14 +169,16 @@ def _render_tdd_section() -> str:
 
 def _render_steps_section(aggregate: AggregateDesign) -> str:
     """Render the Steps section."""
-    return "\n".join([
-        "## Steps",
-        f"1. Create `{aggregate.name}` aggregate with invariant enforcement",
-        "2. Implement commands and domain events",
-        "3. Add repository port interface",
-        "4. Write unit tests for all invariants",
-        "",
-    ])
+    return "\n".join(
+        [
+            "## Steps",
+            f"1. Create `{aggregate.name}` aggregate with invariant enforcement",
+            "2. Implement commands and domain events",
+            "3. Add repository port interface",
+            "4. Write unit tests for all invariants",
+            "",
+        ]
+    )
 
 
 def _render_acceptance_criteria_section(aggregate: AggregateDesign) -> str:
@@ -188,17 +187,15 @@ def _render_acceptance_criteria_section(aggregate: AggregateDesign) -> str:
         "## Acceptance Criteria",
         f"- [ ] `{aggregate.name}` aggregate root created",
     ]
+    lines.extend(f"- [ ] Invariant enforced: {inv}" for inv in aggregate.invariants)
+    lines.extend(f"- [ ] Command implemented: {cmd}" for cmd in aggregate.commands)
     lines.extend(
-        f"- [ ] Invariant enforced: {inv}" for inv in aggregate.invariants
+        [
+            "- [ ] All tests pass",
+            "- [ ] Coverage >= 80%",
+            "",
+        ]
     )
-    lines.extend(
-        f"- [ ] Command implemented: {cmd}" for cmd in aggregate.commands
-    )
-    lines.extend([
-        "- [ ] All tests pass",
-        "- [ ] Coverage >= 80%",
-        "",
-    ])
     return "\n".join(lines)
 
 

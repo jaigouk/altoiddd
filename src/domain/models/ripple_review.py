@@ -56,9 +56,7 @@ class RippleReview:
 
     # -- Commands -------------------------------------------------------------
 
-    def flag_ticket(
-        self, ticket_id: str, *, is_open: bool, flagged_at: str = ""
-    ) -> None:
+    def flag_ticket(self, ticket_id: str, *, is_open: bool, flagged_at: str = "") -> None:
         """Flag a ticket for review.
 
         Args:

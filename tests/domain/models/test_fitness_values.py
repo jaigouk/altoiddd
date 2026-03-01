@@ -38,9 +38,7 @@ class TestContractStrictness:
     def test_from_classification_supporting(self) -> None:
         from src.domain.models.domain_values import SubdomainClassification
 
-        result = ContractStrictness.from_classification(
-            SubdomainClassification.SUPPORTING
-        )
+        result = ContractStrictness.from_classification(SubdomainClassification.SUPPORTING)
         assert result == ContractStrictness.MODERATE
 
     def test_from_classification_generic(self) -> None:

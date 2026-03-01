@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 
 from src.domain.models.errors import InvariantViolationError as InvariantViolationError
+from src.domain.models.errors import SessionNotFoundError as SessionNotFoundError
 
 
 class SessionStatus(enum.Enum):
@@ -34,10 +35,6 @@ class SessionStatus(enum.Enum):
     EXECUTING = "executing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-
-
-class SessionNotFoundError(Exception):
-    """Raised when a session_id does not match any active session."""
 
 
 class BootstrapSession:

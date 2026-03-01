@@ -75,7 +75,22 @@ class DiscoveryHandler:
         session.answer_question(question_id, answer)
         return session
 
-    def confirm_playback(self, session_id: str, *, confirmed: bool) -> DiscoverySession:
+    def skip_question(self, session_id: str, question_id: str, reason: str) -> DiscoverySession:
+        """Skip a question with an explicit reason.
+
+        Args:
+            session_id: The active discovery session identifier.
+            question_id: The question to skip.
+            reason: Why it was skipped (must be non-empty).
+
+        Returns:
+            The updated DiscoverySession.
+        """
+        session = self._get_session(session_id)
+        session.skip_question(question_id, reason)
+        return session
+
+    def confirm_playback(self, session_id: str, confirmed: bool) -> DiscoverySession:
         """Confirm or reject a playback summary.
 
         Args:

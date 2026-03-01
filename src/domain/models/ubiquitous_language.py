@@ -94,11 +94,7 @@ class UbiquitousLanguage:
                 term_contexts[normalized] = set()
             term_contexts[normalized].add(entry.context_name)
 
-        return tuple(
-            term
-            for term, contexts in sorted(term_contexts.items())
-            if len(contexts) > 1
-        )
+        return tuple(term for term, contexts in sorted(term_contexts.items()) if len(contexts) > 1)
 
     def has_per_context_definitions(self, term: str) -> bool:
         """Check if an ambiguous term has a definition in each context it appears in.

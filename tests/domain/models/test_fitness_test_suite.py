@@ -132,9 +132,7 @@ class TestGenerateContracts:
         suite = FitnessTestSuite(root_package="myapp")
         suite.generate_contracts(bounded_contexts=(_core_bc("Orders"),))
 
-        layers_contracts = [
-            c for c in suite.contracts if c.contract_type == ContractType.LAYERS
-        ]
+        layers_contracts = [c for c in suite.contracts if c.contract_type == ContractType.LAYERS]
         assert len(layers_contracts) == 1
         modules = layers_contracts[0].modules
         # infrastructure first (top), domain last (bottom)
@@ -147,9 +145,7 @@ class TestGenerateContracts:
         suite = FitnessTestSuite(root_package="myapp")
         suite.generate_contracts(bounded_contexts=(_core_bc("Orders"),))
 
-        forbidden = [
-            c for c in suite.contracts if c.contract_type == ContractType.FORBIDDEN
-        ]
+        forbidden = [c for c in suite.contracts if c.contract_type == ContractType.FORBIDDEN]
         assert len(forbidden) >= 1
         # Should prevent domain from importing infrastructure
         f = forbidden[0]
@@ -653,9 +649,7 @@ class TestAdditionalEdgeCases:
         from src.domain.models.fitness_test_suite import FitnessTestSuite
 
         suite = FitnessTestSuite(root_package="myapp")
-        suite.generate_contracts(
-            bounded_contexts=(_core_bc("OrderManagement"),)
-        )
+        suite.generate_contracts(bounded_contexts=(_core_bc("OrderManagement"),))
         test_code = suite.render_pytestarch_tests()
         assert "def test_order_management_domain_isolation" in test_code
 
@@ -681,9 +675,7 @@ class TestAdditionalEdgeCases:
         from src.domain.models.fitness_test_suite import FitnessTestSuite
 
         suite = FitnessTestSuite(root_package="myapp")
-        suite.generate_contracts(
-            bounded_contexts=(_core_bc("OrderManagement"),)
-        )
+        suite.generate_contracts(bounded_contexts=(_core_bc("OrderManagement"),))
         for c in suite.contracts:
             for mod in c.modules:
                 assert "OrderManagement" not in mod
@@ -693,9 +685,7 @@ class TestAdditionalEdgeCases:
         """5 Core BCs should produce 5*4=20 contracts + 5 arch rules."""
         from src.domain.models.fitness_test_suite import FitnessTestSuite
 
-        bcs = tuple(
-            _core_bc(f"Context{i}") for i in range(5)
-        )
+        bcs = tuple(_core_bc(f"Context{i}") for i in range(5))
         suite = FitnessTestSuite(root_package="myapp")
         suite.generate_contracts(bounded_contexts=bcs)
         assert len(suite.contracts) == 20

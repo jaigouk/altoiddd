@@ -34,9 +34,7 @@ class FakeDocScanner:
         self._unregistered_statuses = unregistered_statuses
         self.load_registry_calls: list[Path] = []
         self.scan_registered_calls: list[tuple[tuple[DocRegistryEntry, ...], Path]] = []
-        self.scan_unregistered_calls: list[
-            tuple[Path, frozenset[str], tuple[str, ...]]
-        ] = []
+        self.scan_unregistered_calls: list[tuple[Path, frozenset[str], tuple[str, ...]]] = []
 
     def load_registry(self, registry_path: Path) -> tuple[DocRegistryEntry, ...]:
         self.load_registry_calls.append(registry_path)
@@ -69,9 +67,7 @@ class TestDocHealthHandler:
     def test_handler_checks_registered_docs(self) -> None:
         from src.application.queries.doc_health_handler import DocHealthHandler
 
-        registered_statuses = (
-            DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),
-        )
+        registered_statuses = (DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),)
         scanner = FakeDocScanner(
             registry_entries=(DocRegistryEntry(path="docs/PRD.md"),),
             registered_statuses=registered_statuses,
@@ -112,9 +108,7 @@ class TestDocHealthHandler:
 
         scanner = FakeDocScanner(
             registry_entries=(DocRegistryEntry(path="docs/PRD.md"),),
-            registered_statuses=(
-                DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),
-            ),
+            registered_statuses=(DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),),
         )
         handler = DocHealthHandler(scanner=scanner)
 
@@ -129,12 +123,8 @@ class TestDocHealthHandler:
     def test_handler_combines_registered_and_unregistered(self) -> None:
         from src.application.queries.doc_health_handler import DocHealthHandler
 
-        registered = (
-            DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),
-        )
-        unregistered = (
-            DocStatus(path="docs/notes.md", status=DocHealthStatus.NO_FRONTMATTER),
-        )
+        registered = (DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),)
+        unregistered = (DocStatus(path="docs/notes.md", status=DocHealthStatus.NO_FRONTMATTER),)
         scanner = FakeDocScanner(
             registry_entries=(DocRegistryEntry(path="docs/PRD.md"),),
             registered_statuses=registered,
@@ -155,9 +145,7 @@ class TestDocHealthHandler:
             DocStatus(path="docs/PRD.md", status=DocHealthStatus.OK),
             DocStatus(path="docs/DDD.md", status=DocHealthStatus.STALE, days_since=45),
         )
-        unregistered = (
-            DocStatus(path="docs/extra.md", status=DocHealthStatus.NO_FRONTMATTER),
-        )
+        unregistered = (DocStatus(path="docs/extra.md", status=DocHealthStatus.NO_FRONTMATTER),)
         scanner = FakeDocScanner(
             registry_entries=(
                 DocRegistryEntry(path="docs/PRD.md"),

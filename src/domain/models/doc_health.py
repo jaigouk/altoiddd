@@ -41,9 +41,7 @@ class DocRegistryEntry:
 
     def __post_init__(self) -> None:
         if self.review_interval_days <= 0:
-            msg = (
-                f"review_interval_days must be positive, got {self.review_interval_days}"
-            )
+            msg = f"review_interval_days must be positive, got {self.review_interval_days}"
             raise InvariantViolationError(msg)
 
 

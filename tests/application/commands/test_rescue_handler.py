@@ -101,9 +101,7 @@ class TestRescueHandlerGitPreconditions:
         git_ops = FakeGitOps(branch_exists=True)
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
 
-        with pytest.raises(
-            InvariantViolationError, match="Branch alty/init already exists"
-        ):
+        with pytest.raises(InvariantViolationError, match="Branch alty/init already exists"):
             handler.rescue(Path("/tmp/proj"))
 
 
@@ -209,7 +207,8 @@ class TestRescueHandlerHappyPath:
         analysis = handler.rescue(Path("/tmp/proj"))
 
         test_gaps = [
-            g for g in analysis.gaps
+            g
+            for g in analysis.gaps
             if g.gap_type == GapType.MISSING_STRUCTURE and g.path == "tests/"
         ]
         assert len(test_gaps) == 1
@@ -279,9 +278,7 @@ class TestRescueHandlerExecutePlan:
         )
         analysis = handler2.rescue(Path("/tmp/proj"))
 
-        with pytest.raises(
-            InvariantViolationError, match="Cannot execute plan in analyzed state"
-        ):
+        with pytest.raises(InvariantViolationError, match="Cannot execute plan in analyzed state"):
             handler2.execute_plan(analysis)
 
     def test_execute_plan_skips_agents_md_when_flagged(self) -> None:

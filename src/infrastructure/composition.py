@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from src.application.ports.ticket_generation_port import TicketGenerationPort
     from src.application.ports.ticket_health_port import TicketHealthPort
     from src.application.ports.tool_detection_port import ToolDetectionPort
+    from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.doc_health import DocHealthReport
     from src.domain.models.quality_gate import QualityGate, QualityReport
     from src.domain.models.ticket_freshness import TicketHealthReport
@@ -70,19 +71,22 @@ class _StubBootstrap:
 class _StubDiscovery:
     """Stub DiscoveryPort -- raises NotImplementedError on all methods."""
 
-    def start_session(self, readme_content: str) -> str:
+    def start_session(self, readme_content: str) -> DiscoverySession:
         raise NotImplementedError
 
-    def detect_persona(self, session_id: str, choice: str) -> str:
+    def detect_persona(self, session_id: str, choice: str) -> DiscoverySession:
         raise NotImplementedError
 
-    def answer_question(self, session_id: str, answer: str) -> str:
+    def answer_question(self, session_id: str, question_id: str, answer: str) -> DiscoverySession:
         raise NotImplementedError
 
-    def confirm_playback(self, session_id: str, confirmed: bool) -> str:
+    def skip_question(self, session_id: str, question_id: str, reason: str) -> DiscoverySession:
         raise NotImplementedError
 
-    def complete(self, session_id: str) -> str:
+    def confirm_playback(self, session_id: str, confirmed: bool) -> DiscoverySession:
+        raise NotImplementedError
+
+    def complete(self, session_id: str) -> DiscoverySession:
         raise NotImplementedError
 
 

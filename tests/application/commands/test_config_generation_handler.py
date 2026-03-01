@@ -87,15 +87,11 @@ class TestBuildPreview:
             ConfigPreview,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
 
-        preview = handler.build_preview(
-            model, tools=(SupportedTool.CLAUDE_CODE,)
-        )
+        preview = handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
 
         assert isinstance(preview, ConfigPreview)
         assert len(preview.configs) == 1
@@ -106,9 +102,7 @@ class TestBuildPreview:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
         handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
@@ -120,9 +114,7 @@ class TestBuildPreview:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
 
@@ -140,9 +132,7 @@ class TestBuildPreview:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
 
@@ -161,14 +151,10 @@ class TestApproveAndWrite:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
-        preview = handler.build_preview(
-            model, tools=(SupportedTool.CLAUDE_CODE,)
-        )
+        preview = handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -182,14 +168,10 @@ class TestApproveAndWrite:
         )
         from src.domain.events.config_events import ConfigsGenerated
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
-        preview = handler.build_preview(
-            model, tools=(SupportedTool.CLAUDE_CODE,)
-        )
+        preview = handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -203,14 +185,10 @@ class TestApproveAndWrite:
         )
         from src.domain.models.errors import InvariantViolationError
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
-        preview = handler.build_preview(
-            model, tools=(SupportedTool.CLAUDE_CODE,)
-        )
+        preview = handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -222,9 +200,7 @@ class TestApproveAndWrite:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
         preview = handler.build_preview(
@@ -302,9 +278,7 @@ class TestAllToolsEndToEnd:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
 
@@ -330,14 +304,10 @@ class TestAllToolsEndToEnd:
             ConfigGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = ConfigGenerationHandler(writer=writer)
-        preview = handler.build_preview(
-            model, tools=(SupportedTool.CLAUDE_CODE,)
-        )
+        preview = handler.build_preview(model, tools=(SupportedTool.CLAUDE_CODE,))
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
         for content in writer.written.values():

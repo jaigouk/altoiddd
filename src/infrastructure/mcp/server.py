@@ -49,6 +49,7 @@ def _safe_project_path(raw: str, label: str = "path") -> Path:
         raise ValueError(msg)
     return Path(raw).resolve()
 
+
 # Type alias for the MCP request context parametrized with our AppContext.
 # FastMCP introspects tool function signatures at decoration time with
 # eval_str=True, so we must keep real (not stringified) annotations.
@@ -81,7 +82,10 @@ def _bd_path() -> str:
 
 
 async def _run_bd(*args: str) -> str:
-    """Run a bd command asynchronously and return its stdout."""
+    """Run a bd command asynchronously and return its stdout.
+
+    On non-zero exit, includes stderr in the returned message.
+    """
     bd = _bd_path()
     proc = await asyncio.create_subprocess_exec(
         bd,
@@ -89,7 +93,10 @@ async def _run_bd(*args: str) -> str:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout, _stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+    if proc.returncode != 0:
+        err_msg = stderr.decode().strip() if stderr else "unknown error"
+        return f"bd command failed: {err_msg}"
     return stdout.decode() if stdout else ""
 
 
@@ -107,7 +114,8 @@ async def init_project(project_dir: str, ctx: McpContext) -> str:
 async def guide_ddd(readme_content: str, ctx: McpContext) -> str:
     """Start a guided DDD discovery session from README content."""
     app = _get_app(ctx)
-    return app.discovery.start_session(readme_content)
+    session = app.discovery.start_session(readme_content)
+    return f"Discovery session started: {session.session_id}"
 
 
 @mcp.tool()
@@ -124,39 +132,57 @@ async def generate_fitness(
     output_dir: str,
     ctx: McpContext,
 ) -> str:
-    """Generate architecture fitness functions from a domain model."""
+    """Generate architecture fitness functions from a domain model.
+
+    Requires a completed discovery session with generated domain model.
+    """
     app = _get_app(ctx)
     safe_dir = _safe_project_path(output_dir, "output_dir")
-    app.fitness_generation.generate(
-        model=None,  # type: ignore[arg-type]
-        root_package=root_package,
-        output_dir=safe_dir,
-    )
+    try:
+        app.fitness_generation.generate(
+            model=None,  # type: ignore[arg-type]
+            root_package=root_package,
+            output_dir=safe_dir,
+        )
+    except NotImplementedError:
+        return "Error: fitness generation requires a completed domain model. Run guide_ddd first."
     return f"Fitness functions generated in {safe_dir}"
 
 
 @mcp.tool()
 async def generate_tickets(output_dir: str, ctx: McpContext) -> str:
-    """Generate dependency-ordered beads tickets from a domain model."""
+    """Generate dependency-ordered beads tickets from a domain model.
+
+    Requires a completed discovery session with generated domain model.
+    """
     app = _get_app(ctx)
     safe_dir = _safe_project_path(output_dir, "output_dir")
-    app.ticket_generation.generate(
-        model=None,  # type: ignore[arg-type]
-        output_dir=safe_dir,
-    )
+    try:
+        app.ticket_generation.generate(
+            model=None,  # type: ignore[arg-type]
+            output_dir=safe_dir,
+        )
+    except NotImplementedError:
+        return "Error: ticket generation requires a completed domain model. Run guide_ddd first."
     return f"Tickets generated in {safe_dir}"
 
 
 @mcp.tool()
 async def generate_configs(output_dir: str, ctx: McpContext) -> str:
-    """Generate tool-native configurations for detected AI coding tools."""
+    """Generate tool-native configurations for detected AI coding tools.
+
+    Requires a completed discovery session with generated domain model.
+    """
     app = _get_app(ctx)
     safe_dir = _safe_project_path(output_dir, "output_dir")
-    app.config_generation.generate(
-        model=None,  # type: ignore[arg-type]
-        tools=(),
-        output_dir=safe_dir,
-    )
+    try:
+        app.config_generation.generate(
+            model=None,  # type: ignore[arg-type]
+            tools=(),
+            output_dir=safe_dir,
+        )
+    except NotImplementedError:
+        return "Error: config generation requires a completed domain model. Run guide_ddd first."
     return f"Configs generated in {safe_dir}"
 
 
@@ -190,9 +216,7 @@ async def doc_review(doc_path: str, reviewer: str, ctx: McpContext) -> str:
     if not _REVIEWER_RE.fullmatch(reviewer):
         return "Invalid reviewer identifier."
     app = _get_app(ctx)
-    return app.doc_review.mark_reviewed(
-        _safe_project_path(doc_path, "doc_path"), reviewer
-    )
+    return app.doc_review.mark_reviewed(_safe_project_path(doc_path, "doc_path"), reviewer)
 
 
 @mcp.tool()
@@ -205,6 +229,11 @@ async def ticket_health(project_dir: str, ctx: McpContext) -> str:
 # ── Resources (10) ───────────────────────────────────────────────────
 
 
+def _kb_root() -> Path:
+    """Return the knowledge base root resolved from the current working directory."""
+    return Path.cwd() / ".alty" / "knowledge"
+
+
 @mcp.resource("alty://knowledge/ddd/{topic}")
 async def knowledge_ddd(topic: str) -> str:
     """Read a DDD knowledge base entry."""
@@ -212,7 +241,7 @@ async def knowledge_ddd(topic: str) -> str:
         safe_topic = _safe_component(topic, "topic")
     except ValueError:
         return "Invalid topic name."
-    kb_path = Path(".alty/knowledge/ddd") / f"{safe_topic}.md"
+    kb_path = _kb_root() / "ddd" / f"{safe_topic}.md"
     if kb_path.exists():
         return kb_path.read_text()
     return f"DDD topic '{safe_topic}' not found."
@@ -225,7 +254,7 @@ async def knowledge_tool(tool: str) -> str:
         safe_tool = _safe_component(tool, "tool")
     except ValueError:
         return "Invalid tool name."
-    kb_path = Path(".alty/knowledge/tools") / safe_tool
+    kb_path = _kb_root() / "tools" / safe_tool
     if kb_path.exists() and kb_path.is_dir():
         entries = sorted(p.name for p in kb_path.iterdir() if p.is_file())
         return "\n".join(entries) or f"No entries for tool '{safe_tool}'."
@@ -240,7 +269,7 @@ async def knowledge_tool_subtopic(tool: str, subtopic: str) -> str:
         safe_subtopic = _safe_component(subtopic, "subtopic")
     except ValueError:
         return "Invalid tool or subtopic name."
-    kb_path = Path(".alty/knowledge/tools") / safe_tool / f"{safe_subtopic}.toml"
+    kb_path = _kb_root() / "tools" / safe_tool / f"{safe_subtopic}.toml"
     if kb_path.exists():
         return kb_path.read_text()
     return f"Tool '{safe_tool}' subtopic '{safe_subtopic}' not found."
@@ -253,7 +282,7 @@ async def knowledge_conventions(topic: str) -> str:
         safe_topic = _safe_component(topic, "topic")
     except ValueError:
         return "Invalid topic name."
-    kb_path = Path(".alty/knowledge/conventions") / f"{safe_topic}.md"
+    kb_path = _kb_root() / "conventions" / f"{safe_topic}.md"
     if kb_path.exists():
         return kb_path.read_text()
     return f"Convention topic '{safe_topic}' not found."
@@ -266,7 +295,7 @@ async def knowledge_cross_tool(topic: str) -> str:
         safe_topic = _safe_component(topic, "topic")
     except ValueError:
         return "Invalid topic name."
-    kb_path = Path(".alty/knowledge/cross-tool") / f"{safe_topic}.toml"
+    kb_path = _kb_root() / "cross-tool" / f"{safe_topic}.toml"
     if kb_path.exists():
         return kb_path.read_text()
     return f"Cross-tool topic '{safe_topic}' not found."

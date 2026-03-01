@@ -41,9 +41,7 @@ class TestDomainStory:
         assert story.observations == ()
 
     def test_frozen(self) -> None:
-        story = DomainStory(
-            name="Test", actors=("A",), trigger="T", steps=("S",)
-        )
+        story = DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",))
         with pytest.raises(AttributeError):
             story.name = "Changed"  # type: ignore[misc]
 
@@ -90,9 +88,7 @@ class TestContextRelationship:
         assert rel.downstream == "Shipping"
 
     def test_frozen(self) -> None:
-        rel = ContextRelationship(
-            upstream="A", downstream="B", integration_pattern="Events"
-        )
+        rel = ContextRelationship(upstream="A", downstream="B", integration_pattern="Events")
         with pytest.raises(AttributeError):
             rel.upstream = "C"  # type: ignore[misc]
 
@@ -122,8 +118,6 @@ class TestAggregateDesign:
         assert len(agg.commands) == 2
 
     def test_frozen(self) -> None:
-        agg = AggregateDesign(
-            name="X", context_name="Y", root_entity="Z"
-        )
+        agg = AggregateDesign(name="X", context_name="Y", root_entity="Z")
         with pytest.raises(AttributeError):
             agg.name = "W"  # type: ignore[misc]

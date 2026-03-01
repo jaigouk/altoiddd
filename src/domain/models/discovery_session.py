@@ -18,7 +18,6 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from src.domain.models.bootstrap_session import InvariantViolationError
 from src.domain.models.discovery_values import (
     Answer,
     Persona,
@@ -26,6 +25,7 @@ from src.domain.models.discovery_values import (
     QuestionPhase,
     Register,
 )
+from src.domain.models.errors import InvariantViolationError
 from src.domain.models.question import Question
 
 if TYPE_CHECKING:

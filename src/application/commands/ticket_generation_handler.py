@@ -91,9 +91,7 @@ class TicketGenerationHandler:
 
         for ticket in preview.plan.tickets:
             if ticket.ticket_id in approved_set:
-                ticket_path = (
-                    output_dir / "tickets" / f"{ticket.ticket_id}.md"
-                )
+                ticket_path = output_dir / "tickets" / f"{ticket.ticket_id}.md"
                 self._writer.write_file(ticket_path, ticket.description)
 
         # Write plan summary

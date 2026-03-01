@@ -18,11 +18,7 @@ class TestDomainModelGenerated:
     def test_create(self) -> None:
         event = DomainModelGenerated(
             model_id="test-123",
-            domain_stories=(
-                DomainStory(
-                    name="Test", actors=("A",), trigger="T", steps=("S",)
-                ),
-            ),
+            domain_stories=(DomainStory(name="Test", actors=("A",), trigger="T", steps=("S",)),),
             ubiquitous_language=(
                 TermEntry(term="Order", definition="A purchase", context_name="Sales"),
             ),
@@ -35,9 +31,7 @@ class TestDomainModelGenerated:
             ),
             context_relationships=(),
             aggregate_designs=(
-                AggregateDesign(
-                    name="OrderAgg", context_name="Sales", root_entity="Order"
-                ),
+                AggregateDesign(name="OrderAgg", context_name="Sales", root_entity="Order"),
             ),
         )
         assert event.model_id == "test-123"

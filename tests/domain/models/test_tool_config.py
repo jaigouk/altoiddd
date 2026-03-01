@@ -155,9 +155,7 @@ class TestToolConfigCreation:
 
 class TestBuildSections:
     def test_builds_sections_from_adapter(self):
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         adapter = FakeAdapter()
         config.build_sections(model=model, adapter=adapter)
@@ -165,9 +163,7 @@ class TestBuildSections:
         assert config.sections[0].file_path == ".claude/CLAUDE.md"
 
     def test_build_clears_previous_sections(self):
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         adapter = FakeAdapter()
         config.build_sections(model=model, adapter=adapter)
@@ -184,9 +180,7 @@ class TestBuildSections:
     def test_cannot_build_after_approve(self):
         from src.domain.models.errors import InvariantViolationError
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         adapter = FakeAdapter()
         config.build_sections(model=model, adapter=adapter)
@@ -203,9 +197,7 @@ class TestBuildSections:
 
 class TestPreview:
     def test_preview_returns_string(self):
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         config.build_sections(model=model, adapter=FakeAdapter())
         preview = config.preview()
@@ -229,9 +221,7 @@ class TestApprove:
     def test_approve_emits_configs_generated(self):
         from src.domain.events.config_events import ConfigsGenerated
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         config.build_sections(model=model, adapter=FakeAdapter())
         config.approve()
@@ -240,9 +230,7 @@ class TestApprove:
         assert isinstance(config.events[0], ConfigsGenerated)
 
     def test_event_contains_tool_name(self):
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CURSOR)
         config.build_sections(model=model, adapter=FakeAdapter())
         config.approve()
@@ -250,9 +238,7 @@ class TestApprove:
         assert config.events[0].tool_names == ("cursor",)
 
     def test_event_contains_output_paths(self):
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         config.build_sections(model=model, adapter=FakeAdapter())
         config.approve()
@@ -269,9 +255,7 @@ class TestApprove:
     def test_cannot_approve_twice(self):
         from src.domain.models.errors import InvariantViolationError
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         config = ToolConfig(tool=SupportedTool.CLAUDE_CODE)
         config.build_sections(model=model, adapter=FakeAdapter())
         config.approve()

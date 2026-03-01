@@ -58,9 +58,7 @@ class ProjectScanner:
         ]
 
         existing_configs = [
-            config_path
-            for config_path in _CONFIG_TARGETS
-            if (project_dir / config_path).exists()
+            config_path for config_path in _CONFIG_TARGETS if (project_dir / config_path).exists()
         ]
 
         existing_structure = [

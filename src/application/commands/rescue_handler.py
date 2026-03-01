@@ -33,9 +33,7 @@ _REQUIRED_DOCS: tuple[str, ...] = (
     "docs/ARCHITECTURE.md",
 )
 
-_REQUIRED_CONFIGS: tuple[str, ...] = (
-    ".claude/CLAUDE.md",
-)
+_REQUIRED_CONFIGS: tuple[str, ...] = (".claude/CLAUDE.md",)
 
 _REQUIRED_STRUCTURE: tuple[str, ...] = (
     "src/domain/",

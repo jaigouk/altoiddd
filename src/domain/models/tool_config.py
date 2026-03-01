@@ -117,8 +117,7 @@ class ToolConfig:
         ]
 
         lines.extend(
-            f"  {section.section_name}: {section.file_path}"
-            for section in self._sections
+            f"  {section.section_name}: {section.file_path}" for section in self._sections
         )
 
         return "\n".join(lines)

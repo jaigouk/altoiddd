@@ -112,9 +112,7 @@ class ArtifactGenerationHandler:
         """
         self._writer.write_file(output_dir / "PRD.md", preview.prd_content)
         self._writer.write_file(output_dir / "DDD.md", preview.ddd_content)
-        self._writer.write_file(
-            output_dir / "ARCHITECTURE.md", preview.architecture_content
-        )
+        self._writer.write_file(output_dir / "ARCHITECTURE.md", preview.architecture_content)
 
     def generate(
         self,
@@ -216,11 +214,7 @@ class ArtifactGenerationHandler:
         or "General" if no contexts were extracted.
         """
         entities = self._split_answer(answers.get("Q2", ""))
-        context_name = (
-            model.bounded_contexts[0].name
-            if model.bounded_contexts
-            else "General"
-        )
+        context_name = model.bounded_contexts[0].name if model.bounded_contexts else "General"
 
         for entity in entities:
             if entity.strip():

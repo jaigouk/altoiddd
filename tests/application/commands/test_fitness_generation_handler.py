@@ -93,9 +93,7 @@ class TestBuildPreview:
             FitnessPreview,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
 
@@ -111,9 +109,7 @@ class TestBuildPreview:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         handler.build_preview(model, root_package="myapp")
@@ -162,9 +158,7 @@ class TestWriteFiles:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -182,9 +176,7 @@ class TestWriteFiles:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -208,9 +200,7 @@ class TestApproveAndWrite:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -226,9 +216,7 @@ class TestApproveAndWrite:
         )
         from src.domain.events.fitness_events import FitnessTestsGenerated
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -257,9 +245,7 @@ class TestStrictnessMapping:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -271,9 +257,7 @@ class TestStrictnessMapping:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Logging", SubdomainClassification.GENERIC)]
-        )
+        model = _make_model_with_contexts([("Logging", SubdomainClassification.GENERIC)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -326,9 +310,7 @@ class TestEdgeCases:
         )
         from src.domain.models.errors import InvariantViolationError
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -370,9 +352,7 @@ class TestEdgeCases:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Notifications", SubdomainClassification.SUPPORTING)]
-        )
+        model = _make_model_with_contexts([("Notifications", SubdomainClassification.SUPPORTING)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -388,9 +368,7 @@ class TestEdgeCases:
             FitnessGenerationHandler,
         )
 
-        model = _make_model_with_contexts(
-            [("Orders", SubdomainClassification.CORE)]
-        )
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
@@ -398,6 +376,4 @@ class TestEdgeCases:
 
         paths = list(writer.written.keys())
         assert "/project/importlinter.toml" in paths
-        assert (
-            "/project/tests/architecture/test_fitness.py" in paths
-        )
+        assert "/project/tests/architecture/test_fitness.py" in paths

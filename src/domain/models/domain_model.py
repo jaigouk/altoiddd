@@ -241,9 +241,7 @@ class DomainModel:
             msg = "Aggregate context name cannot be empty"
             raise ValueError(msg)
 
-        existing = {
-            (a.name.lower(), a.context_name.lower()) for a in self._aggregates
-        }
+        existing = {(a.name.lower(), a.context_name.lower()) for a in self._aggregates}
         key = (aggregate.name.lower(), aggregate.context_name.lower())
         if key in existing:
             msg = (

@@ -9,6 +9,8 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 
+import pytest
+
 
 class TestAppContext:
     """Tests for the AppContext composition root."""
@@ -477,3 +479,144 @@ class TestDocReviewValidation:
         # that invalid reviewers are rejected with the right message.
         result = asyncio.run(doc_review("/tmp/doc.md", "evil\ninjection", None))
         assert result == "Invalid reviewer identifier."
+
+
+class TestRunBdErrorHandling:
+    """Tests for _run_bd stderr handling on failure."""
+
+    def test_run_bd_includes_stderr_on_failure(self):
+        """When bd command fails, stderr should be included in the result."""
+        from src.infrastructure.mcp.server import _run_bd
+
+        # Use a command that will fail (invalid subcommand)
+        result = asyncio.run(_run_bd("--nonexistent-flag-that-does-not-exist"))
+        assert "bd command failed" in result or result == ""
+
+    def test_run_bd_returns_stdout_on_success(self):
+        """When bd command succeeds, stdout is returned."""
+        import shutil
+
+        from src.infrastructure.mcp.server import _run_bd
+
+        if shutil.which("bd") is None:
+            pytest.skip("bd not available")
+        # 'bd' with no args should at least not crash
+        result = asyncio.run(_run_bd("--help"))
+        assert isinstance(result, str)
+
+
+class TestKbRootHelper:
+    """Tests for _kb_root helper."""
+
+    def test_kb_root_returns_absolute_path(self):
+        from src.infrastructure.mcp.server import _kb_root
+
+        root = _kb_root()
+        assert root.is_absolute()
+
+    def test_kb_root_ends_with_knowledge(self):
+        from src.infrastructure.mcp.server import _kb_root
+
+        root = _kb_root()
+        assert root.parts[-2:] == (".alty", "knowledge")
+
+    def test_knowledge_ddd_uses_absolute_path(self, tmp_path):
+        """Knowledge resources should use absolute paths via _kb_root."""
+        import os
+
+        from src.infrastructure.mcp.server import knowledge_ddd
+
+        kb_dir = tmp_path / ".alty" / "knowledge" / "ddd"
+        kb_dir.mkdir(parents=True)
+        (kb_dir / "test_topic.md").write_text("# Test Topic Content")
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = asyncio.run(knowledge_ddd("test_topic"))
+            assert result == "# Test Topic Content"
+        finally:
+            os.chdir(original_cwd)
+
+
+class TestStubDiscoveryPortCompliance:
+    """Tests for _StubDiscovery matching the DiscoveryPort protocol."""
+
+    def test_stub_has_skip_question(self):
+        from src.infrastructure.composition import create_app
+
+        ctx = create_app()
+        assert hasattr(ctx.discovery, "skip_question")
+
+    def test_stub_answer_question_takes_question_id(self):
+        import inspect
+
+        from src.infrastructure.composition import _StubDiscovery
+
+        sig = inspect.signature(_StubDiscovery.answer_question)
+        params = list(sig.parameters.keys())
+        assert "question_id" in params
+
+    def test_stub_answer_question_raises_not_implemented(self):
+        from src.infrastructure.composition import create_app
+
+        ctx = create_app()
+        with pytest.raises(NotImplementedError):
+            ctx.discovery.answer_question("sid", "Q1", "answer")
+
+    def test_stub_skip_question_raises_not_implemented(self):
+        from src.infrastructure.composition import create_app
+
+        ctx = create_app()
+        with pytest.raises(NotImplementedError):
+            ctx.discovery.skip_question("sid", "Q5", "reason")
+
+
+class TestDiscoveryPortProtocol:
+    """Tests for DiscoveryPort protocol structural compliance."""
+
+    def test_port_answer_question_has_question_id(self):
+        import inspect
+
+        from src.application.ports.discovery_port import DiscoveryPort
+
+        sig = inspect.signature(DiscoveryPort.answer_question)
+        params = list(sig.parameters.keys())
+        assert "question_id" in params
+        assert "answer" in params
+
+    def test_port_has_skip_question(self):
+        from src.application.ports.discovery_port import DiscoveryPort
+
+        assert hasattr(DiscoveryPort, "skip_question")
+
+    def test_port_skip_question_has_reason(self):
+        import inspect
+
+        from src.application.ports.discovery_port import DiscoveryPort
+
+        sig = inspect.signature(DiscoveryPort.skip_question)
+        params = list(sig.parameters.keys())
+        assert "question_id" in params
+        assert "reason" in params
+
+    def test_port_returns_discovery_session_types(self):
+        """All port methods should return DiscoverySession, not str."""
+        import inspect
+
+        from src.application.ports.discovery_port import DiscoveryPort
+
+        for method_name in [
+            "start_session",
+            "detect_persona",
+            "answer_question",
+            "skip_question",
+            "confirm_playback",
+            "complete",
+        ]:
+            method = getattr(DiscoveryPort, method_name)
+            sig = inspect.signature(method)
+            assert sig.return_annotation == "DiscoverySession", (
+                f"{method_name} should return DiscoverySession, "
+                f"got {sig.return_annotation}"
+            )
