@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.domain_model import DomainModel
+
 
 @runtime_checkable
 class TicketGenerationPort(Protocol):
@@ -19,17 +21,16 @@ class TicketGenerationPort(Protocol):
     Adapters implement this to produce dependency-ordered tickets using
     two-tier generation: full-detail for near-term work (Core subdomains)
     and stubs for far-term work (Generic subdomains).
+
+    Handlers using this port implement the preview-before-action pattern:
+    build_preview() renders content, approve_and_write() commits it.
     """
 
-    def generate(self, domain_model: str, output_dir: Path) -> str:
+    def generate(self, model: DomainModel, output_dir: Path) -> None:
         """Generate beads tickets from a domain model.
 
         Args:
-            domain_model: Serialized domain model with bounded contexts,
-                aggregates, and subdomain classification.
+            model: DomainModel with classified bounded contexts and aggregates.
             output_dir: Directory where generated ticket files will be written.
-
-        Returns:
-            Summary of the generated tickets.
         """
         ...

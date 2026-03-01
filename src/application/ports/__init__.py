@@ -17,7 +17,7 @@ from src.application.ports.file_writer_port import FileWriterPort
 from src.application.ports.fitness_generation_port import FitnessGenerationPort
 from src.application.ports.knowledge_lookup_port import KnowledgeLookupPort
 from src.application.ports.persona_port import PersonaPort
-from src.application.ports.quality_gate_port import QualityGatePort
+from src.application.ports.quality_gate_port import GateRunnerProtocol, QualityGatePort
 from src.application.ports.rescue_port import RescuePort
 from src.application.ports.ticket_generation_port import TicketGenerationPort
 from src.application.ports.ticket_health_port import TicketHealthPort
@@ -32,6 +32,7 @@ __all__ = [
     "DocReviewPort",
     "FileWriterPort",
     "FitnessGenerationPort",
+    "GateRunnerProtocol",
     "KnowledgeLookupPort",
     "PersonaPort",
     "QualityGatePort",

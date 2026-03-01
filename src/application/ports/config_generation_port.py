@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.domain_model import DomainModel
+    from src.domain.models.tool_config import SupportedTool
+
 
 @runtime_checkable
 class ConfigGenerationPort(Protocol):
@@ -18,16 +21,22 @@ class ConfigGenerationPort(Protocol):
 
     Adapters implement this to translate a single domain model into
     native config formats for each supported AI coding tool.
+
+    Handlers using this port implement the preview-before-action pattern:
+    build_preview() renders content, approve_and_write() commits it.
     """
 
-    def generate(self, tools: list[str], output_dir: Path) -> str:
+    def generate(
+        self,
+        model: DomainModel,
+        tools: tuple[SupportedTool, ...],
+        output_dir: Path,
+    ) -> None:
         """Generate tool-native configurations for the specified tools.
 
         Args:
-            tools: List of AI coding tool identifiers (e.g., ["claude", "cursor"]).
+            model: DomainModel with classified bounded contexts.
+            tools: Which AI coding tools to generate configs for.
             output_dir: Directory where generated config files will be written.
-
-        Returns:
-            Summary of the generated configurations.
         """
         ...

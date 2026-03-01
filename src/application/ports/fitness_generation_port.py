@@ -22,8 +22,8 @@ class FitnessGenerationPort(Protocol):
     pytestarch test files driven by bounded context maps and subdomain
     classification (complexity budget).
 
-    Follows the preview-before-action pattern: build_preview() renders
-    content for user review, approve_and_write() commits approved content.
+    Handlers using this port implement the preview-before-action pattern:
+    build_preview() renders content, approve_and_write() commits it.
     """
 
     def generate(

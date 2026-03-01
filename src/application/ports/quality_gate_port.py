@@ -1,7 +1,7 @@
-"""Port for quality gate operations.
+"""Ports for quality gate operations.
 
-Defines the interface for running quality gates (lint, type-check, tests)
-on a project directory. Used across multiple bounded contexts.
+GateRunnerProtocol: low-level interface for running a single quality gate.
+QualityGatePort: high-level interface for checking multiple gates at once.
 """
 
 from __future__ import annotations
@@ -9,57 +9,44 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from src.domain.models.quality_gate import GateResult, QualityGate, QualityReport
+
+
+@runtime_checkable
+class GateRunnerProtocol(Protocol):
+    """Interface for running a single quality gate command.
+
+    Infrastructure adapters implement this to execute lint, type-check,
+    test, or fitness commands and return structured results.
+    """
+
+    def run(self, gate: QualityGate) -> GateResult:
+        """Execute a single quality gate and return its result.
+
+        Args:
+            gate: The quality gate to run.
+
+        Returns:
+            GateResult with pass/fail, output, and duration.
+        """
+        ...
 
 
 @runtime_checkable
 class QualityGatePort(Protocol):
-    """Interface for running quality gate checks.
+    """Interface for running multiple quality gate checks.
 
-    Adapters implement this to execute lint, type-check, and test
-    commands against a project directory.
+    Higher-level port that orchestrates running a set of gates
+    and returns an aggregated report.
     """
 
-    def run_all(self, project_dir: Path) -> str:
-        """Run all quality gates (lint, types, tests).
+    def check(self, gates: tuple[QualityGate, ...] | None = None) -> QualityReport:
+        """Run the specified quality gates (or all if None).
 
         Args:
-            project_dir: The project directory to check.
+            gates: Tuple of gates to run. None means all gates.
 
         Returns:
-            Combined results from all quality gate checks.
-        """
-        ...
-
-    def run_lint(self, project_dir: Path) -> str:
-        """Run the lint quality gate.
-
-        Args:
-            project_dir: The project directory to lint.
-
-        Returns:
-            Lint check results.
-        """
-        ...
-
-    def run_types(self, project_dir: Path) -> str:
-        """Run the type-check quality gate.
-
-        Args:
-            project_dir: The project directory to type-check.
-
-        Returns:
-            Type-check results.
-        """
-        ...
-
-    def run_tests(self, project_dir: Path) -> str:
-        """Run the test quality gate.
-
-        Args:
-            project_dir: The project directory to test.
-
-        Returns:
-            Test results.
+            QualityReport aggregating all individual results.
         """
         ...
