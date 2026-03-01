@@ -6,7 +6,6 @@ import pytest
 
 from src.domain.models.bootstrap_session import InvariantViolationError
 from src.domain.models.domain_model import DomainModel
-from src.domain.models.errors import DuplicateStoryError
 from src.domain.models.domain_values import (
     AggregateDesign,
     BoundedContext,
@@ -14,6 +13,7 @@ from src.domain.models.domain_values import (
     DomainStory,
     SubdomainClassification,
 )
+from src.domain.models.errors import DuplicateStoryError
 
 
 def _make_valid_model() -> DomainModel:
