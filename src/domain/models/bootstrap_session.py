@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from src.domain.models.preview import Preview
 
 
+from src.domain.models.errors import InvariantViolationError as InvariantViolationError
+
+
 class SessionStatus(enum.Enum):
     """States in the bootstrap session lifecycle."""
 
@@ -31,10 +34,6 @@ class SessionStatus(enum.Enum):
     EXECUTING = "executing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-
-
-class InvariantViolationError(Exception):
-    """Raised when a domain invariant is violated."""
 
 
 class SessionNotFoundError(Exception):

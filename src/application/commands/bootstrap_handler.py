@@ -104,6 +104,6 @@ class BootstrapHandler:
         """
         session = self._get_session(session_id)
         session.begin_execution()
-        # Future: call DiscoveryPort, ArtifactGenerationPort, etc.
+        # Future: call DiscoveryPort, ArtifactRendererPort, etc.
         session.complete()
         return session

@@ -424,12 +424,11 @@ subdomains:
 
 **Key domain objects:**
 - `DomainModel` (Aggregate) — the complete set of DDD artifacts for a project
-- `DomainStory` (Entity) — a "[Actor] [verb] [work object]" narrative
+- `DomainStory` (Value Object) — a "[Actor] [verb] [work object]" narrative (frozen)
 - `UbiquitousLanguage` (Entity) — the glossary of domain terms
-- `BoundedContextMap` (Entity) — the contexts and their relationships
-- `BoundedContext` (Value Object) — a named context with responsibility and key objects
-- `ContextRelationship` (Value Object) — upstream/downstream relationship with integration pattern
-- `AggregateDesign` (Entity) — root, contents, invariants, commands, events
+- `BoundedContext` (Value Object) — a named context with responsibility and key objects (frozen)
+- `ContextRelationship` (Value Object) — upstream/downstream relationship with integration pattern (frozen)
+- `AggregateDesign` (Value Object) — root, contents, invariants, commands, events (frozen)
 - `SubdomainClassification` (Value Object) — Core/Supporting/Generic with rationale
 - `DomainModelGenerated` (Domain Event) — emitted when all DDD artifacts are complete
 
@@ -595,17 +594,17 @@ subdomains:
 **Aggregate Root:** DomainModel
 
 **Contains:**
-- `DomainStory` (Entity) — one per business process
+- `DomainStory` (Value Object) — one per business process (frozen)
 - `UbiquitousLanguage` (Entity) — glossary of domain terms
-- `BoundedContextMap` (Entity) — contexts and relationships
-- `AggregateDesign` (Entity) — per Core bounded context
+- `BoundedContext` (Value Object) — context with responsibility and classification (frozen)
+- `AggregateDesign` (Value Object) — per Core bounded context (frozen)
 - `SubdomainClassification` (Value Object) — per subdomain
 
 **Invariants:**
-1. Every term in UbiquitousLanguage must appear in at least one DomainStory
+1. Every term in UbiquitousLanguage must appear in at least one DomainStory (word boundary match)
 2. Every BoundedContext must have at least one SubdomainClassification
 3. Every Core subdomain must have at least one AggregateDesign with invariants
-4. BoundedContextMap relationships must be bidirectional (if A → B, B knows about A)
+4. Ambiguous terms must have per-context definitions
 5. Ambiguous terms must be documented with per-context meanings
 
 **Commands:**

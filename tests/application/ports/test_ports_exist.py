@@ -1,6 +1,6 @@
 """Tests for application layer port Protocols.
 
-Verifies all 14 port Protocols exist, are importable, are runtime-checkable
+Verifies all 15 port Protocols exist, are importable, are runtime-checkable
 Protocol subclasses, expose the required methods, and have no external
 dependencies.
 """
@@ -15,24 +15,25 @@ from typing import Protocol, runtime_checkable
 import pytest
 
 # ---------------------------------------------------------------------------
-# 1. All 14 Protocols exist and are importable from the ports package
+# 1. All 15 Protocols exist and are importable from the ports package
 # ---------------------------------------------------------------------------
 
 ALL_PORT_NAMES = [
+    "ArtifactRendererPort",
     "BootstrapPort",
-    "RescuePort",
-    "DiscoveryPort",
-    "ArtifactGenerationPort",
-    "FitnessGenerationPort",
-    "TicketGenerationPort",
     "ConfigGenerationPort",
-    "ToolDetectionPort",
-    "QualityGatePort",
-    "KnowledgeLookupPort",
+    "DiscoveryPort",
     "DocHealthPort",
     "DocReviewPort",
-    "TicketHealthPort",
+    "FileWriterPort",
+    "FitnessGenerationPort",
+    "KnowledgeLookupPort",
     "PersonaPort",
+    "QualityGatePort",
+    "RescuePort",
+    "TicketGenerationPort",
+    "TicketHealthPort",
+    "ToolDetectionPort",
 ]
 
 
@@ -45,7 +46,7 @@ def test_protocol_importable_from_package(name):
 
 
 def test_all_dunder_exports():
-    """__all__ in the ports package lists exactly the 14 Protocols."""
+    """__all__ in the ports package lists exactly the 15 Protocols."""
     from src.application import ports
 
     assert hasattr(ports, "__all__"), "ports package has no __all__"
@@ -93,7 +94,8 @@ EXPECTED_METHODS: dict[str, list[str]] = {
         "confirm_playback",
         "complete",
     ],
-    "ArtifactGenerationPort": ["generate"],
+    "ArtifactRendererPort": ["render_prd", "render_ddd", "render_architecture"],
+    "FileWriterPort": ["write_file"],
     "FitnessGenerationPort": ["generate"],
     "TicketGenerationPort": ["generate"],
     "ConfigGenerationPort": ["generate"],

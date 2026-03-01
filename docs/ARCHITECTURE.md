@@ -91,7 +91,7 @@ status: draft
 | --------------------- | ------------------------------------------------------- | -------------------- | -------------- |
 | `vs` CLI              | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
 | `alty-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
-| 13 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
+| 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
 | DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
 | DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
 | FitnessTestSuite      | Generate import-linter + pytestarch from context map    | Architecture Testing | Core           |
