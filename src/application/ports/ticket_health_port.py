@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.ticket_freshness import TicketHealthReport
+
 
 @runtime_checkable
 class TicketHealthPort(Protocol):
@@ -20,14 +22,14 @@ class TicketHealthPort(Protocol):
     tickets, and report on ripple review status.
     """
 
-    def report(self, project_dir: Path) -> str:
+    def report(self, project_dir: Path) -> TicketHealthReport:
         """Generate a ticket health report.
 
         Args:
             project_dir: The project directory containing the ticket store.
 
         Returns:
-            A health report covering staleness, review_needed flags,
+            A TicketHealthReport covering staleness, review_needed flags,
             and dependency graph status.
         """
         ...

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.persona import PersonaDefinition
+
 
 @runtime_checkable
 class PersonaPort(Protocol):
@@ -20,23 +22,20 @@ class PersonaPort(Protocol):
     tool-native persona configurations (e.g., .claude/agents/*.md).
     """
 
-    def list_personas(self) -> list[str]:
-        """List all available agent persona names.
+    def list_personas(self) -> tuple[PersonaDefinition, ...]:
+        """List all available agent persona definitions.
 
         Returns:
-            List of persona identifiers (e.g., ["developer", "tech-lead"]).
+            Tuple of PersonaDefinition values from the persona registry.
         """
         ...
 
-    def generate(self, persona_name: str, tools: list[str], output_dir: Path) -> str:
+    def generate(self, persona_name: str, tools: tuple[str, ...], output_dir: Path) -> None:
         """Generate persona configuration files for specified tools.
 
         Args:
             persona_name: The persona to generate configs for.
-            tools: List of AI coding tool identifiers.
+            tools: AI coding tool identifiers.
             output_dir: Directory where generated persona files will be written.
-
-        Returns:
-            Summary of the generated persona configurations.
         """
         ...

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.doc_health import DocHealthReport
+
 
 @runtime_checkable
 class DocHealthPort(Protocol):
@@ -20,24 +22,24 @@ class DocHealthPort(Protocol):
     complete, consistent, and up to date.
     """
 
-    def check(self, project_dir: Path) -> str:
+    def check(self, project_dir: Path) -> DocHealthReport:
         """Check the health of project documentation.
 
         Args:
             project_dir: The project directory containing docs to check.
 
         Returns:
-            A health report for the project documentation.
+            A DocHealthReport for the project documentation.
         """
         ...
 
-    def check_knowledge(self, knowledge_dir: Path) -> str:
+    def check_knowledge(self, knowledge_dir: Path) -> DocHealthReport:
         """Check the health of knowledge base entries.
 
         Args:
             knowledge_dir: The knowledge base directory to check.
 
         Returns:
-            A health report for the knowledge base.
+            A DocHealthReport for the knowledge base.
         """
         ...
