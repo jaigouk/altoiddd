@@ -71,6 +71,9 @@ class _StubBootstrap:
 class _StubDiscovery:
     """Stub DiscoveryPort -- raises NotImplementedError on all methods."""
 
+    def get_session(self, session_id: str) -> DiscoverySession:
+        raise NotImplementedError
+
     def start_session(self, readme_content: str) -> DiscoverySession:
         raise NotImplementedError
 

@@ -21,7 +21,11 @@ from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
 
+from src.domain.models.discovery_session import DiscoveryStatus
+from src.domain.models.errors import InvariantViolationError, SessionNotFoundError
 from src.infrastructure.composition import AppContext, create_app
+from src.infrastructure.mcp.discovery_adapter import DiscoveryAdapter
+from src.infrastructure.session.session_store import SessionStore
 
 # ── Input validation ─────────────────────────────────────────────────
 
@@ -60,8 +64,16 @@ McpContext = Context[Any, AppContext, Any]
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
-    """Create the application context for the MCP server lifetime."""
+    """Create the application context for the MCP server lifetime.
+
+    Wires the SessionStore and DiscoveryAdapter into AppContext so that
+    discovery tools share session state across stateless MCP calls.
+    """
+    store = SessionStore()
+    adapter = DiscoveryAdapter(store=store)
     ctx = create_app()
+    # Replace the stub discovery with our real adapter
+    object.__setattr__(ctx, "discovery", adapter)
     yield ctx
 
 
@@ -100,7 +112,7 @@ async def _run_bd(*args: str) -> str:
     return stdout.decode() if stdout else ""
 
 
-# ── Tools (11) ───────────────────────────────────────────────────────
+# ── Tools: Bootstrap & Generation (10) ──────────────────────────────
 
 
 @mcp.tool()
@@ -108,14 +120,6 @@ async def init_project(project_dir: str, ctx: McpContext) -> str:
     """Bootstrap a new project from a README idea."""
     app = _get_app(ctx)
     return app.bootstrap.preview(_safe_project_path(project_dir, "project_dir"))
-
-
-@mcp.tool()
-async def guide_ddd(readme_content: str, ctx: McpContext) -> str:
-    """Start a guided DDD discovery session from README content."""
-    app = _get_app(ctx)
-    session = app.discovery.start_session(readme_content)
-    return f"Discovery session started: {session.session_id}"
 
 
 @mcp.tool()
@@ -145,7 +149,10 @@ async def generate_fitness(
             output_dir=safe_dir,
         )
     except NotImplementedError:
-        return "Error: fitness generation requires a completed domain model. Run guide_ddd first."
+        return (
+            "Error: fitness generation requires a completed domain model. "
+            "Run guide_start first."
+        )
     return f"Fitness functions generated in {safe_dir}"
 
 
@@ -163,7 +170,7 @@ async def generate_tickets(output_dir: str, ctx: McpContext) -> str:
             output_dir=safe_dir,
         )
     except NotImplementedError:
-        return "Error: ticket generation requires a completed domain model. Run guide_ddd first."
+        return "Error: ticket generation requires a completed domain model. Run guide_start first."
     return f"Tickets generated in {safe_dir}"
 
 
@@ -182,7 +189,7 @@ async def generate_configs(output_dir: str, ctx: McpContext) -> str:
             output_dir=safe_dir,
         )
     except NotImplementedError:
-        return "Error: config generation requires a completed domain model. Run guide_ddd first."
+        return "Error: config generation requires a completed domain model. Run guide_start first."
     return f"Configs generated in {safe_dir}"
 
 
@@ -224,6 +231,202 @@ async def ticket_health(project_dir: str, ctx: McpContext) -> str:
     """Show ripple review report for tickets needing attention."""
     app = _get_app(ctx)
     return str(app.ticket_health.report(_safe_project_path(project_dir, "project_dir")))
+
+
+# ── Tools: Guided Discovery (7) ─────────────────────────────────────
+
+
+def _format_next_question(session: Any) -> str:
+    """Build a response describing what the MCP client should do next."""
+    from src.domain.models.question import Question
+
+    status = session.status
+    answered_ids = {a.question_id for a in session.answers}
+
+    if status == DiscoveryStatus.PLAYBACK_PENDING:
+        return (
+            f"Session {session.session_id}: PLAYBACK_PENDING.\n"
+            f"Please confirm the playback summary before continuing.\n"
+            f"Use guide_confirm_playback(session_id, confirmed=True) to proceed."
+        )
+
+    if status == DiscoveryStatus.COMPLETED:
+        return f"Session {session.session_id}: COMPLETED with {len(session.answers)} answers."
+
+    # Find the next unanswered question
+    for q in Question.CATALOG:
+        if q.id not in answered_ids:
+            register = session.register
+            is_technical = register and register.value == "technical"
+            text = q.technical_text if is_technical else q.non_technical_text
+            return (
+                f"Session {session.session_id}: next question {q.id} ({q.phase.value} phase).\n"
+                f"{text}"
+            )
+
+    return f"Session {session.session_id}: all questions answered. Use guide_complete to finish."
+
+
+@mcp.tool()
+async def guide_start(readme_content: str, ctx: McpContext) -> str:
+    """Start a guided DDD discovery session from README content.
+
+    Returns a session_id for use in subsequent guide_* tool calls.
+    The session persists server-side for 30 minutes (TTL).
+    """
+    app = _get_app(ctx)
+    session = app.discovery.start_session(readme_content)
+    return (
+        f"Discovery session started.\n"
+        f"session_id: {session.session_id}\n"
+        f"Next step: detect persona with guide_detect_persona(session_id, choice)\n"
+        f"Choices: 1=Developer, 2=Product Owner, 3=Domain Expert, 4=Mixed"
+    )
+
+
+@mcp.tool()
+async def guide_detect_persona(session_id: str, choice: str, ctx: McpContext) -> str:
+    """Detect the user persona for a discovery session.
+
+    Args:
+        session_id: The session ID from guide_start.
+        choice: '1'=Developer, '2'=Product Owner, '3'=Domain Expert, '4'=Mixed.
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.detect_persona(session_id, choice)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+    except (ValueError, InvariantViolationError) as e:
+        return f"Error: {e}"
+    persona_val = session.persona.value if session.persona else "unknown"
+    register_val = session.register.value if session.register else "unknown"
+    return (
+        f"Persona detected: {persona_val}, register: {register_val}.\n"
+        f"{_format_next_question(session)}"
+    )
+
+
+@mcp.tool()
+async def guide_answer(
+    session_id: str, question_id: str, answer: str, ctx: McpContext
+) -> str:
+    """Answer a discovery question.
+
+    Args:
+        session_id: The session ID from guide_start.
+        question_id: The question to answer (Q1-Q10).
+        answer: The user's free-text answer.
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.answer_question(session_id, question_id, answer)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+    except (ValueError, InvariantViolationError) as e:
+        return f"Error: {e}"
+    return (
+        f"Recorded answer for {question_id}.\n"
+        f"{_format_next_question(session)}"
+    )
+
+
+@mcp.tool()
+async def guide_skip_question(
+    session_id: str, question_id: str, reason: str, ctx: McpContext
+) -> str:
+    """Skip a discovery question with an explicit reason.
+
+    Args:
+        session_id: The session ID from guide_start.
+        question_id: The question to skip (Q1-Q10).
+        reason: Why it was skipped (must be non-empty).
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.skip_question(session_id, question_id, reason)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+    except (ValueError, InvariantViolationError) as e:
+        return f"Error: {e}"
+    return (
+        f"Skipped {question_id} (reason: {reason}).\n"
+        f"{_format_next_question(session)}"
+    )
+
+
+@mcp.tool()
+async def guide_confirm_playback(
+    session_id: str, confirmed: bool, ctx: McpContext
+) -> str:
+    """Confirm or reject the playback summary.
+
+    Args:
+        session_id: The session ID from guide_start.
+        confirmed: True to accept the summary, False to revise.
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.confirm_playback(session_id, confirmed)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+    except (ValueError, InvariantViolationError) as e:
+        return f"Error: {e}"
+    action = "confirmed" if confirmed else "rejected"
+    return (
+        f"Playback {action}.\n"
+        f"{_format_next_question(session)}"
+    )
+
+
+@mcp.tool()
+async def guide_complete(session_id: str, ctx: McpContext) -> str:
+    """Complete a discovery session and produce domain events.
+
+    Validates that minimum MVP questions (Q1, Q3, Q4, Q9, Q10) have been
+    answered before marking complete.
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.complete(session_id)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+    except (ValueError, InvariantViolationError) as e:
+        return f"Error: {e}"
+    return (
+        f"Discovery session completed.\n"
+        f"session_id: {session.session_id}\n"
+        f"Answers: {len(session.answers)}\n"
+        f"Events: {len(session.events)}\n"
+        f"Next step: use generate_artifacts to produce DDD documents."
+    )
+
+
+@mcp.tool()
+async def guide_status(session_id: str, ctx: McpContext) -> str:
+    """Get the current status of a discovery session.
+
+    Returns phase, persona, answered questions, and next steps.
+    """
+    app = _get_app(ctx)
+    try:
+        session = app.discovery.get_session(session_id)
+    except SessionNotFoundError:
+        return f"Error: session '{session_id}' not found or expired."
+
+    answered_ids = [a.question_id for a in session.answers]
+    persona_str = session.persona.value if session.persona else "not detected"
+    register_str = session.register.value if session.register else "not set"
+
+    return (
+        f"Session: {session_id}\n"
+        f"Status: {session.status.value}\n"
+        f"Persona: {persona_str}\n"
+        f"Register: {register_str}\n"
+        f"Phase: {session.current_phase.value}\n"
+        f"Answered: {len(answered_ids)} ({', '.join(answered_ids) or 'none'})\n"
+        f"Playbacks: {len(session.playback_confirmations)}"
+    )
 
 
 # ── Resources (10) ───────────────────────────────────────────────────

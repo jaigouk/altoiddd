@@ -82,6 +82,20 @@ class DiscoveryPort(Protocol):
         """
         ...
 
+    def get_session(self, session_id: str) -> DiscoverySession:
+        """Retrieve a session by its identifier.
+
+        Args:
+            session_id: The active discovery session identifier.
+
+        Returns:
+            The DiscoverySession.
+
+        Raises:
+            SessionNotFoundError: If the session_id is not found or expired.
+        """
+        ...
+
     def complete(self, session_id: str) -> DiscoverySession:
         """Complete the discovery session and produce domain artifacts.
 

@@ -130,11 +130,11 @@ class TestMcpServerInstance:
         assert callable(app_lifespan)
         assert mcp._mcp_server.lifespan is not None
 
-    def test_mcp_server_registers_eleven_tools(self):
+    def test_mcp_server_registers_seventeen_tools(self):
         from src.infrastructure.mcp.server import mcp
 
         tools = mcp._tool_manager._tools
-        assert len(tools) == 11, f"Expected 11 tools, got {len(tools)}: {list(tools.keys())}"
+        assert len(tools) == 17, f"Expected 17 tools, got {len(tools)}: {list(tools.keys())}"
 
     def test_mcp_server_registers_ten_resources(self):
         """10 resources total = static resources + URI templates."""
@@ -166,13 +166,31 @@ def _all_resource_uris() -> set[str]:
 
 
 class TestToolRegistration:
-    """Tests that each of the 11 tools is registered."""
+    """Tests that each of the 17 tools is registered."""
 
     def test_init_project_tool_exists(self):
         assert "init_project" in _tool_names()
 
-    def test_guide_ddd_tool_exists(self):
-        assert "guide_ddd" in _tool_names()
+    def test_guide_start_tool_exists(self):
+        assert "guide_start" in _tool_names()
+
+    def test_guide_detect_persona_tool_exists(self):
+        assert "guide_detect_persona" in _tool_names()
+
+    def test_guide_answer_tool_exists(self):
+        assert "guide_answer" in _tool_names()
+
+    def test_guide_skip_question_tool_exists(self):
+        assert "guide_skip_question" in _tool_names()
+
+    def test_guide_confirm_playback_tool_exists(self):
+        assert "guide_confirm_playback" in _tool_names()
+
+    def test_guide_complete_tool_exists(self):
+        assert "guide_complete" in _tool_names()
+
+    def test_guide_status_tool_exists(self):
+        assert "guide_status" in _tool_names()
 
     def test_generate_artifacts_tool_exists(self):
         assert "generate_artifacts" in _tool_names()
@@ -271,6 +289,17 @@ class TestAppLifespan:
 
         ctx = asyncio.run(_run())
         assert isinstance(ctx, AppContext)
+
+    def test_app_lifespan_wires_discovery_adapter(self):
+        from src.infrastructure.mcp.discovery_adapter import DiscoveryAdapter
+        from src.infrastructure.mcp.server import app_lifespan, mcp
+
+        async def _run() -> object:
+            async with app_lifespan(mcp) as ctx:
+                return ctx.discovery
+
+        discovery = asyncio.run(_run())
+        assert isinstance(discovery, DiscoveryAdapter)
 
 
 class TestInputValidation:
