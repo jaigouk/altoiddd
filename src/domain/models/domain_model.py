@@ -46,6 +46,7 @@ class DomainModel:
         self._relationships: list[ContextRelationship] = []
         self._aggregates: list[AggregateDesign] = []
         self._events: list[DomainModelGenerated] = []
+        self._warnings: list[str] = []
 
     # -- Properties -----------------------------------------------------------
 
@@ -78,6 +79,11 @@ class DomainModel:
     def events(self) -> tuple[DomainModelGenerated, ...]:
         """Domain events produced by this aggregate (defensive copy)."""
         return tuple(self._events)
+
+    @property
+    def warnings(self) -> tuple[str, ...]:
+        """Warnings produced during finalize() (defensive copy)."""
+        return tuple(self._warnings)
 
     # -- Commands -------------------------------------------------------------
 
@@ -258,6 +264,7 @@ class DomainModel:
         Raises:
             InvariantViolationError: If any invariant is violated.
         """
+        self._warnings.clear()
         self._check_terms_in_stories()
         self._check_context_classifications()
         self._check_core_aggregates()
@@ -300,11 +307,24 @@ class DomainModel:
                 raise InvariantViolationError(msg)
 
     def _check_context_classifications(self) -> None:
-        """Invariant 2: Every BoundedContext must have a SubdomainClassification."""
+        """Invariant 2: Every BoundedContext must have a SubdomainClassification.
+
+        Also warns (does not error) when all contexts are GENERIC, since a
+        project with no competitive advantage likely has misclassifications.
+        """
         for ctx in self._contexts:
             if ctx.classification is None:
                 msg = f"BoundedContext '{ctx.name}' has no classification"
                 raise InvariantViolationError(msg)
+
+        if self._contexts and all(
+            ctx.classification == SubdomainClassification.GENERIC for ctx in self._contexts
+        ):
+            self._warnings.append(
+                "All bounded contexts are classified as Generic. "
+                "A project with no Core or Supporting subdomain likely "
+                "has misclassified contexts."
+            )
 
     def _check_core_aggregates(self) -> None:
         """Invariant 3: Every Core subdomain must have at least one AggregateDesign."""

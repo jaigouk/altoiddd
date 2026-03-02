@@ -230,31 +230,29 @@ class ArtifactGenerationHandler:
         model: DomainModel,
         answers: dict[str, str],
     ) -> None:
-        """Extract subdomain classifications from Q10 answers."""
+        """Extract subdomain classifications from Q10 answers.
+
+        Only classifies contexts that match keywords in the Q10 answer.
+        Unresolved contexts remain as None so finalize() invariant 2
+        catches them — no silent SUPPORTING default.
+        """
         q10 = answers.get("Q10", "").lower()
         if not q10:
-            for ctx in model.bounded_contexts:
-                if ctx.classification is None:
-                    model.classify_subdomain(
-                        ctx.name,
-                        SubdomainClassification.SUPPORTING,
-                        "No classification provided — defaulting to Supporting",
-                    )
             return
 
         for ctx in model.bounded_contexts:
-            classification = SubdomainClassification.SUPPORTING
-            rationale = "Default classification"
+            if ctx.classification is not None:
+                continue
 
             ctx_lower = ctx.name.lower()
             for keyword, cls in _CLASSIFICATION_KEYWORDS.items():
                 if keyword in q10 and ctx_lower in q10:
-                    classification = cls
-                    rationale = f"Classified as {cls.value} based on Q10 answer"
+                    model.classify_subdomain(
+                        ctx.name,
+                        cls,
+                        f"Classified as {cls.value} based on Q10 answer",
+                    )
                     break
-
-            if ctx.classification is None:
-                model.classify_subdomain(ctx.name, classification, rationale)
 
     def _extract_aggregates(
         self,

@@ -12,6 +12,7 @@ from src.application.commands.artifact_generation_handler import (
 )
 from src.domain.events.discovery_events import DiscoveryCompleted
 from src.domain.models.discovery_values import Answer, Persona, Playback, Register
+from src.domain.models.domain_values import SubdomainClassification
 
 
 def _make_discovery_event(
@@ -347,3 +348,133 @@ class TestDeadCodeRemoved:
         from src.application.commands import artifact_generation_handler as mod
 
         assert not hasattr(mod, "_QUESTION_ARTIFACT_MAP")
+
+
+# =========================================================================
+# Fix 1: Silent SUPPORTING default (alty-5o4)
+# =========================================================================
+
+
+class TestNoSilentSupportingDefault:
+    """_extract_classifications must NOT silently default to SUPPORTING.
+
+    When Q10 is empty or keywords don't resolve for a context, the context
+    should remain unclassified (None) so finalize() invariant 2 catches it.
+    """
+
+    def test_empty_q10_leaves_contexts_unclassified(self) -> None:
+        """Empty Q10 → contexts stay None → finalize raises invariant 2."""
+        from src.domain.models.errors import InvariantViolationError
+
+        renderer = MagicMock()
+        renderer.render_prd.return_value = ""
+        renderer.render_ddd.return_value = ""
+        renderer.render_architecture.return_value = ""
+        writer = MagicMock()
+
+        handler = ArtifactGenerationHandler(renderer=renderer, writer=writer)
+        answers = (
+            Answer(question_id="Q1", response_text="Customer"),
+            Answer(
+                question_id="Q3",
+                response_text="Customer places order",
+            ),
+            Answer(
+                question_id="Q4",
+                response_text="Order must have at least one item",
+            ),
+            Answer(question_id="Q9", response_text="Sales, Inventory"),
+            Answer(question_id="Q10", response_text=""),
+        )
+        event = _make_discovery_event(answers=answers)
+        with pytest.raises(InvariantViolationError, match="has no classification"):
+            handler.build_preview(event)
+
+    def test_missing_q10_leaves_contexts_unclassified(self) -> None:
+        """No Q10 answer at all → same as empty Q10."""
+        from src.domain.models.errors import InvariantViolationError
+
+        renderer = MagicMock()
+        renderer.render_prd.return_value = ""
+        renderer.render_ddd.return_value = ""
+        renderer.render_architecture.return_value = ""
+        writer = MagicMock()
+
+        handler = ArtifactGenerationHandler(renderer=renderer, writer=writer)
+        answers = (
+            Answer(question_id="Q1", response_text="Customer"),
+            Answer(
+                question_id="Q3",
+                response_text="Customer places order",
+            ),
+            Answer(
+                question_id="Q4",
+                response_text="Order must have at least one item",
+            ),
+            Answer(question_id="Q9", response_text="Sales"),
+        )
+        event = _make_discovery_event(answers=answers)
+        with pytest.raises(InvariantViolationError, match="has no classification"):
+            handler.build_preview(event)
+
+    def test_unresolvable_keywords_leaves_context_unclassified(self) -> None:
+        """Q10 has text but no matching keywords for a context → stays None."""
+        from src.domain.models.errors import InvariantViolationError
+
+        renderer = MagicMock()
+        renderer.render_prd.return_value = ""
+        renderer.render_ddd.return_value = ""
+        renderer.render_architecture.return_value = ""
+        writer = MagicMock()
+
+        handler = ArtifactGenerationHandler(renderer=renderer, writer=writer)
+        answers = (
+            Answer(question_id="Q1", response_text="Customer"),
+            Answer(
+                question_id="Q3",
+                response_text="Customer places order",
+            ),
+            Answer(
+                question_id="Q4",
+                response_text="Order must have at least one item",
+            ),
+            Answer(question_id="Q9", response_text="Sales, Billing"),
+            Answer(
+                question_id="Q10",
+                response_text="Sales is core competitive advantage",
+            ),
+        )
+        event = _make_discovery_event(answers=answers)
+        # Sales resolves to CORE, but Billing has no matching keywords → stays None
+        with pytest.raises(InvariantViolationError, match="has no classification"):
+            handler.build_preview(event)
+
+    def test_resolved_context_still_gets_classified(self) -> None:
+        """Contexts that DO match keywords should still be classified."""
+        renderer = MagicMock()
+        renderer.render_prd.return_value = ""
+        renderer.render_ddd.return_value = ""
+        renderer.render_architecture.return_value = ""
+        writer = MagicMock()
+
+        handler = ArtifactGenerationHandler(renderer=renderer, writer=writer)
+        answers = (
+            Answer(question_id="Q1", response_text="Customer"),
+            Answer(
+                question_id="Q3",
+                response_text="Customer places order",
+            ),
+            Answer(
+                question_id="Q4",
+                response_text="Order must have at least one item",
+            ),
+            Answer(question_id="Q9", response_text="Sales"),
+            Answer(
+                question_id="Q10",
+                response_text="Sales is core competitive advantage",
+            ),
+        )
+        event = _make_discovery_event(answers=answers)
+        preview = handler.build_preview(event)
+        ctx = preview.model.bounded_contexts[0]
+        assert ctx.classification == SubdomainClassification.CORE

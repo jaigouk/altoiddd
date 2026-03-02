@@ -568,3 +568,70 @@ class TestDuplicateAggregateDesign:
             model.design_aggregate(
                 AggregateDesign(name="orderagg", context_name="sales", root_entity="Other")
             )
+
+
+# =========================================================================
+# Fix 2: All-Generic warning (alty-5o4)
+# =========================================================================
+
+
+class TestAllGenericWarning:
+    """finalize() should warn (not error) when all contexts are GENERIC.
+
+    A project with only Generic subdomains has no competitive advantage
+    and likely indicates a misclassification.
+    """
+
+    def test_all_generic_produces_warning(self) -> None:
+        """All contexts classified GENERIC → model.warnings has a message."""
+        model = DomainModel()
+        model.add_domain_story(
+            DomainStory(
+                name="Simple Flow",
+                actors=("User",),
+                trigger="User starts",
+                steps=("User uses Auth", "User uses Logging"),
+            )
+        )
+        model.add_bounded_context(BoundedContext(name="Auth", responsibility="Auth"))
+        model.classify_subdomain("Auth", SubdomainClassification.GENERIC, "Off-the-shelf")
+        model.add_bounded_context(BoundedContext(name="Logging", responsibility="Logs"))
+        model.classify_subdomain("Logging", SubdomainClassification.GENERIC, "Off-the-shelf")
+        model.add_term("Auth", "Authentication", "Auth")
+        model.add_term("Logging", "Application logs", "Logging")
+
+        model.finalize()  # Should NOT raise — Generic-only is valid.
+        assert len(model.warnings) >= 1
+        assert any("generic" in w.lower() for w in model.warnings)
+
+    def test_at_least_one_core_no_warning(self) -> None:
+        """At least one Core context → no all-Generic warning."""
+        model = _make_valid_model()
+        model.finalize()
+        assert not any("generic" in w.lower() for w in model.warnings)
+
+    def test_mixed_supporting_generic_no_warning(self) -> None:
+        """Supporting + Generic (no Core) → no all-Generic warning."""
+        model = DomainModel()
+        model.add_domain_story(
+            DomainStory(
+                name="Flow",
+                actors=("User",),
+                trigger="User starts",
+                steps=("User uses Billing", "User uses Auth"),
+            )
+        )
+        model.add_bounded_context(BoundedContext(name="Billing", responsibility="Bills"))
+        model.classify_subdomain("Billing", SubdomainClassification.SUPPORTING, "Needed")
+        model.add_bounded_context(BoundedContext(name="Auth", responsibility="Auth"))
+        model.classify_subdomain("Auth", SubdomainClassification.GENERIC, "Commodity")
+        model.add_term("Billing", "Payment processing", "Billing")
+        model.add_term("Auth", "Authentication", "Auth")
+
+        model.finalize()
+        assert not any("generic" in w.lower() for w in model.warnings)
+
+    def test_warnings_property_exists_before_finalize(self) -> None:
+        """warnings property is available (empty) before finalize()."""
+        model = DomainModel()
+        assert model.warnings == ()
