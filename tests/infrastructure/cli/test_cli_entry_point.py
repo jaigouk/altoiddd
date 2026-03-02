@@ -66,7 +66,6 @@ class TestTopLevelCommandStubs:
         "init",
         "guide",
         "detect",
-        "check",
         "kb",
         "doc-health",
         "doc-review",

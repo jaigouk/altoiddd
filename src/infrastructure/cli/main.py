@@ -107,9 +107,41 @@ def detect(
 
 
 @app.command()
-def check() -> None:
+def check(
+    gate: str = typer.Option(
+        "", "--gate", help="Run a specific gate: lint, types, tests, fitness."
+    ),
+) -> None:
     """Run quality gates (lint, types, tests, fitness)."""
-    typer.echo("alty check: not yet implemented")
+    from src.domain.models.quality_gate import QualityGate
+    from src.infrastructure.composition import create_app
+
+    ctx = create_app()
+
+    gates_arg: tuple[QualityGate, ...] | None = None
+    if gate:
+        try:
+            gates_arg = (QualityGate(gate),)
+        except ValueError:
+            valid = ", ".join(g.value for g in QualityGate)
+            typer.echo(f"Invalid gate: {gate!r}. Valid gates: {valid}", err=True)
+            raise typer.Exit(code=1) from None
+
+    report = ctx.quality_gate.check(gates=gates_arg)
+
+    for result in report.results:
+        status = "PASS" if result.passed else "FAIL"
+        typer.echo(f"  [{status}] {result.gate.value} ({result.duration_ms}ms)")
+        if not result.passed:
+            for line in result.output.strip().splitlines():
+                typer.echo(f"         {line}")
+
+    if report.passed:
+        typer.echo(f"\nAll {len(report.results)} quality gate(s) passed.")
+    else:
+        failed = sum(1 for r in report.results if not r.passed)
+        typer.echo(f"\n{failed} quality gate(s) failed.", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command()
