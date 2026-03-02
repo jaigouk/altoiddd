@@ -217,3 +217,137 @@ class TestSpikeFollowUpAdapterEdgeCases:
         result = adapter.audit("multi", tmp_path)
         # Should find intents from at least one report
         assert result.defined_count >= 1
+
+
+# ── Improved fuzzy matching (alty-dj7) ─────────────────────────────
+
+
+class TestFuzzyMatchPrefixStripping:
+    """Prefix stripping: common prefixes removed before comparison."""
+
+    def test_task_prefix_stripped(self) -> None:
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match("Task: Build the parser", {"t1": "Build the parser"})
+        assert result == "t1"
+
+    def test_spike_prefix_stripped(self) -> None:
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "Spike: Research caching strategies", {"t1": "Research caching strategies"}
+        )
+        assert result == "t1"
+
+    def test_optional_prefix_stripped(self) -> None:
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match("(Optional) Add retry logic", {"t1": "Add retry logic"})
+        assert result == "t1"
+
+    def test_implement_alty_prefix_stripped(self) -> None:
+        """'Implement X' matches 'Implement alty X'."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "Implement fitness function generation",
+            {"t1": "Implement alty generate fitness"},
+        )
+        # Should match via keyword overlap even after prefix strip
+        assert result == "t1"
+
+    def test_empty_after_strip_no_match(self) -> None:
+        """A title that's only a prefix should not match anything."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match("Task:", {"t1": "Implement alty detect"})
+        assert result is None
+
+
+class TestFuzzyMatchKeywordOverlap:
+    """Keyword overlap scoring: Jaccard similarity on tokenized titles."""
+
+    def test_keyword_overlap_above_threshold(self) -> None:
+        """Titles with rephrased words match via keyword overlap."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        # "fitness function generation (import-linter + pytestarch)"
+        # vs "Implement alty generate fitness (import-linter + pytestarch)"
+        # Shared keywords: fitness, import-linter, pytestarch
+        result = adapter._fuzzy_match(
+            "Implement fitness function generation (import-linter + pytestarch)",
+            {"t1": "Implement alty generate fitness (import-linter + pytestarch)"},
+        )
+        assert result == "t1"
+
+    def test_keyword_overlap_below_threshold_no_match(self) -> None:
+        """Unrelated titles with few shared words do not match."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "Build the parser for YAML",
+            {"t1": "Deploy the server to production"},
+        )
+        assert result is None
+
+    def test_keyword_reorder_matches(self) -> None:
+        """Same keywords in different order match."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "fitness function generation", {"t1": "generate fitness functions"}
+        )
+        assert result == "t1"
+
+    def test_short_titles_shared_common_word_no_false_positive(self) -> None:
+        """Short titles sharing only 'implement' should not match."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match("Implement parser", {"t1": "Implement deploy pipeline"})
+        assert result is None
+
+
+class TestFuzzyMatchParenthetical:
+    """Parenthetical content contributes to matching."""
+
+    def test_parenthetical_tools_match(self) -> None:
+        """Shared parenthetical tool names boost matching."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "Task: Implement fitness generation (import-linter + pytestarch)",
+            {"t1": "Implement alty generate fitness (import-linter + pytestarch)"},
+        )
+        assert result == "t1"
+
+    def test_no_parenthetical_still_uses_keywords(self) -> None:
+        """Without parenthetical, keyword overlap still works."""
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match(
+            "Implement drift detection for knowledge base",
+            {"t1": "Implement knowledge base drift detection"},
+        )
+        assert result == "t1"
+
+
+class TestFuzzyMatchEmptyExisting:
+    """Edge case: empty ticket dict."""
+
+    def test_empty_existing_returns_none(self) -> None:
+        from src.infrastructure.persistence.spike_follow_up_adapter import SpikeFollowUpAdapter
+
+        adapter = SpikeFollowUpAdapter()
+        result = adapter._fuzzy_match("Build something", {})
+        assert result is None
