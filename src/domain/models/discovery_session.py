@@ -310,6 +310,166 @@ class DiscoverySession:
             )
         )
 
+    # -- Serialization --------------------------------------------------------
+
+    def to_snapshot(self) -> dict[str, object]:
+        """Serialize session state to a JSON-serializable dict.
+
+        Domain events (_events) are intentionally excluded. Events are
+        transient side-effects dispatched by the application layer, not
+        part of persisted state.
+        """
+        return {
+            "session_id": self.session_id,
+            "readme_content": self.readme_content,
+            "status": self._status.value,
+            "persona": self._persona.value if self._persona else None,
+            "register": self._register.value if self._register else None,
+            "answers": [
+                {"question_id": a.question_id, "response_text": a.response_text}
+                for a in self._answers
+            ],
+            "skipped": sorted(self._skipped),
+            "playback_confirmations": [
+                {
+                    "summary_text": p.summary_text,
+                    "confirmed": p.confirmed,
+                    "corrections": p.corrections,
+                }
+                for p in self._playback_confirmations
+            ],
+            "answers_since_last_playback": self._answers_since_last_playback,
+        }
+
+    @classmethod
+    def from_snapshot(cls, data: dict[str, object]) -> DiscoverySession:
+        """Reconstruct a DiscoverySession from a snapshot dict.
+
+        Raises:
+            ValueError: If required fields are missing or contain invalid values.
+        """
+        cls._validate_snapshot_keys(data)
+        status, persona, register, answers, skipped, playbacks, counter = (
+            cls._parse_snapshot_fields(data)
+        )
+        cls._validate_snapshot_consistency(status, persona, counter)
+
+        # Construct session bypassing __init__ to restore internal state
+        session = object.__new__(cls)
+        session.session_id = str(data["session_id"])
+        session.readme_content = str(data["readme_content"])
+        session._status = status
+        session._persona = persona
+        session._register = register
+        session._answers = answers
+        session._skipped = skipped
+        session._playback_confirmations = playbacks
+        session._answers_since_last_playback = counter
+        session._events = []
+
+        return session
+
+    @staticmethod
+    def _validate_snapshot_keys(data: dict[str, object]) -> None:
+        """Verify all required keys are present."""
+        required = {
+            "session_id",
+            "readme_content",
+            "status",
+            "persona",
+            "register",
+            "answers",
+            "skipped",
+            "playback_confirmations",
+            "answers_since_last_playback",
+        }
+        missing = required - set(data.keys())
+        if missing:
+            msg = f"Snapshot missing required fields: {sorted(missing)}"
+            raise ValueError(msg)
+
+    @staticmethod
+    def _parse_snapshot_fields(
+        data: dict[str, object],
+    ) -> tuple[
+        DiscoveryStatus,
+        Persona | None,
+        Register | None,
+        list[Answer],
+        set[str],
+        list[Playback],
+        int,
+    ]:
+        """Parse and validate individual snapshot fields."""
+        status = DiscoveryStatus(data["status"])
+
+        persona_raw = data["persona"]
+        persona = Persona(persona_raw) if persona_raw is not None else None
+
+        register_raw = data["register"]
+        register = Register(register_raw) if register_raw is not None else None
+
+        answers_raw = data["answers"]
+        if not isinstance(answers_raw, list):
+            msg = "answers must be a list"
+            raise ValueError(msg)
+        answers = [
+            Answer(question_id=a["question_id"], response_text=a["response_text"])
+            for a in answers_raw
+        ]
+
+        skipped_raw = data["skipped"]
+        if not isinstance(skipped_raw, list):
+            msg = "skipped must be a list"
+            raise ValueError(msg)
+        skipped = set(skipped_raw)
+
+        pb_raw = data["playback_confirmations"]
+        if not isinstance(pb_raw, list):
+            msg = "playback_confirmations must be a list"
+            raise ValueError(msg)
+        playbacks = [
+            Playback(
+                summary_text=p["summary_text"],
+                confirmed=p["confirmed"],
+                corrections=p.get("corrections", ""),
+            )
+            for p in pb_raw
+        ]
+
+        counter = data["answers_since_last_playback"]
+        if not isinstance(counter, int) or counter < 0:
+            msg = "answers_since_last_playback must be a non-negative integer"
+            raise ValueError(msg)
+        if counter > _PLAYBACK_INTERVAL:
+            msg = (
+                f"answers_since_last_playback ({counter}) "
+                f"exceeds playback interval ({_PLAYBACK_INTERVAL})"
+            )
+            raise ValueError(msg)
+
+        return status, persona, register, answers, skipped, playbacks, counter
+
+    @staticmethod
+    def _validate_snapshot_consistency(
+        status: DiscoveryStatus,
+        persona: Persona | None,
+        counter: int,
+    ) -> None:
+        """Cross-validate status against persona and playback counter."""
+        if status == DiscoveryStatus.CREATED and persona is not None:
+            msg = "CREATED state must have persona=None"
+            raise ValueError(msg)
+        if status != DiscoveryStatus.CREATED and persona is None:
+            msg = f"{status.value} state requires a persona"
+            raise ValueError(msg)
+        if status == DiscoveryStatus.PLAYBACK_PENDING and counter != _PLAYBACK_INTERVAL:
+            msg = f"PLAYBACK_PENDING state requires counter={_PLAYBACK_INTERVAL}, got {counter}"
+            raise ValueError(msg)
+        if status == DiscoveryStatus.ANSWERING and counter >= _PLAYBACK_INTERVAL:
+            msg = f"ANSWERING state requires counter < {_PLAYBACK_INTERVAL}, got {counter}"
+            raise ValueError(msg)
+
     # -- Private helpers ------------------------------------------------------
 
     def _enforce_phase_order(self, question: Question) -> None:
