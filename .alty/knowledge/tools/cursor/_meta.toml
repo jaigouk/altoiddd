@@ -9,12 +9,20 @@ schema_url = ""
 
 [versions]
 current = "v2.5"
-tracked = ["v2.5"]
+tracked = ["v2.5", "v2.4"]
 deprecated = []
 
 [versions.v2_5]
 version_range = ">=2.5.0"
 release_date = "2026-01"
 end_of_support = ""
-breaking_changes = "AGENTS.md support, improved .mdc rule system"
+alias = "current"
+breaking_changes = ["AGENTS.md support (Linux Foundation cross-tool standard)", "Improved .mdc rule system with better glob scoping"]
+last_verified = "2026-02-22"
+
+[versions.v2_4]
+version_range = ">=2.4.0, <2.5.0"
+release_date = "2025-10"
+end_of_support = ""
+breaking_changes = ["MDC rule format with YAML frontmatter", "Team Rules via cloud dashboard"]
 last_verified = "2026-02-22"

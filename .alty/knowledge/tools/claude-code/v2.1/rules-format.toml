@@ -1,0 +1,52 @@
+# Claude Code Rules and CLAUDE.md Format
+# Describes how Claude Code loads instructions from CLAUDE.md and rules/ directory.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.1.15"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/memory"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[claude_md]
+format = "markdown"
+description = "CLAUDE.md is the primary instruction file. Plain markdown, no special syntax required. Content is injected into the system prompt at session start."
+global_path = "~/.claude/CLAUDE.md"
+project_path = ".claude/CLAUDE.md"
+local_path = ".claude/CLAUDE.local.md"
+auto_loaded = true
+notes = "All three levels (global, project, local) are loaded and concatenated. Project CLAUDE.md is committed to version control. Local variant is gitignored for personal preferences."
+
+[rules_directory]
+path = ".claude/rules/"
+format = "markdown"
+file_extension = ".md"
+auto_loaded = true
+description = "Additional instruction files placed in .claude/rules/ are automatically loaded alongside CLAUDE.md. Each file is plain markdown. Use this to split large instruction sets into focused, maintainable files."
+
+[loading_order]
+description = "Instructions are loaded in a deterministic order and concatenated into the system context."
+order = [
+    "1. ~/.claude/CLAUDE.md (global user instructions)",
+    "2. .claude/CLAUDE.md (project team instructions)",
+    "3. .claude/CLAUDE.local.md (project personal instructions)",
+    "4. .claude/rules/*.md (alphabetical order by filename)",
+]
+notes = "Later-loaded content does not override earlier content; all instructions coexist. If instructions conflict, Claude Code treats the most specific scope (local > project > global) as higher intent."
+
+[example]
+description = "Example rules directory layout"
+content = """
+.claude/
+  CLAUDE.md              # Main project instructions
+  CLAUDE.local.md        # Personal overrides (gitignored)
+  rules/
+    01-testing.md        # TDD conventions
+    02-architecture.md   # Layer rules and boundaries
+    03-naming.md         # Naming conventions
+"""

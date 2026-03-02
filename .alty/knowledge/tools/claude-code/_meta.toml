@@ -9,12 +9,20 @@ schema_url = "https://json.schemastore.org/claude-code-settings.json"
 
 [versions]
 current = "v2.1"
-tracked = ["v2.1"]
+tracked = ["v2.1", "v2.0"]
 deprecated = []
 
 [versions.v2_1]
 version_range = ">=2.1.0"
 release_date = "2026-01"
 end_of_support = ""
-breaking_changes = "Added .claude/rules/ directory, skills, subagent memory"
+alias = "current"
+breaking_changes = ["Added .claude/rules/ directory", "Added skills/", "Added agent-memory and subagent definitions", "Added hooks in settings.json"]
+last_verified = "2026-02-22"
+
+[versions.v2_0]
+version_range = ">=2.0.0, <2.1.0"
+release_date = "2025-10"
+end_of_support = ""
+breaking_changes = ["Initial stable release with CLAUDE.md, settings.json, commands/, MCP support"]
 last_verified = "2026-02-22"

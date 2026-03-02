@@ -1,0 +1,35 @@
+# Cursor AGENTS.md Support
+# Describes how Cursor handles the cross-tool AGENTS.md standard.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.5"
+changelog_url = "https://www.cursor.com/changelog"
+source_urls = ["https://docs.cursor.com/context/rules"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[support]
+supported = true
+since = "2026"
+standard = "Agentic AI Foundation (Linux Foundation)"
+description = "Cursor recognizes AGENTS.md at the project root as a source of instructions. Content is loaded alongside .mdc rules."
+
+[format]
+file = "AGENTS.md"
+location = "project root"
+format = "markdown"
+description = "Standard markdown file. No special frontmatter required. Content serves as cross-tool instructions that any compatible AI coding tool can consume."
+
+[limitations]
+no_subagents = "Cursor has no concept of subagents or personas. Unlike Claude Code which supports .claude/agents/*.md for distinct agent definitions, Cursor treats all instructions as a single context."
+no_persona_routing = "AGENTS.md cannot route different sections to different 'agents' in Cursor. All content is loaded uniformly."
+scope = "AGENTS.md provides a cross-tool bridge: shared instructions that work across Cursor, Claude Code, and other compatible tools. Tool-specific features should use native config (.cursor/rules/*.mdc)."
+
+[relationship_to_rules]
+description = "AGENTS.md content is loaded alongside .cursor/rules/*.mdc files. It sits at precedence level 3 (below Project Rules, above .cursorrules legacy)."
+complementary = "Use AGENTS.md for cross-tool instructions. Use .cursor/rules/*.mdc for Cursor-specific features like glob-scoped activation."

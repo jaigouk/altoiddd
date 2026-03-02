@@ -1,0 +1,44 @@
+# Claude Code Slash Commands Format (v2.0)
+# Describes how to define custom slash commands using markdown files.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.0.x"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/slash-commands"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file_extension = ".md"
+location_project = ".claude/commands/"
+location_global = "~/.claude/commands/"
+description = "Each .md file defines one slash command. The filename (without extension) becomes the command name. Subdirectories create namespaced commands (e.g., commands/debug/memory.md becomes /debug-memory)."
+
+[structure]
+description = "The file content is the prompt template that gets sent to Claude when the command is invoked. Write it as plain markdown with instructions for what Claude should do."
+naming = "Filename must use lowercase letters, numbers, and hyphens. The .md extension is stripped to form the command name."
+nesting = "Subdirectories are supported. A file at commands/foo/bar.md becomes the command /foo-bar."
+
+[parameters]
+placeholder = "$ARGUMENTS"
+description = "Use the literal string $ARGUMENTS anywhere in the command template to capture user input after the command name. When the user types '/my-command some text here', $ARGUMENTS is replaced with 'some text here'."
+
+[example]
+description = "Example slash command for running a test file"
+filename = ".claude/commands/test-file.md"
+content = """
+Run the test file specified and analyze any failures.
+
+Test file: $ARGUMENTS
+
+Steps:
+1. Read the test file to understand what is being tested
+2. Run the tests with `uv run pytest $ARGUMENTS -v`
+3. If any tests fail, analyze the failure and suggest fixes
+4. If all tests pass, report the coverage summary
+"""

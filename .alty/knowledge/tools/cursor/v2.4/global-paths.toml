@@ -1,0 +1,34 @@
+# Cursor Global Configuration Paths (v2.4)
+# Global config paths per OS. Cursor uses SQLite, not file-based global config.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.4.x"
+changelog_url = "https://www.cursor.com/changelog"
+source_urls = ["https://docs.cursor.com/context/rules"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[paths.macos]
+config_db = "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
+sqlite_key = "aicontext.personalContext"
+description = "macOS global user rules stored as a text value in SQLite under the aicontext.personalContext key."
+
+[paths.linux]
+config_db = "~/.config/Cursor/User/globalStorage/state.vscdb"
+sqlite_key = "aicontext.personalContext"
+description = "Linux global user rules stored in the same SQLite format as macOS."
+
+[paths.windows]
+config_db = "%APPDATA%\\Cursor\\User\\globalStorage\\state.vscdb"
+sqlite_key = "aicontext.personalContext"
+description = "Windows global user rules stored in the same SQLite format."
+
+[notes]
+not_generatable = "Global config is stored in SQLite (state.vscdb), not in a plain text file. alty cannot directly generate or modify global Cursor config. Users must set global rules through the Cursor UI (Settings > Rules)."
+team_rules = "Team Rules are stored in the Cursor cloud dashboard, not on disk. They require a Cursor team subscription and are managed through the web UI."
+vscode_heritage = "Cursor's global storage path follows VS Code conventions since Cursor is a VS Code fork. The state.vscdb file is a VS Code global storage database."

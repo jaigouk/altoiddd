@@ -1,0 +1,75 @@
+# Cursor Rules Format (MDC) (v2.4)
+# Describes the .mdc rule file format used by Cursor for project-level instructions.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.4.x"
+changelog_url = "https://www.cursor.com/changelog"
+source_urls = ["https://docs.cursor.com/context/rules"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file_extension = ".mdc"
+location_project = ".cursor/rules/"
+description = "MDC (Markdown Configuration) files combine YAML frontmatter with a markdown body. Each file defines one rule set."
+
+[frontmatter_fields]
+description = "Short human-readable summary of what the rule does. Shown in Cursor UI."
+globs = "File glob pattern that controls when this rule activates. Example: 'src/**/*.py'. When set, the rule only applies to matching files."
+alwaysApply = "Boolean. When true, the rule is always included in context regardless of globs. When false, the rule is only included when matching files are in context."
+
+[body]
+format = "markdown"
+description = "The rule content in standard markdown. This is the actual instruction text that Cursor will include in the AI context."
+
+[legacy]
+file = ".cursorrules"
+location = "project root"
+format = "plain text"
+deprecated = true
+description = "Legacy format: a single plain-text file at the project root. No frontmatter, no glob scoping. Superseded by .cursor/rules/*.mdc which supports multiple scoped rule files."
+
+[example]
+description = "A complete .mdc rule file for DDD architecture enforcement"
+filename = "architecture.mdc"
+content = """
+---
+description: Architecture enforcement rules for DDD layers
+globs: "src/**/*.py"
+alwaysApply: false
+---
+
+# Architecture Rules
+
+## Layer Dependencies
+- Domain layer (`src/domain/`) has ZERO external dependencies
+- Application layer depends only on domain and ports (interfaces)
+- Infrastructure implements ports and may use external libraries
+- Dependencies flow inward: infrastructure -> application -> domain
+
+## Naming Conventions
+- Use ubiquitous language from docs/DDD.md
+- Value Objects are immutable dataclasses
+- Entities require explicit identity fields
+"""
+
+[example_always_apply]
+description = "A rule that always applies regardless of file context"
+filename = "general.mdc"
+content = """
+---
+description: General coding standards for the project
+globs: ""
+alwaysApply: true
+---
+
+# Coding Standards
+- Python 3.12+ with type annotations on all functions
+- Follow TDD: write failing test first, then minimal implementation
+- Use ruff for linting, mypy for type checking
+"""

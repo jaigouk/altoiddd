@@ -1,0 +1,58 @@
+# Claude Code MCP Server Configuration (v2.0)
+# Describes the .mcp.json format for configuring MCP (Model Context Protocol) servers.
+
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "v2.0.x"
+changelog_url = "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
+source_urls = ["https://docs.anthropic.com/en/docs/claude-code/mcp-servers"]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[format]
+file = ".mcp.json"
+format = "json"
+description = "JSON file that configures MCP servers available to Claude Code. Each server entry defines how to launch and connect to an MCP server process."
+
+[schema]
+description = "Top-level object has a single 'mcpServers' key containing named server definitions."
+mcpServers = "Object where each key is a server name and value is a server configuration object."
+
+[schema.server_fields]
+command = { type = "string", required = true, description = "The executable to run (e.g., 'npx', 'uvx', 'node', 'python')." }
+args = { type = "list[string]", required = false, description = "Arguments passed to the command." }
+env = { type = "object", required = false, description = "Environment variables set for the server process. Key-value string pairs." }
+cwd = { type = "string", required = false, description = "Working directory for the server process." }
+
+[scopes]
+project = { path = ".mcp.json", description = "Project-level MCP config. Committed to version control. Servers available when working in this project." }
+global = { path = "~/.claude/.mcp.json", description = "Global MCP config. Servers available in all projects for this user." }
+notes = "Project-level servers are merged with global servers. If both define the same server name, the project-level definition takes precedence."
+
+[example]
+content = """
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "custom-server": {
+      "command": "uvx",
+      "args": ["my-mcp-server", "--port", "3000"],
+      "cwd": "/home/user/servers"
+    }
+  }
+}
+"""
