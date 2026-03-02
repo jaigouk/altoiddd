@@ -5,8 +5,9 @@ description: >
   changes for architecture review, DDD/SOLID compliance, code review, and
   quality gate enforcement. Also invoke before structural changes to verify
   alignment with ARCHITECTURE.md.
-tools: Read, Grep, Glob, Bash
-model: inherit
+tools: Read, Grep, Glob, Bash, Write, Edit
+model: opus
+permissionMode: default
 memory: project
 ---
 

@@ -6,7 +6,8 @@ description: >
   options, or writing research reports. Invoke for any spike ticket under an
   ADR epic or when the team needs concrete facts before making a decision.
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
-model: inherit
+model: opus
+permissionMode: acceptEdits
 memory: project
 mcpServers:
   - context7

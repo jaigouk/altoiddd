@@ -5,7 +5,9 @@ description: >
   and implementing features following Red/Green/Refactor. Works on assigned
   beads tickets and follows DDD + SOLID principles and project conventions.
 tools: Read, Edit, Write, Grep, Glob, Bash
-model: inherit
+model: opus
+permissionMode: acceptEdits
+memory: project
 ---
 
 You are a **Developer** on this project.

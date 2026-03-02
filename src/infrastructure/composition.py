@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from src.application.ports.discovery_port import DiscoveryPort
     from src.application.ports.doc_health_port import DocHealthPort
     from src.application.ports.doc_review_port import DocReviewPort
-    from src.application.ports.drift_detection_port import DriftDetectionPort
     from src.application.ports.fitness_generation_port import FitnessGenerationPort
     from src.application.ports.quality_gate_port import QualityGatePort
     from src.application.ports.spike_follow_up_port import SpikeFollowUpPort
@@ -30,7 +29,6 @@ if TYPE_CHECKING:
     from src.application.ports.tool_detection_port import ToolDetectionPort
     from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.doc_health import DocHealthReport
-    from src.domain.models.drift_detection import DriftReport
     from src.domain.models.follow_up_intent import FollowUpAuditResult
     from src.domain.models.quality_gate import QualityGate, QualityReport
     from src.domain.models.ticket_freshness import TicketHealthReport
@@ -55,7 +53,6 @@ class AppContext:
     doc_review: DocReviewPort
     ticket_health: TicketHealthPort
     spike_follow_up: SpikeFollowUpPort
-    drift_detection: DriftDetectionPort
 
 
 # ── Stub implementations ────────────────────────────────────────────
@@ -92,7 +89,9 @@ class _StubDiscovery:
     def skip_question(self, session_id: str, question_id: str, reason: str) -> DiscoverySession:
         raise NotImplementedError
 
-    def confirm_playback(self, session_id: str, confirmed: bool) -> DiscoverySession:
+    def confirm_playback(
+        self, session_id: str, confirmed: bool, corrections: str = ""
+    ) -> DiscoverySession:
         raise NotImplementedError
 
     def complete(self, session_id: str) -> DiscoverySession:
@@ -184,13 +183,6 @@ class _StubSpikeFollowUp:
         raise NotImplementedError
 
 
-class _StubDriftDetection:
-    """Stub DriftDetectionPort -- raises NotImplementedError."""
-
-    def detect(self) -> DriftReport:
-        raise NotImplementedError
-
-
 def create_app() -> AppContext:
     """Wire all port implementations and return the application context.
 
@@ -209,5 +201,4 @@ def create_app() -> AppContext:
         doc_review=_StubDocReview(),
         ticket_health=_StubTicketHealth(),
         spike_follow_up=_StubSpikeFollowUp(),
-        drift_detection=_StubDriftDetection(),
     )

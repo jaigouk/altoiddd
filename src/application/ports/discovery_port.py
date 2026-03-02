@@ -21,6 +21,20 @@ class DiscoveryPort(Protocol):
     and playback confirmation loops.
     """
 
+    def get_session(self, session_id: str) -> DiscoverySession:
+        """Retrieve a discovery session by ID.
+
+        Args:
+            session_id: The session identifier.
+
+        Returns:
+            The DiscoverySession.
+
+        Raises:
+            SessionNotFoundError: If the session_id is not found or expired.
+        """
+        ...
+
     def start_session(self, readme_content: str) -> DiscoverySession:
         """Start a new guided discovery session from README content.
 
@@ -70,29 +84,18 @@ class DiscoveryPort(Protocol):
         """
         ...
 
-    def confirm_playback(self, session_id: str, confirmed: bool) -> DiscoverySession:
+    def confirm_playback(
+        self, session_id: str, confirmed: bool, corrections: str = ""
+    ) -> DiscoverySession:
         """Confirm or reject the playback summary.
 
         Args:
             session_id: The active discovery session identifier.
             confirmed: True if the user confirms the playback, False to correct.
+            corrections: Optional correction text when rejecting playback.
 
         Returns:
             The updated DiscoverySession.
-        """
-        ...
-
-    def get_session(self, session_id: str) -> DiscoverySession:
-        """Retrieve a session by its identifier.
-
-        Args:
-            session_id: The active discovery session identifier.
-
-        Returns:
-            The DiscoverySession.
-
-        Raises:
-            SessionNotFoundError: If the session_id is not found or expired.
         """
         ...
 

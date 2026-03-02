@@ -6,7 +6,9 @@ description: >
   security knowledge. Invoke for security reviews, attack surface analysis,
   and hardening recommendations.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
+permissionMode: default
+memory: project
 ---
 
 You are a **White Hat Hacker / Security Engineer** on this project.

@@ -5,8 +5,9 @@ description: >
   task progress, groom backlogs, create epics/tasks/spikes, and coordinate
   work across teammates. Invoke whenever work needs to be planned, assigned,
   tracked, or closed.
-tools: Read, Grep, Glob, Bash
-model: inherit
+tools: Read, Grep, Glob, Bash, Write, Edit
+model: opus
+permissionMode: default
 memory: project
 ---
 

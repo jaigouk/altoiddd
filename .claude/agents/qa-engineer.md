@@ -6,7 +6,9 @@ description: >
   and producing detailed QA reports with root cause analysis. Invoke after
   implementation is complete or when test coverage needs improvement.
 tools: Read, Edit, Write, Grep, Glob, Bash
-model: inherit
+model: opus
+permissionMode: acceptEdits
+memory: project
 ---
 
 You are a **QA Engineer** on this project.
