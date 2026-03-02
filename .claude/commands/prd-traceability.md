@@ -62,7 +62,7 @@ These are complementary. Ripple review won't catch a capability that was missing
 | C14 | Fitness function generation | Architecture Testing | import-linter + pytestarch from bounded context map |
 | C15 | Domain story to ticket pipeline | Ticket Pipeline | DDD artifacts → ordered beads tickets with formal `bd dep add` (not text-only deps) |
 | C16 | Complexity budget | Domain Model | Core/Supporting/Generic classification + treatment levels |
-| C17 | Multi-tool support | Tool Translation | Claude Code, Cursor, Antigravity, OpenCode configs |
+| C17 | Multi-tool support | Tool Translation | Claude Code, Cursor, Roo Code, OpenCode configs |
 | C18 | Knowledge base (RLM) | Knowledge Base | Addressable docs, DDD patterns, tool conventions |
 | C19 | Doc maintenance commands | Knowledge Base | `alty doc-health`, `alty doc-review` |
 | C20 | Ticket freshness & ripple review | Ticket Freshness | Close → flag → context diff → review flow |

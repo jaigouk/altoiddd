@@ -8,7 +8,7 @@ status: approved
 
 ## 1. Problem Statement
 
-People with software ideas — developers, product owners, domain experts — face a recurring problem: the jump from idea to code skips domain discovery, architecture planning, and structured issue tracking. Developers using AI assistants build fast but with wrong abstractions, anemic domain models, and ad-hoc workflows. Non-coders with domain knowledge have no way to capture it in a form that developers or AI tools can act on. The project conventions, agent profiles, CI configuration, and beads templates need to be recreated from scratch each time. Different AI coding tools (Claude Code, Cursor, Antigravity, OpenCode) have different configuration formats, making it harder to maintain consistency.
+People with software ideas — developers, product owners, domain experts — face a recurring problem: the jump from idea to code skips domain discovery, architecture planning, and structured issue tracking. Developers using AI assistants build fast but with wrong abstractions, anemic domain models, and ad-hoc workflows. Non-coders with domain knowledge have no way to capture it in a form that developers or AI tools can act on. The project conventions, agent profiles, CI configuration, and beads templates need to be recreated from scratch each time. Different AI coding tools (Claude Code, Cursor, Roo Code, OpenCode) have different configuration formats, making it harder to maintain consistency.
 
 ## 2. Vision
 
@@ -129,7 +129,7 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **Architecture fitness function generation** — Generate executable architecture tests (import-linter contracts, pytestarch rules) from bounded context map. Enforce layer boundaries, dependency direction, aggregate isolation. Tests run as part of quality gates.
 - [ ] **Domain story to ticket pipeline** — Auto-generate dependency-ordered beads epics from DDD artifacts. Tickets include TDD phases, SOLID mapping, acceptance criteria from domain invariants. Preview before creation (human-in-the-loop). Dependencies MUST be formally set via `bd dep add` (not just described in text) so that `bd blocked`/`bd ready`/ripple review can traverse the graph.
 - [ ] **Complexity budget** — Classify subdomains as Core/Supporting/Generic during DDD discovery. Core gets full DDD treatment, Supporting gets simple services, Generic gets CRUD/library recommendations. Budget enforced in tickets and fitness functions.
-- [ ] **Multi-tool support** — Generate domain-aware configs for Claude Code, Cursor, Antigravity, OpenCode from a single domain model. Configs contain ubiquitous language, bounded context rules, and agent personas tuned to the project.
+- [ ] **Multi-tool support** — Generate domain-aware configs for Claude Code, Cursor, Roo Code, OpenCode from a single domain model. Configs contain ubiquitous language, bounded context rules, and agent personas tuned to the project.
 - [ ] **Knowledge base (RLM)** — Addressable docs for DDD patterns, coding tool conventions
 - [ ] **Doc maintenance commands** — Slash commands for doc health, architecture lookup, knowledge refresh (like doc-health, architecture-docs, owasp-docs in Tachikoma)
 - [ ] **Ticket freshness & ripple review** — When a ticket closes, traverse the dependency graph and flag open dependents/siblings with `review_needed`. Record a context summary of what the closed ticket produced. `alty ticket-health` reports flagged tickets. Agents picking up flagged tickets must present suggested updates to the user before starting work. Two-tier ticket generation: near-term tickets get full AC, far-term tickets are stubs until promoted. (See Scenario 6)
@@ -158,7 +158,7 @@ Every project initialized with `alty init` gets a `.alty/` directory:
 │   ├── tools/               # AI coding tool conventions (versioned)
 │   │   ├── claude-code/     # .claude/ format, agents, commands
 │   │   ├── cursor/          # .cursor/ format, rules
-│   │   ├── antigravity/     # Antigravity config format
+│   │   ├── roo-code/        # Roo Code config format
 │   │   └── opencode/        # OpenCode config format
 │   └── conventions/         # TDD, SOLID, quality gate references
 └── maintenance/             # Doc health tracking, review schedules
@@ -184,7 +184,7 @@ AI coding tools have global configs that **always win** over local project setti
 |------|----------------|-----------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Project `.claude/CLAUDE.md` |
 | Cursor | `~/.cursor/`, global rules | Project `.cursor/` rules |
-| Antigravity | TBD (spike needed) | TBD |
+| Roo Code | TBD (spike needed) | TBD |
 | OpenCode | TBD (spike needed) | TBD |
 
 `alty init` must:
@@ -276,7 +276,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 |------------|--------|-------------|
 | Bootstrap time | < 30 minutes | From README to first beads ticket |
 | Knowledge freshness | < 90 days stale | Per-doc last_reviewed dates |
-| Tool coverage | 4 tools | Claude Code, Cursor, Antigravity, OpenCode |
+| Tool coverage | 4 tools | Claude Code, Cursor, Roo Code, OpenCode |
 
 ### File Safety Rules (HARD CONSTRAINTS)
 
@@ -312,7 +312,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 |--------|--------|-------------------|
 | Time from idea to first ticket | < 30 min | Manual timing |
 | Projects using correct lifecycle | 100% | All have PRD + DDD + ARCH before code |
-| Knowledge base coverage | 4 tools | Claude Code, Cursor, Antigravity, OpenCode docs present |
+| Knowledge base coverage | 4 tools | Claude Code, Cursor, Roo Code, OpenCode docs present |
 | Quality gate enforcement | 100% | No ticket closed without passing gates |
 | Architecture test generation | 100% of bounded contexts | Every context has at least one fitness function test |
 | Ticket pipeline accuracy | Zero manual reordering | Generated dependency order matches actual build order |
@@ -335,7 +335,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 - [x] ~~**Spike: MCP vs CLI** — Decided: both. CLI (`vs`) for humans, MCP server for AI tools.~~
 - [ ] **Spike: CLI + MCP design** — Command tree for `vs`, MCP tool schemas, shared application core
 - [ ] **Spike: Knowledge base structure** — How to organize `.alty/knowledge/` with RLM addressability and version tracking?
-- [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Antigravity, OpenCode? How similar/different?
+- [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Roo Code, OpenCode? How similar/different?
 - [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts? Includes complexity budget classification (Core/Supporting/Generic).
 - [ ] **Spike: Fitness function generation** — How to map bounded context map to import-linter TOML / pytestarch tests? (k7m.10)
 - [ ] **Spike: Ticket pipeline** — How to auto-generate ordered beads tickets from DDD artifacts? (k7m.11)
@@ -347,7 +347,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | Phase 1: Foundation | PRD + DDD + Architecture for alty itself |
 | Phase 2: Core CLI | `alty init` + guided DDD questions + artifact generation |
 | Phase 3: Fitness & Tickets | Architecture fitness function generation + ticket pipeline + complexity budget |
-| Phase 4: Multi-Tool | Config generation for Claude Code, Cursor, Antigravity, OpenCode |
+| Phase 4: Multi-Tool | Config generation for Claude Code, Cursor, Roo Code, OpenCode |
 | Phase 5: MCP Server | MCP tools exposing same core as CLI |
 | Phase 6: Rescue Mode | `alty init --existing` with structural migration |
 | Phase 7: Ticket & Doc Health | `alty ticket-health`, `alty doc-health`, drift detection, ripple review, maintenance registry |

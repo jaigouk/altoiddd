@@ -162,7 +162,7 @@ status: draft
 3. alty CLI translates domain model into tool-native config format:
    - Claude Code: .claude/CLAUDE.md, .claude/agents/*.md, .claude/commands/*.md
    - Cursor: .cursor/rules, .cursor/agents
-   - Antigravity: TBD (spike needed)
+   - Roo Code: TBD (spike needed)
    - OpenCode: TBD (spike needed)
 4. Configs contain: ubiquitous language, bounded context rules, quality gates, agent personas
 5. alty CLI previews generated configs

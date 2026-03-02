@@ -4,7 +4,7 @@
 #
 # Key patterns to preserve:
 # - Tool detection and installation (beads, context7)
-# - IDE config generation (Claude Code, Cursor, Antigravity)
+# - IDE config generation (Claude Code, Cursor, Roo Code)
 # - .gitignore management (ensure_gitignore_entry, fix_gitignore_entry)
 # - AGENTS.md generation
 # - Global config awareness (~/.claude/CLAUDE.md)

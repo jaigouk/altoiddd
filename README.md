@@ -6,7 +6,7 @@
 
 ## The Problem Everyone Has
 
-AI coding tools (Cursor, Claude Code, OpenCode, Antigravity) are amazing at writing code. You type "build me an invoice app" and get a working prototype in minutes.
+AI coding tools (Cursor, Claude Code, OpenCode, Roo Code) are amazing at writing code. You type "build me an invoice app" and get a working prototype in minutes.
 
 But here's what nobody tells you: **that prototype becomes unmaintainable within weeks.**
 
@@ -41,7 +41,7 @@ Then you hand it to Cursor, Claude Code, or any AI tool — and it builds **with
 | No tests until something breaks     | Tests are defined before code is written              |
 | Rewrite every few months            | Built to last from day one                            |
 | Finish one task, others go stale    | Completing work auto-flags what needs review          |
-| Works with one AI tool              | Works with Cursor, Claude Code, Antigravity, OpenCode |
+| Works with one AI tool              | Works with Cursor, Claude Code, Roo Code, OpenCode |
 
 ## Three Commands. That's It.
 

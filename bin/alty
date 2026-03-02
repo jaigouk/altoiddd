@@ -3,7 +3,7 @@
 # alty — the AI architect for vibe coding
 # =============================================================================
 # Guided project setup enforcing DDD + TDD + SOLID with Beads issue tracking.
-# Supports: Claude Code, Cursor, Antigravity, OpenCode
+# Supports: Claude Code, Cursor, Roo Code, OpenCode
 #
 # Usage:
 #   alty init                # New project in current directory
@@ -303,9 +303,9 @@ detect_global_settings() {
         echo -e "  Found: Cursor global config at ${DIM}~/.cursor/${NC}"
     fi
 
-    # Antigravity
-    if [ -d "$HOME/.antigravity" ] || [ -d "$HOME/.agent" ]; then
-        echo -e "  Found: Antigravity global config"
+    # Roo Code
+    if [ -d "$HOME/.roo" ] || [ -d "$HOME/.agent" ]; then
+        echo -e "  Found: Roo Code global config"
     fi
 
     if [ "$found_conflicts" -eq 0 ]; then
@@ -340,7 +340,7 @@ setup_gitignore() {
 
     # Fix known wrong patterns
     fix_gitignore_entry ".cursor/" ".cursor/*"
-    fix_gitignore_entry ".antigravity/" ".antigravity/*"
+    fix_gitignore_entry ".roo/" ".roo/*"
 
     # alty
     ensure_gitignore_entry ""
@@ -375,11 +375,11 @@ setup_gitignore() {
     ensure_gitignore_entry "!.cursor/rules/"
     ensure_gitignore_entry "!.cursor/mcp.json"
 
-    # Antigravity
+    # Roo Code
     ensure_gitignore_entry ""
-    ensure_gitignore_entry "# Antigravity IDE"
-    ensure_gitignore_entry ".antigravity/*"
-    ensure_gitignore_entry "!.antigravity/rules.md"
+    ensure_gitignore_entry "# Roo Code IDE"
+    ensure_gitignore_entry ".roo/*"
+    ensure_gitignore_entry "!.roo/rules-*"
     ensure_gitignore_entry "artifacts/"
     ensure_gitignore_entry ".agent/*"
     ensure_gitignore_entry "!.agent/rules/"
@@ -518,26 +518,26 @@ EOF
 }
 
 # =============================================================================
-# IDE setup — Antigravity
+# IDE setup — Roo Code
 # =============================================================================
-setup_antigravity() {
-    mkdir -p "$PROJECT_DIR/.antigravity"
+setup_roo_code() {
+    mkdir -p "$PROJECT_DIR/.roo"
     mkdir -p "$PROJECT_DIR/.agent/rules"
     mkdir -p "$PROJECT_DIR/.agent/workflows"
 
-    if [ ! -f "$PROJECT_DIR/.antigravity/rules.md" ]; then
-        cat > "$PROJECT_DIR/.antigravity/rules.md" << AGEOF
+    if [ ! -f "$PROJECT_DIR/.roo/rules-code.md" ]; then
+        cat > "$PROJECT_DIR/.roo/rules-code.md" << AGEOF
 # Project Rules for ${PROJECT_NAME}
 
 This project follows DDD + TDD + SOLID principles.
 See AGENTS.md for full instructions and quality gates.
 AGEOF
-        echo -e "  ${GREEN}✓${NC} Antigravity: created .antigravity/rules.md"
+        echo -e "  ${GREEN}✓${NC} Roo Code: created .roo/rules-code.md"
     else
-        echo -e "  ${GREEN}✓${NC} Antigravity: rules.md already exists"
+        echo -e "  ${GREEN}✓${NC} Roo Code: rules-code.md already exists"
     fi
 
-    echo -e "  ${DIM}ℹ Antigravity MCP: configure via IDE UI (Agent Panel → MCP Servers)${NC}"
+    echo -e "  ${DIM}ℹ Roo Code MCP: configure via IDE UI (Agent Panel → MCP Servers)${NC}"
 }
 
 # =============================================================================
@@ -754,7 +754,7 @@ init_existing() {
     echo -e "${BLUE}IDE setup...${NC}"
     setup_claude_code
     setup_cursor
-    setup_antigravity
+    setup_roo_code
 
     # Beads
     echo
@@ -842,7 +842,7 @@ init_new() {
     echo -e "${BLUE}IDE setup...${NC}"
     setup_claude_code
     setup_cursor
-    setup_antigravity
+    setup_roo_code
 
     # Git init if needed
     if [ ! -d "$PROJECT_DIR/.git" ]; then
@@ -876,7 +876,7 @@ init_new() {
     echo -e "IDE configs:"
     [ -d "$PROJECT_DIR/.claude" ] && echo -e "  ${GREEN}✓${NC} Claude Code"
     [ -f "$PROJECT_DIR/.cursor/mcp.json" ] && echo -e "  ${GREEN}✓${NC} Cursor"
-    [ -d "$PROJECT_DIR/.antigravity" ] && echo -e "  ${GREEN}✓${NC} Antigravity"
+    [ -d "$PROJECT_DIR/.roo" ] && echo -e "  ${GREEN}✓${NC} Roo Code"
     echo
     echo -e "${YELLOW}Next steps:${NC}"
     echo "  1. Edit README.md with your project idea (4-5 sentences)"

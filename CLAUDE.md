@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working on the alty project itse
 
 ## Project Overview
 
-alty is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Antigravity, and OpenCode.
+alty is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Roo Code, and OpenCode.
 
 **Key interfaces:** CLI (`bin/alty`) and MCP server (planned).
 
