@@ -4,8 +4,8 @@ Wires all port implementations into a single AppContext dataclass.
 This is the entry point for dependency injection -- infrastructure
 adapters are constructed here and injected into the application layer.
 
-Generic subdomain: stub implementations raise NotImplementedError.
-Real adapters will replace stubs in downstream tickets.
+Real adapters: discovery, quality_gate, file_writer, artifact_renderer.
+Stub implementations (Phase 3+) raise NotImplementedError.
 """
 
 from __future__ import annotations
@@ -16,21 +16,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.application.ports.artifact_generation_port import ArtifactRendererPort
     from src.application.ports.bootstrap_port import BootstrapPort
     from src.application.ports.config_generation_port import ConfigGenerationPort
     from src.application.ports.discovery_port import DiscoveryPort
     from src.application.ports.doc_health_port import DocHealthPort
     from src.application.ports.doc_review_port import DocReviewPort
+    from src.application.ports.file_writer_port import FileWriterPort
     from src.application.ports.fitness_generation_port import FitnessGenerationPort
     from src.application.ports.quality_gate_port import QualityGatePort
     from src.application.ports.spike_follow_up_port import SpikeFollowUpPort
     from src.application.ports.ticket_generation_port import TicketGenerationPort
     from src.application.ports.ticket_health_port import TicketHealthPort
     from src.application.ports.tool_detection_port import ToolDetectionPort
-    from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.doc_health import DocHealthReport
     from src.domain.models.follow_up_intent import FollowUpAuditResult
-    from src.domain.models.quality_gate import QualityGate, QualityReport
     from src.domain.models.ticket_freshness import TicketHealthReport
 
 
@@ -53,6 +53,8 @@ class AppContext:
     doc_review: DocReviewPort
     ticket_health: TicketHealthPort
     spike_follow_up: SpikeFollowUpPort
+    file_writer: FileWriterPort
+    artifact_renderer: ArtifactRendererPort
 
 
 # ── Stub implementations ────────────────────────────────────────────
@@ -68,33 +70,6 @@ class _StubBootstrap:
         raise NotImplementedError
 
     def execute(self, session_id: str) -> str:
-        raise NotImplementedError
-
-
-class _StubDiscovery:
-    """Stub DiscoveryPort -- raises NotImplementedError on all methods."""
-
-    def get_session(self, session_id: str) -> DiscoverySession:
-        raise NotImplementedError
-
-    def start_session(self, readme_content: str) -> DiscoverySession:
-        raise NotImplementedError
-
-    def detect_persona(self, session_id: str, choice: str) -> DiscoverySession:
-        raise NotImplementedError
-
-    def answer_question(self, session_id: str, question_id: str, answer: str) -> DiscoverySession:
-        raise NotImplementedError
-
-    def skip_question(self, session_id: str, question_id: str, reason: str) -> DiscoverySession:
-        raise NotImplementedError
-
-    def confirm_playback(
-        self, session_id: str, confirmed: bool, corrections: str = ""
-    ) -> DiscoverySession:
-        raise NotImplementedError
-
-    def complete(self, session_id: str) -> DiscoverySession:
         raise NotImplementedError
 
 
@@ -139,16 +114,6 @@ class _StubConfigGeneration:
         raise NotImplementedError
 
 
-class _StubQualityGate:
-    """Stub QualityGatePort -- raises NotImplementedError."""
-
-    def check(
-        self,
-        gates: tuple[QualityGate, ...] | None = None,
-    ) -> QualityReport:
-        raise NotImplementedError
-
-
 class _StubDocHealth:
     """Stub DocHealthPort -- raises NotImplementedError."""
 
@@ -186,19 +151,36 @@ class _StubSpikeFollowUp:
 def create_app() -> AppContext:
     """Wire all port implementations and return the application context.
 
-    Currently returns stub implementations that raise NotImplementedError.
-    Real adapters will be wired in downstream tickets.
+    Real adapters are used for ports with concrete implementations.
+    Stubs remain for ports not yet implemented (Phase 3+).
     """
+    from src.application.commands.quality_gate_handler import QualityGateHandler
+    from src.infrastructure.external.subprocess_gate_runner import SubprocessGateRunner
+    from src.infrastructure.persistence.filesystem_file_writer import (
+        FilesystemFileWriter,
+    )
+    from src.infrastructure.persistence.markdown_artifact_renderer import (
+        MarkdownArtifactRenderer,
+    )
+    from src.infrastructure.session.in_memory_discovery_adapter import (
+        InMemoryDiscoveryAdapter,
+    )
+    from src.infrastructure.session.session_store import SessionStore
+
+    store = SessionStore()
+
     return AppContext(
         bootstrap=_StubBootstrap(),
-        discovery=_StubDiscovery(),
+        discovery=InMemoryDiscoveryAdapter(store=store),
         tool_detection=_StubToolDetection(),
         fitness_generation=_StubFitnessGeneration(),
         ticket_generation=_StubTicketGeneration(),
         config_generation=_StubConfigGeneration(),
-        quality_gate=_StubQualityGate(),
+        quality_gate=QualityGateHandler(runner=SubprocessGateRunner()),
         doc_health=_StubDocHealth(),
         doc_review=_StubDocReview(),
         ticket_health=_StubTicketHealth(),
         spike_follow_up=_StubSpikeFollowUp(),
+        file_writer=FilesystemFileWriter(),
+        artifact_renderer=MarkdownArtifactRenderer(),
     )

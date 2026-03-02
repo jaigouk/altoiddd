@@ -7,98 +7,15 @@ input validation, resource invocation, and the alty-mcp entry point.
 from __future__ import annotations
 
 import asyncio
-import dataclasses
 
 import pytest
 
 
 class TestAppContext:
-    """Tests for the AppContext composition root."""
+    """Smoke tests for AppContext in MCP context.
 
-    def test_app_context_is_dataclass(self):
-        from src.infrastructure.composition import AppContext
-
-        assert dataclasses.is_dataclass(AppContext)
-
-    def test_app_context_has_bootstrap_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "bootstrap" in fields
-
-    def test_app_context_has_discovery_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "discovery" in fields
-
-    def test_app_context_has_tool_detection_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "tool_detection" in fields
-
-    def test_app_context_has_fitness_generation_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "fitness_generation" in fields
-
-    def test_app_context_has_ticket_generation_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "ticket_generation" in fields
-
-    def test_app_context_has_config_generation_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "config_generation" in fields
-
-    def test_app_context_has_quality_gate_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "quality_gate" in fields
-
-    def test_app_context_has_doc_health_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "doc_health" in fields
-
-    def test_app_context_has_doc_review_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "doc_review" in fields
-
-    def test_app_context_has_ticket_health_port(self):
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert "ticket_health" in fields
-
-    def test_app_context_has_all_ports(self):
-        """AppContext must declare all 11 port attributes."""
-        from src.infrastructure.composition import AppContext
-
-        fields = {f.name for f in dataclasses.fields(AppContext)}
-        expected = {
-            "bootstrap",
-            "discovery",
-            "tool_detection",
-            "fitness_generation",
-            "ticket_generation",
-            "config_generation",
-            "quality_gate",
-            "doc_health",
-            "doc_review",
-            "ticket_health",
-            "spike_follow_up",
-        }
-        assert expected.issubset(fields)
+    Detailed composition root tests live in tests/infrastructure/test_composition.py.
+    """
 
     def test_create_app_returns_app_context(self):
         from src.infrastructure.composition import AppContext, create_app
@@ -572,36 +489,40 @@ class TestKbRootHelper:
             os.chdir(original_cwd)
 
 
-class TestStubDiscoveryPortCompliance:
-    """Tests for _StubDiscovery matching the DiscoveryPort protocol."""
+class TestDiscoveryAdapterPortCompliance:
+    """Tests for InMemoryDiscoveryAdapter matching the DiscoveryPort protocol."""
 
-    def test_stub_has_skip_question(self):
+    def test_adapter_has_skip_question(self):
         from src.infrastructure.composition import create_app
 
         ctx = create_app()
         assert hasattr(ctx.discovery, "skip_question")
 
-    def test_stub_answer_question_takes_question_id(self):
+    def test_adapter_answer_question_takes_question_id(self):
         import inspect
 
-        from src.infrastructure.composition import _StubDiscovery
+        from src.infrastructure.session.in_memory_discovery_adapter import (
+            InMemoryDiscoveryAdapter,
+        )
 
-        sig = inspect.signature(_StubDiscovery.answer_question)
+        sig = inspect.signature(InMemoryDiscoveryAdapter.answer_question)
         params = list(sig.parameters.keys())
         assert "question_id" in params
 
-    def test_stub_answer_question_raises_not_implemented(self):
+    def test_adapter_answer_question_raises_on_missing_session(self):
+        from src.domain.models.errors import SessionNotFoundError
         from src.infrastructure.composition import create_app
 
         ctx = create_app()
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(SessionNotFoundError):
             ctx.discovery.answer_question("sid", "Q1", "answer")
 
-    def test_stub_skip_question_raises_not_implemented(self):
+    def test_adapter_skip_question_raises_on_missing_session(self):
+        from src.domain.models.errors import SessionNotFoundError
         from src.infrastructure.composition import create_app
 
         ctx = create_app()
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(SessionNotFoundError):
             ctx.discovery.skip_question("sid", "Q5", "reason")
 
 
@@ -650,6 +571,5 @@ class TestDiscoveryPortProtocol:
             method = getattr(DiscoveryPort, method_name)
             sig = inspect.signature(method)
             assert sig.return_annotation == "DiscoverySession", (
-                f"{method_name} should return DiscoverySession, "
-                f"got {sig.return_annotation}"
+                f"{method_name} should return DiscoverySession, got {sig.return_annotation}"
             )
