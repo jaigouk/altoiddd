@@ -1,6 +1,6 @@
 """Tests for application layer port Protocols.
 
-Verifies all 15 port Protocols exist, are importable, are runtime-checkable
+Verifies all 17 port Protocols exist, are importable, are runtime-checkable
 Protocol subclasses, expose the required methods, and have no external
 dependencies.
 """
@@ -15,7 +15,7 @@ from typing import Protocol, runtime_checkable
 import pytest
 
 # ---------------------------------------------------------------------------
-# 1. All 15 Protocols exist and are importable from the ports package
+# 1. All 17 Protocols exist and are importable from the ports package
 # ---------------------------------------------------------------------------
 
 ALL_PORT_NAMES = [
@@ -25,6 +25,7 @@ ALL_PORT_NAMES = [
     "DiscoveryPort",
     "DocHealthPort",
     "DocReviewPort",
+    "DriftDetectionPort",
     "FileWriterPort",
     "FitnessGenerationPort",
     "GateRunnerProtocol",
@@ -47,7 +48,7 @@ def test_protocol_importable_from_package(name):
 
 
 def test_all_dunder_exports():
-    """__all__ in the ports package lists exactly the 15 Protocols."""
+    """__all__ in the ports package lists exactly the 17 Protocols."""
     from src.application import ports
 
     assert hasattr(ports, "__all__"), "ports package has no __all__"
@@ -108,6 +109,7 @@ EXPECTED_METHODS: dict[str, list[str]] = {
     "DocReviewPort": ["mark_reviewed", "review_status"],
     "TicketHealthPort": ["report"],
     "PersonaPort": ["list_personas", "generate"],
+    "DriftDetectionPort": ["detect"],
 }
 
 

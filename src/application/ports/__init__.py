@@ -13,6 +13,7 @@ from src.application.ports.config_generation_port import ConfigGenerationPort
 from src.application.ports.discovery_port import DiscoveryPort
 from src.application.ports.doc_health_port import DocHealthPort
 from src.application.ports.doc_review_port import DocReviewPort
+from src.application.ports.drift_detection_port import DriftDetectionPort
 from src.application.ports.file_writer_port import FileWriterPort
 from src.application.ports.fitness_generation_port import FitnessGenerationPort
 from src.application.ports.knowledge_lookup_port import KnowledgeLookupPort
@@ -30,6 +31,7 @@ __all__ = [
     "DiscoveryPort",
     "DocHealthPort",
     "DocReviewPort",
+    "DriftDetectionPort",
     "FileWriterPort",
     "FitnessGenerationPort",
     "GateRunnerProtocol",
