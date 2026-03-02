@@ -11,10 +11,20 @@ Reference: ARCHITECTURE.md §6.1 CLI Command Tree
 from __future__ import annotations
 
 from importlib.metadata import version
+from typing import TYPE_CHECKING
 
 import typer
 
 from src.infrastructure.cli import generate, persona
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from src.application.ports.discovery_port import DiscoveryPort
+    from src.domain.events.discovery_events import DiscoveryCompleted
+    from src.domain.models.discovery_session import DiscoverySession
+    from src.domain.models.discovery_values import Answer
+    from src.infrastructure.composition import AppContext
 
 app = typer.Typer(
     name="alty",
@@ -58,17 +68,277 @@ def init(
             typer.echo(f"Rescue failed: {e}", err=True)
             raise typer.Exit(code=1) from None
     else:
-        typer.echo("alty init: not yet implemented")
+        _init_new_project()
+
+
+def _init_new_project() -> None:
+    """Run the full bootstrap pipeline: discovery → artifacts → fitness → tickets → configs."""
+    from pathlib import Path
+
+    from src.infrastructure.composition import create_app
+
+    ctx = create_app()
+
+    # 1. Load README.md
+    readme_path = Path.cwd() / "README.md"
+    if not readme_path.exists():
+        typer.echo("No README.md found. Create one first.", err=True)
+        raise typer.Exit(code=1)
+
+    # 2. Run interactive discovery
+    session = _run_discovery(ctx, readme_path.read_text())
+
+    # 3. Reconstruct event from completed session
+    event = _reconstruct_event(session)
+
+    # 4. Generate all artifacts with preview-approve pattern
+    _run_generation_pipeline(ctx, event, Path.cwd())
+
+    # 5. Save session snapshot
+    _save_session(session)
+
+    typer.echo("\nBootstrap complete!")
+
+
+def _run_discovery(
+    ctx: AppContext,
+    readme_content: str,
+) -> DiscoverySession:
+    """Run the 10-question interactive discovery flow and return completed session."""
+    from src.domain.models.discovery_session import DiscoveryStatus
+    from src.domain.models.discovery_values import Register
+    from src.domain.models.errors import DomainError
+    from src.domain.models.question import Question
+
+    session = ctx.discovery.start_session(readme_content)
+    typer.echo(f"Discovery session started ({session.session_id})\n")
+
+    session = _guide_prompt_persona(ctx.discovery, session.session_id)
+    register = session.register
+
+    for question in Question.CATALOG:
+        q_text = (
+            question.technical_text
+            if register == Register.TECHNICAL
+            else question.non_technical_text
+        )
+        session = _guide_handle_question(
+            ctx.discovery,
+            session.session_id,
+            question.id,
+            q_text,
+            question.phase.value,
+        )
+        if session.status == DiscoveryStatus.PLAYBACK_PENDING:
+            session = _guide_handle_playback(
+                ctx.discovery, session.session_id, session.answers
+            )
+
+    try:
+        session = ctx.discovery.complete(session.session_id)
+    except (DomainError, ValueError, KeyError) as e:
+        _guide_error(str(e))
+
+    return session
+
+
+def _reconstruct_event(session: DiscoverySession) -> DiscoveryCompleted:
+    """Reconstruct a DiscoveryCompleted event from a completed session."""
+    from src.domain.events.discovery_events import DiscoveryCompleted
+    from src.domain.models.errors import InvariantViolationError
+
+    if session.persona is None:
+        raise InvariantViolationError("session.persona must not be None")
+    if session.register is None:
+        raise InvariantViolationError("session.register must not be None")
+
+    return DiscoveryCompleted(
+        session_id=session.session_id,
+        persona=session.persona,
+        register=session.register,
+        answers=session.answers,
+        playback_confirmations=session.playback_confirmations,
+    )
+
+
+def _run_generation_pipeline(
+    ctx: AppContext,
+    event: DiscoveryCompleted,
+    output_dir: Path,
+) -> None:
+    """Run the four-stage generation pipeline with preview-approve at each stage."""
+    from src.application.commands.artifact_generation_handler import (
+        ArtifactGenerationHandler,
+    )
+    from src.application.commands.config_generation_handler import (
+        ConfigGenerationHandler,
+    )
+    from src.application.commands.fitness_generation_handler import (
+        FitnessGenerationHandler,
+    )
+    from src.application.commands.ticket_generation_handler import (
+        TicketGenerationHandler,
+    )
+    from src.domain.models.tool_config import SupportedTool
+
+    # a. Artifacts
+    artifact_handler = ArtifactGenerationHandler(
+        renderer=ctx.artifact_renderer,
+        writer=ctx.file_writer,
+    )
+    artifact_preview = artifact_handler.build_preview(event)
+
+    typer.echo("\nArtifact Generation Preview")
+    typer.echo(f"  PRD: {len(artifact_preview.prd_content)} chars")
+    typer.echo(f"  DDD: {len(artifact_preview.ddd_content)} chars")
+    typer.echo(f"  Architecture: {len(artifact_preview.architecture_content)} chars")
+
+    if not typer.confirm("Write artifacts?"):
+        typer.echo("Cancelled.")
+        raise typer.Exit(code=0)
+    artifact_handler.write_artifacts(artifact_preview, output_dir / "docs")
+
+    model = artifact_preview.model
+
+    # b. Fitness
+    fitness_handler = FitnessGenerationHandler(writer=ctx.file_writer)
+    root_package = output_dir.name.replace("-", "_")
+    fitness_preview = fitness_handler.build_preview(model, root_package)
+
+    typer.echo(f"\n{fitness_preview.summary}")
+
+    if not typer.confirm("Write fitness tests?"):
+        typer.echo("Cancelled.")
+        raise typer.Exit(code=0)
+    fitness_handler.approve_and_write(fitness_preview, output_dir)
+
+    # c. Tickets
+    ticket_handler = TicketGenerationHandler(writer=ctx.file_writer)
+    ticket_preview = ticket_handler.build_preview(model)
+
+    typer.echo(f"\n{ticket_preview.summary}")
+
+    if not typer.confirm("Write tickets?"):
+        typer.echo("Cancelled.")
+        raise typer.Exit(code=0)
+    ticket_handler.approve_and_write(ticket_preview, output_dir)
+
+    # d. Configs
+    config_handler = ConfigGenerationHandler(writer=ctx.file_writer)
+    tools = tuple(SupportedTool)
+    config_preview = config_handler.build_preview(model, tools)
+
+    typer.echo(f"\n{config_preview.summary}")
+
+    if not typer.confirm("Write configs?"):
+        typer.echo("Cancelled.")
+        raise typer.Exit(code=0)
+    config_handler.approve_and_write(config_preview, output_dir)
+
+
+def _save_session(session: DiscoverySession) -> None:
+    """Save session snapshot to .alty/session.json."""
+    import json
+    from pathlib import Path
+
+    alty_dir = Path.cwd() / ".alty"
+    alty_dir.mkdir(parents=True, exist_ok=True)
+    session_file = alty_dir / "session.json"
+    session_file.write_text(json.dumps(session.to_snapshot(), indent=2))
+    typer.echo(f"Session saved to {session_file}")
+
+
+def _guide_error(msg: str) -> None:
+    """Print error and raise SystemExit via typer."""
+    typer.echo(f"Error: {msg}", err=True)
+    raise typer.Exit(code=1)
+
+
+def _guide_prompt_persona(
+    discovery: DiscoveryPort, session_id: str
+) -> DiscoverySession:
+    """Prompt for persona selection and call detect_persona."""
+    from src.domain.models.errors import DomainError
+
+    typer.echo("Select your persona:")
+    typer.echo("  1) Developer (technical register)")
+    typer.echo("  2) Product Owner")
+    typer.echo("  3) Domain Expert")
+    typer.echo("  4) Mixed")
+    choice = typer.prompt("Persona [1-4]")
+    try:
+        return discovery.detect_persona(session_id, choice)
+    except (DomainError, ValueError, KeyError) as e:
+        _guide_error(str(e))
+        raise  # unreachable, but satisfies type checker
+
+
+def _guide_handle_question(
+    discovery: DiscoveryPort,
+    session_id: str,
+    question_id: str,
+    q_text: str,
+    phase: str,
+) -> DiscoverySession:
+    """Present a question, collect answer or skip, return updated session."""
+    from src.domain.models.errors import DomainError
+
+    typer.echo(f"\n[{question_id}] ({phase}) {q_text}")
+    answer = typer.prompt("Answer (or 'skip' to skip)")
+    try:
+        if answer.strip().lower() == "skip":
+            reason = typer.prompt("Skip reason")
+            return discovery.skip_question(session_id, question_id, reason)
+        return discovery.answer_question(session_id, question_id, answer)
+    except (DomainError, ValueError, KeyError) as e:
+        _guide_error(str(e))
+        raise  # unreachable
+
+
+def _guide_handle_playback(
+    discovery: DiscoveryPort,
+    session_id: str,
+    answers: tuple[Answer, ...],
+) -> DiscoverySession:
+    """Show playback summary and prompt for confirmation."""
+    from src.domain.models.errors import DomainError
+
+    typer.echo("\n--- Playback Summary ---")
+    recent = answers[-3:] if len(answers) >= 3 else answers
+    for a in recent:
+        typer.echo(f"  {a.question_id}: {a.response_text}")
+    typer.echo("---")
+
+    confirmed = typer.confirm("Confirm playback?")
+    corrections = ""
+    if not confirmed:
+        corrections = typer.prompt("Corrections")
+    try:
+        return discovery.confirm_playback(session_id, confirmed, corrections)
+    except (DomainError, ValueError, KeyError) as e:
+        _guide_error(str(e))
+        raise  # unreachable
 
 
 @app.command()
 def guide() -> None:
     """Run the 10-question guided DDD discovery flow."""
-    from src.application.commands.discovery_handler import DiscoveryHandler
+    from pathlib import Path
 
-    handler = DiscoveryHandler()
-    session = handler.start_session(readme_content="")
-    typer.echo(f"alty guide: session started ({session.session_id})")
+    from src.infrastructure.composition import create_app
+
+    ctx = create_app()
+
+    # Load README from current directory
+    readme_path = Path.cwd() / "README.md"
+    if not readme_path.exists():
+        typer.echo("No README.md found. Create one first.", err=True)
+        raise typer.Exit(code=1)
+
+    session = _run_discovery(ctx, readme_path.read_text())
+    _save_session(session)
+
+    typer.echo("\nDiscovery session complete!")
 
 
 @app.command()

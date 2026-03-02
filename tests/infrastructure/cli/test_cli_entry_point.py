@@ -63,8 +63,6 @@ class TestTopLevelCommandStubs:
     """Each top-level command stub exits cleanly (exit code 0)."""
 
     STUB_COMMANDS = [
-        "init",
-        "guide",
         "detect",
         "kb",
         "doc-health",
@@ -88,7 +86,7 @@ class TestTopLevelCommandStubs:
 
 
 class TestGenerateSubcommands:
-    """alty generate subcommand group with 4 stubs."""
+    """alty generate subcommand group with 4 wired subcommands."""
 
     SUBCOMMANDS = ["artifacts", "fitness", "tickets", "configs"]
 
@@ -100,11 +98,6 @@ class TestGenerateSubcommands:
     def test_generate_help_lists_subcommand(self, subcommand):
         result = runner.invoke(app, ["generate", "--help"])
         assert subcommand in result.output, f"'{subcommand}' not found in generate help output"
-
-    @pytest.mark.parametrize("subcommand", SUBCOMMANDS)
-    def test_generate_stub_exits_cleanly(self, subcommand):
-        result = runner.invoke(app, ["generate", subcommand])
-        assert result.exit_code == 0
 
 
 # ── Persona subcommand group ─────────────────────────────────
