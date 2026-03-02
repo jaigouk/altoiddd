@@ -112,7 +112,7 @@ async def _run_bd(*args: str) -> str:
     return stdout.decode() if stdout else ""
 
 
-# ── Tools: Bootstrap & Generation (10) ──────────────────────────────
+# ── Tools: Bootstrap & Generation (11) ──────────────────────────────
 
 
 @mcp.tool()
@@ -231,6 +231,36 @@ async def ticket_health(project_dir: str, ctx: McpContext) -> str:
     """Show ripple review report for tickets needing attention."""
     app = _get_app(ctx)
     return str(app.ticket_health.report(_safe_project_path(project_dir, "project_dir")))
+
+
+@mcp.tool()
+async def spike_follow_up_audit(spike_id: str, project_dir: str, ctx: McpContext) -> str:
+    """Audit whether a spike's follow-up tickets were actually created.
+
+    Scans the spike's research report for follow-up intent sections and
+    compares them against existing beads tickets using fuzzy matching.
+
+    Args:
+        spike_id: The spike ticket identifier.
+        project_dir: Project directory containing docs/research/ and .beads/.
+    """
+    app = _get_app(ctx)
+    result = app.spike_follow_up.audit(
+        spike_id, _safe_project_path(project_dir, "project_dir")
+    )
+    if result.defined_count == 0:
+        return f"Spike '{spike_id}': no follow-up intents found in research reports."
+    if not result.has_orphans:
+        return (
+            f"Spike '{spike_id}': all {result.defined_count} follow-up intents "
+            f"matched to existing tickets."
+        )
+    orphan_titles = "\n".join(f"  - {o.title}" for o in result.orphaned_intents)
+    return (
+        f"Spike '{spike_id}': {result.orphaned_count} of {result.defined_count} "
+        f"follow-up intents have no matching ticket:\n{orphan_titles}\n\n"
+        f"Report: {result.report_path}"
+    )
 
 
 # ── Tools: Guided Discovery (7) ─────────────────────────────────────

@@ -210,6 +210,9 @@ status: draft
 | Context Diff | The summary of what a closed ticket produced, attached to flagged tickets so reviewers know what changed | Ticket Freshness |
 | review_needed | A label on a ticket indicating it may be stale due to a dependency completing | Ticket Freshness |
 | last_reviewed | A timestamp on a ticket indicating when it was last confirmed as current | Ticket Freshness |
+| Follow-Up Intent | A concrete ticket idea (title + description) discovered during a spike but not yet created in Beads | Ticket Freshness |
+| Orphaned Follow-Up | A follow-up intent defined in a spike report but no corresponding ticket was created in Beads | Ticket Freshness |
+| Follow-Up Audit | The verification step ensuring all spike-defined follow-ups either exist as tickets or were deliberately dismissed | Ticket Freshness |
 | Two-Tier Generation | Generating full-detail tickets for near-term work and stub tickets for far-term work | Ticket Pipeline |
 | Knowledge Base | RLM-addressable documentation for DDD patterns, tool conventions, and coding standards | Knowledge |
 | Tool Convention | The configuration format and rules for a specific AI coding tool (Claude Code, Cursor, etc.) | Knowledge |

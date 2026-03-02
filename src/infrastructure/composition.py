@@ -23,11 +23,13 @@ if TYPE_CHECKING:
     from src.application.ports.doc_review_port import DocReviewPort
     from src.application.ports.fitness_generation_port import FitnessGenerationPort
     from src.application.ports.quality_gate_port import QualityGatePort
+    from src.application.ports.spike_follow_up_port import SpikeFollowUpPort
     from src.application.ports.ticket_generation_port import TicketGenerationPort
     from src.application.ports.ticket_health_port import TicketHealthPort
     from src.application.ports.tool_detection_port import ToolDetectionPort
     from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.doc_health import DocHealthReport
+    from src.domain.models.follow_up_intent import FollowUpAuditResult
     from src.domain.models.quality_gate import QualityGate, QualityReport
     from src.domain.models.ticket_freshness import TicketHealthReport
 
@@ -50,6 +52,7 @@ class AppContext:
     doc_health: DocHealthPort
     doc_review: DocReviewPort
     ticket_health: TicketHealthPort
+    spike_follow_up: SpikeFollowUpPort
 
 
 # ── Stub implementations ────────────────────────────────────────────
@@ -171,6 +174,13 @@ class _StubTicketHealth:
         raise NotImplementedError
 
 
+class _StubSpikeFollowUp:
+    """Stub SpikeFollowUpPort -- raises NotImplementedError."""
+
+    def audit(self, spike_id: str, project_dir: Path) -> FollowUpAuditResult:
+        raise NotImplementedError
+
+
 def create_app() -> AppContext:
     """Wire all port implementations and return the application context.
 
@@ -188,4 +198,5 @@ def create_app() -> AppContext:
         doc_health=_StubDocHealth(),
         doc_review=_StubDocReview(),
         ticket_health=_StubTicketHealth(),
+        spike_follow_up=_StubSpikeFollowUp(),
     )

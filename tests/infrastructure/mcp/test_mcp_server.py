@@ -81,7 +81,7 @@ class TestAppContext:
         assert "ticket_health" in fields
 
     def test_app_context_has_all_ports(self):
-        """AppContext must declare all 10 port attributes."""
+        """AppContext must declare all 11 port attributes."""
         from src.infrastructure.composition import AppContext
 
         fields = {f.name for f in dataclasses.fields(AppContext)}
@@ -96,6 +96,7 @@ class TestAppContext:
             "doc_health",
             "doc_review",
             "ticket_health",
+            "spike_follow_up",
         }
         assert expected.issubset(fields)
 
@@ -130,11 +131,11 @@ class TestMcpServerInstance:
         assert callable(app_lifespan)
         assert mcp._mcp_server.lifespan is not None
 
-    def test_mcp_server_registers_seventeen_tools(self):
+    def test_mcp_server_registers_eighteen_tools(self):
         from src.infrastructure.mcp.server import mcp
 
         tools = mcp._tool_manager._tools
-        assert len(tools) == 17, f"Expected 17 tools, got {len(tools)}: {list(tools.keys())}"
+        assert len(tools) == 18, f"Expected 18 tools, got {len(tools)}: {list(tools.keys())}"
 
     def test_mcp_server_registers_ten_resources(self):
         """10 resources total = static resources + URI templates."""
@@ -218,6 +219,9 @@ class TestToolRegistration:
 
     def test_ticket_health_tool_exists(self):
         assert "ticket_health" in _tool_names()
+
+    def test_spike_follow_up_audit_tool_exists(self):
+        assert "spike_follow_up_audit" in _tool_names()
 
 
 class TestResourceRegistration:

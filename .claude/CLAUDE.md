@@ -64,6 +64,7 @@ If closing produced new work:
    - Far-term stubs: `docs/beads_templates/beads-stub-template.md`
 2. Set formal dependencies: `bd dep add <new-id> <depends-on-id>`
 3. Verify with `bd blocked` that the graph is correct
+4. **Spike audit:** If the closed ticket was a spike, verify its research report's follow-up intents were all created as tickets. Orphaned follow-ups (defined in the report but never created) represent lost work items.
 
 ### 4. Groom Next Ticket
 ```bash
