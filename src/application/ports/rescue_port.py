@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from src.domain.models.gap_analysis import GapAnalysis, MigrationPlan, ProjectScan
+    from src.domain.models.stack_profile import StackProfile
 
 
 @runtime_checkable
@@ -22,11 +23,16 @@ class ProjectScanPort(Protocol):
     what documentation, configs, and structure already exist.
     """
 
-    def scan(self, project_dir: Path) -> ProjectScan:
+    def scan(
+        self,
+        project_dir: Path,
+        profile: StackProfile | None = None,
+    ) -> ProjectScan:
         """Scan a project directory and return a frozen snapshot.
 
         Args:
             project_dir: The project directory to scan.
+            profile: Stack profile providing structure and manifest targets.
 
         Returns:
             A ProjectScan value object describing the current state.

@@ -27,7 +27,7 @@ class FakeScanner:
     def __init__(self, scan: ProjectScan | None = None) -> None:
         self._scan = scan
 
-    def scan(self, project_dir: Path) -> ProjectScan:
+    def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
         if self._scan is not None:
             return self._scan
         return ProjectScan(
@@ -170,7 +170,7 @@ class TestRescueHandlerHappyPath:
         scan = ProjectScan(
             project_dir=Path("/tmp/proj"),
             existing_docs=("docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"),
-            existing_configs=(".claude/CLAUDE.md",),
+            existing_configs=(".claude/CLAUDE.md", "pyproject.toml"),
             existing_structure=("src/domain/", "src/application/", "src/infrastructure/"),
             has_knowledge_dir=True,
             has_agents_md=True,
@@ -189,8 +189,10 @@ class TestRescueHandlerHappyPath:
         analysis = handler.rescue(Path("/tmp/proj"))
 
         config_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_CONFIG]
-        assert len(config_gaps) == 1
-        assert config_gaps[0].path == ".claude/CLAUDE.md"
+        config_paths = [g.path for g in config_gaps]
+        # alty-universal + default manifest (pyproject.toml)
+        assert ".claude/CLAUDE.md" in config_paths
+        assert "pyproject.toml" in config_paths
 
     def test_rescue_detects_missing_structure(self) -> None:
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
@@ -263,7 +265,7 @@ class TestRescueHandlerExecutePlan:
         scan = ProjectScan(
             project_dir=Path("/tmp/proj"),
             existing_docs=("docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"),
-            existing_configs=(".claude/CLAUDE.md",),
+            existing_configs=(".claude/CLAUDE.md", "pyproject.toml"),
             existing_structure=("src/domain/", "src/application/", "src/infrastructure/"),
             has_knowledge_dir=True,
             has_agents_md=True,

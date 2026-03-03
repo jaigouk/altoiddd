@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.discovery_values import Answer
     from src.domain.models.stack_profile import StackProfile
+    from src.domain.models.tech_stack import TechStack
     from src.infrastructure.composition import AppContext
 
 app = typer.Typer(
@@ -50,15 +51,20 @@ def init(
 
         from src.application.commands.rescue_handler import RescueHandler
         from src.domain.models.errors import InvariantViolationError
+        from src.domain.services.stack_resolver import resolve_profile
         from src.infrastructure.git.git_ops_adapter import GitOpsAdapter
         from src.infrastructure.scanner.project_scanner import ProjectScanner
+
+        # Ask tech stack before rescue so profile is available
+        tech_stack = _ask_tech_stack()
+        profile = resolve_profile(tech_stack)
 
         scanner = ProjectScanner()
         git_ops = GitOpsAdapter()
         handler = RescueHandler(project_scan=scanner, git_ops=git_ops)
         project_dir = Path.cwd()
         try:
-            analysis = handler.rescue(project_dir)
+            analysis = handler.rescue(project_dir, profile=profile)
             if not analysis.gaps:
                 typer.echo("No gaps found -- project already follows alty conventions.")
                 return
@@ -269,18 +275,23 @@ def _guide_error(msg: str) -> None:
     raise typer.Exit(code=1)
 
 
+def _ask_tech_stack() -> TechStack:
+    """Prompt for tech stack selection and return a TechStack value object."""
+    from src.domain.models.tech_stack import TechStack
+
+    is_python = typer.confirm("Are you using Python with uv and pyproject.toml?")
+    if is_python:
+        return TechStack(language="python", package_manager="uv")
+    return TechStack(language="unknown", package_manager="")
+
+
 def _guide_prompt_tech_stack(
     discovery: DiscoveryPort, session_id: str
 ) -> DiscoverySession:
     """Prompt for tech stack selection and call set_tech_stack."""
     from src.domain.models.errors import DomainError
-    from src.domain.models.tech_stack import TechStack
 
-    is_python = typer.confirm("Are you using Python with uv and pyproject.toml?")
-    if is_python:
-        tech_stack = TechStack(language="python", package_manager="uv")
-    else:
-        tech_stack = TechStack(language="unknown", package_manager="")
+    tech_stack = _ask_tech_stack()
     try:
         return discovery.set_tech_stack(session_id, tech_stack)
     except (DomainError, ValueError, KeyError) as e:

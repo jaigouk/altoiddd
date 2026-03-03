@@ -13,6 +13,8 @@ from src.domain.models.gap_analysis import ProjectScan
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.domain.models.stack_profile import StackProfile
+
 
 # Documentation files to check for
 _DOC_TARGETS: tuple[str, ...] = (
@@ -22,19 +24,21 @@ _DOC_TARGETS: tuple[str, ...] = (
     "AGENTS.md",
 )
 
-# Configuration files to check for
-_CONFIG_TARGETS: tuple[str, ...] = (
+# Alty-universal configuration files (always checked)
+_ALTY_CONFIG_TARGETS: tuple[str, ...] = (
     ".claude/CLAUDE.md",
     ".beads/issues.jsonl",
-    "pyproject.toml",
 )
 
-# Directory structure to check for
-_STRUCTURE_TARGETS: tuple[str, ...] = (
+# Default structure targets (used when no profile provided)
+_DEFAULT_STRUCTURE_TARGETS: tuple[str, ...] = (
     "src/domain/",
     "src/application/",
     "src/infrastructure/",
 )
+
+# Default manifest (used when no profile provided)
+_DEFAULT_MANIFEST: str = "pyproject.toml"
 
 
 class ProjectScanner:
@@ -44,11 +48,17 @@ class ProjectScanner:
     within a project directory.
     """
 
-    def scan(self, project_dir: Path) -> ProjectScan:
+    def scan(
+        self,
+        project_dir: Path,
+        profile: StackProfile | None = None,
+    ) -> ProjectScan:
         """Scan a project directory and return a frozen snapshot.
 
         Args:
             project_dir: The project directory to scan.
+            profile: Stack profile providing structure and manifest targets.
+                When None, uses default Python targets for backward compat.
 
         Returns:
             A ProjectScan value object describing the current state.
@@ -57,13 +67,24 @@ class ProjectScanner:
             doc_path for doc_path in _DOC_TARGETS if (project_dir / doc_path).exists()
         ]
 
+        # Build config targets: alty-universal + profile manifest
+        manifest = profile.project_manifest if profile is not None else _DEFAULT_MANIFEST
+        config_targets = list(_ALTY_CONFIG_TARGETS)
+        if manifest:
+            config_targets.append(manifest)
+
         existing_configs = [
-            config_path for config_path in _CONFIG_TARGETS if (project_dir / config_path).exists()
+            config_path for config_path in config_targets if (project_dir / config_path).exists()
         ]
+
+        # Build structure targets from profile
+        structure_targets = (
+            profile.source_layout if profile is not None else _DEFAULT_STRUCTURE_TARGETS
+        )
 
         existing_structure = [
             structure_path
-            for structure_path in _STRUCTURE_TARGETS
+            for structure_path in structure_targets
             if (project_dir / structure_path).is_dir()
         ]
 

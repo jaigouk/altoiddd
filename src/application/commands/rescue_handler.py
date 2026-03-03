@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from src.application.ports.file_writer_port import FileWriterPort
     from src.application.ports.rescue_port import GitOpsPort, ProjectScanPort
     from src.domain.models.gap_analysis import ProjectScan
+    from src.domain.models.stack_profile import StackProfile
 
 # Reference structure: docs and configs an alty project should have.
 _REQUIRED_DOCS: tuple[str, ...] = (
@@ -35,11 +36,13 @@ _REQUIRED_DOCS: tuple[str, ...] = (
 
 _REQUIRED_CONFIGS: tuple[str, ...] = (".claude/CLAUDE.md",)
 
-_REQUIRED_STRUCTURE: tuple[str, ...] = (
+_DEFAULT_STRUCTURE: tuple[str, ...] = (
     "src/domain/",
     "src/application/",
     "src/infrastructure/",
 )
+
+_DEFAULT_MANIFEST: str = "pyproject.toml"
 
 _BRANCH_NAME = "alty/init"
 
@@ -63,7 +66,11 @@ class RescueHandler:
         self._git_ops = git_ops
         self._file_writer = file_writer
 
-    def rescue(self, project_dir: Path) -> GapAnalysis:
+    def rescue(
+        self,
+        project_dir: Path,
+        profile: StackProfile | None = None,
+    ) -> GapAnalysis:
         """Analyze an existing project and produce a gap analysis with plan.
 
         Validates git preconditions, scans the project, identifies gaps,
@@ -72,6 +79,8 @@ class RescueHandler:
 
         Args:
             project_dir: The existing project directory.
+            profile: Stack profile providing structure and manifest targets.
+                When None, uses default Python targets for backward compat.
 
         Returns:
             A GapAnalysis aggregate in PLANNED state (or ANALYZED if no gaps).
@@ -95,11 +104,11 @@ class RescueHandler:
         # Create branch before scanning
         self._git_ops.create_branch(project_dir, _BRANCH_NAME)
 
-        # Scan project
-        scan = self._project_scan.scan(project_dir)
+        # Scan project (profile tells scanner which structure/config targets to check)
+        scan = self._project_scan.scan(project_dir, profile=profile)
 
         # Analyze gaps
-        gaps = self._identify_gaps(scan)
+        gaps = self._identify_gaps(scan, profile)
 
         # Build aggregate
         analysis = GapAnalysis(project_dir=project_dir)
@@ -162,11 +171,16 @@ class RescueHandler:
 
         analysis.complete()
 
-    def _identify_gaps(self, scan: ProjectScan) -> tuple[Gap, ...]:
+    def _identify_gaps(
+        self,
+        scan: ProjectScan,
+        profile: StackProfile | None = None,
+    ) -> tuple[Gap, ...]:
         """Compare scan results against reference structure to find gaps.
 
         Args:
             scan: The project scan result.
+            profile: Stack profile providing structure and manifest targets.
 
         Returns:
             Tuple of identified gaps.
@@ -184,7 +198,7 @@ class RescueHandler:
             if doc_path not in scan.existing_docs
         ]
 
-        # Check required configs
+        # Check required configs (alty-universal)
         gaps.extend(
             Gap(
                 gap_id=str(uuid.uuid4()),
@@ -197,7 +211,21 @@ class RescueHandler:
             if config_path not in scan.existing_configs
         )
 
-        # Check required structure
+        # Check project manifest from profile
+        manifest = profile.project_manifest if profile is not None else _DEFAULT_MANIFEST
+        if manifest and manifest not in scan.existing_configs:
+            gaps.append(
+                Gap(
+                    gap_id=str(uuid.uuid4()),
+                    gap_type=GapType.MISSING_CONFIG,
+                    path=manifest,
+                    description=f"Missing configuration: {manifest}",
+                    severity="required",
+                )
+            )
+
+        # Check structure from profile
+        structure_targets = profile.source_layout if profile is not None else _DEFAULT_STRUCTURE
         gaps.extend(
             Gap(
                 gap_id=str(uuid.uuid4()),
@@ -206,7 +234,7 @@ class RescueHandler:
                 description=f"Missing directory: {structure_path}",
                 severity="required",
             )
-            for structure_path in _REQUIRED_STRUCTURE
+            for structure_path in structure_targets
             if structure_path not in scan.existing_structure
         )
 
