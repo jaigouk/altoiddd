@@ -12,8 +12,13 @@ stateless request/response cycles.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from src.domain.models.discovery_session import DiscoverySession
 from src.infrastructure.session.session_store import SessionStore
+
+if TYPE_CHECKING:
+    from src.domain.models.tech_stack import TechStack
 
 
 class DiscoveryAdapter:
@@ -40,6 +45,12 @@ class DiscoveryAdapter:
         """Start a new discovery session and store it."""
         session = DiscoverySession(readme_content=readme_content)
         self._store.put(session.session_id, session)
+        return session
+
+    def set_tech_stack(self, session_id: str, tech_stack: TechStack) -> DiscoverySession:
+        """Set the tech stack on a discovery session."""
+        session = self.get_session(session_id)
+        session.set_tech_stack(tech_stack)
         return session
 
     def detect_persona(self, session_id: str, choice: str) -> DiscoverySession:

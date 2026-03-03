@@ -217,6 +217,9 @@ status: draft
 | Knowledge Base | RLM-addressable documentation for DDD patterns, tool conventions, and coding standards | Knowledge |
 | Tool Convention | The configuration format and rules for a specific AI coding tool (Claude Code, Cursor, etc.) | Knowledge |
 | Drift Detection | Detecting when tool conventions change between versions or when docs diverge from actual code | Knowledge |
+| TechStack | A frozen value object recording the user's language and package manager (e.g., Python + uv) | Guided Discovery |
+| StackProfile | A strategy Protocol providing stack-specific behavior (file globs, quality gate commands, source layout) | Domain Model |
+| resolve_profile | A domain service factory that maps a TechStack to the corresponding StackProfile | Domain Model |
 
 **Ambiguous terms** (same word, different meaning in different contexts):
 

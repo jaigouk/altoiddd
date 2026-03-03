@@ -64,6 +64,7 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
     mock_create_app.return_value = mock_ctx
 
     mock_ctx.discovery.start_session.return_value = _make_session()
+    mock_ctx.discovery.set_tech_stack.return_value = _make_session()
     mock_ctx.discovery.detect_persona.return_value = _make_session(
         status=DiscoveryStatus.PERSONA_DETECTED
     )
@@ -85,8 +86,9 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
 
 
 def _happy_path_input() -> str:
-    """Build stdin input for a full happy-path run: persona + 10 answers + 3 playbacks."""
+    """Build stdin: tech stack + persona + 10 answers + 3 playbacks."""
     return (
+        "y\n"                   # tech stack: Python
         "1\n"                   # persona
         "answer1\n"             # Q1
         "answer2\n"             # Q2
@@ -141,7 +143,7 @@ class TestGuidePersonaSelection:
         (tmp_path / "README.md").write_text("# Test")
         mock_ctx = _setup_happy_path(mock_create_app)
         input_text = (
-            "2\n" + "answer\n" * 3 + "y\n" + "answer\n" * 3
+            "y\n" + "2\n" + "answer\n" * 3 + "y\n" + "answer\n" * 3
             + "y\n" + "answer\n" * 3 + "y\n" + "answer\n"
         )
         runner.invoke(app, ["guide"], input=input_text)
@@ -186,6 +188,7 @@ class TestGuideQuestionFlow:
         mock_ctx = MagicMock()
         mock_create_app.return_value = mock_ctx
         mock_ctx.discovery.start_session.return_value = _make_session()
+        mock_ctx.discovery.set_tech_stack.return_value = _make_session()
         mock_ctx.discovery.detect_persona.return_value = _make_session(
             status=DiscoveryStatus.PERSONA_DETECTED,
             register=Register.NON_TECHNICAL,
@@ -222,6 +225,7 @@ class TestGuideQuestionFlow:
         mock_ctx = MagicMock()
         mock_create_app.return_value = mock_ctx
         mock_ctx.discovery.start_session.return_value = _make_session()
+        mock_ctx.discovery.set_tech_stack.return_value = _make_session()
         mock_ctx.discovery.detect_persona.return_value = _make_session(
             status=DiscoveryStatus.PERSONA_DETECTED,
         )
@@ -239,6 +243,7 @@ class TestGuideQuestionFlow:
         mock_ctx.discovery.complete.return_value = completed
 
         input_text = (
+            "y\n"                   # tech stack
             "1\n"                   # persona
             "skip\ntoo early\n"     # Q1 skip + reason
             "answer\nanswer\n"      # Q2, Q3
@@ -277,6 +282,7 @@ class TestGuidePlayback:
 
         # First playback: reject with corrections
         input_text = (
+            "y\n"                        # tech stack
             "1\n"
             "answer\nanswer\nanswer\n"
             "n\nfix Q1 wording\n"       # reject + corrections
@@ -341,8 +347,9 @@ class TestGuideErrorHandling:
         mock_ctx = MagicMock()
         mock_create_app.return_value = mock_ctx
         mock_ctx.discovery.start_session.return_value = _make_session()
+        mock_ctx.discovery.set_tech_stack.return_value = _make_session()
         mock_ctx.discovery.detect_persona.side_effect = ValueError("Invalid choice '9'")
-        result = runner.invoke(app, ["guide"], input="9\n")
+        result = runner.invoke(app, ["guide"], input="y\n9\n")
         assert result.exit_code == 1
 
 

@@ -12,6 +12,7 @@ import pytest
 from src.application.ports.discovery_port import DiscoveryPort
 from src.domain.models.discovery_session import DiscoveryStatus
 from src.domain.models.errors import InvariantViolationError, SessionNotFoundError
+from src.domain.models.tech_stack import TechStack
 from src.infrastructure.session.in_memory_discovery_adapter import InMemoryDiscoveryAdapter
 from src.infrastructure.session.session_store import SessionStore
 
@@ -243,3 +244,51 @@ class TestErrorPropagation:
         adapter.answer_question(sid, "Q3", "Use case")
         with pytest.raises(InvariantViolationError, match="ANSWERING"):
             adapter.complete(sid)
+
+
+# -- TechStack via Port Tests ------------------------------------------------
+
+
+class TestSetTechStack:
+    """set_tech_stack() via the adapter stores TechStack on session."""
+
+    def test_set_tech_stack_in_created_state(self) -> None:
+        adapter = _make_adapter()
+        session = adapter.start_session(_README)
+        ts = TechStack(language="python", package_manager="uv")
+        updated = adapter.set_tech_stack(session.session_id, ts)
+        assert updated.tech_stack == ts
+
+    def test_set_tech_stack_in_persona_detected_state(self) -> None:
+        adapter = _make_adapter()
+        sid = _start_with_persona(adapter)
+        ts = TechStack(language="python", package_manager="uv")
+        updated = adapter.set_tech_stack(sid, ts)
+        assert updated.tech_stack == ts
+
+    def test_set_tech_stack_persists_in_store(self) -> None:
+        adapter = _make_adapter()
+        session = adapter.start_session(_README)
+        ts = TechStack(language="rust", package_manager="cargo")
+        adapter.set_tech_stack(session.session_id, ts)
+        retrieved = adapter.get_session(session.session_id)
+        assert retrieved.tech_stack == ts
+
+    def test_set_tech_stack_in_answering_state_raises(self) -> None:
+        adapter = _make_adapter()
+        sid = _start_with_persona(adapter)
+        adapter.answer_question(sid, "Q1", "Actors")
+        ts = TechStack(language="python", package_manager="uv")
+        with pytest.raises(InvariantViolationError, match="CREATED or PERSONA_DETECTED"):
+            adapter.set_tech_stack(sid, ts)
+
+    def test_set_tech_stack_carries_through_completion(self) -> None:
+        adapter = _make_adapter()
+        session = adapter.start_session(_README)
+        ts = TechStack(language="python", package_manager="uv")
+        adapter.set_tech_stack(session.session_id, ts)
+        adapter.detect_persona(session.session_id, "1")
+        _answer_all_questions(adapter, session.session_id)
+        completed = adapter.complete(session.session_id)
+        assert completed.tech_stack == ts
+        assert completed.events[0].tech_stack == ts

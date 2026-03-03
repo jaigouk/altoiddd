@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from src.domain.models.discovery_session import DiscoverySession
+    from src.domain.models.tech_stack import TechStack
 
 
 @runtime_checkable
@@ -43,6 +44,20 @@ class DiscoveryPort(Protocol):
 
         Returns:
             The newly created DiscoverySession.
+        """
+        ...
+
+    def set_tech_stack(self, session_id: str, tech_stack: TechStack) -> DiscoverySession:
+        """Set the tech stack on a discovery session.
+
+        Must be called in CREATED or PERSONA_DETECTED state.
+
+        Args:
+            session_id: The active discovery session identifier.
+            tech_stack: The TechStack value object to store.
+
+        Returns:
+            The updated DiscoverySession.
         """
         ...
 

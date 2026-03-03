@@ -60,6 +60,7 @@ def _make_session(
 def _setup_discovery_mocks(mock_ctx: MagicMock) -> None:
     """Configure discovery port mocks for a full happy-path discovery run."""
     mock_ctx.discovery.start_session.return_value = _make_session()
+    mock_ctx.discovery.set_tech_stack.return_value = _make_session()
     mock_ctx.discovery.detect_persona.return_value = _make_session(
         status=DiscoveryStatus.PERSONA_DETECTED
     )
@@ -105,8 +106,9 @@ def _mock_config_preview() -> MagicMock:
 
 
 def _discovery_input() -> str:
-    """Build stdin for full discovery: persona + 10 answers + 3 playbacks."""
+    """Build stdin for full discovery: tech stack + persona + 10 answers + 3 playbacks."""
     return (
+        "y\n"                   # tech stack: Python
         "1\n"                   # persona
         "answer1\n"             # Q1
         "answer2\n"             # Q2
@@ -791,6 +793,7 @@ class TestInitErrorHandling:
         mock_ctx = MagicMock()
         mock_create_app.return_value = mock_ctx
         mock_ctx.discovery.start_session.return_value = _make_session()
+        mock_ctx.discovery.set_tech_stack.return_value = _make_session()
         mock_ctx.discovery.detect_persona.side_effect = ValueError("Invalid choice '9'")
-        result = runner.invoke(app, ["init"], input="9\n")
+        result = runner.invoke(app, ["init"], input="y\n9\n")
         assert result.exit_code == 1

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, cast
 from src.domain.models.discovery_session import DiscoverySession
 
 if TYPE_CHECKING:
+    from src.domain.models.tech_stack import TechStack
     from src.infrastructure.session.session_store import SessionStore
 
 
@@ -39,6 +40,21 @@ class InMemoryDiscoveryAdapter:
         """
         session = DiscoverySession(readme_content)
         self._store.put(session.session_id, session)
+        return session
+
+    def set_tech_stack(self, session_id: str, tech_stack: TechStack) -> DiscoverySession:
+        """Set the tech stack on a discovery session.
+
+        Args:
+            session_id: The active discovery session identifier.
+            tech_stack: The TechStack value object to store.
+
+        Returns:
+            The updated DiscoverySession.
+        """
+        session = self._get(session_id)
+        session.set_tech_stack(tech_stack)
+        self._store.put(session_id, session)
         return session
 
     def detect_persona(self, session_id: str, choice: str) -> DiscoverySession:

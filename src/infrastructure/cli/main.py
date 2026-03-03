@@ -113,6 +113,7 @@ def _run_discovery(
     session = ctx.discovery.start_session(readme_content)
     typer.echo(f"Discovery session started ({session.session_id})\n")
 
+    session = _guide_prompt_tech_stack(ctx.discovery, session.session_id)
     session = _guide_prompt_persona(ctx.discovery, session.session_id)
     register = session.register
 
@@ -253,6 +254,25 @@ def _guide_error(msg: str) -> None:
     """Print error and raise SystemExit via typer."""
     typer.echo(f"Error: {msg}", err=True)
     raise typer.Exit(code=1)
+
+
+def _guide_prompt_tech_stack(
+    discovery: DiscoveryPort, session_id: str
+) -> DiscoverySession:
+    """Prompt for tech stack selection and call set_tech_stack."""
+    from src.domain.models.errors import DomainError
+    from src.domain.models.tech_stack import TechStack
+
+    is_python = typer.confirm("Are you using Python with uv and pyproject.toml?")
+    if is_python:
+        tech_stack = TechStack(language="python", package_manager="uv")
+    else:
+        tech_stack = TechStack(language="unknown", package_manager="")
+    try:
+        return discovery.set_tech_stack(session_id, tech_stack)
+    except (DomainError, ValueError, KeyError) as e:
+        _guide_error(str(e))
+        raise  # unreachable, but satisfies type checker
 
 
 def _guide_prompt_persona(
