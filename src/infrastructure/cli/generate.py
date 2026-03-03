@@ -20,6 +20,7 @@ import typer
 if TYPE_CHECKING:
     from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
     from src.infrastructure.composition import AppContext
 
 app = typer.Typer(
@@ -86,6 +87,13 @@ def _build_domain_model(
     return preview.model, ctx
 
 
+def _resolve_profile(session: DiscoverySession) -> StackProfile:
+    """Resolve a StackProfile from the session's tech stack."""
+    from src.domain.services.stack_resolver import resolve_profile
+
+    return resolve_profile(session.tech_stack)
+
+
 # ── Subcommands ───────────────────────────────────────────────
 
 
@@ -132,10 +140,11 @@ def fitness() -> None:
 
     session = _load_session()
     model, ctx = _build_domain_model(session)
+    profile = _resolve_profile(session)
 
     # Generate fitness tests.
     handler = FitnessGenerationHandler(writer=ctx.file_writer)
-    root_package = Path.cwd().name.replace("-", "_")
+    root_package = profile.to_root_package(Path.cwd().name)
     preview = handler.build_preview(model, root_package)
 
     typer.echo(preview.summary)
@@ -158,10 +167,11 @@ def tickets() -> None:
 
     session = _load_session()
     model, ctx = _build_domain_model(session)
+    profile = _resolve_profile(session)
 
     # Generate tickets.
     handler = TicketGenerationHandler(writer=ctx.file_writer)
-    preview = handler.build_preview(model)
+    preview = handler.build_preview(model, profile)
 
     typer.echo(preview.summary)
 
@@ -184,11 +194,12 @@ def configs() -> None:
 
     session = _load_session()
     model, ctx = _build_domain_model(session)
+    profile = _resolve_profile(session)
 
     # Generate configs for all supported tools.
     handler = ConfigGenerationHandler(writer=ctx.file_writer)
     tools = tuple(SupportedTool)
-    preview = handler.build_preview(model, tools)
+    preview = handler.build_preview(model, tools, profile)
 
     typer.echo(preview.summary)
 

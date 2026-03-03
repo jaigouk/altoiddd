@@ -32,6 +32,7 @@ from src.domain.services.ticket_detail_renderer import TicketDetailRenderer
 if TYPE_CHECKING:
     from src.domain.events.ticket_events import TicketPlanApproved
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
 
 
 class TicketPlan:
@@ -48,6 +49,7 @@ class TicketPlan:
         self._dependency_order: DependencyOrder | None = None
         self._events: list[TicketPlanApproved] = []
         self._approved: bool = False
+        self._profile: StackProfile | None = None
 
     # -- Properties -----------------------------------------------------------
 
@@ -73,7 +75,7 @@ class TicketPlan:
 
     # -- Commands -------------------------------------------------------------
 
-    def generate_plan(self, model: DomainModel) -> None:
+    def generate_plan(self, model: DomainModel, profile: StackProfile | None = None) -> None:
         """Generate epics and tickets from a finalized DomainModel.
 
         Creates one epic per bounded context, then generates tickets per
@@ -82,6 +84,8 @@ class TicketPlan:
 
         Args:
             model: A finalized DomainModel with classified bounded contexts.
+            profile: Stack profile for quality gate rendering. Defaults to
+                PythonUvProfile for backward compatibility.
 
         Raises:
             InvariantViolationError: If model has no bounded contexts,
@@ -90,6 +94,12 @@ class TicketPlan:
         if self._approved:
             msg = "Cannot regenerate plan on an approved TicketPlan"
             raise InvariantViolationError(msg)
+
+        if profile is None:
+            from src.domain.models.stack_profile import PythonUvProfile
+
+            profile = PythonUvProfile()
+        self._profile = profile
 
         contexts = model.bounded_contexts
         if not contexts:
@@ -143,7 +153,9 @@ class TicketPlan:
                     context_name=bc.name,
                     root_entity=bc.name,
                 )
-                stub_description = TicketDetailRenderer.render(stub_agg, TicketDetailLevel.STUB)
+                stub_description = TicketDetailRenderer.render(
+                    stub_agg, TicketDetailLevel.STUB, profile
+                )
                 self._tickets.append(
                     GeneratedTicket(
                         ticket_id=str(uuid.uuid4()),
@@ -157,7 +169,7 @@ class TicketPlan:
                 )
             else:
                 for agg in context_aggregates:
-                    description = TicketDetailRenderer.render(agg, detail_level)
+                    description = TicketDetailRenderer.render(agg, detail_level, profile)
                     self._tickets.append(
                         GeneratedTicket(
                             ticket_id=str(uuid.uuid4()),
@@ -213,11 +225,13 @@ class TicketPlan:
 
         return "\n".join(lines)
 
-    def promote_stub(self, ticket_id: str) -> None:
+    def promote_stub(self, ticket_id: str, profile: StackProfile | None = None) -> None:
         """Promote a STUB ticket to FULL detail.
 
         Args:
             ticket_id: ID of the stub ticket to promote.
+            profile: Stack profile for quality gate rendering. Uses the
+                profile from generate_plan() if not provided.
 
         Raises:
             InvariantViolationError: If ticket not found or not a STUB.
@@ -232,12 +246,19 @@ class TicketPlan:
                     raise InvariantViolationError(msg)
 
                 # Find or create aggregate design for re-rendering
+                resolved_profile = profile or self._profile
+                if resolved_profile is None:
+                    from src.domain.models.stack_profile import PythonUvProfile
+
+                    resolved_profile = PythonUvProfile()
                 agg = AggregateDesign(
                     name=ticket.aggregate_name,
                     context_name=ticket.bounded_context_name,
                     root_entity=ticket.aggregate_name,
                 )
-                new_description = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
+                new_description = TicketDetailRenderer.render(
+                    agg, TicketDetailLevel.FULL, resolved_profile
+                )
                 self._tickets[i] = GeneratedTicket(
                     ticket_id=ticket.ticket_id,
                     title=ticket.title,

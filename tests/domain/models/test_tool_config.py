@@ -75,7 +75,9 @@ class FakeAdapter:
             ),
         )
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(
+        self, model: DomainModel, profile: object | None = None
+    ) -> tuple[ConfigSection, ...]:
         return self._sections
 
 

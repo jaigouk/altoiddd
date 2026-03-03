@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from src.application.ports.file_writer_port import FileWriterPort
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
 
 
 @dataclass
@@ -46,11 +47,15 @@ class TicketGenerationHandler:
     def __init__(self, writer: FileWriterPort) -> None:
         self._writer = writer
 
-    def build_preview(self, model: DomainModel) -> TicketPreview:
+    def build_preview(
+        self, model: DomainModel, profile: StackProfile | None = None
+    ) -> TicketPreview:
         """Build a ticket plan and render for preview without writing.
 
         Args:
             model: A finalized DomainModel with classified bounded contexts.
+            profile: Stack profile for quality gate rendering. Defaults to
+                PythonUvProfile for backward compatibility.
 
         Returns:
             TicketPreview with plan and summary.
@@ -59,7 +64,7 @@ class TicketGenerationHandler:
             InvariantViolationError: If no bounded contexts in the model.
         """
         plan = TicketPlan()
-        plan.generate_plan(model)
+        plan.generate_plan(model, profile)
 
         return TicketPreview(
             plan=plan,

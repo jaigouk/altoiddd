@@ -3,6 +3,9 @@
 Each adapter translates a DomainModel into tool-native configuration files.
 Adapters are pure domain logic -- they produce content strings without I/O.
 
+Quality gate display and file globs are read from a StackProfile so that
+output is stack-aware. GenericProfile produces configs with no quality gates.
+
 Supported tools:
 - Claude Code: .claude/CLAUDE.md
 - Cursor: AGENTS.md + .cursor/rules/project-conventions.mdc
@@ -19,17 +22,19 @@ from src.domain.models.tool_config import ConfigSection
 
 if TYPE_CHECKING:
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
 
 
 @runtime_checkable
 class ToolAdapterProtocol(Protocol):
     """Interface for translating a DomainModel into tool-native config sections."""
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate a DomainModel into config sections for a specific tool.
 
         Args:
             model: A finalized DomainModel with bounded contexts and UL.
+            profile: Stack profile providing quality gate display and file globs.
 
         Returns:
             Tuple of ConfigSection value objects ready for output.
@@ -76,19 +81,16 @@ def _build_ddd_layer_rules() -> str:
 """
 
 
-def _build_quality_gates() -> str:
-    """Render quality gate commands as markdown."""
-    return """## Quality Gates
+def _build_quality_gates(profile: StackProfile) -> str:
+    """Render quality gate commands from the stack profile.
 
-```bash
-uv run ruff check .              # Lint
-uv run mypy .                    # Type check
-uv run pytest                    # Tests
-```
-"""
+    Returns profile.quality_gate_display (code block format) for stacks
+    that have quality gates, or empty string for GenericProfile.
+    """
+    return profile.quality_gate_display
 
 
-def _build_agents_md(model: DomainModel) -> str:
+def _build_agents_md(model: DomainModel, profile: StackProfile) -> str:
     """Build a generic AGENTS.md with project conventions from the domain model."""
     parts: list[str] = [
         "# Project Conventions",
@@ -96,8 +98,10 @@ def _build_agents_md(model: DomainModel) -> str:
         _build_ubiquitous_language_section(model),
         _build_bounded_context_section(model),
         _build_ddd_layer_rules(),
-        _build_quality_gates(),
     ]
+    gates = _build_quality_gates(profile)
+    if gates:
+        parts.append(gates)
     return "\n".join(parts)
 
 
@@ -109,7 +113,7 @@ def _build_agents_md(model: DomainModel) -> str:
 class ClaudeCodeAdapter:
     """Generates .claude/CLAUDE.md for Claude Code."""
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate DomainModel into Claude Code configuration."""
         parts: list[str] = [
             "# CLAUDE.md",
@@ -117,8 +121,10 @@ class ClaudeCodeAdapter:
             _build_ubiquitous_language_section(model),
             _build_bounded_context_section(model),
             _build_ddd_layer_rules(),
-            _build_quality_gates(),
         ]
+        gates = _build_quality_gates(profile)
+        if gates:
+            parts.append(gates)
         content = "\n".join(parts)
         return (
             ConfigSection(
@@ -132,19 +138,21 @@ class ClaudeCodeAdapter:
 class CursorAdapter:
     """Generates AGENTS.md and .cursor/rules/project-conventions.mdc for Cursor."""
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate DomainModel into Cursor configuration."""
-        agents_content = _build_agents_md(model)
+        agents_content = _build_agents_md(model, profile)
 
         mdc_parts: list[str] = [
             "---",
             "description: Project conventions derived from domain model",
-            "globs: **/*.py",
+            f"globs: {profile.file_glob}",
             "---",
             "",
             _build_ddd_layer_rules(),
-            _build_quality_gates(),
         ]
+        gates = _build_quality_gates(profile)
+        if gates:
+            mdc_parts.append(gates)
         mdc_content = "\n".join(mdc_parts)
 
         return (
@@ -164,9 +172,9 @@ class CursorAdapter:
 class RooCodeAdapter:
     """Generates AGENTS.md, .roomodes, and .roo/rules/project-conventions.md."""
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate DomainModel into Roo Code configuration."""
-        agents_content = _build_agents_md(model)
+        agents_content = _build_agents_md(model, profile)
 
         roomodes = json.dumps(
             {
@@ -185,8 +193,10 @@ class RooCodeAdapter:
             "# Project Conventions",
             "",
             _build_ddd_layer_rules(),
-            _build_quality_gates(),
         ]
+        gates = _build_quality_gates(profile)
+        if gates:
+            rules_parts.append(gates)
         rules_content = "\n".join(rules_parts)
 
         return (
@@ -211,16 +221,18 @@ class RooCodeAdapter:
 class OpenCodeAdapter:
     """Generates AGENTS.md, .opencode/rules/project-conventions.md, and opencode.json."""
 
-    def translate(self, model: DomainModel) -> tuple[ConfigSection, ...]:
+    def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate DomainModel into OpenCode configuration."""
-        agents_content = _build_agents_md(model)
+        agents_content = _build_agents_md(model, profile)
 
         rules_parts: list[str] = [
             "# Project Conventions",
             "",
             _build_ddd_layer_rules(),
-            _build_quality_gates(),
         ]
+        gates = _build_quality_gates(profile)
+        if gates:
+            rules_parts.append(gates)
         rules_content = "\n".join(rules_parts)
 
         opencode_json = json.dumps(

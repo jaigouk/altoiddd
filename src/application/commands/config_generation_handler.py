@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     from src.application.ports.file_writer_port import FileWriterPort
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
 
 _ADAPTER_REGISTRY: dict[SupportedTool, type[ToolAdapterProtocol]] = {
     SupportedTool.CLAUDE_CODE: ClaudeCodeAdapter,
@@ -64,12 +65,15 @@ class ConfigGenerationHandler:
         self,
         model: DomainModel,
         tools: tuple[SupportedTool, ...],
+        profile: StackProfile | None = None,
     ) -> ConfigPreview:
         """Build tool configs and render for preview without writing.
 
         Args:
             model: A finalized DomainModel with classified bounded contexts.
             tools: Which tools to generate configs for.
+            profile: Stack profile for quality gate display. Defaults to
+                PythonUvProfile for backward compatibility.
 
         Returns:
             ConfigPreview with rendered configs and summary.
@@ -88,7 +92,7 @@ class ConfigGenerationHandler:
             adapter_cls = _ADAPTER_REGISTRY[tool]
             adapter = adapter_cls()
             config = ToolConfig(tool=tool)
-            config.build_sections(model=model, adapter=adapter)
+            config.build_sections(model=model, adapter=adapter, profile=profile)
             configs.append(config)
             summary_lines.append(config.preview())
             summary_lines.append("")

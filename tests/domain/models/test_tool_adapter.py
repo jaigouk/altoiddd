@@ -12,6 +12,7 @@ from src.domain.models.domain_values import (
     DomainStory,
     SubdomainClassification,
 )
+from src.domain.models.stack_profile import PythonUvProfile
 from src.domain.models.tool_adapter import (
     ClaudeCodeAdapter,
     CursorAdapter,
@@ -19,6 +20,8 @@ from src.domain.models.tool_adapter import (
     RooCodeAdapter,
     ToolAdapterProtocol,
 )
+
+_PROFILE = PythonUvProfile()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -94,14 +97,14 @@ class TestClaudeCodeAdapter:
     def test_produces_claude_md(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = ClaudeCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert len(sections) == 1
         assert sections[0].file_path == ".claude/CLAUDE.md"
 
     def test_content_includes_ubiquitous_language(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = ClaudeCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert "Orders" in sections[0].content
         assert "Ubiquitous Language" in sections[0].content
 
@@ -113,7 +116,7 @@ class TestClaudeCodeAdapter:
             ]
         )
         adapter = ClaudeCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert "Orders" in sections[0].content
         assert "Notifications" in sections[0].content
         assert "Bounded Contexts" in sections[0].content
@@ -121,7 +124,7 @@ class TestClaudeCodeAdapter:
     def test_content_includes_ddd_layer_rules(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = ClaudeCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert "DDD Layer Rules" in sections[0].content
 
 
@@ -134,27 +137,27 @@ class TestCursorAdapter:
     def test_produces_agents_md(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = CursorAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert "AGENTS.md" in paths
 
     def test_produces_cursor_rules(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = CursorAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert ".cursor/rules/project-conventions.mdc" in paths
 
     def test_produces_two_sections(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = CursorAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert len(sections) == 2
 
     def test_mdc_has_frontmatter(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = CursorAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         mdc = next(s for s in sections if s.file_path.endswith(".mdc"))
         assert mdc.content.startswith("---")
 
@@ -168,28 +171,28 @@ class TestRooCodeAdapter:
     def test_produces_agents_md(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert "AGENTS.md" in paths
 
     def test_produces_roomodes(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert ".roomodes" in paths
 
     def test_produces_roo_rules(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert ".roo/rules/project-conventions.md" in paths
 
     def test_produces_three_sections(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert len(sections) == 3
 
     def test_roomodes_is_valid_json(self):
@@ -197,7 +200,7 @@ class TestRooCodeAdapter:
 
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         roomodes = next(s for s in sections if s.file_path == ".roomodes")
         parsed = json.loads(roomodes.content)
         assert "customModes" in parsed
@@ -212,28 +215,28 @@ class TestOpenCodeAdapter:
     def test_produces_agents_md(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = OpenCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert "AGENTS.md" in paths
 
     def test_produces_opencode_json(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = OpenCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert "opencode.json" in paths
 
     def test_produces_opencode_rules(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = OpenCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         paths = [s.file_path for s in sections]
         assert ".opencode/rules/project-conventions.md" in paths
 
     def test_produces_three_sections(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = OpenCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         assert len(sections) == 3
 
     def test_opencode_json_is_valid(self):
@@ -241,7 +244,7 @@ class TestOpenCodeAdapter:
 
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = OpenCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         oc_json = next(s for s in sections if s.file_path == "opencode.json")
         parsed = json.loads(oc_json.content)
         assert "context" in parsed
@@ -256,13 +259,13 @@ class TestAdapterContent:
     def test_agents_md_includes_terms(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = CursorAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         agents = next(s for s in sections if s.file_path == "AGENTS.md")
         assert "Orders" in agents.content
 
     def test_agents_md_includes_classification(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = RooCodeAdapter()
-        sections = adapter.translate(model)
+        sections = adapter.translate(model, _PROFILE)
         agents = next(s for s in sections if s.file_path == "AGENTS.md")
         assert "core" in agents.content

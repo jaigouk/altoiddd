@@ -23,6 +23,7 @@ from src.domain.models.errors import InvariantViolationError
 if TYPE_CHECKING:
     from src.domain.events.config_events import ConfigsGenerated
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
     from src.domain.models.tool_adapter import ToolAdapterProtocol
 
 
@@ -83,12 +84,15 @@ class ToolConfig:
         self,
         model: DomainModel,
         adapter: ToolAdapterProtocol,
+        profile: StackProfile | None = None,
     ) -> None:
         """Generate config sections from a DomainModel using the given adapter.
 
         Args:
             model: A finalized DomainModel with classified bounded contexts.
             adapter: A tool-specific adapter that translates domain model to sections.
+            profile: Stack profile for quality gate display. Defaults to
+                PythonUvProfile for backward compatibility.
 
         Raises:
             InvariantViolationError: If this config has already been approved.
@@ -97,8 +101,13 @@ class ToolConfig:
             msg = "Cannot regenerate sections on an approved config"
             raise InvariantViolationError(msg)
 
+        if profile is None:
+            from src.domain.models.stack_profile import PythonUvProfile
+
+            profile = PythonUvProfile()
+
         self._sections.clear()
-        self._sections.extend(adapter.translate(model))
+        self._sections.extend(adapter.translate(model, profile))
 
     def preview(self) -> str:
         """Return a human-readable preview of generated sections.

@@ -4,16 +4,33 @@ TicketDetailRenderer is a stateless domain service that produces ticket body
 text from aggregate metadata. Detail level is driven by subdomain classification:
 Core gets full DDD/TDD/SOLID sections, Supporting gets core sections, Generic
 gets a minimal stub.
+
+Quality gate sections are derived from a StackProfile's quality_gate_commands
+dict in bullet-point format. GenericProfile (empty commands) omits the section.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.domain.models.quality_gate import QualityGate
 from src.domain.models.ticket_values import TicketDetailLevel
 
 if TYPE_CHECKING:
     from src.domain.models.domain_values import AggregateDesign
+    from src.domain.models.stack_profile import StackProfile
+
+
+# Gate labels for bullet-point rendering in tickets
+_GATE_LABELS: dict[QualityGate, str] = {
+    QualityGate.LINT: "zero errors",
+    QualityGate.TYPES: "zero errors",
+    QualityGate.TESTS: "all pass",
+    QualityGate.FITNESS: "all pass",
+}
+
+# Gates excluded from ticket quality gates section
+_EXCLUDED_GATES: frozenset[QualityGate] = frozenset({QualityGate.FITNESS})
 
 
 class TicketDetailRenderer:
@@ -23,24 +40,35 @@ class TicketDetailRenderer:
     """
 
     @staticmethod
-    def render(aggregate: AggregateDesign, detail_level: TicketDetailLevel) -> str:
+    def render(
+        aggregate: AggregateDesign,
+        detail_level: TicketDetailLevel,
+        profile: StackProfile | None = None,
+    ) -> str:
         """Render a ticket description for the given aggregate and detail level.
 
         Args:
             aggregate: The aggregate design providing domain metadata.
             detail_level: How much detail to include.
+            profile: Stack profile for quality gate commands. Defaults to
+                PythonUvProfile for backward compatibility.
 
         Returns:
             Rendered ticket description as a multi-line string.
         """
+        if profile is None:
+            from src.domain.models.stack_profile import PythonUvProfile
+
+            profile = PythonUvProfile()
+
         if detail_level == TicketDetailLevel.FULL:
-            return TicketDetailRenderer._render_full(aggregate)
+            return TicketDetailRenderer._render_full(aggregate, profile)
         if detail_level == TicketDetailLevel.STANDARD:
-            return TicketDetailRenderer._render_standard(aggregate)
+            return TicketDetailRenderer._render_standard(aggregate, profile)
         return TicketDetailRenderer._render_stub(aggregate)
 
     @staticmethod
-    def _render_full(aggregate: AggregateDesign) -> str:
+    def _render_full(aggregate: AggregateDesign, profile: StackProfile) -> str:
         """Render FULL detail: all DDD/TDD/SOLID sections."""
         sections = [
             _render_goal_section(aggregate),
@@ -51,12 +79,14 @@ class TicketDetailRenderer:
             _render_steps_section(aggregate),
             _render_acceptance_criteria_section(aggregate),
             _render_edge_cases_section(),
-            _render_quality_gates_section(),
         ]
+        gates = _render_quality_gates_section(profile)
+        if gates:
+            sections.append(gates)
         return "\n".join(sections)
 
     @staticmethod
-    def _render_standard(aggregate: AggregateDesign) -> str:
+    def _render_standard(aggregate: AggregateDesign, profile: StackProfile) -> str:
         """Render STANDARD detail: core sections only."""
         lines: list[str] = [
             "## Goal",
@@ -78,12 +108,11 @@ class TicketDetailRenderer:
             f"- [ ] `{aggregate.name}` aggregate root created",
             "- [ ] All tests pass",
             "- [ ] Coverage >= 80%",
-            "",
-            "## Quality Gates",
-            "- `uv run ruff check .` -- zero errors",
-            "- `uv run mypy .` -- zero errors",
-            "- `uv run pytest` -- all pass",
         ]
+        gate_lines = _render_quality_gates_lines(profile)
+        if gate_lines:
+            lines.append("")
+            lines.extend(gate_lines)
         return "\n".join(lines)
 
     @staticmethod
@@ -208,11 +237,31 @@ def _render_edge_cases_section() -> str:
     )
 
 
-def _render_quality_gates_section() -> str:
-    """Render the Quality Gates section."""
-    return (
-        "## Quality Gates\n"
-        "- `uv run ruff check .` -- zero errors\n"
-        "- `uv run mypy .` -- zero errors\n"
-        "- `uv run pytest` -- all pass"
-    )
+def _render_quality_gates_section(profile: StackProfile) -> str:
+    """Render the Quality Gates section from profile in bullet-point format.
+
+    Returns empty string for GenericProfile (empty commands dict).
+    """
+    lines = _render_quality_gates_lines(profile)
+    if not lines:
+        return ""
+    return "\n".join(lines)
+
+
+def _render_quality_gates_lines(profile: StackProfile) -> list[str]:
+    """Build quality gate bullet-point lines from profile.quality_gate_commands.
+
+    Returns empty list for GenericProfile (empty commands dict).
+    """
+    commands = profile.quality_gate_commands
+    if not commands:
+        return []
+
+    lines: list[str] = ["## Quality Gates"]
+    for gate, cmd_parts in commands.items():
+        if gate in _EXCLUDED_GATES:
+            continue
+        cmd_str = " ".join(cmd_parts)
+        label = _GATE_LABELS.get(gate, "passes")
+        lines.append(f"- `{cmd_str}` -- {label}")
+    return lines

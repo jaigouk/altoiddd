@@ -233,6 +233,38 @@ class TestPromoteStub:
         with pytest.raises(InvariantViolationError, match="not found"):
             plan.promote_stub("nonexistent-id")
 
+    def test_promote_stub_inherits_stored_profile(self):
+        """promote_stub without explicit profile uses profile from generate_plan."""
+        from src.domain.models.stack_profile import GenericProfile
+
+        model = _make_model([("Logging", SubdomainClassification.GENERIC)])
+        plan = TicketPlan()
+        plan.generate_plan(model, profile=GenericProfile())
+
+        stub_ticket = plan.tickets[0]
+        plan.promote_stub(stub_ticket.ticket_id)
+        promoted = plan.tickets[0]
+
+        assert promoted.detail_level == TicketDetailLevel.FULL
+        # GenericProfile has no quality gate commands, so no gates section
+        assert "## Quality Gates" not in promoted.description
+
+    def test_promote_stub_explicit_profile_overrides_stored(self):
+        """Explicit profile arg to promote_stub overrides the stored one."""
+        from src.domain.models.stack_profile import GenericProfile, PythonUvProfile
+
+        model = _make_model([("Logging", SubdomainClassification.GENERIC)])
+        plan = TicketPlan()
+        plan.generate_plan(model, profile=GenericProfile())
+
+        stub_ticket = plan.tickets[0]
+        plan.promote_stub(stub_ticket.ticket_id, profile=PythonUvProfile())
+        promoted = plan.tickets[0]
+
+        assert promoted.detail_level == TicketDetailLevel.FULL
+        # PythonUvProfile overrides GenericProfile — gates appear
+        assert "## Quality Gates" in promoted.description
+
 
 # ---------------------------------------------------------------------------
 # 6. Approve
