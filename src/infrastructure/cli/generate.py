@@ -145,7 +145,11 @@ def fitness() -> None:
     # Generate fitness tests.
     handler = FitnessGenerationHandler(writer=ctx.file_writer)
     root_package = profile.to_root_package(Path.cwd().name)
-    preview = handler.build_preview(model, root_package)
+    preview = handler.build_preview(model, root_package, profile=profile)
+
+    if preview is None:
+        typer.echo("Fitness tests not available for your stack (requires Python with uv).")
+        raise typer.Exit(code=0)
 
     typer.echo(preview.summary)
 

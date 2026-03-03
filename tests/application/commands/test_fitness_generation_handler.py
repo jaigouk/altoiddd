@@ -130,6 +130,7 @@ class TestBuildPreview:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         assert "Orders" in preview.summary
         assert "Notifications" in preview.summary
@@ -162,6 +163,7 @@ class TestWriteFiles:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         handler.write_files(preview, output_dir=Path("/project"))
 
@@ -180,6 +182,7 @@ class TestWriteFiles:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
         handler.write_files(preview, output_dir=Path("/project"))
 
         # Written TOML content should match preview
@@ -204,6 +207,7 @@ class TestApproveAndWrite:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -220,6 +224,7 @@ class TestApproveAndWrite:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -249,6 +254,7 @@ class TestStrictnessMapping:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         assert "STRICT" in preview.summary or "strict" in preview.summary.lower()
 
@@ -261,6 +267,7 @@ class TestStrictnessMapping:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         # Minimal = only forbidden contracts
         assert "[tool.importlinter]" in preview.toml_content
@@ -314,6 +321,7 @@ class TestEdgeCases:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         handler.approve_and_write(preview, output_dir=Path("/project"))
 
@@ -336,6 +344,7 @@ class TestEdgeCases:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         # All 3 contexts should be in the summary
         assert "Orders" in preview.summary
@@ -356,6 +365,7 @@ class TestEdgeCases:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
 
         assert 'type = "layers"' in preview.toml_content
         assert 'type = "forbidden"' in preview.toml_content
@@ -372,6 +382,7 @@ class TestEdgeCases:
         writer = FakeFileWriter()
         handler = FitnessGenerationHandler(writer=writer)
         preview = handler.build_preview(model, root_package="myapp")
+        assert preview is not None
         handler.write_files(preview, output_dir=Path("/project"))
 
         paths = list(writer.written.keys())

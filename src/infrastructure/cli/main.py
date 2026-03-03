@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from src.domain.events.discovery_events import DiscoveryCompleted
     from src.domain.models.discovery_session import DiscoverySession
     from src.domain.models.discovery_values import Answer
+    from src.domain.models.stack_profile import StackProfile
     from src.infrastructure.composition import AppContext
 
 app = typer.Typer(
@@ -91,10 +92,15 @@ def _init_new_project() -> None:
     # 3. Reconstruct event from completed session
     event = _reconstruct_event(session)
 
-    # 4. Generate all artifacts with preview-approve pattern
-    _run_generation_pipeline(ctx, event, Path.cwd())
+    # 4. Resolve stack profile
+    from src.domain.services.stack_resolver import resolve_profile
 
-    # 5. Save session snapshot
+    profile = resolve_profile(session.tech_stack)
+
+    # 5. Generate all artifacts with preview-approve pattern
+    _run_generation_pipeline(ctx, event, Path.cwd(), profile)
+
+    # 6. Save session snapshot
     _save_session(session)
 
     typer.echo("\nBootstrap complete!")
@@ -167,6 +173,7 @@ def _run_generation_pipeline(
     ctx: AppContext,
     event: DiscoveryCompleted,
     output_dir: Path,
+    profile: StackProfile | None = None,
 ) -> None:
     """Run the four-stage generation pipeline with preview-approve at each stage."""
     from src.application.commands.artifact_generation_handler import (
@@ -204,19 +211,25 @@ def _run_generation_pipeline(
 
     # b. Fitness
     fitness_handler = FitnessGenerationHandler(writer=ctx.file_writer)
-    root_package = output_dir.name.replace("-", "_")
-    fitness_preview = fitness_handler.build_preview(model, root_package)
+    if profile is not None:
+        root_package = profile.to_root_package(output_dir.name)
+    else:
+        root_package = output_dir.name.replace("-", "_")
+    fitness_preview = fitness_handler.build_preview(model, root_package, profile=profile)
 
-    typer.echo(f"\n{fitness_preview.summary}")
+    if fitness_preview is None:
+        typer.echo("\nFitness tests not available for your stack (requires Python with uv).")
+    else:
+        typer.echo(f"\n{fitness_preview.summary}")
 
-    if not typer.confirm("Write fitness tests?"):
-        typer.echo("Cancelled.")
-        raise typer.Exit(code=0)
-    fitness_handler.approve_and_write(fitness_preview, output_dir)
+        if not typer.confirm("Write fitness tests?"):
+            typer.echo("Cancelled.")
+            raise typer.Exit(code=0)
+        fitness_handler.approve_and_write(fitness_preview, output_dir)
 
     # c. Tickets
     ticket_handler = TicketGenerationHandler(writer=ctx.file_writer)
-    ticket_preview = ticket_handler.build_preview(model)
+    ticket_preview = ticket_handler.build_preview(model, profile)
 
     typer.echo(f"\n{ticket_preview.summary}")
 
@@ -228,7 +241,7 @@ def _run_generation_pipeline(
     # d. Configs
     config_handler = ConfigGenerationHandler(writer=ctx.file_writer)
     tools = tuple(SupportedTool)
-    config_preview = config_handler.build_preview(model, tools)
+    config_preview = config_handler.build_preview(model, tools, profile)
 
     typer.echo(f"\n{config_preview.summary}")
 

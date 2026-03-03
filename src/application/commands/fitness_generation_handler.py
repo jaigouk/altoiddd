@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from src.application.ports.file_writer_port import FileWriterPort
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.stack_profile import StackProfile
 
 
 @dataclass
@@ -54,19 +55,26 @@ class FitnessGenerationHandler:
         self,
         model: DomainModel,
         root_package: str,
-    ) -> FitnessPreview:
+        profile: StackProfile | None = None,
+    ) -> FitnessPreview | None:
         """Build fitness tests and render for preview without writing.
 
         Args:
             model: A DomainModel with classified bounded contexts.
             root_package: The root Python package name.
+            profile: Stack profile. When fitness_available is False,
+                returns None instead of generating tests.
 
         Returns:
-            FitnessPreview with rendered content and suite.
+            FitnessPreview with rendered content and suite, or None
+            if the profile indicates fitness tests are not available.
 
         Raises:
             ValueError: If no bounded contexts in the model.
         """
+        if profile is not None and not profile.fitness_available:
+            return None
+
         contexts = model.bounded_contexts
         if not contexts:
             msg = "No bounded contexts to generate fitness tests for"
