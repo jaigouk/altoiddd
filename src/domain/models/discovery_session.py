@@ -27,6 +27,7 @@ from src.domain.models.discovery_values import (
 )
 from src.domain.models.errors import InvariantViolationError
 from src.domain.models.question import Question
+from src.domain.models.tech_stack import TechStack
 
 if TYPE_CHECKING:
     from src.domain.events.discovery_events import DiscoveryCompleted
@@ -82,6 +83,7 @@ class DiscoverySession:
         self._skipped: set[str] = set()
         self._playback_confirmations: list[Playback] = []
         self._answers_since_last_playback: int = 0
+        self._tech_stack: TechStack | None = None
         self._events: list[DiscoveryCompleted] = []
 
     # -- Properties -----------------------------------------------------------
@@ -100,6 +102,11 @@ class DiscoverySession:
     def register(self) -> Register | None:
         """The language register, or None if not yet determined."""
         return self._register
+
+    @property
+    def tech_stack(self) -> TechStack | None:
+        """The user's chosen tech stack, or None if not yet set."""
+        return self._tech_stack
 
     @property
     def answers(self) -> tuple[Answer, ...]:
@@ -143,6 +150,22 @@ class DiscoverySession:
         return list(self._events)
 
     # -- Commands -------------------------------------------------------------
+
+    def set_tech_stack(self, tech_stack: TechStack) -> None:
+        """Set the tech stack for this session.
+
+        Allowed in CREATED or PERSONA_DETECTED states (pre-flight step before questions).
+
+        Raises:
+            InvariantViolationError: If not in CREATED or PERSONA_DETECTED state.
+        """
+        if self._status not in (DiscoveryStatus.CREATED, DiscoveryStatus.PERSONA_DETECTED):
+            msg = (
+                f"Can only set tech stack in CREATED or PERSONA_DETECTED state, "
+                f"currently {self._status.value}"
+            )
+            raise InvariantViolationError(msg)
+        self._tech_stack = tech_stack
 
     def detect_persona(self, choice: str) -> None:
         """Set the user persona and language register from a choice string.
@@ -307,6 +330,7 @@ class DiscoverySession:
                 register=self._register,
                 answers=tuple(self._answers),
                 playback_confirmations=tuple(self._playback_confirmations),
+                tech_stack=self._tech_stack,
             )
         )
 
@@ -339,6 +363,14 @@ class DiscoverySession:
                 for p in self._playback_confirmations
             ],
             "answers_since_last_playback": self._answers_since_last_playback,
+            "tech_stack": (
+                {
+                    "language": self._tech_stack.language,
+                    "package_manager": self._tech_stack.package_manager,
+                }
+                if self._tech_stack
+                else None
+            ),
         }
 
     @classmethod
@@ -366,6 +398,15 @@ class DiscoverySession:
         session._playback_confirmations = playbacks
         session._answers_since_last_playback = counter
         session._events = []
+
+        tech_stack_raw = data.get("tech_stack")
+        if isinstance(tech_stack_raw, dict):
+            session._tech_stack = TechStack(
+                language=tech_stack_raw["language"],
+                package_manager=tech_stack_raw["package_manager"],
+            )
+        else:
+            session._tech_stack = None
 
         return session
 

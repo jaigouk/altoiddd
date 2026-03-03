@@ -59,4 +59,5 @@ class TestDiscoveryCompleted:
             "register",
             "answers",
             "playback_confirmations",
+            "tech_stack",
         }

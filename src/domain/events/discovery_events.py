@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.domain.models.discovery_values import Answer, Persona, Playback, Register
+    from src.domain.models.tech_stack import TechStack
 
 
 @dataclass(frozen=True)
@@ -30,3 +31,4 @@ class DiscoveryCompleted:
     register: Register
     answers: tuple[Answer, ...]
     playback_confirmations: tuple[Playback, ...]
+    tech_stack: TechStack | None = None

@@ -158,6 +158,7 @@ def _reconstruct_event(session: DiscoverySession) -> DiscoveryCompleted:
         register=session.register,
         answers=session.answers,
         playback_confirmations=session.playback_confirmations,
+        tech_stack=session.tech_stack,
     )
 
 
