@@ -43,6 +43,21 @@ class ToolAdapterProtocol(Protocol):
 
 
 # ---------------------------------------------------------------------------
+# Shared constants
+# ---------------------------------------------------------------------------
+
+_AFTER_CLOSE_PROTOCOL_TEXT = """## After-Close Protocol
+
+After every `bd close <id>`, run these steps:
+
+1. **Ripple review** -- `bin/bd-ripple <id> "<what this ticket produced>"`
+2. **Review flagged tickets** -- `bd query label=review_needed`, read ripple comments,
+   draft updates, present to user for approval
+3. **Follow-up tickets** -- create using beads templates, set dependencies
+4. **Groom next ticket** -- `bd ready`, run grooming checklist on top pick
+"""
+
+# ---------------------------------------------------------------------------
 # Shared content builders
 # ---------------------------------------------------------------------------
 
@@ -79,6 +94,14 @@ def _build_ddd_layer_rules() -> str:
 - `infrastructure/` implements `ports/` and depends on external libraries
 - Dependencies flow inward: infrastructure -> application -> domain
 """
+
+
+def _build_after_close_section() -> str:
+    """Render the after-close protocol section for CLAUDE.md / AGENTS.md.
+
+    Reuses the same protocol text as MEMORY.md for consistency.
+    """
+    return _AFTER_CLOSE_PROTOCOL_TEXT
 
 
 def _build_quality_gates(profile: StackProfile) -> str:
@@ -129,16 +152,7 @@ bd label remove <id> review_needed   # Clear flag after review
 
 def _build_memory_after_close_protocol() -> str:
     """Render the after-close protocol for MEMORY.md."""
-    return """## After-Close Protocol
-
-After every `bd close <id>`, run these steps:
-
-1. **Ripple review** -- `bin/bd-ripple <id> "<what this ticket produced>"`
-2. **Review flagged tickets** -- `bd query label=review_needed`, read ripple comments,
-   draft updates, present to user for approval
-3. **Follow-up tickets** -- create using beads templates, set dependencies
-4. **Groom next ticket** -- `bd ready`, run grooming checklist on top pick
-"""
+    return _AFTER_CLOSE_PROTOCOL_TEXT
 
 
 def _build_memory_grooming_checklist() -> str:
@@ -188,6 +202,7 @@ def _build_agents_md(model: DomainModel, profile: StackProfile) -> str:
         _build_ubiquitous_language_section(model),
         _build_bounded_context_section(model),
         _build_ddd_layer_rules(),
+        _build_after_close_section(),
     ]
     gates = _build_quality_gates(profile)
     if gates:
@@ -211,6 +226,7 @@ class ClaudeCodeAdapter:
             _build_ubiquitous_language_section(model),
             _build_bounded_context_section(model),
             _build_ddd_layer_rules(),
+            _build_after_close_section(),
         ]
         gates = _build_quality_gates(profile)
         if gates:

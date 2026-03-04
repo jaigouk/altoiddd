@@ -128,6 +128,37 @@ class TestClaudeCodeAdapter:
         sections = adapter.translate(model, _PROFILE)
         assert "DDD Layer Rules" in sections[0].content
 
+    def test_claude_md_includes_after_close_protocol(self):
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        assert "After-Close Protocol" in sections[0].content
+
+    def test_claude_md_after_close_has_ripple_step(self):
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        assert "bd-ripple" in sections[0].content
+
+    def test_claude_md_after_close_has_review_step(self):
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        assert "review_needed" in sections[0].content
+
+    def test_claude_md_after_close_has_followup_step(self):
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        content = sections[0].content
+        assert "Follow-up" in content or "follow-up" in content
+
+    def test_claude_md_after_close_has_groom_step(self):
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        assert "bd ready" in sections[0].content
+
 
 # ---------------------------------------------------------------------------
 # 3. CursorAdapter
@@ -270,3 +301,26 @@ class TestAdapterContent:
         sections = adapter.translate(model, _PROFILE)
         agents = next(s for s in sections if s.file_path == "AGENTS.md")
         assert "core" in agents.content
+
+    def test_agents_md_includes_after_close_protocol(self):
+        """All adapters using _build_agents_md include the after-close protocol."""
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        for adapter_cls in (CursorAdapter, RooCodeAdapter, OpenCodeAdapter):
+            adapter = adapter_cls()
+            sections = adapter.translate(model, _PROFILE)
+            agents = next(s for s in sections if s.file_path == "AGENTS.md")
+            assert "After-Close Protocol" in agents.content, (
+                f"{adapter_cls.__name__} AGENTS.md missing After-Close Protocol"
+            )
+
+    def test_claude_md_and_memory_md_protocol_consistent(self):
+        """After-close protocol in CLAUDE.md matches MEMORY.md protocol steps."""
+        model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
+        adapter = ClaudeCodeAdapter()
+        sections = adapter.translate(model, _PROFILE)
+        claude_md = sections[0].content
+        memory_md = sections[1].content
+        # Both must contain the same 4 protocol steps
+        for keyword in ("bd-ripple", "review_needed", "Follow-up", "bd ready"):
+            assert keyword in claude_md, f"CLAUDE.md missing {keyword}"
+            assert keyword in memory_md, f"MEMORY.md missing {keyword}"
