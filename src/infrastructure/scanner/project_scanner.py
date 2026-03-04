@@ -91,7 +91,6 @@ class ProjectScanner:
         has_knowledge_dir = (project_dir / ".alty" / "knowledge").is_dir()
         has_agents_md = (project_dir / "AGENTS.md").is_file()
         has_git = (project_dir / ".git").exists()
-        has_tests = (project_dir / "tests").is_dir()
 
         return ProjectScan(
             project_dir=project_dir,
@@ -101,5 +100,4 @@ class ProjectScanner:
             has_knowledge_dir=has_knowledge_dir,
             has_agents_md=has_agents_md,
             has_git=has_git,
-            has_tests=has_tests,
         )

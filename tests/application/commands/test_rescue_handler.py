@@ -38,7 +38,6 @@ class FakeScanner:
             has_knowledge_dir=False,
             has_agents_md=False,
             has_git=True,
-            has_tests=False,
         )
 
 
@@ -77,6 +76,39 @@ class FakeFileWriter:
 
     def write_file(self, path: Path, content: str) -> None:
         self.written_files[path] = content
+
+
+# -- Validate Preconditions Tests ------------------------------------------
+
+
+class TestValidatePreconditions:
+    def test_validate_preconditions_raises_if_not_git_repo(self) -> None:
+        git_ops = FakeGitOps(has_git=False)
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        with pytest.raises(InvariantViolationError, match="Not a git repository"):
+            handler.validate_preconditions(Path("/tmp/proj"))
+
+    def test_validate_preconditions_raises_on_dirty_tree(self) -> None:
+        git_ops = FakeGitOps(is_clean=False)
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        with pytest.raises(InvariantViolationError, match="Working tree is dirty"):
+            handler.validate_preconditions(Path("/tmp/proj"))
+
+    def test_validate_preconditions_raises_if_branch_exists(self) -> None:
+        git_ops = FakeGitOps(branch_exists=True)
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        with pytest.raises(InvariantViolationError, match="Branch alty/init already exists"):
+            handler.validate_preconditions(Path("/tmp/proj"))
+
+    def test_validate_preconditions_passes_for_clean_repo(self) -> None:
+        git_ops = FakeGitOps()
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        # Should not raise
+        handler.validate_preconditions(Path("/tmp/proj"))
 
 
 # -- Git Precondition Tests ------------------------------------------------
@@ -152,7 +184,6 @@ class TestRescueHandlerHappyPath:
             has_knowledge_dir=False,
             has_agents_md=True,
             has_git=True,
-            has_tests=False,
         )
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
         analysis = handler.rescue(Path("/tmp/proj"))
@@ -175,7 +206,6 @@ class TestRescueHandlerHappyPath:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
-            has_tests=True,
         )
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
         analysis = handler.rescue(Path("/tmp/proj"))
@@ -204,7 +234,8 @@ class TestRescueHandlerHappyPath:
         assert "src/application/" in structure_paths
         assert "src/infrastructure/" in structure_paths
 
-    def test_rescue_detects_missing_tests(self) -> None:
+    def test_rescue_does_not_report_tests_gap(self) -> None:
+        """alty does not prescribe where tests live — no tests/ gap."""
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
         analysis = handler.rescue(Path("/tmp/proj"))
 
@@ -213,7 +244,7 @@ class TestRescueHandlerHappyPath:
             for g in analysis.gaps
             if g.gap_type == GapType.MISSING_STRUCTURE and g.path == "tests/"
         ]
-        assert len(test_gaps) == 1
+        assert len(test_gaps) == 0
 
 
 # -- Execute Plan Tests ----------------------------------------------------
@@ -270,7 +301,6 @@ class TestRescueHandlerExecutePlan:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
-            has_tests=True,
         )
         scanner = FakeScanner(scan=scan)
         handler2 = RescueHandler(
@@ -292,7 +322,6 @@ class TestRescueHandlerExecutePlan:
             has_knowledge_dir=False,
             has_agents_md=True,
             has_git=True,
-            has_tests=False,
         )
         writer = FakeFileWriter()
         handler = RescueHandler(

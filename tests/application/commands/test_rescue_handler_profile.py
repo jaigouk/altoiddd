@@ -35,7 +35,6 @@ class FakeScanner:
             has_knowledge_dir=False,
             has_agents_md=False,
             has_git=True,
-            has_tests=False,
         )
 
 
@@ -90,9 +89,7 @@ class TestRescueUsesProfileStructure:
         analysis = handler.rescue(Path("/tmp/proj"), profile=profile)
 
         structure_gaps = [
-            g
-            for g in analysis.gaps
-            if g.gap_type == GapType.MISSING_STRUCTURE and g.path != "tests/"
+            g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE
         ]
         assert structure_gaps == []
 
@@ -187,7 +184,6 @@ class TestFullProjectWithProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
-            has_tests=True,
         )
         profile = PythonUvProfile()
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
@@ -208,7 +204,6 @@ class TestFullProjectWithProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
-            has_tests=True,
         )
         profile = GenericProfile()
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())

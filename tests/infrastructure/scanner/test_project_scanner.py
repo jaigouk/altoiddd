@@ -25,7 +25,6 @@ class TestProjectScannerEmptyProject:
         assert scan.has_knowledge_dir is False
         assert scan.has_agents_md is False
         assert scan.has_git is False
-        assert scan.has_tests is False
 
 
 class TestProjectScannerDocs:
@@ -113,11 +112,6 @@ class TestProjectScannerSpecialDirs:
         scan = scanner.scan(tmp_path)
         assert scan.has_git is True
 
-    def test_scan_finds_tests_dir(self, tmp_path: Path) -> None:
-        (tmp_path / "tests").mkdir()
-        scanner = ProjectScanner()
-        scan = scanner.scan(tmp_path)
-        assert scan.has_tests is True
 
 
 class TestProjectScannerFullProject:
@@ -145,8 +139,6 @@ class TestProjectScannerFullProject:
         # Create special dirs
         (tmp_path / ".alty" / "knowledge").mkdir(parents=True)
         (tmp_path / ".git").mkdir()
-        (tmp_path / "tests").mkdir()
-
         scanner = ProjectScanner()
         scan = scanner.scan(tmp_path)
 
@@ -156,7 +148,6 @@ class TestProjectScannerFullProject:
         assert scan.has_knowledge_dir is True
         assert scan.has_agents_md is True
         assert scan.has_git is True
-        assert scan.has_tests is True
 
     def test_scan_result_is_frozen(self, tmp_path: Path) -> None:
         scanner = ProjectScanner()

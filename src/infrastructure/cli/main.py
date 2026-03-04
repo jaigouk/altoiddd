@@ -55,15 +55,18 @@ def init(
         from src.infrastructure.git.git_ops_adapter import GitOpsAdapter
         from src.infrastructure.scanner.project_scanner import ProjectScanner
 
-        # Ask tech stack before rescue so profile is available
-        tech_stack = _ask_tech_stack()
-        profile = resolve_profile(tech_stack)
-
         scanner = ProjectScanner()
         git_ops = GitOpsAdapter()
         handler = RescueHandler(project_scan=scanner, git_ops=git_ops)
         project_dir = Path.cwd()
         try:
+            # Validate preconditions before asking tech stack
+            handler.validate_preconditions(project_dir)
+
+            # Ask tech stack after validation so user doesn't waste effort
+            tech_stack = _ask_tech_stack()
+            profile = resolve_profile(tech_stack)
+
             analysis = handler.rescue(project_dir, profile=profile)
             if not analysis.gaps:
                 typer.echo("No gaps found -- project already follows alty conventions.")

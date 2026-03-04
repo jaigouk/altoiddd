@@ -54,7 +54,6 @@ class ProjectScan:
         has_knowledge_dir: Whether .alty/knowledge/ exists.
         has_agents_md: Whether AGENTS.md exists at the project root.
         has_git: Whether the project is a git repository.
-        has_tests: Whether a tests/ directory exists.
     """
 
     project_dir: Path
@@ -64,7 +63,6 @@ class ProjectScan:
     has_knowledge_dir: bool = False
     has_agents_md: bool = False
     has_git: bool = False
-    has_tests: bool = False
 
 
 @dataclass(frozen=True)

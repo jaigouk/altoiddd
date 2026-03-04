@@ -66,6 +66,30 @@ class RescueHandler:
         self._git_ops = git_ops
         self._file_writer = file_writer
 
+    def validate_preconditions(self, project_dir: Path) -> None:
+        """Validate git preconditions before rescue.
+
+        Call this early (before asking tech stack) so the user doesn't
+        answer questions only to discover git state is invalid.
+
+        Args:
+            project_dir: The existing project directory.
+
+        Raises:
+            InvariantViolationError: If git preconditions are not met.
+        """
+        if not self._git_ops.has_git(project_dir):
+            raise InvariantViolationError("Not a git repository")
+
+        if not self._git_ops.is_clean(project_dir):
+            raise InvariantViolationError("Working tree is dirty")
+
+        if self._git_ops.branch_exists(project_dir, _BRANCH_NAME):
+            raise InvariantViolationError(
+                f"Branch {_BRANCH_NAME} already exists. "
+                "Delete it first or use --force-branch to override."
+            )
+
     def rescue(
         self,
         project_dir: Path,
@@ -88,18 +112,8 @@ class RescueHandler:
         Raises:
             InvariantViolationError: If git preconditions are not met.
         """
-        # Validate git preconditions
-        if not self._git_ops.has_git(project_dir):
-            raise InvariantViolationError("Not a git repository")
-
-        if not self._git_ops.is_clean(project_dir):
-            raise InvariantViolationError("Working tree is dirty")
-
-        if self._git_ops.branch_exists(project_dir, _BRANCH_NAME):
-            raise InvariantViolationError(
-                f"Branch {_BRANCH_NAME} already exists. "
-                "Delete it first or use --force-branch to override."
-            )
+        # Validate git preconditions (delegates to validate_preconditions)
+        self.validate_preconditions(project_dir)
 
         # Create branch before scanning
         self._git_ops.create_branch(project_dir, _BRANCH_NAME)
@@ -258,18 +272,6 @@ class RescueHandler:
                     gap_type=GapType.MISSING_DOC,
                     path="AGENTS.md",
                     description="Missing AGENTS.md",
-                    severity="recommended",
-                )
-            )
-
-        # Check tests directory
-        if not scan.has_tests:
-            gaps.append(
-                Gap(
-                    gap_id=str(uuid.uuid4()),
-                    gap_type=GapType.MISSING_STRUCTURE,
-                    path="tests/",
-                    description="Missing tests directory",
                     severity="recommended",
                 )
             )
