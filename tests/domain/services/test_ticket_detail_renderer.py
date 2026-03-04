@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from src.domain.models.domain_values import AggregateDesign
+from src.domain.models.stack_profile import PythonUvProfile
 from src.domain.models.ticket_values import TicketDetailLevel
 from src.domain.services.ticket_detail_renderer import TicketDetailRenderer
+
+_PROFILE = PythonUvProfile()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -32,7 +35,7 @@ def _make_aggregate() -> AggregateDesign:
 class TestFullDetail:
     def test_full_has_all_sections(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, _PROFILE)
 
         assert "## Goal" in result
         assert "## DDD Alignment" in result
@@ -49,21 +52,21 @@ class TestFullDetail:
 
     def test_full_includes_aggregate_name(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, _PROFILE)
 
         assert "OrderAggregate" in result
         assert "Orders" in result
 
     def test_full_includes_invariants(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, _PROFILE)
 
         assert "total must be positive" in result
         assert "at least one line item" in result
 
     def test_full_includes_commands_and_events(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, _PROFILE)
 
         assert "PlaceOrder" in result
         assert "CancelOrder" in result
@@ -74,7 +77,7 @@ class TestFullDetail:
 class TestStandardDetail:
     def test_standard_has_core_sections(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STANDARD)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STANDARD, _PROFILE)
 
         assert "## Goal" in result
         assert "## DDD Alignment" in result
@@ -84,7 +87,7 @@ class TestStandardDetail:
 
     def test_standard_omits_full_sections(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STANDARD)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STANDARD, _PROFILE)
 
         assert "## Design" not in result
         assert "## SOLID Mapping" not in result
@@ -95,7 +98,7 @@ class TestStandardDetail:
 class TestStubDetail:
     def test_stub_is_minimal(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB, _PROFILE)
 
         assert "## Goal" in result
         assert "Integrate" in result
@@ -104,7 +107,7 @@ class TestStubDetail:
 
     def test_stub_has_no_extra_sections(self):
         agg = _make_aggregate()
-        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB)
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB, _PROFILE)
 
         assert "## DDD Alignment" not in result
         assert "## Design" not in result

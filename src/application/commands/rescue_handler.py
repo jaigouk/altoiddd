@@ -36,14 +36,6 @@ _REQUIRED_DOCS: tuple[str, ...] = (
 
 _REQUIRED_CONFIGS: tuple[str, ...] = (".claude/CLAUDE.md",)
 
-_DEFAULT_STRUCTURE: tuple[str, ...] = (
-    "src/domain/",
-    "src/application/",
-    "src/infrastructure/",
-)
-
-_DEFAULT_MANIFEST: str = "pyproject.toml"
-
 _BRANCH_NAME = "alty/init"
 
 
@@ -226,7 +218,7 @@ class RescueHandler:
         )
 
         # Check project manifest from profile
-        manifest = profile.project_manifest if profile is not None else _DEFAULT_MANIFEST
+        manifest = profile.project_manifest if profile is not None else ""
         if manifest and manifest not in scan.existing_configs:
             gaps.append(
                 Gap(
@@ -239,7 +231,7 @@ class RescueHandler:
             )
 
         # Check structure from profile
-        structure_targets = profile.source_layout if profile is not None else _DEFAULT_STRUCTURE
+        structure_targets = profile.source_layout if profile is not None else ()
         gaps.extend(
             Gap(
                 gap_id=str(uuid.uuid4()),

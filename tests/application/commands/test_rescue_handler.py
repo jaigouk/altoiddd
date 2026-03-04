@@ -17,6 +17,9 @@ from src.domain.models.gap_analysis import (
     GapType,
     ProjectScan,
 )
+from src.domain.models.stack_profile import PythonUvProfile
+
+_PROFILE = PythonUvProfile()
 
 # -- Fake adapters ---------------------------------------------------------
 
@@ -216,17 +219,17 @@ class TestRescueHandlerHappyPath:
 
     def test_rescue_detects_missing_config(self) -> None:
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
-        analysis = handler.rescue(Path("/tmp/proj"))
+        analysis = handler.rescue(Path("/tmp/proj"), profile=_PROFILE)
 
         config_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_CONFIG]
         config_paths = [g.path for g in config_gaps]
-        # alty-universal + default manifest (pyproject.toml)
+        # alty-universal + Python manifest
         assert ".claude/CLAUDE.md" in config_paths
         assert "pyproject.toml" in config_paths
 
     def test_rescue_detects_missing_structure(self) -> None:
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
-        analysis = handler.rescue(Path("/tmp/proj"))
+        analysis = handler.rescue(Path("/tmp/proj"), profile=_PROFILE)
 
         structure_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE]
         structure_paths = [g.path for g in structure_gaps]
@@ -245,6 +248,33 @@ class TestRescueHandlerHappyPath:
             if g.gap_type == GapType.MISSING_STRUCTURE and g.path == "tests/"
         ]
         assert len(test_gaps) == 0
+
+
+# -- None Profile Fallback Tests -------------------------------------------
+
+
+class TestRescueNoneProfileFallback:
+    """When profile=None, rescue must not produce Python-specific gaps."""
+
+    def test_none_profile_no_structure_gaps(self) -> None:
+        """rescue(profile=None) must not report src/domain/ or similar structure gaps."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"), profile=None)
+
+        structure_gaps = [
+            g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE
+        ]
+        assert structure_gaps == []
+
+    def test_none_profile_no_pyproject_gap(self) -> None:
+        """rescue(profile=None) must not report pyproject.toml as missing config."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"), profile=None)
+
+        config_paths = [
+            g.path for g in analysis.gaps if g.gap_type == GapType.MISSING_CONFIG
+        ]
+        assert "pyproject.toml" not in config_paths
 
 
 # -- Execute Plan Tests ----------------------------------------------------

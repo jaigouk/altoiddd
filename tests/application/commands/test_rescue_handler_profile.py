@@ -214,7 +214,7 @@ class TestFullProjectWithProfile:
 
 
 # ---------------------------------------------------------------------------
-# 5. Backward compatibility (no profile = default behavior)
+# 5. Backward compatibility (no profile = generic fallback)
 # ---------------------------------------------------------------------------
 
 
@@ -227,10 +227,11 @@ class TestBackwardCompat:
 
         analysis = handler.rescue(Path("/tmp/proj"))
 
+        # Should still find doc/config/knowledge gaps even without profile
         assert len(analysis.gaps) > 0
 
-    def test_no_profile_checks_python_structure(self) -> None:
-        """Without profile, default behavior checks Python structure."""
+    def test_no_profile_produces_no_structure_gaps(self) -> None:
+        """Without profile, no structure gaps are reported (generic fallback)."""
         from src.application.commands.rescue_handler import RescueHandler
 
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
@@ -238,5 +239,4 @@ class TestBackwardCompat:
         analysis = handler.rescue(Path("/tmp/proj"))
 
         structure_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE]
-        structure_paths = [g.path for g in structure_gaps]
-        assert "src/domain/" in structure_paths
+        assert structure_gaps == []

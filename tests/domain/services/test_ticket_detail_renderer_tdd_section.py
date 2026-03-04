@@ -25,6 +25,35 @@ def _make_aggregate() -> AggregateDesign:
     )
 
 
+class TestRendererNoneProfileFallback:
+    """When profile=None, renderer must default to GenericProfile (not PythonUvProfile)."""
+
+    def test_none_profile_produces_no_python_terms(self) -> None:
+        """render(profile=None) must not contain pytest, uv run, ruff, or mypy."""
+        agg = _make_aggregate()
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, profile=None)
+
+        assert "pytest" not in result
+        assert "uv run" not in result
+        assert "ruff" not in result
+        assert "mypy" not in result
+
+    def test_none_profile_uses_generic_placeholder(self) -> None:
+        """render(profile=None) TDD section uses <test-runner> placeholder."""
+        agg = _make_aggregate()
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, profile=None)
+
+        tdd_section = _extract_tdd_section(result)
+        assert "<test-runner>" in tdd_section
+
+    def test_none_profile_omits_quality_gates(self) -> None:
+        """render(profile=None) omits Quality Gates section."""
+        agg = _make_aggregate()
+        result = TicketDetailRenderer.render(agg, TicketDetailLevel.FULL, profile=None)
+
+        assert "## Quality Gates" not in result
+
+
 class TestTddSectionGenericProfile:
     """GenericProfile TDD section contains no Python-specific content."""
 

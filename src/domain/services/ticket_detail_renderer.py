@@ -57,9 +57,9 @@ class TicketDetailRenderer:
             Rendered ticket description as a multi-line string.
         """
         if profile is None:
-            from src.domain.models.stack_profile import PythonUvProfile
+            from src.domain.models.stack_profile import GenericProfile
 
-            profile = PythonUvProfile()
+            profile = GenericProfile()
 
         if detail_level == TicketDetailLevel.FULL:
             return TicketDetailRenderer._render_full(aggregate, profile)
