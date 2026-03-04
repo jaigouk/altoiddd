@@ -75,7 +75,7 @@ bd create "Task title" --parent <epic-id>
 - [ ] All child tasks closed (`bd close <id>`) — each child must have passed quality gates and QA before close
 - [ ] Documentation updated where required
 - [ ] For all code changes (in child tasks), quality gates were run before each task was closed:
-  - [ ] `uv run ruff check src/ tests/` (linting)
-  - [ ] `uv run mypy .` (type checking)
-  - [ ] `uv run pytest tests/ -v --cov=src --cov-fail-under=80` (tests with 80% coverage)
+  - [ ] `<lint-command>` (linting)
+  - [ ] `<type-check-command>` (type checking)
+  - [ ] `<test-runner> --coverage --min-coverage=80` (tests with 80% coverage)
 - [ ] QA was done for each child task before close (happy path, edge cases, error handling, no regressions)

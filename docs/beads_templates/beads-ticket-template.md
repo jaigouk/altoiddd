@@ -69,24 +69,21 @@ Component A          Component B          Component C
 
 Write failing tests first. Example test signatures:
 
-```python
-# tests/domain/test_feature.py
-def test_happy_path():
-    """Description of expected behavior."""
-
-def test_error_condition():
-    """Description of error handling."""
+```
+# <test-dir>/domain/test_feature.<ext>
+test_happy_path: Description of expected behavior.
+test_error_condition: Description of error handling.
 ```
 
-Run: `uv run pytest tests/domain/test_feature.py -v` → should FAIL
+Run: `<test-runner> <test-dir>/domain/test_feature.<ext>` → should FAIL
 
 ### GREEN Phase
 
-1. Create `src/domain/models/feature.py` (or appropriate layer)
+1. Create `<source-dir>/domain/models/feature.<ext>` (or appropriate layer)
 2. Define models
 3. Implement minimal logic to pass tests
 
-Run: `uv run pytest tests/domain/test_feature.py -v` → should PASS
+Run: `<test-runner> <test-dir>/domain/test_feature.<ext>` → should PASS
 
 ### REFACTOR Phase
 
@@ -120,9 +117,9 @@ Run: `uv run pytest tests/domain/test_feature.py -v` → should PASS
 Only close when all gates pass **and** edge cases are tested.
 
 ```bash
-uv run ruff check src/ tests/
-uv run mypy .
-uv run pytest tests/ -v --cov=src --cov-fail-under=80
+<lint-command>
+<type-check-command>
+<test-runner> --coverage --min-coverage=80
 ```
 
 - [ ] Lint passes

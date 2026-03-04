@@ -75,7 +75,7 @@ class TicketDetailRenderer:
             _render_ddd_alignment_section(aggregate),
             _render_design_section(aggregate),
             _render_solid_section(aggregate),
-            _render_tdd_section(),
+            _render_tdd_section(profile),
             _render_steps_section(aggregate),
             _render_acceptance_criteria_section(aggregate),
             _render_edge_cases_section(),
@@ -186,12 +186,26 @@ def _render_solid_section(aggregate: AggregateDesign) -> str:
     )
 
 
-def _render_tdd_section() -> str:
-    """Render the TDD Workflow section."""
+def _render_tdd_section(profile: StackProfile | None = None) -> str:
+    """Render the TDD Workflow section with stack-specific test runner examples.
+
+    Args:
+        profile: Stack profile for deriving the test runner command.
+            When None or GenericProfile (no TESTS gate), uses ``<test-runner>``
+            placeholder. When a concrete profile, uses the actual command.
+    """
+    test_cmd = "<test-runner>"
+    if profile is not None:
+        cmds = profile.quality_gate_commands
+        if QualityGate.TESTS in cmds:
+            test_cmd = " ".join(cmds[QualityGate.TESTS])
+
     return (
         "## TDD Workflow\n"
         "1. **RED:** Write failing tests for each invariant\n"
+        f"   - Run: `{test_cmd}` → should FAIL\n"
         "2. **GREEN:** Implement minimal code to pass\n"
+        f"   - Run: `{test_cmd}` → should PASS\n"
         "3. **REFACTOR:** Clean up while tests stay green\n"
     )
 
