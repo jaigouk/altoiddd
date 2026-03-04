@@ -90,6 +90,96 @@ def _build_quality_gates(profile: StackProfile) -> str:
     return profile.quality_gate_display
 
 
+def _build_memory_md(model: DomainModel, profile: StackProfile) -> str:
+    """Build MEMORY.md encoding the DDD agile work process.
+
+    Content is kept under 200 lines (Claude Code's critical window).
+    Quality gates are included only when profile provides them.
+    """
+    parts: list[str] = [
+        "# Project Memory",
+        "",
+        _build_memory_beads_workflow(),
+        _build_memory_after_close_protocol(),
+        _build_memory_grooming_checklist(),
+        _build_memory_bounded_contexts(model),
+        _build_memory_ubiquitous_language(model),
+    ]
+    gates = _build_quality_gates(profile)
+    if gates:
+        parts.append(gates)
+    return "\n".join(parts)
+
+
+def _build_memory_beads_workflow() -> str:
+    """Render beads workflow commands for MEMORY.md."""
+    return """## Beads Workflow
+
+```bash
+bd ready                         # Find available work
+bd show <id>                     # View ticket details
+bd update <id> --status in_progress  # Claim a ticket
+bd close <id>                    # Close completed ticket
+bin/bd-ripple <id> "<summary>"   # Flag dependents (ripple review)
+bd query label=review_needed     # See tickets needing review
+bd label remove <id> review_needed   # Clear flag after review
+```
+"""
+
+
+def _build_memory_after_close_protocol() -> str:
+    """Render the after-close protocol for MEMORY.md."""
+    return """## After-Close Protocol
+
+After every `bd close <id>`, run these steps:
+
+1. **Ripple review** -- `bin/bd-ripple <id> "<what this ticket produced>"`
+2. **Review flagged tickets** -- `bd query label=review_needed`, read ripple comments,
+   draft updates, present to user for approval
+3. **Follow-up tickets** -- create using beads templates, set dependencies
+4. **Groom next ticket** -- `bd ready`, run grooming checklist on top pick
+"""
+
+
+def _build_memory_grooming_checklist() -> str:
+    """Render the grooming checklist for MEMORY.md."""
+    return """## Grooming Checklist
+
+Before claiming a ticket:
+
+1. **Template compliance** -- description follows beads template
+2. **Freshness check** -- `bd label list <id>` for `review_needed`
+3. **PRD traceability** -- `/prd-traceability <id>` to verify capability coverage
+4. **DDD alignment** -- bounded context boundaries respected
+5. **Ubiquitous language** -- terms match DDD.md glossary
+6. **TDD & SOLID** -- RED/GREEN/REFACTOR phases documented
+7. **Acceptance criteria** -- testable checkboxes, edge cases, coverage >= 80%
+"""
+
+
+def _build_memory_bounded_contexts(model: DomainModel) -> str:
+    """Render bounded contexts summary for MEMORY.md."""
+    lines: list[str] = ["## Bounded Contexts", ""]
+    for ctx in model.bounded_contexts:
+        classification = ctx.classification.value if ctx.classification else "unclassified"
+        lines.append(f"- **{ctx.name}** ({classification}): {ctx.responsibility}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _build_memory_ubiquitous_language(model: DomainModel) -> str:
+    """Render ubiquitous language summary for MEMORY.md."""
+    lines: list[str] = ["## Ubiquitous Language", ""]
+    lines.append("| Term | Definition | Context |")
+    lines.append("|------|-----------|---------|")
+    lines.extend(
+        f"| {entry.term} | {entry.definition} | {entry.context_name} |"
+        for entry in model.ubiquitous_language.terms
+    )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _build_agents_md(model: DomainModel, profile: StackProfile) -> str:
     """Build a generic AGENTS.md with project conventions from the domain model."""
     parts: list[str] = [
@@ -111,7 +201,7 @@ def _build_agents_md(model: DomainModel, profile: StackProfile) -> str:
 
 
 class ClaudeCodeAdapter:
-    """Generates .claude/CLAUDE.md for Claude Code."""
+    """Generates .claude/CLAUDE.md and .claude/memory/MEMORY.md for Claude Code."""
 
     def translate(self, model: DomainModel, profile: StackProfile) -> tuple[ConfigSection, ...]:
         """Translate DomainModel into Claude Code configuration."""
@@ -126,11 +216,17 @@ class ClaudeCodeAdapter:
         if gates:
             parts.append(gates)
         content = "\n".join(parts)
+        memory_content = _build_memory_md(model, profile)
         return (
             ConfigSection(
                 file_path=".claude/CLAUDE.md",
                 content=content,
                 section_name="Claude Code config",
+            ),
+            ConfigSection(
+                file_path=".claude/memory/MEMORY.md",
+                content=memory_content,
+                section_name="Claude Code memory",
             ),
         )
 

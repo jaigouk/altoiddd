@@ -98,8 +98,9 @@ class TestClaudeCodeAdapter:
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
         adapter = ClaudeCodeAdapter()
         sections = adapter.translate(model, _PROFILE)
-        assert len(sections) == 1
+        assert len(sections) == 2
         assert sections[0].file_path == ".claude/CLAUDE.md"
+        assert sections[1].file_path == ".claude/memory/MEMORY.md"
 
     def test_content_includes_ubiquitous_language(self):
         model = _make_model_with_contexts([("Orders", SubdomainClassification.CORE)])
