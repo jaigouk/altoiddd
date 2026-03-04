@@ -127,6 +127,28 @@ class TestBootstrapHandler:
         assert preview.conflict_descriptions == ("Global cursor setting overrides local",)
 
 
+class TestBootstrapPlannedFiles:
+    """_PLANNED_FILES includes all .alty/ paths."""
+
+    def test_planned_files_includes_alty_config(self, tmp_path: Path) -> None:
+        (tmp_path / "README.md").write_text("idea")
+        handler = BootstrapHandler(tool_detection=FakeToolDetection())
+        session = handler.preview(tmp_path)
+        preview = session.preview
+        assert preview is not None
+        paths = [str(a.path) for a in preview.file_actions]
+        assert ".alty/config.toml" in paths
+
+    def test_planned_files_includes_alty_maintenance(self, tmp_path: Path) -> None:
+        (tmp_path / "README.md").write_text("idea")
+        handler = BootstrapHandler(tool_detection=FakeToolDetection())
+        session = handler.preview(tmp_path)
+        preview = session.preview
+        assert preview is not None
+        paths = [str(a.path) for a in preview.file_actions]
+        assert ".alty/maintenance/doc-registry.toml" in paths
+
+
 class TestBootstrapHandlerSessionNotFound:
     def test_confirm_invalid_session_raises(self):
         handler = BootstrapHandler(tool_detection=FakeToolDetection())

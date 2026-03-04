@@ -434,6 +434,7 @@ class TestRescueHandlerGenericProfile:
     def test_no_structure_gaps_for_generic_profile(self) -> None:
         """GenericProfile rescue reports no MISSING_STRUCTURE gaps."""
         from src.application.commands.rescue_handler import RescueHandler
+        from tests.conftest import FakeGitOps, FakeScanner
 
         scan = ProjectScan(
             project_dir=Path("/tmp/proj"),
@@ -443,39 +444,29 @@ class TestRescueHandlerGenericProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
 
-        class FakeScanner:
-            def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
-                return scan
-
-        class FakeGitOps:
-            def __init__(self) -> None:
-                self.created_branches: list[str] = []
-
-            def has_git(self, project_dir: Path) -> bool:
-                return True
-
-            def is_clean(self, project_dir: Path) -> bool:
-                return True
-
-            def branch_exists(self, project_dir: Path, branch_name: str) -> bool:
-                return False
-
-            def create_branch(self, project_dir: Path, branch_name: str) -> None:
-                self.created_branches.append(branch_name)
-
-        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        handler = RescueHandler(
+            project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps(),
+        )
         analysis = handler.rescue(Path("/tmp/proj"), profile=GenericProfile())
 
-        structure_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE]
-        assert structure_gaps == [], (
-            f"GenericProfile should have no structure gaps: {structure_gaps}"
+        profile_structure_gaps = [
+            g for g in analysis.gaps
+            if g.gap_type == GapType.MISSING_STRUCTURE
+            and not g.path.startswith(".alty/")
+        ]
+        assert profile_structure_gaps == [], (
+            f"GenericProfile should have no profile-specific structure gaps: "
+            f"{profile_structure_gaps}"
         )
 
     def test_no_manifest_gap_for_generic_profile(self) -> None:
         """GenericProfile rescue reports no pyproject.toml gap."""
         from src.application.commands.rescue_handler import RescueHandler
+        from tests.conftest import FakeGitOps, FakeScanner
 
         scan = ProjectScan(
             project_dir=Path("/tmp/proj"),
@@ -485,29 +476,13 @@ class TestRescueHandlerGenericProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
 
-        class FakeScanner:
-            def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
-                return scan
-
-        class FakeGitOps:
-            def __init__(self) -> None:
-                self.created_branches: list[str] = []
-
-            def has_git(self, project_dir: Path) -> bool:
-                return True
-
-            def is_clean(self, project_dir: Path) -> bool:
-                return True
-
-            def branch_exists(self, project_dir: Path, branch_name: str) -> bool:
-                return False
-
-            def create_branch(self, project_dir: Path, branch_name: str) -> None:
-                self.created_branches.append(branch_name)
-
-        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        handler = RescueHandler(
+            project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps(),
+        )
         analysis = handler.rescue(Path("/tmp/proj"), profile=GenericProfile())
 
         config_paths = [g.path for g in analysis.gaps if g.gap_type == GapType.MISSING_CONFIG]
@@ -516,6 +491,7 @@ class TestRescueHandlerGenericProfile:
     def test_no_tests_dir_gap_for_generic_profile(self) -> None:
         """GenericProfile rescue does not report a tests/ gap."""
         from src.application.commands.rescue_handler import RescueHandler
+        from tests.conftest import FakeGitOps, FakeScanner
 
         scan = ProjectScan(
             project_dir=Path("/tmp/proj"),
@@ -527,27 +503,9 @@ class TestRescueHandlerGenericProfile:
             has_git=True,
         )
 
-        class FakeScanner:
-            def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
-                return scan
-
-        class FakeGitOps:
-            def __init__(self) -> None:
-                self.created_branches: list[str] = []
-
-            def has_git(self, project_dir: Path) -> bool:
-                return True
-
-            def is_clean(self, project_dir: Path) -> bool:
-                return True
-
-            def branch_exists(self, project_dir: Path, branch_name: str) -> bool:
-                return False
-
-            def create_branch(self, project_dir: Path, branch_name: str) -> None:
-                self.created_branches.append(branch_name)
-
-        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        handler = RescueHandler(
+            project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps(),
+        )
         analysis = handler.rescue(Path("/tmp/proj"), profile=GenericProfile())
 
         all_paths = [g.path for g in analysis.gaps]

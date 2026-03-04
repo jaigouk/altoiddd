@@ -14,61 +14,16 @@ from src.application.commands.rescue_handler import RescueHandler
 from src.domain.models.errors import InvariantViolationError
 from src.domain.models.gap_analysis import (
     AnalysisStatus,
+    GapSeverity,
     GapType,
     ProjectScan,
 )
 from src.domain.models.stack_profile import PythonUvProfile
+from tests.conftest import FakeGitOps, FakeScanner
 
 _PROFILE = PythonUvProfile()
 
 # -- Fake adapters ---------------------------------------------------------
-
-
-class FakeScanner:
-    """In-memory test double implementing ProjectScanPort."""
-
-    def __init__(self, scan: ProjectScan | None = None) -> None:
-        self._scan = scan
-
-    def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
-        if self._scan is not None:
-            return self._scan
-        return ProjectScan(
-            project_dir=project_dir,
-            existing_docs=(),
-            existing_configs=(),
-            existing_structure=(),
-            has_knowledge_dir=False,
-            has_agents_md=False,
-            has_git=True,
-        )
-
-
-class FakeGitOps:
-    """In-memory test double implementing GitOpsPort."""
-
-    def __init__(
-        self,
-        has_git: bool = True,
-        is_clean: bool = True,
-        branch_exists: bool = False,
-    ) -> None:
-        self._has_git = has_git
-        self._is_clean = is_clean
-        self._branch_exists = branch_exists
-        self.created_branches: list[str] = []
-
-    def has_git(self, project_dir: Path) -> bool:
-        return self._has_git
-
-    def is_clean(self, project_dir: Path) -> bool:
-        return self._is_clean
-
-    def branch_exists(self, project_dir: Path, branch_name: str) -> bool:
-        return self._branch_exists
-
-    def create_branch(self, project_dir: Path, branch_name: str) -> None:
-        self.created_branches.append(branch_name)
 
 
 class FakeFileWriter:
@@ -209,6 +164,8 @@ class TestRescueHandlerHappyPath:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
         analysis = handler.rescue(Path("/tmp/proj"))
@@ -249,6 +206,50 @@ class TestRescueHandlerHappyPath:
         ]
         assert len(test_gaps) == 0
 
+    def test_rescue_detects_missing_alty_config(self) -> None:
+        """Gap when .alty/config.toml is absent."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        config_gaps = [
+            g for g in analysis.gaps if g.path == ".alty/config.toml"
+        ]
+        assert len(config_gaps) == 1
+        assert config_gaps[0].gap_type == GapType.MISSING_CONFIG
+
+    def test_rescue_detects_missing_alty_maintenance(self) -> None:
+        """Gap when .alty/maintenance/ is absent."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        maint_gaps = [
+            g for g in analysis.gaps if g.path == ".alty/maintenance/"
+        ]
+        assert len(maint_gaps) == 1
+        assert maint_gaps[0].gap_type == GapType.MISSING_STRUCTURE
+
+    def test_rescue_no_alty_config_gap_when_present(self) -> None:
+        """No gap when .alty/config.toml exists."""
+        scan = ProjectScan(
+            project_dir=Path("/tmp/proj"),
+            existing_docs=("docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"),
+            existing_configs=(".claude/CLAUDE.md", "pyproject.toml"),
+            existing_structure=("src/domain/", "src/application/", "src/infrastructure/"),
+            has_knowledge_dir=True,
+            has_agents_md=True,
+            has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
+        )
+        handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        alty_gaps = [
+            g for g in analysis.gaps
+            if ".alty/" in g.path
+        ]
+        assert len(alty_gaps) == 0
+
 
 # -- None Profile Fallback Tests -------------------------------------------
 
@@ -257,14 +258,16 @@ class TestRescueNoneProfileFallback:
     """When profile=None, rescue must not produce Python-specific gaps."""
 
     def test_none_profile_no_structure_gaps(self) -> None:
-        """rescue(profile=None) must not report src/domain/ or similar structure gaps."""
+        """rescue(profile=None) must not report profile-specific structure gaps."""
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
         analysis = handler.rescue(Path("/tmp/proj"), profile=None)
 
-        structure_gaps = [
-            g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE
+        # Profile-specific structure gaps (src/domain/, etc.) should not appear
+        profile_structure_gaps = [
+            g for g in analysis.gaps
+            if g.gap_type == GapType.MISSING_STRUCTURE and not g.path.startswith(".alty/")
         ]
-        assert structure_gaps == []
+        assert profile_structure_gaps == []
 
     def test_none_profile_no_pyproject_gap(self) -> None:
         """rescue(profile=None) must not report pyproject.toml as missing config."""
@@ -331,6 +334,8 @@ class TestRescueHandlerExecutePlan:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
         scanner = FakeScanner(scan=scan)
         handler2 = RescueHandler(
@@ -365,3 +370,104 @@ class TestRescueHandlerExecutePlan:
         # AGENTS.md should not be in written files
         written_paths = [str(p) for p in writer.written_files]
         assert not any("AGENTS.md" in p for p in written_paths)
+
+
+# -- Gap Severity Tests ----------------------------------------------------
+
+
+class TestGapSeverity:
+    def test_required_docs_have_required_severity(self) -> None:
+        """docs/PRD.md, DDD.md, ARCHITECTURE.md gaps are REQUIRED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"), profile=_PROFILE)
+
+        doc_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_DOC]
+        for gap in doc_gaps:
+            if gap.path in ("docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"):
+                assert gap.severity == GapSeverity.REQUIRED
+
+    def test_required_configs_have_required_severity(self) -> None:
+        """.claude/CLAUDE.md and pyproject.toml gaps are REQUIRED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"), profile=_PROFILE)
+
+        config_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_CONFIG]
+        for gap in config_gaps:
+            if gap.path in (".claude/CLAUDE.md", "pyproject.toml"):
+                assert gap.severity == GapSeverity.REQUIRED
+
+    def test_structure_gaps_have_required_severity(self) -> None:
+        """Profile structure gaps (src/domain/) are REQUIRED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"), profile=_PROFILE)
+
+        structure_gaps = [
+            g for g in analysis.gaps
+            if g.gap_type == GapType.MISSING_STRUCTURE
+            and not g.path.startswith(".alty/")
+        ]
+        for gap in structure_gaps:
+            assert gap.severity == GapSeverity.REQUIRED
+
+    def test_alty_config_gap_has_recommended_severity(self) -> None:
+        """.alty/config.toml gap is RECOMMENDED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        alty_config_gap = next(
+            g for g in analysis.gaps if g.path == ".alty/config.toml"
+        )
+        assert alty_config_gap.severity == GapSeverity.RECOMMENDED
+
+    def test_alty_maintenance_gap_has_recommended_severity(self) -> None:
+        """.alty/maintenance/ gap is RECOMMENDED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        maint_gap = next(
+            g for g in analysis.gaps if g.path == ".alty/maintenance/"
+        )
+        assert maint_gap.severity == GapSeverity.RECOMMENDED
+
+    def test_knowledge_gap_has_recommended_severity(self) -> None:
+        """.alty/knowledge/ gap is RECOMMENDED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        knowledge_gap = next(
+            g for g in analysis.gaps if g.path == ".alty/knowledge/"
+        )
+        assert knowledge_gap.severity == GapSeverity.RECOMMENDED
+
+    def test_agents_md_gap_has_recommended_severity(self) -> None:
+        """AGENTS.md gap is RECOMMENDED."""
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
+        analysis = handler.rescue(Path("/tmp/proj"))
+
+        agents_gap = next(
+            g for g in analysis.gaps if g.path == "AGENTS.md"
+        )
+        assert agents_gap.severity == GapSeverity.RECOMMENDED
+
+
+# -- Validated Parameter Tests ---------------------------------------------
+
+
+class TestRescueValidatedParameter:
+    def test_rescue_validated_skips_precondition_check(self) -> None:
+        """rescue(validated=True) skips git precondition validation."""
+        git_ops = FakeGitOps(has_git=False)
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        # Without validated=True, this would raise (not a git repo)
+        # With validated=True, preconditions are skipped
+        analysis = handler.rescue(Path("/tmp/proj"), validated=True)
+        assert len(analysis.gaps) > 0
+
+    def test_rescue_default_validates_preconditions(self) -> None:
+        """rescue() without validated= still validates git preconditions."""
+        git_ops = FakeGitOps(has_git=False)
+        handler = RescueHandler(project_scan=FakeScanner(), git_ops=git_ops)
+
+        with pytest.raises(InvariantViolationError, match="Not a git repository"):
+            handler.rescue(Path("/tmp/proj"))

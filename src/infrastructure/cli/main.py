@@ -67,7 +67,7 @@ def init(
             tech_stack = _ask_tech_stack()
             profile = resolve_profile(tech_stack)
 
-            analysis = handler.rescue(project_dir, profile=profile)
+            analysis = handler.rescue(project_dir, profile=profile, validated=True)
             if not analysis.gaps:
                 typer.echo("No gaps found -- project already follows alty conventions.")
                 return

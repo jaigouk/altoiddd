@@ -112,6 +112,29 @@ class TestProjectScannerSpecialDirs:
         scan = scanner.scan(tmp_path)
         assert scan.has_git is True
 
+    def test_scan_finds_alty_config(self, tmp_path: Path) -> None:
+        (tmp_path / ".alty").mkdir(parents=True)
+        (tmp_path / ".alty" / "config.toml").write_text("[alty]")
+        scanner = ProjectScanner()
+        scan = scanner.scan(tmp_path)
+        assert scan.has_alty_config is True
+
+    def test_scan_no_alty_config(self, tmp_path: Path) -> None:
+        scanner = ProjectScanner()
+        scan = scanner.scan(tmp_path)
+        assert scan.has_alty_config is False
+
+    def test_scan_finds_maintenance_dir(self, tmp_path: Path) -> None:
+        (tmp_path / ".alty" / "maintenance").mkdir(parents=True)
+        scanner = ProjectScanner()
+        scan = scanner.scan(tmp_path)
+        assert scan.has_maintenance_dir is True
+
+    def test_scan_no_maintenance_dir(self, tmp_path: Path) -> None:
+        scanner = ProjectScanner()
+        scan = scanner.scan(tmp_path)
+        assert scan.has_maintenance_dir is False
+
 
 
 class TestProjectScannerFullProject:

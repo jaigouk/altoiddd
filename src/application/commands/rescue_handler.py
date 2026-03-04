@@ -15,6 +15,7 @@ from src.domain.models.gap_analysis import (
     AnalysisStatus,
     Gap,
     GapAnalysis,
+    GapSeverity,
     GapType,
     MigrationPlan,
 )
@@ -86,17 +87,21 @@ class RescueHandler:
         self,
         project_dir: Path,
         profile: StackProfile | None = None,
+        *,
+        validated: bool = False,
     ) -> GapAnalysis:
         """Analyze an existing project and produce a gap analysis with plan.
 
-        Validates git preconditions, scans the project, identifies gaps,
-        and creates a migration plan. The caller decides whether to proceed
-        (preview-before-action pattern).
+        Validates git preconditions (unless already validated), scans the
+        project, identifies gaps, and creates a migration plan. The caller
+        decides whether to proceed (preview-before-action pattern).
 
         Args:
             project_dir: The existing project directory.
             profile: Stack profile providing structure and manifest targets.
                 When None, uses default Python targets for backward compat.
+            validated: If True, skip precondition validation (caller already
+                called validate_preconditions).
 
         Returns:
             A GapAnalysis aggregate in PLANNED state (or ANALYZED if no gaps).
@@ -104,8 +109,8 @@ class RescueHandler:
         Raises:
             InvariantViolationError: If git preconditions are not met.
         """
-        # Validate git preconditions (delegates to validate_preconditions)
-        self.validate_preconditions(project_dir)
+        if not validated:
+            self.validate_preconditions(project_dir)
 
         # Create branch before scanning
         self._git_ops.create_branch(project_dir, _BRANCH_NAME)
@@ -198,7 +203,7 @@ class RescueHandler:
                 gap_type=GapType.MISSING_DOC,
                 path=doc_path,
                 description=f"Missing documentation: {doc_path}",
-                severity="required",
+                severity=GapSeverity.REQUIRED,
             )
             for doc_path in _REQUIRED_DOCS
             if doc_path not in scan.existing_docs
@@ -211,7 +216,7 @@ class RescueHandler:
                 gap_type=GapType.MISSING_CONFIG,
                 path=config_path,
                 description=f"Missing configuration: {config_path}",
-                severity="required",
+                severity=GapSeverity.REQUIRED,
             )
             for config_path in _REQUIRED_CONFIGS
             if config_path not in scan.existing_configs
@@ -226,7 +231,7 @@ class RescueHandler:
                     gap_type=GapType.MISSING_CONFIG,
                     path=manifest,
                     description=f"Missing configuration: {manifest}",
-                    severity="required",
+                    severity=GapSeverity.REQUIRED,
                 )
             )
 
@@ -238,7 +243,7 @@ class RescueHandler:
                 gap_type=GapType.MISSING_STRUCTURE,
                 path=structure_path,
                 description=f"Missing directory: {structure_path}",
-                severity="required",
+                severity=GapSeverity.REQUIRED,
             )
             for structure_path in structure_targets
             if structure_path not in scan.existing_structure
@@ -252,7 +257,31 @@ class RescueHandler:
                     gap_type=GapType.MISSING_KNOWLEDGE,
                     path=".alty/knowledge/",
                     description="Missing knowledge base directory",
-                    severity="recommended",
+                    severity=GapSeverity.RECOMMENDED,
+                )
+            )
+
+        # Check .alty/config.toml
+        if not scan.has_alty_config:
+            gaps.append(
+                Gap(
+                    gap_id=str(uuid.uuid4()),
+                    gap_type=GapType.MISSING_CONFIG,
+                    path=".alty/config.toml",
+                    description="Missing alty project configuration",
+                    severity=GapSeverity.RECOMMENDED,
+                )
+            )
+
+        # Check .alty/maintenance/
+        if not scan.has_maintenance_dir:
+            gaps.append(
+                Gap(
+                    gap_id=str(uuid.uuid4()),
+                    gap_type=GapType.MISSING_STRUCTURE,
+                    path=".alty/maintenance/",
+                    description="Missing doc maintenance directory",
+                    severity=GapSeverity.RECOMMENDED,
                 )
             )
 
@@ -264,7 +293,7 @@ class RescueHandler:
                     gap_type=GapType.MISSING_DOC,
                     path="AGENTS.md",
                     description="Missing AGENTS.md",
-                    severity="recommended",
+                    severity=GapSeverity.RECOMMENDED,
                 )
             )
 

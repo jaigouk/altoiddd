@@ -42,6 +42,19 @@ class GapType(enum.Enum):
     CONFLICT = "conflict"
 
 
+class GapSeverity(enum.Enum):
+    """How critical a gap is.
+
+    REQUIRED:    Must be resolved before the project is operational.
+    RECOMMENDED: Should be resolved but the project can function without it.
+    OPTIONAL:    Nice-to-have; can be deferred indefinitely.
+    """
+
+    REQUIRED = "required"
+    RECOMMENDED = "recommended"
+    OPTIONAL = "optional"
+
+
 @dataclass(frozen=True)
 class ProjectScan:
     """Immutable snapshot of an existing project's current state.
@@ -54,6 +67,8 @@ class ProjectScan:
         has_knowledge_dir: Whether .alty/knowledge/ exists.
         has_agents_md: Whether AGENTS.md exists at the project root.
         has_git: Whether the project is a git repository.
+        has_alty_config: Whether .alty/config.toml exists.
+        has_maintenance_dir: Whether .alty/maintenance/ exists.
     """
 
     project_dir: Path
@@ -63,6 +78,8 @@ class ProjectScan:
     has_knowledge_dir: bool = False
     has_agents_md: bool = False
     has_git: bool = False
+    has_alty_config: bool = False
+    has_maintenance_dir: bool = False
 
 
 @dataclass(frozen=True)
@@ -74,14 +91,14 @@ class Gap:
         gap_type: Classification of the gap.
         path: Relative path where the gap was detected.
         description: Human-readable explanation of the gap.
-        severity: How critical the gap is: "required", "recommended", or "optional".
+        severity: How critical the gap is (GapSeverity enum).
     """
 
     gap_id: str
     gap_type: GapType
     path: str
     description: str
-    severity: str  # "required" | "recommended" | "optional"
+    severity: GapSeverity
 
 
 @dataclass(frozen=True)

@@ -51,7 +51,7 @@ class TicketDetailRenderer:
             aggregate: The aggregate design providing domain metadata.
             detail_level: How much detail to include.
             profile: Stack profile for quality gate commands. Defaults to
-                PythonUvProfile for backward compatibility.
+                GenericProfile when not provided.
 
         Returns:
             Rendered ticket description as a multi-line string.

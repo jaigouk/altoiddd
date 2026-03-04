@@ -21,7 +21,9 @@ _PLANNED_FILES: tuple[Path, ...] = (
     Path("docs/DDD.md"),
     Path("docs/ARCHITECTURE.md"),
     Path("AGENTS.md"),
+    Path(".alty/config.toml"),
     Path(".alty/knowledge/_index.toml"),
+    Path(".alty/maintenance/doc-registry.toml"),
 )
 
 

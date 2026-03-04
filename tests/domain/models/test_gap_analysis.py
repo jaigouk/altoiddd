@@ -16,6 +16,7 @@ from src.domain.models.gap_analysis import (
     AnalysisStatus,
     Gap,
     GapAnalysis,
+    GapSeverity,
     GapType,
     MigrationPlan,
     ProjectScan,
@@ -40,7 +41,7 @@ def _make_gap() -> Gap:
         gap_type=GapType.MISSING_DOC,
         path="docs/DDD.md",
         description="Missing documentation: docs/DDD.md",
-        severity="required",
+        severity=GapSeverity.REQUIRED,
     )
 
 
@@ -240,7 +241,7 @@ class TestValueObjects:
     def test_gap_is_frozen(self) -> None:
         gap = _make_gap()
         with pytest.raises(AttributeError):
-            gap.severity = "optional"  # type: ignore[misc]
+            gap.severity = GapSeverity.OPTIONAL  # type: ignore[misc]
 
     def test_migration_plan_is_frozen(self) -> None:
         plan = _make_plan()
@@ -267,6 +268,15 @@ class TestGapTypeValues:
         assert AnalysisStatus.EXECUTING.value == "executing"
         assert AnalysisStatus.COMPLETED.value == "completed"
         assert AnalysisStatus.FAILED.value == "failed"
+
+    def test_gap_severity_values(self) -> None:
+        assert GapSeverity.REQUIRED.value == "required"
+        assert GapSeverity.RECOMMENDED.value == "recommended"
+        assert GapSeverity.OPTIONAL.value == "optional"
+
+    def test_gap_severity_count(self) -> None:
+        """GapSeverity has exactly 3 members."""
+        assert len(GapSeverity) == 3
 
 
 # -- Edge Cases ------------------------------------------------------------
@@ -315,6 +325,6 @@ class TestGapAnalysisEdgeCases:
             gap_type=GapType.CONFLICT,
             path=".claude/CLAUDE.md",
             description="Conflicting config",
-            severity="required",
+            severity=GapSeverity.REQUIRED,
         )
         assert gap.gap_type == GapType.CONFLICT

@@ -14,48 +14,7 @@ from src.domain.models.gap_analysis import (
     ProjectScan,
 )
 from src.domain.models.stack_profile import GenericProfile, PythonUvProfile
-
-# -- Fake adapters -----------------------------------------------------------
-
-
-class FakeScanner:
-    """In-memory test double implementing ProjectScanPort."""
-
-    def __init__(self, scan: ProjectScan | None = None) -> None:
-        self._scan = scan
-
-    def scan(self, project_dir: Path, profile: object = None) -> ProjectScan:
-        if self._scan is not None:
-            return self._scan
-        return ProjectScan(
-            project_dir=project_dir,
-            existing_docs=(),
-            existing_configs=(),
-            existing_structure=(),
-            has_knowledge_dir=False,
-            has_agents_md=False,
-            has_git=True,
-        )
-
-
-class FakeGitOps:
-    """In-memory test double implementing GitOpsPort."""
-
-    def __init__(self) -> None:
-        self.created_branches: list[str] = []
-
-    def has_git(self, project_dir: Path) -> bool:
-        return True
-
-    def is_clean(self, project_dir: Path) -> bool:
-        return True
-
-    def branch_exists(self, project_dir: Path, branch_name: str) -> bool:
-        return False
-
-    def create_branch(self, project_dir: Path, branch_name: str) -> None:
-        self.created_branches.append(branch_name)
-
+from tests.conftest import FakeGitOps, FakeScanner
 
 # ---------------------------------------------------------------------------
 # 1. RescueHandler uses profile for structure checks
@@ -80,7 +39,7 @@ class TestRescueUsesProfileStructure:
         assert "src/infrastructure/" in structure_paths
 
     def test_rescue_generic_profile_skips_structure_check(self) -> None:
-        """GenericProfile (empty source_layout) → no structure gaps reported."""
+        """GenericProfile (empty source_layout) -> no profile-specific structure gaps."""
         from src.application.commands.rescue_handler import RescueHandler
 
         profile = GenericProfile()
@@ -88,10 +47,12 @@ class TestRescueUsesProfileStructure:
 
         analysis = handler.rescue(Path("/tmp/proj"), profile=profile)
 
-        structure_gaps = [
-            g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE
+        profile_structure_gaps = [
+            g for g in analysis.gaps
+            if g.gap_type == GapType.MISSING_STRUCTURE
+            and not g.path.startswith(".alty/")
         ]
-        assert structure_gaps == []
+        assert profile_structure_gaps == []
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +76,7 @@ class TestRescueUsesProfileManifest:
         assert "pyproject.toml" in config_paths
 
     def test_rescue_generic_profile_skips_manifest_check(self) -> None:
-        """GenericProfile (empty manifest) → no manifest gap reported."""
+        """GenericProfile (empty manifest) -> no manifest gap reported."""
         from src.application.commands.rescue_handler import RescueHandler
 
         profile = GenericProfile()
@@ -167,13 +128,13 @@ class TestAltyUniversalItemsUnchanged:
 
 
 # ---------------------------------------------------------------------------
-# 4. Full project with profile → no gaps
+# 4. Full project with profile -> no gaps
 # ---------------------------------------------------------------------------
 
 
 class TestFullProjectWithProfile:
     def test_python_profile_all_present_no_gaps(self) -> None:
-        """All artifacts present for Python profile → no gaps."""
+        """All artifacts present for Python profile -> no gaps."""
         from src.application.commands.rescue_handler import RescueHandler
 
         scan = ProjectScan(
@@ -184,6 +145,8 @@ class TestFullProjectWithProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
         profile = PythonUvProfile()
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
@@ -204,6 +167,8 @@ class TestFullProjectWithProfile:
             has_knowledge_dir=True,
             has_agents_md=True,
             has_git=True,
+            has_alty_config=True,
+            has_maintenance_dir=True,
         )
         profile = GenericProfile()
         handler = RescueHandler(project_scan=FakeScanner(scan=scan), git_ops=FakeGitOps())
@@ -231,12 +196,16 @@ class TestBackwardCompat:
         assert len(analysis.gaps) > 0
 
     def test_no_profile_produces_no_structure_gaps(self) -> None:
-        """Without profile, no structure gaps are reported (generic fallback)."""
+        """Without profile, no profile-specific structure gaps are reported."""
         from src.application.commands.rescue_handler import RescueHandler
 
         handler = RescueHandler(project_scan=FakeScanner(), git_ops=FakeGitOps())
 
         analysis = handler.rescue(Path("/tmp/proj"))
 
-        structure_gaps = [g for g in analysis.gaps if g.gap_type == GapType.MISSING_STRUCTURE]
-        assert structure_gaps == []
+        profile_structure_gaps = [
+            g for g in analysis.gaps
+            if g.gap_type == GapType.MISSING_STRUCTURE
+            and not g.path.startswith(".alty/")
+        ]
+        assert profile_structure_gaps == []
