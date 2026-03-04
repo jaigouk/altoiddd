@@ -465,7 +465,40 @@ def check(
 @app.command()
 def kb(topic: str = typer.Argument("", help="Knowledge base topic to look up.")) -> None:
     """Look up a topic in the RLM knowledge base."""
-    typer.echo(f"alty kb: not yet implemented (topic={topic!r})")
+    import os
+    from pathlib import Path
+
+    from src.application.queries.knowledge_lookup_handler import KnowledgeLookupHandler
+    from src.domain.models.errors import InvariantViolationError
+    from src.infrastructure.persistence.file_knowledge_reader import FileKnowledgeReader
+
+    project_dir = Path(os.environ.get("ALTY_PROJECT_DIR", ".")).resolve()
+    knowledge_dir = project_dir / ".alty" / "knowledge"
+
+    if not knowledge_dir.exists():
+        typer.echo("Error: No .alty/knowledge/ directory found. Run `alty init` first.", err=True)
+        raise typer.Exit(code=1)
+
+    reader = FileKnowledgeReader(knowledge_dir)
+    handler = KnowledgeLookupHandler(reader=reader)
+
+    if not topic:
+        # List categories and their topics
+        typer.echo("Knowledge Base Categories")
+        typer.echo("\u2500" * 40)
+        for cat in handler.list_categories():
+            topics = handler.list_topics(cat)
+            topic_list = ", ".join(topics) if topics else "(empty)"
+            typer.echo(f"  {cat}: {topic_list}")
+        return
+
+    try:
+        entry = handler.lookup(topic)
+    except InvariantViolationError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+
+    typer.echo(entry.content)
 
 
 @app.command(name="doc-health")

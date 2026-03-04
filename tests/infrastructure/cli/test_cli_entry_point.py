@@ -64,7 +64,6 @@ class TestTopLevelCommandStubs:
 
     STUB_COMMANDS = [
         "detect",
-        "kb",
         "doc-review",
         "ticket-health",
     ]
