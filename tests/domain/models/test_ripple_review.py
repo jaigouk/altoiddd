@@ -209,3 +209,45 @@ class TestDefensiveCopies:
         events = review.events
         assert isinstance(events, tuple)
         assert review.events == events
+
+
+# ---------------------------------------------------------------------------
+# 6. Review checklist constant (G1)
+# ---------------------------------------------------------------------------
+
+
+class TestReviewChecklist:
+    def test_review_checklist_template_exists(self) -> None:
+        """G1: REVIEW_CHECKLIST_TEMPLATE constant must exist."""
+        from src.domain.models.ripple_review import REVIEW_CHECKLIST_TEMPLATE
+
+        assert isinstance(REVIEW_CHECKLIST_TEMPLATE, str)
+        assert len(REVIEW_CHECKLIST_TEMPLATE) > 0
+
+    def test_review_checklist_template_has_key_items(self) -> None:
+        """Checklist must contain review guidance items."""
+        from src.domain.models.ripple_review import REVIEW_CHECKLIST_TEMPLATE
+
+        # Must mention description/AC review, DDD alignment, and dismiss option
+        assert "description" in REVIEW_CHECKLIST_TEMPLATE.lower()
+        assert "acceptance criteria" in REVIEW_CHECKLIST_TEMPLATE.lower()
+        assert "dismiss" in REVIEW_CHECKLIST_TEMPLATE.lower() or (
+            "unchanged" in REVIEW_CHECKLIST_TEMPLATE.lower()
+        )
+
+    def test_review_checklist_used_in_build_ripple_comment(self) -> None:
+        """The aggregate must produce comments that include the checklist."""
+        from src.domain.models.ripple_review import RippleReview
+
+        review = RippleReview(
+            review_id="rr-001",
+            closed_ticket_id="k7m.19",
+            context_diff=_make_context_diff(),
+        )
+        comment = review.build_ripple_comment()
+        assert isinstance(comment, str)
+        assert "k7m.19" in comment
+        assert "fitness" in comment.lower()
+        # Must include checklist items
+        assert "description" in comment.lower()
+        assert "acceptance criteria" in comment.lower()

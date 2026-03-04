@@ -1,0 +1,37 @@
+# Claude Code Global Configuration Paths
+# Describes where global config files live on each operating system.
+
+[_meta]
+last_verified = "2026-03-04"
+verified_against = "v2.1"
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-06-04"
+schema_version = 1
+
+[paths.macos]
+global_dir = "~/.claude/"
+managed = "/Library/Application Support/ClaudeCode/managed-settings.json"
+description = "macOS global config in home directory. Managed settings in Application Support."
+
+[paths.linux]
+global_dir = "~/.claude/"
+managed = "/etc/claude-code/managed-settings.json"
+description = "Linux global config in home directory. Managed settings in /etc."
+
+[paths.windows]
+global_dir = "~/.claude/"
+managed = "C:\\Program Files\\ClaudeCode\\managed-settings.json"
+description = "Windows global config in home directory. Managed settings in Program Files."
+
+[global_structure]
+description = "Files under ~/.claude/ that apply to all projects."
+"CLAUDE.md" = "Global instructions loaded in every session."
+"settings.json" = "Global settings (lowest precedence)."
+".mcp.json" = "Global MCP server definitions."
+"agents/*.md" = "Global agent definitions."
+"commands/*.md" = "Global slash commands."
+"agent-memory/" = "Global agent memory, shared across projects."
+"projects/" = "Per-project memory keyed by path."

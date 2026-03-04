@@ -139,11 +139,15 @@ if [[ ${#TO_FLAG[@]} -eq 0 ]]; then
 fi
 
 # Flag each ticket
-COMMENT="**Ripple review needed** — \`$TICKET_ID\` ($TITLE) was closed.
+COMMENT="**Ripple review needed** -- \`$TICKET_ID\` ($TITLE) was closed.
 
 **What changed:** $CONTEXT
 
-Review this ticket's description and acceptance criteria against the new context. Update if needed, or dismiss if still valid."
+**Review checklist:**
+- [ ] Read the description -- does it still match the new context?
+- [ ] Check acceptance criteria -- are any obsolete, incomplete, or contradicted?
+- [ ] Verify DDD alignment -- do bounded-context boundaries still hold?
+- [ ] Update or dismiss -- apply changes, or mark as unchanged if still valid."
 
 echo ""
 echo "=== Ripple Review: $TICKET_ID closed ==="

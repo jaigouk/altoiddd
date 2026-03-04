@@ -219,3 +219,142 @@ class TestBeadsTicketReaderFlags:
 
         assert len(flags) == 1
         assert "25" in flags[0].context_diff.summary
+
+
+# ---------------------------------------------------------------------------
+# G9: Additional integration tests for BeadsTicketReader
+# ---------------------------------------------------------------------------
+
+
+class TestBeadsTicketReaderMissingInteractions:
+    def test_handles_missing_interactions_file(self, tmp_path: Path) -> None:
+        """When interactions.jsonl does not exist, read_flags returns empty tuple."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        # No interactions.jsonl created
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        flags = reader.read_flags("k7m.25")
+
+        assert flags == ()
+
+    def test_handles_empty_interactions_file(self, tmp_path: Path) -> None:
+        """When interactions.jsonl is empty, read_flags returns empty tuple."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        interactions_path = beads_dir / "interactions.jsonl"
+        interactions_path.write_text("")
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        flags = reader.read_flags("k7m.25")
+
+        assert flags == ()
+
+    def test_handles_corrupted_interaction_lines(self, tmp_path: Path) -> None:
+        """Corrupted interaction lines are skipped gracefully."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        interactions_path = beads_dir / "interactions.jsonl"
+        with interactions_path.open("w") as f:
+            f.write("not valid json at all\n")
+            f.write(
+                json.dumps(
+                    {
+                        "issue_id": "k7m.25",
+                        "type": "comment",
+                        "body": (
+                            "**Ripple context diff from `k7m.19`:**\nAdded fitness functions"
+                        ),
+                        "created_at": "2026-03-01T10:00:00",
+                        "created_by": "agent",
+                    }
+                )
+                + "\n"
+            )
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        flags = reader.read_flags("k7m.25")
+
+        assert len(flags) == 1
+        assert "fitness" in flags[0].context_diff.summary.lower()
+
+
+class TestBeadsTicketReaderEdgeCases:
+    def test_reads_open_tickets_skips_blank_lines(self, tmp_path: Path) -> None:
+        """Blank lines in issues.jsonl are skipped."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        jsonl_path = beads_dir / "issues.jsonl"
+        with jsonl_path.open("w") as f:
+            f.write(json.dumps(_open_issue("k7m.25", "Ticket A")) + "\n")
+            f.write("\n")
+            f.write("   \n")
+            f.write(json.dumps(_open_issue("k7m.26", "Ticket B")) + "\n")
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        tickets = reader.read_open_tickets()
+
+        assert len(tickets) == 2
+
+    def test_reads_open_tickets_handles_empty_file(self, tmp_path: Path) -> None:
+        """Empty issues.jsonl returns empty tuple."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        jsonl_path = beads_dir / "issues.jsonl"
+        jsonl_path.write_text("")
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        tickets = reader.read_open_tickets()
+
+        assert tickets == ()
+
+    def test_read_flags_multiple_ripple_comments(self, tmp_path: Path) -> None:
+        """Multiple ripple comments for the same ticket produce multiple flags."""
+        from src.infrastructure.external.beads_ticket_reader import BeadsTicketReader
+
+        beads_dir = tmp_path / ".beads"
+        beads_dir.mkdir(parents=True)
+        interactions_path = beads_dir / "interactions.jsonl"
+        with interactions_path.open("w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "issue_id": "k7m.25",
+                        "type": "comment",
+                        "body": "**Ripple context diff from `k7m.19`:**\nFirst change",
+                        "created_at": "2026-03-01T10:00:00",
+                        "created_by": "agent",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "issue_id": "k7m.25",
+                        "type": "comment",
+                        "body": "**Ripple context diff from `k7m.20`:**\nSecond change",
+                        "created_at": "2026-03-02T10:00:00",
+                        "created_by": "agent",
+                    }
+                )
+                + "\n"
+            )
+
+        reader = BeadsTicketReader(beads_dir=beads_dir)
+        flags = reader.read_flags("k7m.25")
+
+        assert len(flags) == 2
+        summaries = {f.context_diff.summary for f in flags}
+        assert "First change" in summaries
+        assert "Second change" in summaries

@@ -20,6 +20,13 @@ from src.domain.models.errors import InvariantViolationError
 if TYPE_CHECKING:
     from src.domain.models.ticket_freshness import ContextDiff
 
+REVIEW_CHECKLIST_TEMPLATE = """\
+**Review checklist:**
+- [ ] Read the description -- does it still match the new context?
+- [ ] Check acceptance criteria -- are any obsolete, incomplete, or contradicted?
+- [ ] Verify DDD alignment -- do bounded-context boundaries still hold?
+- [ ] Update or dismiss -- apply changes, or mark as unchanged if still valid."""
+
 
 class RippleReview:
     """Aggregate root: manages flagging and clearing of freshness flags.
@@ -79,6 +86,20 @@ class RippleReview:
                 context_diff=self.context_diff,
                 flagged_at=flagged_at,
             )
+        )
+
+    def build_ripple_comment(self) -> str:
+        """Build a structured ripple review comment including the review checklist.
+
+        Returns:
+            A formatted comment string with context diff summary and review checklist.
+        """
+        return (
+            f"**Ripple review needed** -- `{self.closed_ticket_id}` was closed.\n"
+            f"\n"
+            f"**What changed:** {self.context_diff.summary}\n"
+            f"\n"
+            f"{REVIEW_CHECKLIST_TEMPLATE}"
         )
 
     def clear_flag(self, ticket_id: str, *, cleared_at: str = "") -> None:

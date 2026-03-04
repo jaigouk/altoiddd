@@ -469,9 +469,56 @@ def kb(topic: str = typer.Argument("", help="Knowledge base topic to look up."))
 
 
 @app.command(name="doc-health")
-def doc_health() -> None:
+def doc_health(
+    project_dir: str = typer.Argument(
+        ".",
+        help="Project directory to scan (defaults to current directory).",
+    ),
+) -> None:
     """Check documentation freshness and health."""
-    typer.echo("alty doc-health: not yet implemented")
+    from pathlib import Path
+
+    from src.application.queries.doc_health_handler import DocHealthHandler
+    from src.domain.models.doc_health import DocHealthStatus
+    from src.infrastructure.persistence.filesystem_doc_scanner import FilesystemDocScanner
+
+    resolved_dir = Path(project_dir).resolve()
+    scanner = FilesystemDocScanner()
+    handler = DocHealthHandler(scanner=scanner)
+    report = handler.check(resolved_dir)
+
+    status_icons = {
+        DocHealthStatus.OK: "  \u2713 ",
+        DocHealthStatus.STALE: "  \u26a0 ",
+        DocHealthStatus.MISSING: "  \u2717 ",
+        DocHealthStatus.NO_FRONTMATTER: "  ! ",
+    }
+
+    typer.echo("Doc Health Report")
+    typer.echo("\u2500" * 40)
+
+    for status in report.statuses:
+        icon = status_icons.get(status.status, "  ? ")
+        detail = ""
+        if status.status == DocHealthStatus.OK and status.days_since is not None:
+            detail = f"  (reviewed {status.days_since} days ago)"
+        elif status.status == DocHealthStatus.STALE and status.days_since is not None:
+            detail = (
+                f"  (reviewed {status.days_since} days ago,"
+                f" interval: {status.review_interval_days})"
+            )
+        typer.echo(
+            f"{icon} {status.path:<40s} {status.status.name}{detail}"
+        )
+
+    typer.echo("")
+    typer.echo(
+        f"Summary: {report.total_checked} checked,"
+        f" {report.issue_count} issue(s) found"
+    )
+
+    if report.has_issues:
+        raise typer.Exit(code=1)
 
 
 @app.command(name="doc-review")

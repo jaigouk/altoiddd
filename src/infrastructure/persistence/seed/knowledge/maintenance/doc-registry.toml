@@ -1,0 +1,38 @@
+# Document Registry
+# Tracks project documents for freshness checks and drift detection.
+
+[_meta]
+last_verified = "2026-03-04"
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-06-04"
+schema_version = 1
+
+[registry]
+description = "Default document tracking entries for bootstrapped projects"
+
+[[registry.entries]]
+path = "docs/PRD.md"
+type = "requirements"
+purpose = "Product requirements document"
+freshness_interval_days = 30
+
+[[registry.entries]]
+path = "docs/DDD.md"
+type = "domain_model"
+purpose = "Domain model, bounded contexts, ubiquitous language"
+freshness_interval_days = 30
+
+[[registry.entries]]
+path = "docs/ARCHITECTURE.md"
+type = "architecture"
+purpose = "Technical architecture decisions"
+freshness_interval_days = 60
+
+[[registry.entries]]
+path = "CLAUDE.md"
+type = "instructions"
+purpose = "AI agent instructions and project conventions"
+freshness_interval_days = 14

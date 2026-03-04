@@ -105,6 +105,58 @@ class TicketHealthReport:
         """Whether any tickets need attention."""
         return self.review_needed_count > 0
 
+    @property
+    def freshness_pct(self) -> float:
+        """Percentage of open tickets that are fresh (not needing review).
+
+        Returns 100.0 when there are no open tickets (avoids division by zero).
+        Formula: (total_open - review_needed_count) / total_open * 100
+        """
+        if self.total_open == 0:
+            return 100.0
+        return (self.total_open - self.review_needed_count) / self.total_open * 100
+
+
+@dataclass(frozen=True)
+class EpicHealthSummary:
+    """Epic-level breakdown of ticket freshness.
+
+    Provides a per-epic view of how many tickets are fresh vs stale,
+    used when reporting health grouped by epic rather than globally.
+
+    Attributes:
+        epic_id: Identifier of the epic.
+        total_tickets: Total tickets in this epic.
+        fresh_count: Number of fresh (non-stale) tickets.
+        stale_count: Number of tickets needing review.
+    """
+
+    epic_id: str
+    total_tickets: int
+    fresh_count: int
+    stale_count: int
+
+    def __post_init__(self) -> None:
+        if self.total_tickets < 0 or self.fresh_count < 0 or self.stale_count < 0:
+            msg = "Counts must be non-negative"
+            raise InvariantViolationError(msg)
+        if self.fresh_count + self.stale_count != self.total_tickets:
+            msg = (
+                f"fresh_count ({self.fresh_count}) + stale_count ({self.stale_count})"
+                f" must equal total_tickets ({self.total_tickets})"
+            )
+            raise InvariantViolationError(msg)
+
+    @property
+    def freshness_pct(self) -> float:
+        """Percentage of tickets that are fresh.
+
+        Returns 100.0 when there are no tickets (avoids division by zero).
+        """
+        if self.total_tickets == 0:
+            return 100.0
+        return self.fresh_count / self.total_tickets * 100
+
 
 @dataclass(frozen=True)
 class OpenTicketData:

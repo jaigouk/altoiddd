@@ -281,6 +281,120 @@ class TestTicketHealthReport:
         )
         assert report.oldest_last_reviewed is None
 
+    # -- freshness_pct (G7) ---------------------------------------------------
+
+    def test_freshness_pct_all_fresh(self) -> None:
+        """10 open, 0 review_needed -> 100.0%."""
+        from src.domain.models.ticket_freshness import TicketHealthReport
+
+        report = TicketHealthReport(
+            flagged_tickets=(),
+            total_open=10,
+        )
+        assert report.freshness_pct == 100.0
+
+    def test_freshness_pct_some_stale(self) -> None:
+        """10 open, 3 review_needed -> 70.0%."""
+        from src.domain.models.ticket_freshness import (
+            ContextDiff,
+            FlaggedTicket,
+            FreshnessFlag,
+            TicketFreshnessStatus,
+            TicketHealthReport,
+        )
+
+        diff = ContextDiff(
+            summary="Change",
+            triggering_ticket_id="k7m.19",
+            produced_at="2026-03-01",
+        )
+        flag = FreshnessFlag(context_diff=diff, flagged_at="2026-03-01T10:00:00")
+        flagged = tuple(
+            FlaggedTicket(
+                ticket_id=f"k7m.{i}",
+                title=f"Ticket {i}",
+                flags=(flag,),
+                status=TicketFreshnessStatus.REVIEW_NEEDED,
+            )
+            for i in range(3)
+        )
+        report = TicketHealthReport(
+            flagged_tickets=flagged,
+            total_open=10,
+        )
+        assert report.freshness_pct == 70.0
+
+    def test_freshness_pct_all_stale(self) -> None:
+        """10 open, 10 review_needed -> 0.0%."""
+        from src.domain.models.ticket_freshness import (
+            ContextDiff,
+            FlaggedTicket,
+            FreshnessFlag,
+            TicketFreshnessStatus,
+            TicketHealthReport,
+        )
+
+        diff = ContextDiff(
+            summary="Change",
+            triggering_ticket_id="k7m.19",
+            produced_at="2026-03-01",
+        )
+        flag = FreshnessFlag(context_diff=diff, flagged_at="2026-03-01T10:00:00")
+        flagged = tuple(
+            FlaggedTicket(
+                ticket_id=f"k7m.{i}",
+                title=f"Ticket {i}",
+                flags=(flag,),
+                status=TicketFreshnessStatus.REVIEW_NEEDED,
+            )
+            for i in range(10)
+        )
+        report = TicketHealthReport(
+            flagged_tickets=flagged,
+            total_open=10,
+        )
+        assert report.freshness_pct == 0.0
+
+    def test_freshness_pct_zero_open(self) -> None:
+        """0 open tickets -> 100.0% (no division by zero)."""
+        from src.domain.models.ticket_freshness import TicketHealthReport
+
+        report = TicketHealthReport(
+            flagged_tickets=(),
+            total_open=0,
+        )
+        assert report.freshness_pct == 100.0
+
+    def test_freshness_pct_single_ticket_stale(self) -> None:
+        """1 open, 1 stale -> 0.0%."""
+        from src.domain.models.ticket_freshness import (
+            ContextDiff,
+            FlaggedTicket,
+            FreshnessFlag,
+            TicketFreshnessStatus,
+            TicketHealthReport,
+        )
+
+        diff = ContextDiff(
+            summary="Change",
+            triggering_ticket_id="k7m.19",
+            produced_at="2026-03-01",
+        )
+        flag = FreshnessFlag(context_diff=diff, flagged_at="2026-03-01T10:00:00")
+        flagged = (
+            FlaggedTicket(
+                ticket_id="k7m.25",
+                title="Ticket Health",
+                flags=(flag,),
+                status=TicketFreshnessStatus.REVIEW_NEEDED,
+            ),
+        )
+        report = TicketHealthReport(
+            flagged_tickets=flagged,
+            total_open=1,
+        )
+        assert report.freshness_pct == 0.0
+
 
 # ---------------------------------------------------------------------------
 # 6. OpenTicketData Value Object

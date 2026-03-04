@@ -1,0 +1,41 @@
+# Claude Code Configuration Structure
+# Describes the .claude/ directory layout and config file locations.
+
+[_meta]
+last_verified = "2026-03-04"
+verified_against = "v2.1"
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-06-04"
+schema_version = 1
+
+[project_structure]
+"CLAUDE.md" = "Project memory and instructions. Committed to version control."
+"CLAUDE.local.md" = "Personal project memory. Gitignored."
+"settings.json" = "Team-shared settings (permissions, model, hooks). Committed."
+"settings.local.json" = "Personal project settings. Gitignored."
+".mcp.json" = "Project-scoped MCP server configuration."
+"agents/*.md" = "Custom subagent definitions. Markdown with YAML frontmatter."
+"agent-memory/<agent-name>/MEMORY.md" = "Persistent subagent memory scoped to project."
+"rules/*.md" = "Additional instruction files. Auto-loaded every session."
+"commands/*.md" = "Project slash commands. Filename becomes /command-name."
+"skills/" = "Project skills. Each subdirectory has a SKILL.md."
+
+[global_structure]
+"CLAUDE.md" = "Global instructions loaded in every session."
+"settings.json" = "Global settings (lowest precedence)."
+".mcp.json" = "Global MCP server definitions."
+"agents/*.md" = "Global agent definitions."
+"commands/*.md" = "Global slash commands."
+
+[config_precedence]
+description = "Settings merged from highest to lowest precedence."
+order = [
+    "1. Managed settings (managed-settings.json) -- enterprise, cannot be overridden",
+    "2. Command line arguments",
+    "3. .claude/settings.local.json -- project personal (gitignored)",
+    "4. .claude/settings.json -- project team (committed)",
+    "5. ~/.claude/settings.json -- user global (lowest)",
+]
