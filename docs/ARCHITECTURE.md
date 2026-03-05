@@ -22,9 +22,12 @@ status: draft
    I/O, no file access. Business logic is expressed purely in Python data structures
    and functions. _(Source: DDD.md layer rules; PRD section 6)_
 
-2. **Local-first** -- Everything runs locally. No cloud dependencies, no paid APIs for
-   core functionality, no network calls during bootstrap. _(Source: PRD section 6,
-   budget/resource constraints)_
+2. **Local-first** -- Express mode (default) runs entirely locally with zero network calls.
+   Deep mode (optional) may use LLM APIs and web search for AI-assisted challenge,
+   research, and simulation — but every Deep mode feature has a local fallback (rule-based
+   heuristics, empty research briefing) so alty works offline. No paid APIs required for
+   core functionality. _(Source: PRD section 6, budget/resource constraints; updated by
+   iterative DDD discovery protocol spike alty-20c.1)_
 
 3. **Preview before action** -- All file operations, ticket creation, and config
    generation show a preview and require explicit user confirmation before writing
@@ -1073,6 +1076,105 @@ ripple review, executed by agent during grooming).
 
 _(Source: ripple review spike sections 1-6)_
 
+### 7.8 LLM Port Architecture (Deep Mode)
+
+**PRD reference:** Section 5 P1 "Iterative DDD discovery protocol"
+**Spike source:** `docs/research/20260305_ai_assisted_ddd_session_design.md`
+
+Deep mode features (Challenger, Domain Research, Customer Simulator) require LLM
+capabilities. The architecture isolates LLM dependency behind domain-specific ports
+with a shared infrastructure client, enabling provider swaps without domain changes.
+
+#### Layer Separation
+
+```
+Domain Layer (pure Python, no LLM awareness)
+  ChallengerService     — generates challenge questions from model gaps
+  SimulatorService      — generates scenarios from model entities
+  (no LLM imports, no network imports, no provider awareness)
+        |
+Application Layer (Protocols only)
+  ChallengerPort        — analyze_and_challenge(model_data) -> list[Challenge]
+  DomainResearchPort    — research(domain, areas) -> ResearchBriefing
+  SimulatorPort         — generate_scenarios(model_data) -> list[Scenario]
+        |
+Infrastructure Layer (adapters + shared client)
+  llm_client.py         — LLMClient Protocol (send_prompt -> structured response)
+  anthropic_adapter.py  — AnthropicLLMClient (uses `anthropic` SDK)
+  ollama_adapter.py     — OllamaLLMClient (future: local LLM via Ollama)
+  vertexai_adapter.py   — VertexAILLMClient (future: Google Vertex AI)
+  challenger_adapter.py — Implements ChallengerPort using LLMClient
+  simulator_adapter.py  — Implements SimulatorPort using LLMClient
+  research_adapter.py   — Implements DomainResearchPort using LLMClient + web search
+  rule_based_challenger.py — Implements ChallengerPort without LLM (local fallback)
+  rule_based_simulator.py  — Implements SimulatorPort without LLM (local fallback)
+```
+
+#### LLMClient Protocol (Infrastructure-Internal)
+
+```python
+# src/infrastructure/external/llm_client.py
+class LLMClient(Protocol):
+    """Infrastructure-internal abstraction for LLM providers.
+    NOT a domain or application port — this is an infrastructure detail."""
+
+    async def structured_output(
+        self,
+        prompt: str,
+        system: str,
+        output_schema: dict[str, Any],
+    ) -> dict[str, Any]: ...
+```
+
+This is **not** an application port — it's an infrastructure-internal abstraction.
+Domain-specific ports (ChallengerPort, SimulatorPort) are the application-layer
+contracts. The LLMClient is a shared implementation detail that adapters use internally.
+
+#### Provider Configuration
+
+```toml
+# .alty/config.toml
+[llm]
+provider = "anthropic"          # anthropic | ollama | vertexai | none
+model = "claude-sonnet-4-20250514"       # Provider-specific model ID
+fallback = "rule_based"         # What to use if provider unavailable
+
+[llm.anthropic]
+# API key via ANTHROPIC_API_KEY env var (never stored in config)
+
+[llm.ollama]
+base_url = "http://localhost:11434"
+model = "llama3.2"
+
+[llm.vertexai]
+project_id = "my-project"
+location = "us-central1"
+model = "gemini-2.0-flash"
+```
+
+#### Capability Tiers
+
+| Feature | Express Mode (default) | Deep Mode (optional) |
+|---------|----------------------|---------------------|
+| 10-question discovery | Local only | Local only |
+| AI Challenger | N/A | LLM or rule-based fallback |
+| Domain Research | N/A | Web search + LLM or empty briefing |
+| Customer Simulator | N/A | LLM or rule-based fallback |
+| Network required | Never | Only if LLM provider is cloud-based |
+| Works offline | Always | Yes (degrades to rule-based) |
+
+#### SOLID Compliance
+
+| Principle | How |
+|-----------|-----|
+| **S** | Each adapter has one job: translate between port interface and LLM client |
+| **O** | New providers added by implementing LLMClient, no existing code changes |
+| **L** | All LLMClient implementations honor the same Protocol contract |
+| **I** | Domain-specific ports expose only domain-relevant methods |
+| **D** | Domain depends on ChallengerPort Protocol, not anthropic SDK |
+
+_(Source: AI-assisted DDD discovery spike section 9; Claude Agent SDK evaluation)_
+
 ## 8. `.alty/` Project Directory
 
 Every project initialized with `alty init` gets this directory:
@@ -1108,8 +1210,12 @@ _(Source: PRD section 5.1; knowledge base spike section 4)_
 | pytest           | Test execution quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
 | import-linter    | Architecture fitness function execution                          | subprocess (`lint-imports`) | None (local) | Architecture Testing                   |
 | pytestarch       | Architecture fitness function execution                          | pytest (in-process)         | None (local) | Architecture Testing                   |
+| Anthropic API    | LLM for Deep mode (Challenger, Simulator, Research)              | `anthropic` SDK (HTTPS)     | API key (env) | Guided Discovery (Deep mode only)     |
+| Ollama (future)  | Local LLM alternative for Deep mode                             | HTTP REST API               | None (local) | Guided Discovery (Deep mode only)      |
+| Web search       | Domain research via RLM adapter                                  | HTTPS                       | None          | Guided Discovery (Deep mode only)      |
 
-All integrations are local. No network calls, no cloud dependencies, no paid APIs.
+Express mode integrations are local-only. Deep mode optionally uses LLM APIs and web
+search with graceful local fallback when unavailable.
 
 _(Source: PRD section 6 constraints; CLI+MCP design spike section 2)_
 
@@ -1138,7 +1244,7 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | No silent installs            | Tool installation (beads, trivy, shannon) is optional and shown separately in preview. _(PRD section 5.2)_                                                                                  |
 | Global config detection       | `alty detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. _(PRD section 5.2.1)_                             |
 | No secrets in generated files | Generated configs contain project structure and domain terms, not API keys, passwords, or personal information.                                                                             |
-| No network access             | All operations are local-only. No cloud dependencies, no phone-home, no telemetry. _(PRD section 6 budget constraints)_                                                                     |
+| No network access (Express)   | Express mode is fully local. Deep mode optionally uses LLM APIs + web search with local fallback. API keys via env vars only, never stored in project files. No telemetry. _(PRD section 6; updated by iterative discovery spike)_ |
 
 ## 11. Deployment
 
@@ -1209,6 +1315,7 @@ From `docs/PRD.md` section 6:
 | ADR-010 | 13 application-layer ports (Protocols) shared between CLI and MCP                              | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
 | ADR-011 | Composition root at `src/infrastructure/composition.py`                                        | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
 | ADR-012 | MCP server is an infrastructure adapter, not a bounded context                                 | Accepted | `docs/research/20260222_cli_mcp_design.md` section 7            |
+| ADR-013 | LLM via `anthropic` SDK (not Agent SDK) behind infrastructure-internal LLMClient Protocol. Domain-specific ports (ChallengerPort, SimulatorPort) at app layer. Provider-swappable: Anthropic (default), Ollama, Vertex AI. Every Deep mode feature has local rule-based fallback. | Accepted | `docs/research/20260305_ai_assisted_ddd_session_design.md`; Claude Agent SDK evaluation |
 
 ## 14. Open Architecture Decisions
 
