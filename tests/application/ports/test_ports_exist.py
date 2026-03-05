@@ -106,7 +106,7 @@ EXPECTED_METHODS: dict[str, list[str]] = {
     "QualityGatePort": ["check"],
     "KnowledgeLookupPort": ["lookup", "list_tools", "list_versions", "list_topics"],
     "DocHealthPort": ["check", "check_knowledge"],
-    "DocReviewPort": ["mark_reviewed", "review_status"],
+    "DocReviewPort": ["reviewable_docs", "mark_reviewed", "mark_all_reviewed"],
     "TicketHealthPort": ["report"],
     "PersonaPort": ["list_personas", "generate"],
     "DriftDetectionPort": ["detect"],
@@ -259,7 +259,7 @@ def test_tool_detection_port_method_signatures():
 
 
 # ---------------------------------------------------------------------------
-# 9. DocReviewPort has: mark_reviewed, review_status
+# 9. DocReviewPort has: reviewable_docs, mark_reviewed, mark_all_reviewed
 # ---------------------------------------------------------------------------
 
 
@@ -267,9 +267,12 @@ def test_doc_review_port_method_signatures():
     """DocReviewPort methods have correct parameter names."""
     from src.application.ports import DocReviewPort
 
+    sig = inspect.signature(DocReviewPort.reviewable_docs)
+    assert "project_dir" in sig.parameters
+
     sig = inspect.signature(DocReviewPort.mark_reviewed)
     assert "doc_path" in sig.parameters
-    assert "reviewer" in sig.parameters
+    assert "project_dir" in sig.parameters
 
-    sig = inspect.signature(DocReviewPort.review_status)
+    sig = inspect.signature(DocReviewPort.mark_all_reviewed)
     assert "project_dir" in sig.parameters

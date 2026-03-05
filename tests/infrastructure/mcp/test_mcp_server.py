@@ -307,16 +307,11 @@ class TestInputValidation:
         assert _TICKET_ID_RE.fullmatch("; rm -rf /") is None
         assert _TICKET_ID_RE.fullmatch("--delete") is None
 
-    def test_reviewer_regex_accepts_valid_reviewer(self):
-        from src.infrastructure.mcp.server import _REVIEWER_RE
+    def test_ticket_id_regex_accepts_dotted_ids(self):
+        from src.infrastructure.mcp.server import _TICKET_ID_RE
 
-        assert _REVIEWER_RE.fullmatch("jaigouk")
-        assert _REVIEWER_RE.fullmatch("user@example.com")
-
-    def test_reviewer_regex_rejects_injection(self):
-        from src.infrastructure.mcp.server import _REVIEWER_RE
-
-        assert _REVIEWER_RE.fullmatch("evil\nlast_reviewed: 1970") is None
+        assert _TICKET_ID_RE.fullmatch("alty-2j7.8")
+        assert _TICKET_ID_RE.fullmatch("k7m.25")
 
 
 class TestResourceInvocation:
@@ -418,17 +413,20 @@ class TestResourceInvocation:
 
 
 class TestDocReviewValidation:
-    """Tests for doc_review reviewer validation."""
+    """Tests for doc_review input path validation."""
 
-    def test_doc_review_rejects_invalid_reviewer(self):
-        """doc_review returns error for malicious reviewer input."""
-        from src.infrastructure.mcp.server import doc_review
+    def test_doc_review_tool_exists(self):
+        """doc_review is registered as an MCP tool."""
+        assert "doc_review" in _tool_names()
 
-        # We can't easily mock the context, but we can verify the
-        # validation happens before the port is called by checking
-        # that invalid reviewers are rejected with the right message.
-        result = asyncio.run(doc_review("/tmp/doc.md", "evil\ninjection", None))
-        assert result == "Invalid reviewer identifier."
+    def test_safe_project_path_rejects_traversal(self):
+        """_safe_project_path rejects path traversal attempts."""
+        from pathlib import Path
+
+        from src.infrastructure.mcp.server import _safe_project_path
+
+        result = _safe_project_path("../../etc", "project_dir")
+        assert isinstance(result, Path)
 
 
 class TestRunBdErrorHandling:

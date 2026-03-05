@@ -31,7 +31,6 @@ from src.infrastructure.session.session_store import SessionStore
 
 _SAFE_NAME_RE = re.compile(r"^[a-zA-Z0-9_\-]{1,64}$")
 _TICKET_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._\-]{0,63}$")
-_REVIEWER_RE = re.compile(r"^[a-zA-Z0-9_\-.@]{1,100}$")
 
 
 def _safe_component(value: str, label: str) -> str:
@@ -218,12 +217,14 @@ async def doc_health(project_dir: str, ctx: McpContext) -> str:
 
 
 @mcp.tool()
-async def doc_review(doc_path: str, reviewer: str, ctx: McpContext) -> str:
+async def doc_review(doc_path: str, project_dir: str, ctx: McpContext) -> str:
     """Mark a document as reviewed."""
-    if not _REVIEWER_RE.fullmatch(reviewer):
-        return "Invalid reviewer identifier."
     app = _get_app(ctx)
-    return app.doc_review.mark_reviewed(_safe_project_path(doc_path, "doc_path"), reviewer)
+    result = app.doc_review.mark_reviewed(
+        doc_path=doc_path,
+        project_dir=_safe_project_path(project_dir, "project_dir"),
+    )
+    return f"Reviewed: {result.path} (last_reviewed: {result.new_date})"
 
 
 @mcp.tool()

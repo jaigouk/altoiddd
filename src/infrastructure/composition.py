@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from datetime import date
     from pathlib import Path
 
     from src.application.ports.artifact_generation_port import ArtifactRendererPort
@@ -29,7 +30,11 @@ if TYPE_CHECKING:
     from src.application.ports.ticket_generation_port import TicketGenerationPort
     from src.application.ports.ticket_health_port import TicketHealthPort
     from src.application.ports.tool_detection_port import ToolDetectionPort
-    from src.domain.models.doc_health import DocHealthReport
+    from src.domain.models.doc_health import (
+        DocHealthReport,
+        DocReviewResult,
+        DocStatus,
+    )
     from src.domain.models.follow_up_intent import FollowUpAuditResult
     from src.domain.models.ticket_freshness import TicketHealthReport
 
@@ -125,12 +130,28 @@ class _StubDocHealth:
 
 
 class _StubDocReview:
-    """Stub DocReviewPort -- raises NotImplementedError."""
+    """Stub DocReviewPort -- raises NotImplementedError.
 
-    def mark_reviewed(self, doc_path: Path, reviewer: str) -> str:
+    Deprecated: replaced by DocReviewHandler in create_app().
+    Kept for reference only.
+    """
+
+    def reviewable_docs(self, project_dir: Path) -> tuple[DocStatus, ...]:
         raise NotImplementedError
 
-    def review_status(self, project_dir: Path) -> str:
+    def mark_reviewed(
+        self,
+        doc_path: str,
+        project_dir: Path,
+        review_date: date | None = None,
+    ) -> DocReviewResult:
+        raise NotImplementedError
+
+    def mark_all_reviewed(
+        self,
+        project_dir: Path,
+        review_date: date | None = None,
+    ) -> tuple[DocReviewResult, ...]:
         raise NotImplementedError
 
 
@@ -158,11 +179,15 @@ def create_app() -> AppContext:
     Real adapters are used for ports with concrete implementations.
     Stubs remain for ports not yet implemented (Phase 3+).
     """
+    from src.application.commands.doc_review_handler import DocReviewHandler
     from src.application.commands.quality_gate_handler import QualityGateHandler
     from src.infrastructure.external.beads_ticket_health_adapter import (
         BeadsTicketHealthAdapter,
     )
     from src.infrastructure.external.subprocess_gate_runner import SubprocessGateRunner
+    from src.infrastructure.persistence.filesystem_doc_scanner import (
+        FilesystemDocScanner,
+    )
     from src.infrastructure.persistence.filesystem_file_writer import (
         FilesystemFileWriter,
     )
@@ -185,7 +210,7 @@ def create_app() -> AppContext:
         config_generation=_StubConfigGeneration(),
         quality_gate=QualityGateHandler(runner=SubprocessGateRunner()),
         doc_health=_StubDocHealth(),
-        doc_review=_StubDocReview(),
+        doc_review=DocReviewHandler(scanner=FilesystemDocScanner()),
         ticket_health=BeadsTicketHealthAdapter(),
         spike_follow_up=_StubSpikeFollowUp(),
         file_writer=FilesystemFileWriter(),

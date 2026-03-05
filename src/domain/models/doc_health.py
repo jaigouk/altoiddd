@@ -92,6 +92,19 @@ class DocHealthReport:
         return self.issue_count > 0
 
 
+@dataclass(frozen=True)
+class DocReviewResult:
+    """Result of marking a document as reviewed.
+
+    Attributes:
+        path: Relative path to the reviewed document.
+        new_date: The date stamped as last_reviewed.
+    """
+
+    path: str
+    new_date: date
+
+
 def create_doc_status(
     path: str,
     exists: bool,

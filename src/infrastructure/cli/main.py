@@ -555,10 +555,66 @@ def doc_health(
         raise typer.Exit(code=1)
 
 
+def _get_project_dir() -> Path:
+    """Return the current working directory as project root."""
+    from pathlib import Path
+
+    return Path.cwd()
+
+
 @app.command(name="doc-review")
-def doc_review() -> None:
+def doc_review(
+    doc_path: str = typer.Argument(
+        None,
+        help="Relative path to the document to mark as reviewed.",
+    ),
+    all_docs: bool = typer.Option(
+        False,
+        "--all",
+        help="Mark all stale docs as reviewed.",
+    ),
+) -> None:
     """Mark documentation as reviewed."""
-    typer.echo("alty doc-review: not yet implemented")
+    from src.application.commands.doc_review_handler import DocReviewHandler
+    from src.domain.models.errors import InvariantViolationError
+    from src.infrastructure.persistence.filesystem_doc_scanner import (
+        FilesystemDocScanner,
+    )
+
+    project_dir = _get_project_dir()
+    handler = DocReviewHandler(scanner=FilesystemDocScanner())
+
+    if doc_path is not None and all_docs:
+        typer.echo("Error: cannot specify both a doc path and --all", err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        if doc_path is not None:
+            result = handler.mark_reviewed(doc_path=doc_path, project_dir=project_dir)
+            typer.echo(f"Reviewed: {result.path} (last_reviewed: {result.new_date})")
+            return
+
+        if all_docs:
+            results = handler.mark_all_reviewed(project_dir=project_dir)
+            if not results:
+                typer.echo("All docs are fresh — no docs need review.")
+                return
+            for r in results:
+                typer.echo(f"Reviewed: {r.path} (last_reviewed: {r.new_date})")
+            return
+
+        # No args: show reviewable docs
+        reviewable = handler.reviewable_docs(project_dir=project_dir)
+        if not reviewable:
+            typer.echo("All docs are fresh — no docs need review.")
+            return
+        typer.echo("Docs due for review:")
+        for doc in reviewable:
+            days = f" ({doc.days_since}d ago)" if doc.days_since is not None else ""
+            typer.echo(f"  {doc.path}{days}")
+    except InvariantViolationError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from None
 
 
 def _build_ticket_health_report() -> TicketHealthReport:
