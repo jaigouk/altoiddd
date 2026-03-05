@@ -238,12 +238,13 @@ class TestRemainingStubs:
         with pytest.raises(NotImplementedError):
             ctx.doc_review.mark_reviewed(Path("."), "reviewer")
 
-    def test_ticket_health_raises(self):
-        from pathlib import Path
+    def test_ticket_health_is_real_adapter(self):
+        from src.infrastructure.external.beads_ticket_health_adapter import (
+            BeadsTicketHealthAdapter,
+        )
 
         ctx = create_app()
-        with pytest.raises(NotImplementedError):
-            ctx.ticket_health.report(Path("."))
+        assert isinstance(ctx.ticket_health, BeadsTicketHealthAdapter)
 
     def test_spike_follow_up_raises(self):
         from pathlib import Path

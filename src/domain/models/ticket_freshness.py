@@ -116,6 +116,20 @@ class TicketHealthReport:
             return 100.0
         return (self.total_open - self.review_needed_count) / self.total_open * 100
 
+    @property
+    def freshness_label(self) -> str:
+        """Human-readable threshold label for the freshness percentage.
+
+        Returns:
+            'healthy' for >= 90%, 'acceptable' for >= 70%, 'action needed' otherwise.
+        """
+        pct = self.freshness_pct
+        if pct >= 90.0:
+            return "healthy"
+        if pct >= 70.0:
+            return "acceptable"
+        return "action needed"
+
 
 @dataclass(frozen=True)
 class EpicHealthSummary:

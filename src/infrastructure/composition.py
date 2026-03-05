@@ -135,7 +135,11 @@ class _StubDocReview:
 
 
 class _StubTicketHealth:
-    """Stub TicketHealthPort -- raises NotImplementedError."""
+    """Stub TicketHealthPort -- raises NotImplementedError.
+
+    Deprecated: replaced by BeadsTicketHealthAdapter in create_app().
+    Kept for reference only.
+    """
 
     def report(self, project_dir: Path) -> TicketHealthReport:
         raise NotImplementedError
@@ -155,6 +159,9 @@ def create_app() -> AppContext:
     Stubs remain for ports not yet implemented (Phase 3+).
     """
     from src.application.commands.quality_gate_handler import QualityGateHandler
+    from src.infrastructure.external.beads_ticket_health_adapter import (
+        BeadsTicketHealthAdapter,
+    )
     from src.infrastructure.external.subprocess_gate_runner import SubprocessGateRunner
     from src.infrastructure.persistence.filesystem_file_writer import (
         FilesystemFileWriter,
@@ -179,7 +186,7 @@ def create_app() -> AppContext:
         quality_gate=QualityGateHandler(runner=SubprocessGateRunner()),
         doc_health=_StubDocHealth(),
         doc_review=_StubDocReview(),
-        ticket_health=_StubTicketHealth(),
+        ticket_health=BeadsTicketHealthAdapter(),
         spike_follow_up=_StubSpikeFollowUp(),
         file_writer=FilesystemFileWriter(),
         artifact_renderer=MarkdownArtifactRenderer(),

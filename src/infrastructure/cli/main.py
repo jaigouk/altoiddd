@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from src.domain.models.discovery_values import Answer
     from src.domain.models.stack_profile import StackProfile
     from src.domain.models.tech_stack import TechStack
+    from src.domain.models.ticket_freshness import TicketHealthReport
     from src.infrastructure.composition import AppContext
 
 app = typer.Typer(
@@ -560,10 +561,40 @@ def doc_review() -> None:
     typer.echo("alty doc-review: not yet implemented")
 
 
+def _build_ticket_health_report() -> TicketHealthReport:
+    """Build a TicketHealthReport from the .beads directory."""
+    from pathlib import Path
+
+    from src.infrastructure.external.beads_ticket_health_adapter import (
+        BeadsTicketHealthAdapter,
+    )
+
+    adapter = BeadsTicketHealthAdapter()
+    return adapter.report(project_dir=Path.cwd())
+
+
 @app.command(name="ticket-health")
 def ticket_health() -> None:
     """Show ripple review report for tickets needing attention."""
-    typer.echo("alty ticket-health: not yet implemented")
+    report = _build_ticket_health_report()
+
+    pct = report.freshness_pct
+    label = report.freshness_label
+    flagged_count = report.review_needed_count
+
+    typer.echo(f"Ticket Freshness: {pct:.1f}% ({label})")
+    typer.echo(f"Open: {report.total_open}  Flagged: {flagged_count}")
+
+    if report.flagged_tickets:
+        typer.echo("")
+        typer.echo("Flagged tickets:")
+        for ft in report.flagged_tickets:
+            typer.echo(f"  {ft.ticket_id} — {ft.title}")
+            for flag in ft.flags:
+                typer.echo(f"    ↳ {flag.context_diff.summary}")
+
+    if report.has_issues:
+        raise typer.Exit(code=1)
 
 
 @app.command(name="version")

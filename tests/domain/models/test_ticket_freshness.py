@@ -395,6 +395,69 @@ class TestTicketHealthReport:
         )
         assert report.freshness_pct == 0.0
 
+    def test_freshness_label_healthy(self) -> None:
+        """>=90% freshness -> 'healthy'."""
+        from src.domain.models.ticket_freshness import TicketHealthReport
+
+        report = TicketHealthReport(flagged_tickets=(), total_open=10)
+        assert report.freshness_label == "healthy"
+
+    def test_freshness_label_acceptable(self) -> None:
+        """70-89% freshness -> 'acceptable'."""
+        from src.domain.models.ticket_freshness import (
+            ContextDiff,
+            FlaggedTicket,
+            FreshnessFlag,
+            TicketFreshnessStatus,
+            TicketHealthReport,
+        )
+
+        diff = ContextDiff(
+            summary="Change",
+            triggering_ticket_id="t.1",
+            produced_at="2026-03-01",
+        )
+        flag = FreshnessFlag(context_diff=diff, flagged_at="2026-03-01")
+        flagged = tuple(
+            FlaggedTicket(
+                ticket_id=f"t.{i}",
+                title=f"T{i}",
+                flags=(flag,),
+                status=TicketFreshnessStatus.REVIEW_NEEDED,
+            )
+            for i in range(2)
+        )
+        report = TicketHealthReport(flagged_tickets=flagged, total_open=10)
+        assert report.freshness_label == "acceptable"
+
+    def test_freshness_label_action_needed(self) -> None:
+        """<70% freshness -> 'action needed'."""
+        from src.domain.models.ticket_freshness import (
+            ContextDiff,
+            FlaggedTicket,
+            FreshnessFlag,
+            TicketFreshnessStatus,
+            TicketHealthReport,
+        )
+
+        diff = ContextDiff(
+            summary="Change",
+            triggering_ticket_id="t.1",
+            produced_at="2026-03-01",
+        )
+        flag = FreshnessFlag(context_diff=diff, flagged_at="2026-03-01")
+        flagged = tuple(
+            FlaggedTicket(
+                ticket_id=f"t.{i}",
+                title=f"T{i}",
+                flags=(flag,),
+                status=TicketFreshnessStatus.REVIEW_NEEDED,
+            )
+            for i in range(4)
+        )
+        report = TicketHealthReport(flagged_tickets=flagged, total_open=10)
+        assert report.freshness_label == "action needed"
+
 
 # ---------------------------------------------------------------------------
 # 6. OpenTicketData Value Object

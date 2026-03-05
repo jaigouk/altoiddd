@@ -7,9 +7,23 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
+
+import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
+
+
+@pytest.fixture(autouse=True)
+def _no_bd_cli() -> Iterator[None]:
+    """Prevent bd CLI calls in JSONL-focused tests."""
+    with patch(
+        "src.infrastructure.external.beads_ticket_reader.subprocess.run",
+        side_effect=FileNotFoundError,
+    ):
+        yield
 
 # ---------------------------------------------------------------------------
 # Helpers

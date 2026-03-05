@@ -65,7 +65,6 @@ class TestTopLevelCommandStubs:
     STUB_COMMANDS = [
         "detect",
         "doc-review",
-        "ticket-health",
     ]
 
     @pytest.mark.parametrize("command", STUB_COMMANDS)
