@@ -167,6 +167,51 @@ class TestDocHealthExitCodes:
         assert result.exit_code == 1
 
 
+class TestDocHealthBrokenLinks:
+    """Broken links shown in doc-health output."""
+
+    def test_broken_link_shown_in_output(self, tmp_path: Path) -> None:
+        """Broken link target appears in CLI output."""
+        doc = tmp_path / "docs" / "PRD.md"
+        doc.parent.mkdir(parents=True, exist_ok=True)
+        reviewed_date = date.today() - timedelta(days=5)
+        doc.write_text(
+            f"---\nlast_reviewed: {reviewed_date.isoformat()}\n---\n\n"
+            "See [setup](setup.md) for details.\n"
+        )
+        _create_doc_with_frontmatter(tmp_path / "docs" / "DDD.md", days_ago=5)
+        _create_doc_with_frontmatter(
+            tmp_path / "docs" / "ARCHITECTURE.md", days_ago=5,
+        )
+
+        result = runner.invoke(
+            app, ["doc-health", str(tmp_path)], catch_exceptions=False,
+        )
+
+        assert "setup.md" in result.output
+        assert result.exit_code == 1
+
+    def test_broken_link_exit_code_one(self, tmp_path: Path) -> None:
+        """Exit code 1 when broken links found even if all docs are OK."""
+        doc = tmp_path / "docs" / "PRD.md"
+        doc.parent.mkdir(parents=True, exist_ok=True)
+        reviewed_date = date.today() - timedelta(days=5)
+        doc.write_text(
+            f"---\nlast_reviewed: {reviewed_date.isoformat()}\n---\n\n"
+            "See [gone](gone.md).\n"
+        )
+        _create_doc_with_frontmatter(tmp_path / "docs" / "DDD.md", days_ago=5)
+        _create_doc_with_frontmatter(
+            tmp_path / "docs" / "ARCHITECTURE.md", days_ago=5,
+        )
+
+        result = runner.invoke(
+            app, ["doc-health", str(tmp_path)], catch_exceptions=False,
+        )
+
+        assert result.exit_code == 1
+
+
 class TestDocHealthProjectDirHandling:
     """Handle project_dir argument edge cases."""
 

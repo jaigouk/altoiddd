@@ -544,6 +544,11 @@ def doc_health(
         typer.echo(
             f"{icon} {status.path:<40s} {status.status.name}{detail}"
         )
+        for bl in status.broken_links:
+            typer.echo(
+                f"       -> line {bl.line_number}: "
+                f"[{bl.link_text}]({bl.target}) — {bl.reason}"
+            )
 
     typer.echo("")
     typer.echo(

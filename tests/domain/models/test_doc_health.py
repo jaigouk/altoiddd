@@ -11,6 +11,7 @@ from datetime import date, timedelta
 import pytest
 
 from src.domain.models.doc_health import (
+    BrokenLink,
     DocHealthReport,
     DocHealthStatus,
     DocRegistryEntry,
@@ -193,3 +194,41 @@ class TestDocHealthReport:
         report = DocHealthReport(statuses=())
         with pytest.raises(AttributeError):
             report.statuses = ()  # type: ignore[misc]
+
+    def test_report_has_issues_with_broken_links(self) -> None:
+        """Report has_issues is True when OK doc carries broken links."""
+        bl = BrokenLink(line_number=5, link_text="ref", target="gone.md", reason="not found")
+        statuses = (
+            DocStatus(
+                path="a.md",
+                status=DocHealthStatus.OK,
+                broken_links=(bl,),
+            ),
+        )
+        report = DocHealthReport(statuses=statuses)
+        assert report.has_issues is True
+        assert report.issue_count == 1
+
+
+# ---------------------------------------------------------------------------
+# 5. BrokenLink value object
+# ---------------------------------------------------------------------------
+
+
+class TestBrokenLink:
+    def test_broken_link_vo_immutable(self) -> None:
+        bl = BrokenLink(line_number=10, link_text="ref", target="gone.md", reason="not found")
+        with pytest.raises(AttributeError):
+            bl.target = "other.md"  # type: ignore[misc]
+
+    def test_doc_status_broken_links_default_empty(self) -> None:
+        status = DocStatus(path="a.md", status=DocHealthStatus.OK)
+        assert status.broken_links == ()
+
+    def test_broken_link_rejects_zero_line_number(self) -> None:
+        with pytest.raises(InvariantViolationError, match="line_number must be >= 1"):
+            BrokenLink(line_number=0, link_text="x", target="x.md", reason="test")
+
+    def test_broken_link_rejects_negative_line_number(self) -> None:
+        with pytest.raises(InvariantViolationError, match="line_number must be >= 1"):
+            BrokenLink(line_number=-1, link_text="x", target="x.md", reason="test")

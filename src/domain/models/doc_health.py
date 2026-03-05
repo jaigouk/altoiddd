@@ -26,6 +26,28 @@ class DocHealthStatus(enum.Enum):
 
 
 @dataclass(frozen=True)
+class BrokenLink:
+    """A broken internal markdown link found in a document.
+
+    Attributes:
+        line_number: Line where the link appears (1-based).
+        link_text: Display text of the link.
+        target: Raw link target path.
+        reason: Why the link is broken (e.g., "target not found").
+    """
+
+    line_number: int
+    link_text: str
+    target: str
+    reason: str
+
+    def __post_init__(self) -> None:
+        if self.line_number < 1:
+            msg = f"line_number must be >= 1, got {self.line_number}"
+            raise InvariantViolationError(msg)
+
+
+@dataclass(frozen=True)
 class DocRegistryEntry:
     """A document registered for health tracking.
 
@@ -64,6 +86,7 @@ class DocStatus:
     days_since: int | None = None
     review_interval_days: int = 30
     owner: str | None = None
+    broken_links: tuple[BrokenLink, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -78,8 +101,12 @@ class DocHealthReport:
 
     @property
     def issue_count(self) -> int:
-        """Count of documents with non-OK status."""
-        return sum(1 for s in self.statuses if s.status != DocHealthStatus.OK)
+        """Count of documents with non-OK status or broken links."""
+        return sum(
+            1
+            for s in self.statuses
+            if s.status != DocHealthStatus.OK or s.broken_links
+        )
 
     @property
     def total_checked(self) -> int:
@@ -88,7 +115,7 @@ class DocHealthReport:
 
     @property
     def has_issues(self) -> bool:
-        """Whether any document has a non-OK status."""
+        """Whether any document has a non-OK status or broken links."""
         return self.issue_count > 0
 
 
@@ -112,6 +139,7 @@ def create_doc_status(
     review_interval_days: int = 30,
     owner: str | None = None,
     today: date | None = None,
+    broken_links: tuple[BrokenLink, ...] = (),
 ) -> DocStatus:
     """Create DocStatus with auto-calculated status and days_since.
 
@@ -131,6 +159,7 @@ def create_doc_status(
             status=DocHealthStatus.MISSING,
             review_interval_days=review_interval_days,
             owner=owner,
+            broken_links=broken_links,
         )
     if last_reviewed is None:
         return DocStatus(
@@ -138,6 +167,7 @@ def create_doc_status(
             status=DocHealthStatus.NO_FRONTMATTER,
             review_interval_days=review_interval_days,
             owner=owner,
+            broken_links=broken_links,
         )
     effective_today = today if today is not None else date.today()
     days = (effective_today - last_reviewed).days
@@ -149,4 +179,5 @@ def create_doc_status(
         days_since=days,
         review_interval_days=review_interval_days,
         owner=owner,
+        broken_links=broken_links,
     )

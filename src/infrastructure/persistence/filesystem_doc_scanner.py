@@ -12,6 +12,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from src.domain.models.doc_health import (
+    BrokenLink,
     DocRegistryEntry,
     DocStatus,
     create_doc_status,
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 _LAST_REVIEWED_RE = re.compile(r"^last_reviewed:\s*(.+)$", re.MULTILINE)
 _PLACEHOLDER_RE = re.compile(r"^[A-Z]{4}-[A-Z]{2}-[A-Z]{2}$")
+_MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)]*)\)")
 
 
 def _parse_last_reviewed(content: str) -> date | None:
@@ -112,6 +114,70 @@ def _parse_toml_docs(content: str) -> list[dict[str, str | int]]:
     return entries
 
 
+def _extract_markdown_links(content: str) -> list[tuple[int, str, str]]:
+    """Extract markdown links from file content.
+
+    Returns (line_number, link_text, target) tuples. Skips image links
+    (preceded by !) via negative lookbehind in the regex.
+
+    Args:
+        content: Full markdown file content.
+
+    Returns:
+        List of (line_number, link_text, target) tuples.
+    """
+    results: list[tuple[int, str, str]] = []
+    in_fence = False
+    for lineno, line in enumerate(content.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        results.extend(
+            (lineno, m.group(1), m.group(2))
+            for m in _MARKDOWN_LINK_RE.finditer(line)
+        )
+    return results
+
+
+def _check_broken_links(
+    links: list[tuple[int, str, str]],
+    doc_path: Path,
+) -> tuple[BrokenLink, ...]:
+    """Check extracted links for broken targets.
+
+    Skips external URLs (http/https/mailto) and pure anchor links (#).
+    Resolves relative paths from the doc file's directory.
+
+    Args:
+        links: List of (line_number, link_text, target) tuples.
+        doc_path: Absolute path to the document file.
+
+    Returns:
+        Tuple of BrokenLink for each broken link found.
+    """
+    broken: list[BrokenLink] = []
+    for lineno, text, target in links:
+        if not target:
+            broken.append(BrokenLink(lineno, text, target, "empty target"))
+            continue
+        if target.startswith(("http://", "https://", "mailto:")):
+            continue
+        if target.startswith("#"):
+            continue
+        path_part = target.split("#")[0]
+        if not path_part:
+            continue
+        resolved = doc_path.parent / path_part
+        if not resolved.exists():
+            broken.append(
+                BrokenLink(lineno, text, target, "target not found"),
+            )
+    return tuple(broken)
+
+
 class FilesystemDocScanner:
     """Scans the filesystem for document health status.
 
@@ -179,10 +245,13 @@ class FilesystemDocScanner:
             exists = file_path.is_file()
 
             last_reviewed: date | None = None
+            broken_links: tuple[BrokenLink, ...] = ()
             if exists:
                 try:
                     content = file_path.read_text()
                     last_reviewed = _parse_last_reviewed(content)
+                    links = _extract_markdown_links(content)
+                    broken_links = _check_broken_links(links, file_path)
                 except OSError:
                     pass
 
@@ -193,6 +262,7 @@ class FilesystemDocScanner:
                     last_reviewed=last_reviewed,
                     review_interval_days=entry.review_interval_days,
                     owner=entry.owner,
+                    broken_links=broken_links,
                 )
             )
 
@@ -237,10 +307,13 @@ class FilesystemDocScanner:
             if any(part in exclude_dirs for part in parts):
                 continue
 
-            # Check frontmatter
+            # Check frontmatter and links
+            broken_links: tuple[BrokenLink, ...] = ()
             try:
                 content = md_file.read_text()
                 last_reviewed = _parse_last_reviewed(content)
+                links = _extract_markdown_links(content)
+                broken_links = _check_broken_links(links, md_file)
             except OSError:
                 last_reviewed = None
 
@@ -249,6 +322,7 @@ class FilesystemDocScanner:
                     path=rel_path,
                     exists=True,
                     last_reviewed=last_reviewed,
+                    broken_links=broken_links,
                 )
             )
 
