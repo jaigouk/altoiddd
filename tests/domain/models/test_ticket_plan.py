@@ -265,6 +265,20 @@ class TestPromoteStub:
         # PythonUvProfile overrides GenericProfile — gates appear
         assert "## Quality Gates" in promoted.description
 
+    def test_promote_stub_preserves_depth(self):
+        """Promoted ticket retains its depth metadata."""
+        model = _make_model([("Logging", SubdomainClassification.GENERIC)])
+        plan = TicketPlan()
+        plan.generate_plan(model)
+
+        stub_ticket = plan.tickets[0]
+        original_depth = stub_ticket.depth
+
+        plan.promote_stub(stub_ticket.ticket_id)
+        promoted = plan.tickets[0]
+
+        assert promoted.depth == original_depth
+
 
 # ---------------------------------------------------------------------------
 # 6. Approve

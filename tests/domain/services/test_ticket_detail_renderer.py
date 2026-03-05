@@ -96,20 +96,21 @@ class TestStandardDetail:
 
 
 class TestStubDetail:
-    def test_stub_is_minimal(self):
+    def test_stub_matches_template(self):
         agg = _make_aggregate()
         result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB, _PROFILE)
 
-        assert "## Goal" in result
+        assert "Stub ticket" in result
+        assert "## Goal / Problem" in result
         assert "Integrate" in result
-        assert "## Acceptance Criteria" in result
-        assert "Boundary test passes" in result
+        assert "## DDD Alignment" in result
+        assert "## Risks / Dependencies" in result
 
-    def test_stub_has_no_extra_sections(self):
+    def test_stub_has_no_implementation_sections(self):
         agg = _make_aggregate()
         result = TicketDetailRenderer.render(agg, TicketDetailLevel.STUB, _PROFILE)
 
-        assert "## DDD Alignment" not in result
         assert "## Design" not in result
         assert "## Steps" not in result
         assert "## SOLID Mapping" not in result
+        assert "## TDD" not in result

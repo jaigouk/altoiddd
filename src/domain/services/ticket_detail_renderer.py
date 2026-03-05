@@ -117,13 +117,28 @@ class TicketDetailRenderer:
 
     @staticmethod
     def _render_stub(aggregate: AggregateDesign) -> str:
-        """Render STUB detail: minimal placeholder for Generic subdomains."""
+        """Render STUB detail: matches beads-stub-template.md format.
+
+        Includes stub notice, Goal / Problem, DDD Alignment table,
+        and Risks / Dependencies section.
+        """
         lines: list[str] = [
-            "## Goal",
-            (f"Integrate `{aggregate.context_name}` boundary for `{aggregate.name}`."),
+            "> **Stub ticket.** Full specification will be added when blockers are resolved.",
             "",
-            "## Acceptance Criteria",
-            "- [ ] Boundary test passes",
+            "## Goal / Problem",
+            "",
+            f"Integrate `{aggregate.context_name}` boundary for `{aggregate.name}`.",
+            "",
+            "## DDD Alignment",
+            "",
+            "| Aspect | Detail |",
+            "|--------|--------|",
+            f"| Bounded Context | {aggregate.context_name} |",
+            "| Layer | domain |",
+            "",
+            "## Risks / Dependencies",
+            "",
+            "- Blocked by: (see formal dependencies)",
         ]
         return "\n".join(lines)
 

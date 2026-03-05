@@ -26,12 +26,15 @@ from src.domain.models.ticket_values import (
     GeneratedEpic,
     GeneratedTicket,
     TicketDetailLevel,
+    classify_tier,
+    tier_to_detail_level,
 )
 from src.domain.services.ticket_detail_renderer import TicketDetailRenderer
 
 if TYPE_CHECKING:
     from src.domain.events.ticket_events import TicketPlanApproved
     from src.domain.models.domain_model import DomainModel
+    from src.domain.models.domain_values import SubdomainClassification
     from src.domain.models.stack_profile import StackProfile
 
 
@@ -188,6 +191,14 @@ class TicketPlan:
         # Compute topological order (INV2, INV3)
         self._dependency_order = self._compute_dependency_order()
 
+        # Two-tier generation: compute depths and reclassify (alty-2j7.11)
+        # classification is guaranteed non-None (validated at line 127)
+        classification_by_context: dict[str, SubdomainClassification] = {
+            bc.name: bc.classification  # type: ignore[misc]
+            for bc in contexts
+        }
+        self._reclassify_by_depth(classification_by_context, profile)
+
     def preview(self) -> str:
         """Return a human-readable preview of the generated plan.
 
@@ -268,6 +279,7 @@ class TicketPlan:
                     bounded_context_name=ticket.bounded_context_name,
                     aggregate_name=ticket.aggregate_name,
                     dependencies=ticket.dependencies,
+                    depth=ticket.depth,
                 )
                 return
 
@@ -321,7 +333,110 @@ class TicketPlan:
             )
         )
 
+    def promotion_eligible_ids(self, resolved_ids: frozenset[str]) -> frozenset[str]:
+        """Return IDs of STUB tickets whose dependencies are all resolved.
+
+        Args:
+            resolved_ids: Ticket IDs that have been completed/resolved.
+
+        Returns:
+            Frozenset of ticket IDs eligible for promotion.
+        """
+        eligible: set[str] = set()
+        for ticket in self._tickets:
+            if ticket.detail_level != TicketDetailLevel.STUB:
+                continue
+            if not ticket.dependencies:
+                continue
+            if all(dep_id in resolved_ids for dep_id in ticket.dependencies):
+                eligible.add(ticket.ticket_id)
+        return frozenset(eligible)
+
     # -- Private helpers ------------------------------------------------------
+
+    def _compute_ticket_depths(self) -> dict[str, int]:
+        """Compute depth for each ticket using topological order.
+
+        Depth 0 = tickets with no in-plan dependencies (roots).
+        Depth N = 1 + max(dependency depths).
+
+        Requires ``_dependency_order`` to be computed first.
+        """
+        if self._dependency_order is None:
+            msg = "Dependency order must be computed before depths"
+            raise InvariantViolationError(msg)
+
+        all_ids = {t.ticket_id for t in self._tickets}
+        deps_map = {
+            t.ticket_id: [d for d in t.dependencies if d in all_ids]
+            for t in self._tickets
+        }
+        depths: dict[str, int] = {}
+
+        for tid in self._dependency_order.ordered_ids:
+            dep_depths = [depths[d] for d in deps_map[tid] if d in depths]
+            depths[tid] = (max(dep_depths) + 1) if dep_depths else 0
+
+        return depths
+
+    def _reclassify_by_depth(
+        self,
+        classification_by_context: dict[str, SubdomainClassification],
+        profile: StackProfile,
+    ) -> None:
+        """Reclassify ticket detail levels using depth-based two-tier rules.
+
+        Near-term tickets (depth ≤2) keep their classification-based detail.
+        Far-term tickets (depth >2) are downgraded to STUB.
+        Core tickets are always FULL regardless of depth.
+        """
+        depths = self._compute_ticket_depths()
+        updated: list[GeneratedTicket] = []
+
+        for ticket in self._tickets:
+            depth = depths.get(ticket.ticket_id, 0)
+            classification = classification_by_context[ticket.bounded_context_name]
+            tier = classify_tier(depth, classification)
+            new_level = tier_to_detail_level(tier, classification)
+
+            if new_level != ticket.detail_level:
+                # Re-render description at new detail level
+                agg = AggregateDesign(
+                    name=ticket.aggregate_name,
+                    context_name=ticket.bounded_context_name,
+                    root_entity=ticket.aggregate_name,
+                )
+                new_description = TicketDetailRenderer.render(agg, new_level, profile)
+                updated.append(
+                    GeneratedTicket(
+                        ticket_id=ticket.ticket_id,
+                        title=ticket.title,
+                        description=new_description,
+                        detail_level=new_level,
+                        epic_id=ticket.epic_id,
+                        bounded_context_name=ticket.bounded_context_name,
+                        aggregate_name=ticket.aggregate_name,
+                        dependencies=ticket.dependencies,
+                        depth=depth,
+                    )
+                )
+            else:
+                # Keep same ticket but add depth
+                updated.append(
+                    GeneratedTicket(
+                        ticket_id=ticket.ticket_id,
+                        title=ticket.title,
+                        description=ticket.description,
+                        detail_level=ticket.detail_level,
+                        epic_id=ticket.epic_id,
+                        bounded_context_name=ticket.bounded_context_name,
+                        aggregate_name=ticket.aggregate_name,
+                        dependencies=ticket.dependencies,
+                        depth=depth,
+                    )
+                )
+
+        self._tickets = updated
 
     def _assign_cross_bc_dependencies(
         self,
