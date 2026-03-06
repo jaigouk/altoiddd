@@ -43,6 +43,7 @@ packages = ["src"]
 
 [project.optional-dependencies]
 llm = ["anthropic>=0.40,<2.0"]
+search = ["ddgs>=9.0,<10.0"]
 
 # ── Dependency Groups ────────────────────────────────────────
 [dependency-groups]

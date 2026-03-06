@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from src.application.ports.discovery_port import DiscoveryPort
     from src.application.ports.doc_health_port import DocHealthPort
     from src.application.ports.doc_review_port import DocReviewPort
+    from src.application.ports.domain_research_port import DomainResearchPort
     from src.application.ports.file_writer_port import FileWriterPort
     from src.application.ports.fitness_generation_port import FitnessGenerationPort
     from src.application.ports.quality_gate_port import QualityGatePort
@@ -64,6 +65,7 @@ class AppContext:
     artifact_renderer: ArtifactRendererPort
     llm_client: LLMClient | None = None
     challenger: ChallengerPort | None = None
+    domain_research: DomainResearchPort | None = None
 
 
 # ── Stub implementations ────────────────────────────────────────────
