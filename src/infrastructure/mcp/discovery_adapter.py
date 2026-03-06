@@ -18,6 +18,7 @@ from src.domain.models.discovery_session import DiscoverySession
 from src.infrastructure.session.session_store import SessionStore
 
 if TYPE_CHECKING:
+    from src.domain.models.discovery_values import DiscoveryMode
     from src.domain.models.tech_stack import TechStack
 
 
@@ -44,6 +45,13 @@ class DiscoveryAdapter:
     def start_session(self, readme_content: str) -> DiscoverySession:
         """Start a new discovery session and store it."""
         session = DiscoverySession(readme_content=readme_content)
+        self._store.put(session.session_id, session)
+        return session
+
+    def set_mode(self, session_id: str, mode: DiscoveryMode) -> DiscoverySession:
+        """Set the discovery mode on a session."""
+        session = self.get_session(session_id)
+        session.set_mode(mode)
         self._store.put(session.session_id, session)
         return session
 

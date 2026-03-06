@@ -265,7 +265,10 @@ class TestWriteArtifacts:
 
         contents = {c[0][0].name: c[0][1] for c in writer.write_file.call_args_list}
         assert contents["PRD.md"] == "PRD body"
-        assert contents["DDD.md"] == "DDD body"
+        assert "DDD body" in contents["DDD.md"]
+        # Canvas content is appended after DDD body
+        if preview.canvas_content:
+            assert preview.canvas_content in contents["DDD.md"]
         assert contents["ARCHITECTURE.md"] == "ARCH body"
 
     def test_write_does_not_re_render(self) -> None:

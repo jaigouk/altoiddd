@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# git-review — launch Claude Code review for uncommitted changes or a specific target
+#
+# Usage:
+#   git review                  # review all uncommitted changes
+#   git review --staged         # review only staged changes
+#   git review <commit>         # review a specific commit
+#   git review <branch>         # review branch vs main
+#   git review <file>           # review a specific file
+#
+# How it works:
+#   Git automatically finds executables named "git-<cmd>" on PATH and
+#   exposes them as "git <cmd>". Add this project's bin/ to PATH or
+#   symlink this file into a directory already on your PATH.
+#
+# Setup (one-time):
+#   # Option A: add to PATH in your shell profile
+#   export PATH="$PATH:$(git rev-parse --show-toplevel)/bin"
+#
+#   # Option B: git alias (per-repo)
+#   git config alias.review '!$(git rev-parse --show-toplevel)/bin/git-review'
+#
+#   # Option C: global git alias
+#   git config --global alias.review '!$(git rev-parse --show-toplevel)/bin/git-review'
+
+set -euo pipefail
+
+TARGET="${1:-}"
+
+# Build the Claude Code prompt
+if [ -z "$TARGET" ]; then
+    PROMPT="/code-review"
+elif [ "$TARGET" = "--staged" ]; then
+    PROMPT="/code-review --staged"
+else
+    PROMPT="/code-review $TARGET"
+fi
+
+# Check if claude is available
+if ! command -v claude >/dev/null 2>&1; then
+    echo "Error: claude CLI not found. Install Claude Code first." >&2
+    echo "  https://docs.anthropic.com/en/docs/claude-code" >&2
+    exit 1
+fi
+
+echo "Starting code review..."
+exec claude --print "$PROMPT"

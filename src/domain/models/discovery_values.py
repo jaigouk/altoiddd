@@ -54,6 +54,21 @@ class QuestionPhase(enum.Enum):
     BOUNDARIES = "boundaries"
 
 
+class DiscoveryMode(enum.Enum):
+    """Discovery thoroughness level."""
+
+    EXPRESS = "express"
+    DEEP = "deep"
+
+
+class DiscoveryRound(enum.Enum):
+    """Which round of discovery is active."""
+
+    DISCOVERY = "discovery"
+    CHALLENGE = "challenge"
+    SIMULATE = "simulate"
+
+
 @dataclass(frozen=True)
 class Answer:
     """A user's response to a single discovery question.

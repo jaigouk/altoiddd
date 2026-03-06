@@ -20,6 +20,7 @@ from src.domain.models.domain_values import (
     DomainStory,
     SubdomainClassification,
 )
+from src.domain.services.canvas_assembler import CanvasAssembler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -58,6 +59,7 @@ class ArtifactPreview:
     prd_content: str
     ddd_content: str
     architecture_content: str
+    canvas_content: str
 
 
 class ArtifactGenerationHandler:
@@ -96,11 +98,15 @@ class ArtifactGenerationHandler:
         model = self._build_model(event)
         model.finalize()
 
+        canvases = CanvasAssembler.assemble(model)
+        canvas_md = CanvasAssembler.render_markdown(canvases)
+
         return ArtifactPreview(
             model=model,
             prd_content=self._renderer.render_prd(model),
             ddd_content=self._renderer.render_ddd(model),
             architecture_content=self._renderer.render_architecture(model),
+            canvas_content=canvas_md,
         )
 
     def write_artifacts(self, preview: ArtifactPreview, output_dir: Path) -> None:
@@ -111,7 +117,10 @@ class ArtifactGenerationHandler:
             output_dir: Directory to write PRD.md, DDD.md, ARCHITECTURE.md.
         """
         self._writer.write_file(output_dir / "PRD.md", preview.prd_content)
-        self._writer.write_file(output_dir / "DDD.md", preview.ddd_content)
+        ddd_with_canvas = preview.ddd_content
+        if preview.canvas_content:
+            ddd_with_canvas = preview.ddd_content + "\n\n" + preview.canvas_content
+        self._writer.write_file(output_dir / "DDD.md", ddd_with_canvas)
         self._writer.write_file(output_dir / "ARCHITECTURE.md", preview.architecture_content)
 
     def generate(

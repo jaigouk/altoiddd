@@ -61,6 +61,7 @@ def _setup_discovery_mocks(mock_ctx: MagicMock) -> None:
     """Configure discovery port mocks for a full happy-path discovery run."""
     mock_ctx.discovery.start_session.return_value = _make_session()
     mock_ctx.discovery.set_tech_stack.return_value = _make_session()
+    mock_ctx.discovery.get_session.return_value = _make_session()
     mock_ctx.discovery.detect_persona.return_value = _make_session(
         status=DiscoveryStatus.PERSONA_DETECTED
     )
@@ -106,9 +107,10 @@ def _mock_config_preview() -> MagicMock:
 
 
 def _discovery_input() -> str:
-    """Build stdin for full discovery: tech stack + persona + 10 answers + 3 playbacks."""
+    """Build stdin for full discovery: tech stack + mode + persona + 10 answers + 3 playbacks."""
     return (
         "y\n"                   # tech stack: Python
+        "1\n"                   # mode: Express
         "1\n"                   # persona
         "answer1\n"             # Q1
         "answer2\n"             # Q2

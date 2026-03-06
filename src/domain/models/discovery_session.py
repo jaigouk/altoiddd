@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING
 
 from src.domain.models.discovery_values import (
     Answer,
+    DiscoveryMode,
+    DiscoveryRound,
     Persona,
     Playback,
     QuestionPhase,
@@ -63,6 +65,11 @@ class DiscoveryStatus(enum.Enum):
     PLAYBACK_PENDING = "playback_pending"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    # Deep mode states:
+    ROUND_1_COMPLETE = "round_1_complete"
+    CHALLENGING = "challenging"
+    ROUND_2_COMPLETE = "round_2_complete"
+    SIMULATING = "simulating"
 
 
 class DiscoverySession:
@@ -84,6 +91,8 @@ class DiscoverySession:
         self._playback_confirmations: list[Playback] = []
         self._answers_since_last_playback: int = 0
         self._tech_stack: TechStack | None = None
+        self._mode: DiscoveryMode | None = None
+        self._round: DiscoveryRound | None = None
         self._events: list[DiscoveryCompleted] = []
 
     # -- Properties -----------------------------------------------------------
@@ -145,6 +154,11 @@ class DiscoverySession:
         return _QUESTION_PHASES[-1]  # pragma: no cover
 
     @property
+    def mode(self) -> DiscoveryMode:
+        """Discovery mode. Defaults to EXPRESS if not set."""
+        return self._mode if self._mode is not None else DiscoveryMode.EXPRESS
+
+    @property
     def events(self) -> list[DiscoveryCompleted]:
         """Domain events produced by this aggregate (defensive copy)."""
         return list(self._events)
@@ -166,6 +180,103 @@ class DiscoverySession:
             )
             raise InvariantViolationError(msg)
         self._tech_stack = tech_stack
+
+    def set_mode(self, mode: DiscoveryMode) -> None:
+        """Set discovery mode. Only allowed once, in CREATED state.
+
+        Raises:
+            InvariantViolationError: If not in CREATED state or mode already set.
+        """
+        if self._status != DiscoveryStatus.CREATED:
+            msg = f"Can only set mode in CREATED state, currently {self._status.value}"
+            raise InvariantViolationError(msg)
+        if self._mode is not None:
+            msg = "Discovery mode has already been set"
+            raise InvariantViolationError(msg)
+        self._mode = mode
+
+    def start_challenge(self) -> None:
+        """Transition to CHALLENGING. Only from ROUND_1_COMPLETE in DEEP mode.
+
+        Raises:
+            InvariantViolationError: If not ROUND_1_COMPLETE or not DEEP mode.
+        """
+        if self._status != DiscoveryStatus.ROUND_1_COMPLETE:
+            msg = (
+                f"Can only start challenge from ROUND_1_COMPLETE state, "
+                f"currently {self._status.value}"
+            )
+            raise InvariantViolationError(msg)
+        if self.mode != DiscoveryMode.DEEP:
+            msg = "start_challenge() is only available in DEEP mode"
+            raise InvariantViolationError(msg)
+        self._status = DiscoveryStatus.CHALLENGING
+        self._round = DiscoveryRound.CHALLENGE
+
+    def complete_challenge(self) -> None:
+        """Transition to ROUND_2_COMPLETE. Only from CHALLENGING.
+
+        Raises:
+            InvariantViolationError: If not in CHALLENGING state.
+        """
+        if self._status != DiscoveryStatus.CHALLENGING:
+            msg = (
+                f"Can only complete challenge from CHALLENGING state, "
+                f"currently {self._status.value}"
+            )
+            raise InvariantViolationError(msg)
+        self._status = DiscoveryStatus.ROUND_2_COMPLETE
+
+    def start_simulate(self) -> None:
+        """Transition to SIMULATING. Only from ROUND_2_COMPLETE in DEEP mode.
+
+        Raises:
+            InvariantViolationError: If not ROUND_2_COMPLETE or not DEEP mode.
+        """
+        if self._status != DiscoveryStatus.ROUND_2_COMPLETE:
+            msg = (
+                f"Can only start simulation from ROUND_2_COMPLETE state, "
+                f"currently {self._status.value}"
+            )
+            raise InvariantViolationError(msg)
+        if self.mode != DiscoveryMode.DEEP:
+            msg = "start_simulate() is only available in DEEP mode"
+            raise InvariantViolationError(msg)
+        self._status = DiscoveryStatus.SIMULATING
+        self._round = DiscoveryRound.SIMULATE
+
+    def complete_simulation(self) -> None:
+        """Transition to COMPLETED from SIMULATING. Emits DiscoveryCompleted event.
+
+        Raises:
+            InvariantViolationError: If not in SIMULATING state.
+        """
+        if self._status != DiscoveryStatus.SIMULATING:
+            msg = (
+                f"Can only complete simulation from SIMULATING state, "
+                f"currently {self._status.value}"
+            )
+            raise InvariantViolationError(msg)
+        self._status = DiscoveryStatus.COMPLETED
+        self._emit_completed_event()
+
+    def _emit_completed_event(self) -> None:
+        """Emit a DiscoveryCompleted event. Used by both complete() and complete_simulation()."""
+        from src.domain.events.discovery_events import DiscoveryCompleted
+
+        assert self._persona is not None  # Guaranteed by state machine.
+        assert self._register is not None
+
+        self._events.append(
+            DiscoveryCompleted(
+                session_id=self.session_id,
+                persona=self._persona,
+                register=self._register,
+                answers=tuple(self._answers),
+                playback_confirmations=tuple(self._playback_confirmations),
+                tech_stack=self._tech_stack,
+            )
+        )
 
     def detect_persona(self, choice: str) -> None:
         """Set the user persona and language register from a choice string.
@@ -304,8 +415,6 @@ class DiscoverySession:
             InvariantViolationError: If not in ANSWERING state or insufficient
                 MVP questions answered.
         """
-        from src.domain.events.discovery_events import DiscoveryCompleted
-
         if self._status != DiscoveryStatus.ANSWERING:
             msg = f"Can only complete from ANSWERING state, currently {self._status.value}"
             raise InvariantViolationError(msg)
@@ -318,21 +427,15 @@ class DiscoverySession:
             msg = f"Cannot complete: MVP questions not answered: {sorted(missing)}"
             raise InvariantViolationError(msg)
 
+        if self.mode == DiscoveryMode.DEEP:
+            self._status = DiscoveryStatus.ROUND_1_COMPLETE
+            self._round = DiscoveryRound.DISCOVERY
+            return
+
+        # EXPRESS: existing behavior unchanged
         self._status = DiscoveryStatus.COMPLETED
-
-        assert self._persona is not None  # Guaranteed by state machine.
-        assert self._register is not None
-
-        self._events.append(
-            DiscoveryCompleted(
-                session_id=self.session_id,
-                persona=self._persona,
-                register=self._register,
-                answers=tuple(self._answers),
-                playback_confirmations=tuple(self._playback_confirmations),
-                tech_stack=self._tech_stack,
-            )
-        )
+        self._round = DiscoveryRound.DISCOVERY
+        self._emit_completed_event()
 
     # -- Serialization --------------------------------------------------------
 
@@ -363,6 +466,8 @@ class DiscoverySession:
                 for p in self._playback_confirmations
             ],
             "answers_since_last_playback": self._answers_since_last_playback,
+            "mode": self._mode.value if self._mode else None,
+            "round": self._round.value if self._round else None,
             "tech_stack": (
                 {
                     "language": self._tech_stack.language,
@@ -398,6 +503,13 @@ class DiscoverySession:
         session._playback_confirmations = playbacks
         session._answers_since_last_playback = counter
         session._events = []
+
+        # Mode and round: backward-compatible with old snapshots
+        mode_raw = data.get("mode")
+        session._mode = DiscoveryMode(mode_raw) if mode_raw is not None else None
+
+        round_raw = data.get("round")
+        session._round = DiscoveryRound(round_raw) if round_raw is not None else None
 
         tech_stack_raw = data.get("tech_stack")
         if isinstance(tech_stack_raw, dict):

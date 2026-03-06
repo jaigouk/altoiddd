@@ -66,6 +66,7 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
     mock_ctx.discovery.set_tech_stack.return_value = _make_session(
         tech_stack=TechStack(language="python", package_manager="uv"),
     )
+    mock_ctx.discovery.get_session.return_value = _make_session()
     mock_ctx.discovery.detect_persona.return_value = _make_session(
         status=DiscoveryStatus.PERSONA_DETECTED,
     )
@@ -86,9 +87,10 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
 
 
 def _happy_path_input_python() -> str:
-    """Input: yes to Python, persona 1, 10 answers, 3 playbacks."""
+    """Input: yes to Python, mode 1, persona 1, 10 answers, 3 playbacks."""
     return (
         "y\n"                   # tech stack: Python
+        "1\n"                   # mode: Express
         "1\n"                   # persona
         "answer1\n"
         "answer2\n"
@@ -107,9 +109,10 @@ def _happy_path_input_python() -> str:
 
 
 def _happy_path_input_no_python() -> str:
-    """Input: no to Python, persona 1, 10 answers, 3 playbacks."""
+    """Input: no to Python, mode 1, persona 1, 10 answers, 3 playbacks."""
     return (
         "n\n"                   # tech stack: not Python
+        "1\n"                   # mode: Express
         "1\n"                   # persona
         "answer1\n"
         "answer2\n"

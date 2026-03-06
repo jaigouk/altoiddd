@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, cast
 from src.domain.models.discovery_session import DiscoverySession
 
 if TYPE_CHECKING:
+    from src.domain.models.discovery_values import DiscoveryMode
     from src.domain.models.tech_stack import TechStack
     from src.infrastructure.session.session_store import SessionStore
 
@@ -40,6 +41,21 @@ class InMemoryDiscoveryAdapter:
         """
         session = DiscoverySession(readme_content)
         self._store.put(session.session_id, session)
+        return session
+
+    def set_mode(self, session_id: str, mode: DiscoveryMode) -> DiscoverySession:
+        """Set the discovery mode on a session.
+
+        Args:
+            session_id: The active discovery session identifier.
+            mode: The DiscoveryMode to set.
+
+        Returns:
+            The updated DiscoverySession.
+        """
+        session = self._get(session_id)
+        session.set_mode(mode)
+        self._store.put(session_id, session)
         return session
 
     def set_tech_stack(self, session_id: str, tech_stack: TechStack) -> DiscoverySession:

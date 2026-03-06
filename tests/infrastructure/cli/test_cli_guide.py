@@ -65,6 +65,7 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
 
     mock_ctx.discovery.start_session.return_value = _make_session()
     mock_ctx.discovery.set_tech_stack.return_value = _make_session()
+    mock_ctx.discovery.get_session.return_value = _make_session()
     mock_ctx.discovery.detect_persona.return_value = _make_session(
         status=DiscoveryStatus.PERSONA_DETECTED
     )
@@ -86,9 +87,10 @@ def _setup_happy_path(mock_create_app: MagicMock) -> MagicMock:
 
 
 def _happy_path_input() -> str:
-    """Build stdin: tech stack + persona + 10 answers + 3 playbacks."""
+    """Build stdin: tech stack + mode + persona + 10 answers + 3 playbacks."""
     return (
         "y\n"                   # tech stack: Python
+        "1\n"                   # mode: Express
         "1\n"                   # persona
         "answer1\n"             # Q1
         "answer2\n"             # Q2
@@ -143,7 +145,7 @@ class TestGuidePersonaSelection:
         (tmp_path / "README.md").write_text("# Test")
         mock_ctx = _setup_happy_path(mock_create_app)
         input_text = (
-            "y\n" + "2\n" + "answer\n" * 3 + "y\n" + "answer\n" * 3
+            "y\n" + "1\n" + "2\n" + "answer\n" * 3 + "y\n" + "answer\n" * 3
             + "y\n" + "answer\n" * 3 + "y\n" + "answer\n"
         )
         runner.invoke(app, ["guide"], input=input_text)
@@ -226,6 +228,7 @@ class TestGuideQuestionFlow:
         mock_create_app.return_value = mock_ctx
         mock_ctx.discovery.start_session.return_value = _make_session()
         mock_ctx.discovery.set_tech_stack.return_value = _make_session()
+        mock_ctx.discovery.get_session.return_value = _make_session()
         mock_ctx.discovery.detect_persona.return_value = _make_session(
             status=DiscoveryStatus.PERSONA_DETECTED,
         )
@@ -244,6 +247,7 @@ class TestGuideQuestionFlow:
 
         input_text = (
             "y\n"                   # tech stack
+            "1\n"                   # mode: Express
             "1\n"                   # persona
             "skip\ntoo early\n"     # Q1 skip + reason
             "answer\nanswer\n"      # Q2, Q3
@@ -283,7 +287,8 @@ class TestGuidePlayback:
         # First playback: reject with corrections
         input_text = (
             "y\n"                        # tech stack
-            "1\n"
+            "1\n"                        # mode: Express
+            "1\n"                        # persona
             "answer\nanswer\nanswer\n"
             "n\nfix Q1 wording\n"       # reject + corrections
             "answer\nanswer\nanswer\n"

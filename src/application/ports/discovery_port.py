@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from src.domain.models.discovery_session import DiscoverySession
+    from src.domain.models.discovery_values import DiscoveryMode
     from src.domain.models.tech_stack import TechStack
 
 
@@ -55,6 +56,20 @@ class DiscoveryPort(Protocol):
         Args:
             session_id: The active discovery session identifier.
             tech_stack: The TechStack value object to store.
+
+        Returns:
+            The updated DiscoverySession.
+        """
+        ...
+
+    def set_mode(self, session_id: str, mode: DiscoveryMode) -> DiscoverySession:
+        """Set the discovery mode (Express or Deep) on a session.
+
+        Must be called in CREATED state before persona detection.
+
+        Args:
+            session_id: The active discovery session identifier.
+            mode: The DiscoveryMode to set.
 
         Returns:
             The updated DiscoverySession.

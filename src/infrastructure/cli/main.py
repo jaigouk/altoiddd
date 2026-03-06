@@ -130,6 +130,7 @@ def _run_discovery(
     typer.echo(f"Discovery session started ({session.session_id})\n")
 
     session = _guide_prompt_tech_stack(ctx.discovery, session.session_id)
+    session = _guide_prompt_mode(ctx.discovery, session.session_id)
     session = _guide_prompt_persona(ctx.discovery, session.session_id)
     register = session.register
 
@@ -301,6 +302,22 @@ def _guide_prompt_tech_stack(
     except (DomainError, ValueError, KeyError) as e:
         _guide_error(str(e))
         raise  # unreachable, but satisfies type checker
+
+
+def _guide_prompt_mode(
+    discovery: DiscoveryPort, session_id: str
+) -> DiscoverySession:
+    """Prompt for Express/Deep mode selection."""
+    typer.echo("\nHow thorough should the discovery session be?\n")
+    typer.echo("  1. Express (15 min) — Quick 10-question flow.")
+    typer.echo("  2. Deep (60-90 min) — Full iterative session.\n")
+    choice = typer.prompt("Mode [1/2]", default="1")
+
+    if choice == "2":
+        from src.domain.models.discovery_values import DiscoveryMode
+
+        return discovery.set_mode(session_id, DiscoveryMode.DEEP)
+    return discovery.get_session(session_id)
 
 
 def _guide_prompt_persona(
