@@ -167,3 +167,56 @@ class TestAnthropicChallengerFallback:
         challenges = await adapter.generate_challenges(_make_model())
 
         assert len(challenges) >= 1
+
+    @pytest.mark.asyncio
+    async def test_falls_back_on_empty_question_text(self) -> None:
+        """LLM returns empty question_text — InvariantViolationError should trigger fallback."""
+        import json
+
+        response_json = json.dumps(
+            {
+                "challenges": [
+                    {
+                        "challenge_type": "invariant",
+                        "question_text": "",
+                        "context_name": "Sales",
+                        "source_reference": "Aggregate: OrderAggregate",
+                    }
+                ]
+            }
+        )
+        llm = AsyncMock()
+        llm.structured_output.return_value = LLMResponse(
+            content=response_json, model_used="m", usage_tokens=10
+        )
+        adapter = AnthropicChallengerAdapter(llm_client=llm)
+
+        # Should not raise — falls back to rule-based
+        challenges = await adapter.generate_challenges(_make_model())
+        assert len(challenges) >= 1
+
+    @pytest.mark.asyncio
+    async def test_falls_back_on_empty_source_reference(self) -> None:
+        """LLM returns empty source_reference — InvariantViolationError should trigger fallback."""
+        import json
+
+        response_json = json.dumps(
+            {
+                "challenges": [
+                    {
+                        "challenge_type": "boundary",
+                        "question_text": "Should Shipping own tracking?",
+                        "context_name": "Sales",
+                        "source_reference": "",
+                    }
+                ]
+            }
+        )
+        llm = AsyncMock()
+        llm.structured_output.return_value = LLMResponse(
+            content=response_json, model_used="m", usage_tokens=10
+        )
+        adapter = AnthropicChallengerAdapter(llm_client=llm)
+
+        challenges = await adapter.generate_challenges(_make_model())
+        assert len(challenges) >= 1

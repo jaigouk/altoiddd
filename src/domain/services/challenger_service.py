@@ -35,6 +35,9 @@ class ChallengerService:
         Returns:
             Tuple of Challenge VOs, limited to max_per_type per category.
         """
+        # Rule-based covers 4 of 6 types: LANGUAGE, INVARIANT, FAILURE_MODE, BOUNDARY.
+        # AGGREGATE and COMMUNICATION require deeper analysis — LLM-only via
+        # AnthropicChallengerAdapter.
         challenges: list[Challenge] = []
         challenges.extend(ChallengerService._language_challenges(model, max_per_type))
         challenges.extend(ChallengerService._invariant_challenges(model, max_per_type))

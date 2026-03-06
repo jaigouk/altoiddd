@@ -12,7 +12,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from src.domain.models.challenge import Challenge, ChallengeType
-from src.domain.models.errors import LLMUnavailableError
+from src.domain.models.errors import InvariantViolationError, LLMUnavailableError
 from src.domain.services.challenger_service import ChallengerService
 
 if TYPE_CHECKING:
@@ -73,7 +73,13 @@ class AnthropicChallengerAdapter:
         """
         try:
             return await self._llm_generate(model, max_per_type)
-        except (LLMUnavailableError, ValueError, KeyError, json.JSONDecodeError):
+        except (
+            LLMUnavailableError,
+            InvariantViolationError,
+            ValueError,
+            KeyError,
+            json.JSONDecodeError,
+        ):
             logger.info("LLM challenge generation failed, falling back to rule-based")
             return ChallengerService.generate(model, max_per_type)
 
