@@ -147,6 +147,7 @@ COMMENT="**Ripple review needed** -- \`$TICKET_ID\` ($TITLE) was closed.
 - [ ] Read the description -- does it still match the new context?
 - [ ] Check acceptance criteria -- are any obsolete, incomplete, or contradicted?
 - [ ] Verify DDD alignment -- do bounded-context boundaries still hold?
+- [ ] **Compatibility check** -- does this ticket's design actually work with what was just delivered? Trace the interfaces: do port signatures match? Do assumed methods exist? Are dependencies concrete (not \"magic happens here\")?
 - [ ] Update or dismiss -- apply changes, or mark as unchanged if still valid."
 
 echo ""

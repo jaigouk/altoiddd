@@ -127,6 +127,17 @@ Only close when all gates pass **and** edge cases are tested.
 - [ ] All tests pass with >= 80% coverage
 - [ ] Edge cases have test coverage
 
+## Pre-Implementation Validation
+
+Before claiming this ticket, trace the implementation end-to-end:
+
+- [ ] Every dependency in the Design section resolves to a concrete interface (no "magic happens here")
+- [ ] Port signatures in the SOLID/ISP section match the sequence diagram
+- [ ] New constructor parameters won't break existing tests (or updates are listed in Steps)
+- [ ] External libraries/APIs are specified (not just "does web search" — which library? which port?)
+
+If any check fails, the ticket needs updating before work begins.
+
 ## QA Before Close
 
 - [ ] Happy path works as expected

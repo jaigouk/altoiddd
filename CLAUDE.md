@@ -228,6 +228,7 @@ Before claiming a ticket:
 5. **Ubiquitous Language** — Do class/method names match domain language?
 6. **TDD & SOLID** — RED/GREEN/REFACTOR phases documented
 7. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
+8. **Implementation Simulation** — Mentally trace the implementation: constructor → dependencies → method calls → return values. For each dependency, ask: "does this exist? what interface does it have?" For each new injection point, ask: "what existing tests break?" If any step is "magic happens here" (e.g., "adapter does web search" without specifying what library/port does the actual searching), the ticket is NOT groomed. Also cross-reference within the ticket: does the Design section match the SOLID/ISP line? Does the sequence diagram match the port signature? Do the Steps cover updating existing tests that will break?
 
 Update via `bd update <id> --description` if incomplete.
 
