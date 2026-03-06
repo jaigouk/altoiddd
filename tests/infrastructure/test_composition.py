@@ -24,10 +24,10 @@ class TestAppContextStructure:
     def test_app_context_is_dataclass(self):
         assert dataclasses.is_dataclass(AppContext)
 
-    def test_app_context_has_16_fields(self):
-        """15 prior fields + domain_research = 16."""
+    def test_app_context_has_17_fields(self):
+        """16 prior fields + simulator = 17."""
         fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert len(fields) == 16
+        assert len(fields) == 17
 
     def test_app_context_has_file_writer_field(self):
         fields = {f.name for f in dataclasses.fields(AppContext)}
@@ -57,6 +57,7 @@ class TestAppContextStructure:
             "llm_client",
             "challenger",
             "domain_research",
+            "simulator",
         }
         assert expected == fields
 

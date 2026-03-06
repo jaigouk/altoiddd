@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from src.application.ports.file_writer_port import FileWriterPort
     from src.application.ports.fitness_generation_port import FitnessGenerationPort
     from src.application.ports.quality_gate_port import QualityGatePort
+    from src.application.ports.simulator_port import SimulatorPort
     from src.application.ports.spike_follow_up_port import SpikeFollowUpPort
     from src.application.ports.ticket_generation_port import TicketGenerationPort
     from src.application.ports.ticket_health_port import TicketHealthPort
@@ -66,6 +67,7 @@ class AppContext:
     llm_client: LLMClient | None = None
     challenger: ChallengerPort | None = None
     domain_research: DomainResearchPort | None = None
+    simulator: SimulatorPort | None = None
 
 
 # ── Stub implementations ────────────────────────────────────────────
