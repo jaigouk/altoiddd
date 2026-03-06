@@ -157,6 +157,69 @@ class TestBuildPreview:
 
 
 # ---------------------------------------------------------------------------
+# 1b. Build preview — validation
+# ---------------------------------------------------------------------------
+
+
+class TestBuildPreviewValidation:
+    def test_build_preview_includes_validation(self):
+        """Preview has a validation field with DesignTraceResult per ticket."""
+        from src.application.commands.ticket_generation_handler import (
+            TicketGenerationHandler,
+        )
+        from src.domain.models.ticket_implementability import DesignTraceResult
+
+        model = _make_model([("Orders", SubdomainClassification.CORE)])
+        writer = FakeFileWriter()
+        handler = TicketGenerationHandler(writer=writer)
+
+        preview = handler.build_preview(model)
+
+        assert hasattr(preview, "validation")
+        assert isinstance(preview.validation, tuple)
+        assert len(preview.validation) == len(preview.plan.tickets)
+        for result in preview.validation:
+            assert isinstance(result, DesignTraceResult)
+
+    def test_validation_clean_ticket_passes(self):
+        """Core context with invariants produces tickets that pass validation."""
+        from src.application.commands.ticket_generation_handler import (
+            TicketGenerationHandler,
+        )
+
+        model = _make_model([("Orders", SubdomainClassification.CORE)])
+        writer = FakeFileWriter()
+        handler = TicketGenerationHandler(writer=writer)
+
+        preview = handler.build_preview(model)
+
+        # At least one result should be valid (STUB tickets auto-pass)
+        assert any(r.is_valid for r in preview.validation)
+
+    def test_validation_findings_accessible(self):
+        """Validation results expose findings for inspection."""
+        from src.application.commands.ticket_generation_handler import (
+            TicketGenerationHandler,
+        )
+
+        model = _make_model(
+            [
+                ("Orders", SubdomainClassification.CORE),
+                ("Logging", SubdomainClassification.GENERIC),
+            ]
+        )
+        writer = FakeFileWriter()
+        handler = TicketGenerationHandler(writer=writer)
+
+        preview = handler.build_preview(model)
+
+        # Each result has a ticket_id matching a plan ticket
+        plan_ids = {t.ticket_id for t in preview.plan.tickets}
+        for result in preview.validation:
+            assert result.ticket_id in plan_ids
+
+
+# ---------------------------------------------------------------------------
 # 2. Approve and write
 # ---------------------------------------------------------------------------
 

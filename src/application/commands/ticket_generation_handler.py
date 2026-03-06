@@ -14,6 +14,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from src.domain.models.ticket_plan import TicketPlan
+from src.domain.services.implementability_validator import (
+    ImplementabilityValidator,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -21,6 +24,7 @@ if TYPE_CHECKING:
     from src.application.ports.file_writer_port import FileWriterPort
     from src.domain.models.domain_model import DomainModel
     from src.domain.models.stack_profile import StackProfile
+    from src.domain.models.ticket_implementability import DesignTraceResult
 
 
 @dataclass
@@ -30,10 +34,12 @@ class TicketPreview:
     Attributes:
         plan: The TicketPlan aggregate.
         summary: Human-readable preview summary.
+        validation: Implementability validation results per ticket.
     """
 
     plan: TicketPlan
     summary: str
+    validation: tuple[DesignTraceResult, ...] = ()
 
 
 class TicketGenerationHandler:
@@ -66,9 +72,12 @@ class TicketGenerationHandler:
         plan = TicketPlan()
         plan.generate_plan(model, profile)
 
+        validation = ImplementabilityValidator.validate_plan(plan.tickets)
+
         return TicketPreview(
             plan=plan,
             summary=plan.preview(),
+            validation=validation,
         )
 
     def approve_and_write(

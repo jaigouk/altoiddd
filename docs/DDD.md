@@ -220,6 +220,14 @@ status: draft
 | TechStack | A frozen value object recording the user's language and package manager (e.g., Python + uv) | Guided Discovery |
 | StackProfile | A strategy Protocol providing stack-specific behavior (file globs, quality gate commands, source layout) | Domain Model |
 | resolve_profile | A domain service factory that maps a TechStack to the corresponding StackProfile | Domain Model |
+| Implementability Validation | Automated check that a generated ticket contains enough detail to actually write code from — catches "magic happens here" patterns | Ticket Freshness |
+| ImplementabilityFinding | A single issue found during implementability validation (severity + location + description) | Ticket Freshness |
+| FindingSeverity | How critical an implementability finding is: CRITICAL (unspecified dependency), MAJOR (missing section), MINOR (style) | Ticket Freshness |
+| DesignTraceResult | Structured validation result for one ticket, containing all findings and is_valid/critical_count properties | Ticket Freshness |
+| Unspecified Dependency | A ticket action like "adapter performs web search" that names no concrete port or library — always CRITICAL | Ticket Freshness |
+| ImplementabilityValidator | Stateless domain service that checks tickets for section completeness, unspecified dependencies, empty invariants, and empty AC | Ticket Freshness |
+| CodebasePortScanner | Infrastructure adapter that scans port Protocol files via Python AST to extract method signatures | Ticket Freshness |
+| PortDefinition | Infrastructure VO representing a Protocol class name and its method signatures, produced by CodebasePortScanner | Ticket Freshness |
 
 **Ambiguous terms** (same word, different meaning in different contexts):
 
