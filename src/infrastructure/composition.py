@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from src.application.ports.artifact_generation_port import ArtifactRendererPort
     from src.application.ports.bootstrap_port import BootstrapPort
+    from src.application.ports.challenger_port import ChallengerPort
     from src.application.ports.config_generation_port import ConfigGenerationPort
     from src.application.ports.discovery_port import DiscoveryPort
     from src.application.ports.doc_health_port import DocHealthPort
@@ -62,6 +63,7 @@ class AppContext:
     file_writer: FileWriterPort
     artifact_renderer: ArtifactRendererPort
     llm_client: LLMClient | None = None
+    challenger: ChallengerPort | None = None
 
 
 # ── Stub implementations ────────────────────────────────────────────
