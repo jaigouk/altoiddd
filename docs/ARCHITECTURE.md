@@ -60,33 +60,41 @@ status: draft
                             User
                          (5 personas)
                              |
-                  +----------+----------+
-                  |                     |
-              CLI (vs)           MCP Server (alty-mcp)
-             [Typer 0.24.1]     [FastMCP 1.26.0]
-                  |                     |
-                  +----------+----------+
-                             |
-                    Application Layer
-                   (13 Ports / Protocols)
-                             |
-              +--------------+---------------+
-              |              |               |
-         Domain Layer   Infrastructure   .alty/
-         (Pure Python)    Adapters       (Project State)
-              |              |               |
-     +--------+--------+     |    +-----------+---------+
-     | Guided Discovery |    |    | domain-model.yaml   |
-     | Domain Model     |    |    | config.toml         |
-     | Arch Testing     |    |    | knowledge/          |
-     | Ticket Pipeline  |    |    | maintenance/        |
-     | Ticket Freshness |    |    +---------------------+
-     | Tool Translation |    |
-     | Knowledge Base   |    +--- File I/O, Beads CLI,
-     | Bootstrap        |         Git, Template Engine,
-     | Rescue           |         Tool Detection
-     +------------------+
+          +------------------+------------------+
+          |                  |                  |
+      CLI (vs)        MCP Server         VS Code Extension
+     [Typer]         (alty-mcp)          (alty-vscode-extension)
+     [Python]        [FastMCP]           [TypeScript + Svelte]
+          |               |                     |
+          |               |              MCP Client (stdio)
+          |               |                     |
+          +-------+-------+---------------------+
+                  |
+         Application Layer
+        (Ports / Protocols)
+                  |
+   +--------------+---------------+
+   |              |               |
+Domain Layer  Infrastructure   .alty/
+(Pure Python)   Adapters       (Project State)
+   |              |               |
+   | Guided      |    +-----------+---------+
+   | Discovery   |    | domain-model.yaml   |
+   | Domain Model|    | config.toml         |
+   | Arch Testing|    | knowledge/          |
+   | Ticket Pipe.|    | maintenance/        |
+   | Freshness   |    +---------------------+
+   | Translation |
+   | Knowledge   +--- File I/O, Beads CLI,
+   | Bootstrap   |    Git, Template Engine,
+   | Rescue      |    Tool Detection, LLM
+   +-------------+
 ```
+
+> **Terminal-first principle:** Every feature is fully functional via CLI alone. The
+> VS Code extension adds visual rendering (canvas diagrams, diff views, convergence
+> charts) but never gates functionality. Users without the extension get the same
+> data as structured text output.
 
 ### Component Summary
 
