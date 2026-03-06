@@ -21,3 +21,7 @@ class DuplicateStoryError(DomainError):
 
 class SessionNotFoundError(DomainError):
     """Raised when a session_id does not match any active session."""
+
+
+class LLMUnavailableError(DomainError):
+    """Raised when LLM service is unavailable (missing key, network, rate limit)."""

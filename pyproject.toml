@@ -41,6 +41,9 @@ Repository = "https://git.alty.ai/jaigouk/alty"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[project.optional-dependencies]
+llm = ["anthropic>=0.40,<2.0"]
+
 # ── Dependency Groups ────────────────────────────────────────
 [dependency-groups]
 dev = [

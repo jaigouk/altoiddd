@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     )
     from src.domain.models.follow_up_intent import FollowUpAuditResult
     from src.domain.models.ticket_freshness import TicketHealthReport
+    from src.infrastructure.external.llm_client import LLMClient
 
 
 @dataclass
@@ -60,6 +61,7 @@ class AppContext:
     spike_follow_up: SpikeFollowUpPort
     file_writer: FileWriterPort
     artifact_renderer: ArtifactRendererPort
+    llm_client: LLMClient | None = None
 
 
 # ── Stub implementations ────────────────────────────────────────────

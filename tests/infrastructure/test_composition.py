@@ -24,10 +24,10 @@ class TestAppContextStructure:
     def test_app_context_is_dataclass(self):
         assert dataclasses.is_dataclass(AppContext)
 
-    def test_app_context_has_13_fields(self):
-        """11 original ports + file_writer + artifact_renderer = 13."""
+    def test_app_context_has_14_fields(self):
+        """11 original ports + file_writer + artifact_renderer + llm_client = 14."""
         fields = {f.name for f in dataclasses.fields(AppContext)}
-        assert len(fields) == 13
+        assert len(fields) == 14
 
     def test_app_context_has_file_writer_field(self):
         fields = {f.name for f in dataclasses.fields(AppContext)}
@@ -54,6 +54,7 @@ class TestAppContextStructure:
             "spike_follow_up",
             "file_writer",
             "artifact_renderer",
+            "llm_client",
         }
         assert expected == fields
 
