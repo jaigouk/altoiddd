@@ -1,0 +1,144 @@
+version: 3
+workdir: internal
+
+allow:
+  depOnAnyVendor: false
+  deepScan: true
+
+components:
+  # Bounded contexts — domain layers
+  bootstrap-domain:         { in: bootstrap/domain/** }
+  bootstrap-application:    { in: bootstrap/application/** }
+  bootstrap-infrastructure: { in: bootstrap/infrastructure/** }
+
+  discovery-domain:         { in: discovery/domain/** }
+  discovery-application:    { in: discovery/application/** }
+  discovery-infrastructure: { in: discovery/infrastructure/** }
+
+  ticket-domain:            { in: ticket/domain/** }
+  ticket-application:       { in: ticket/application/** }
+  ticket-infrastructure:    { in: ticket/infrastructure/** }
+
+  fitness-domain:           { in: fitness/domain/** }
+  fitness-application:      { in: fitness/application/** }
+  fitness-infrastructure:   { in: fitness/infrastructure/** }
+
+  knowledge-domain:         { in: knowledge/domain/** }
+  knowledge-application:    { in: knowledge/application/** }
+  knowledge-infrastructure: { in: knowledge/infrastructure/** }
+
+  rescue-domain:            { in: rescue/domain/** }
+  rescue-application:       { in: rescue/application/** }
+  rescue-infrastructure:    { in: rescue/infrastructure/** }
+
+  research-domain:          { in: research/domain/** }
+  research-application:     { in: research/application/** }
+  research-infrastructure:  { in: research/infrastructure/** }
+
+  tooltranslation-domain:         { in: tooltranslation/domain/** }
+  tooltranslation-application:    { in: tooltranslation/application/** }
+  tooltranslation-infrastructure: { in: tooltranslation/infrastructure/** }
+
+  dochealth-domain:         { in: dochealth/domain/** }
+  dochealth-application:    { in: dochealth/application/** }
+  dochealth-infrastructure: { in: dochealth/infrastructure/** }
+
+  challenge-domain:         { in: challenge/domain/** }
+  challenge-application:    { in: challenge/application/** }
+  challenge-infrastructure: { in: challenge/infrastructure/** }
+
+  # Shared kernel
+  shared-events:       { in: shared/domain/events }
+  shared-valueobjects: { in: shared/domain/valueobjects }
+  shared-errors:       { in: shared/domain/errors }
+  shared-ddd:          { in: shared/domain/ddd }
+
+commonComponents:
+  - shared-events
+  - shared-valueobjects
+  - shared-errors
+  - shared-ddd
+
+vendors:
+  cobra:      { in: github.com/spf13/cobra/** }
+  mcp-sdk:    { in: github.com/modelcontextprotocol/go-sdk/** }
+  watermill:  { in: github.com/ThreeDotsLabs/watermill/** }
+  testify:    { in: github.com/stretchr/testify/** }
+  anthropic:  { in: github.com/anthropics/anthropic-sdk-go/** }
+
+deps:
+  # Domain layers: depend on NOTHING (except shared kernel via commonComponents)
+  bootstrap-domain: {}
+  discovery-domain: {}
+  ticket-domain: {}
+  fitness-domain: {}
+  knowledge-domain: {}
+  rescue-domain: {}
+  research-domain: {}
+  tooltranslation-domain: {}
+  dochealth-domain: {}
+  challenge-domain: {}
+
+  # Application layers: depend on their domain only
+  bootstrap-application:
+    mayDependOn: [bootstrap-domain]
+    canUse: [watermill]
+  discovery-application:
+    mayDependOn: [discovery-domain]
+    canUse: [watermill]
+  ticket-application:
+    mayDependOn: [ticket-domain]
+    canUse: [watermill]
+  fitness-application:
+    mayDependOn: [fitness-domain]
+    canUse: [watermill]
+  knowledge-application:
+    mayDependOn: [knowledge-domain]
+    canUse: [watermill]
+  rescue-application:
+    mayDependOn: [rescue-domain]
+    canUse: [watermill]
+  research-application:
+    mayDependOn: [research-domain]
+    canUse: [watermill]
+  tooltranslation-application:
+    mayDependOn: [tooltranslation-domain]
+    canUse: [watermill]
+  dochealth-application:
+    mayDependOn: [dochealth-domain]
+    canUse: [watermill]
+  challenge-application:
+    mayDependOn: [challenge-domain]
+    canUse: [watermill]
+
+  # Infrastructure layers: depend on domain + application
+  bootstrap-infrastructure:
+    mayDependOn: [bootstrap-domain, bootstrap-application]
+    anyVendorDeps: true
+  discovery-infrastructure:
+    mayDependOn: [discovery-domain, discovery-application]
+    anyVendorDeps: true
+  ticket-infrastructure:
+    mayDependOn: [ticket-domain, ticket-application]
+    anyVendorDeps: true
+  fitness-infrastructure:
+    mayDependOn: [fitness-domain, fitness-application]
+    anyVendorDeps: true
+  knowledge-infrastructure:
+    mayDependOn: [knowledge-domain, knowledge-application]
+    anyVendorDeps: true
+  rescue-infrastructure:
+    mayDependOn: [rescue-domain, rescue-application]
+    anyVendorDeps: true
+  research-infrastructure:
+    mayDependOn: [research-domain, research-application]
+    anyVendorDeps: true
+  tooltranslation-infrastructure:
+    mayDependOn: [tooltranslation-domain, tooltranslation-application]
+    anyVendorDeps: true
+  dochealth-infrastructure:
+    mayDependOn: [dochealth-domain, dochealth-application]
+    anyVendorDeps: true
+  challenge-infrastructure:
+    mayDependOn: [challenge-domain, challenge-application]
+    anyVendorDeps: true

@@ -1,0 +1,103 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    # Error handling
+    - errorlint
+    - wrapcheck
+
+    # Code quality
+    - revive
+    - gocritic
+    - exhaustive
+    - misspell
+
+    # Context propagation
+    - noctx
+    - contextcheck
+
+    # Resource management
+    - bodyclose
+
+    # Testing
+    - testifylint
+
+    # Import control (DDD layer enforcement)
+    - depguard
+
+  settings:
+    govet:
+      enable-all: true
+
+    revive:
+      rules:
+        - name: exported
+          arguments: [checkPrivateReceivers]
+        - name: var-naming
+        - name: indent-error-flow
+        - name: error-return
+        - name: unexported-return
+
+    depguard:
+      rules:
+        domain:
+          files:
+            - "**/internal/**/domain/**/*.go"
+          deny:
+            - pkg: "github.com/alty-cli/alty/internal/**/application"
+              desc: "Domain layer must not import application layer"
+            - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+              desc: "Domain layer must not import infrastructure layer"
+            - pkg: "github.com/spf13/cobra"
+              desc: "Domain layer must not import CLI framework"
+            - pkg: "github.com/mark3labs/mcp-go"
+              desc: "Domain layer must not import MCP framework"
+            - pkg: "database/sql"
+              desc: "Domain layer must not import database packages"
+            - pkg: "net/http"
+              desc: "Domain layer must not import HTTP packages"
+
+        application:
+          files:
+            - "**/internal/**/application/**/*.go"
+          deny:
+            - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+              desc: "Application layer must not import infrastructure layer"
+            - pkg: "github.com/spf13/cobra"
+              desc: "Application layer must not import CLI framework"
+
+        deprecated:
+          files:
+            - $all
+          deny:
+            - pkg: "io/ioutil"
+              desc: "Deprecated since Go 1.16; use io and os directly"
+            - pkg: "github.com/pkg/errors"
+              desc: "Deprecated; use stdlib errors + fmt.Errorf with %w"
+
+  exclusions:
+    rules:
+      - path: '_test\.go'
+        linters:
+          - errcheck
+          - gocritic
+          - wrapcheck
+
+formatters:
+  enable:
+    - gofumpt
+    - gci
+
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/alty-cli/alty)
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true

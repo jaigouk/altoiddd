@@ -47,6 +47,11 @@ uv.lock
 
 *.jsonl.bak 
 
+# Go binaries
+/alty
+/alty-mcp
+/bin/
+
 # Environment
 .env
 .env.local
