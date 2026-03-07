@@ -74,6 +74,37 @@ bd export                             # Export Dolt DB → JSONL (manual sync)
 - Task: `docs/beads_templates/beads-ticket-template.md`
 - Spike: `docs/beads_templates/beads-spike-template.md`
 
+## Go Migration — Additional Context
+
+### Go Quality Gates Reference
+
+When creating/grooming Go migration tickets, reference these quality gates:
+
+```bash
+go build ./...                    # Compile check
+go test ./... -v -race            # Tests with race detector
+go vet ./...                      # Static analysis
+golangci-lint run                 # Meta-linter
+```
+
+### Go Project Structure
+
+```
+internal/{context}/domain/        # Domain layer per bounded context
+internal/{context}/application/   # Application layer per bounded context
+internal/{context}/infrastructure/ # Infrastructure layer per bounded context
+internal/shared/domain/           # Shared kernel (errors, events, VOs, DDD types)
+cmd/alty/                         # CLI entry point (Cobra)
+cmd/alty-mcp/                     # MCP server entry point
+```
+
+### Go Migration Ticket Conventions
+
+- Tickets organized by DDD layer (Epic 1: Domain, Epic 2: Application, Epic 3: Infra)
+- Within each layer, tickets grouped by bounded context
+- dev-core tickets (shared kernel) must complete before context-specific tickets start
+- Python test count = Go test count for parity verification
+
 ## Key Rules
 
 - Always read `CLAUDE.md` before creating tickets to align with conventions.

@@ -1,0 +1,88 @@
+package domain_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alty-cli/alty/internal/fitness/domain"
+	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+)
+
+// ---------------------------------------------------------------------------
+// Role enum
+// ---------------------------------------------------------------------------
+
+func TestRoleValues(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "execution", string(domain.RoleExecution))
+	assert.Equal(t, "analysis", string(domain.RoleAnalysis))
+	assert.Equal(t, "gateway", string(domain.RoleGateway))
+	assert.Equal(t, "specification", string(domain.RoleSpecification))
+	assert.Equal(t, "draft", string(domain.RoleDraft))
+}
+
+// ---------------------------------------------------------------------------
+// StrategicClassification
+// ---------------------------------------------------------------------------
+
+func TestStrategicClassification(t *testing.T) {
+	t.Parallel()
+	sc := domain.NewStrategicClassification(vo.SubdomainCore, "Revenue", "Custom")
+	assert.Equal(t, vo.SubdomainCore, sc.Domain())
+	assert.Equal(t, "Revenue", sc.BusinessModel())
+	assert.Equal(t, "Custom", sc.Evolution())
+}
+
+// ---------------------------------------------------------------------------
+// CommunicationMessage
+// ---------------------------------------------------------------------------
+
+func TestCommunicationMessage(t *testing.T) {
+	t.Parallel()
+	msg := domain.NewCommunicationMessage("PlaceOrder", "Command", "API Gateway")
+	assert.Equal(t, "PlaceOrder", msg.Message())
+	assert.Equal(t, "Command", msg.MessageType())
+	assert.Equal(t, "API Gateway", msg.Counterpart())
+}
+
+// ---------------------------------------------------------------------------
+// BoundedContextCanvas
+// ---------------------------------------------------------------------------
+
+func TestBoundedContextCanvas(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stores fields", func(t *testing.T) {
+		t.Parallel()
+		sc := domain.NewStrategicClassification(vo.SubdomainCore, "Revenue", "Custom")
+		canvas := domain.NewBoundedContextCanvas(
+			"Sales", "Manages orders", sc,
+			[]domain.Role{domain.RoleExecution},
+			[]domain.CommunicationMessage{domain.NewCommunicationMessage("PlaceOrder", "Command", "Gateway")},
+			[]domain.CommunicationMessage{domain.NewCommunicationMessage("OrderPlaced", "Event", "Fulfillment")},
+			[][2]string{{"Order", "A purchase request"}},
+			[]string{"Order must have items"},
+			nil, nil,
+		)
+		assert.Equal(t, "Sales", canvas.ContextName())
+		assert.Equal(t, "Manages orders", canvas.Purpose())
+		assert.Equal(t, vo.SubdomainCore, canvas.Classification().Domain())
+		assert.Len(t, canvas.Roles(), 1)
+		assert.Len(t, canvas.InboundCommunication(), 1)
+		assert.Len(t, canvas.OutboundCommunication(), 1)
+		assert.Len(t, canvas.UbiquitousLanguage(), 1)
+		assert.Len(t, canvas.BusinessDecisions(), 1)
+		assert.Empty(t, canvas.Assumptions())
+		assert.Empty(t, canvas.OpenQuestions())
+	})
+
+	t.Run("defensive copy domain roles", func(t *testing.T) {
+		t.Parallel()
+		roles := []domain.Role{domain.RoleExecution}
+		sc := domain.NewStrategicClassification(vo.SubdomainCore, "R", "C")
+		canvas := domain.NewBoundedContextCanvas("X", "Y", sc, roles, nil, nil, nil, nil, nil, nil)
+		roles[0] = domain.RoleDraft
+		assert.Equal(t, domain.RoleExecution, canvas.Roles()[0])
+	})
+}

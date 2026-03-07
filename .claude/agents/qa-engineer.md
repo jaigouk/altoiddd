@@ -5,6 +5,7 @@ description: >
   coverage, verifying edge cases from multiple angles, investigating failures,
   and producing detailed QA reports with root cause analysis. Invoke after
   implementation is complete or when test coverage needs improvement.
+  Supports both Python and Go codebases.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: opus
 permissionMode: acceptEdits
@@ -48,10 +49,10 @@ For each feature, systematically check:
 For each function/endpoint, check inputs across:
 
 ```
-           | Valid | Invalid | Empty | Null | Boundary | Type Error |
------------+-------+---------+-------+------+----------+------------+
- Required  |   Y   |    Y    |   Y   |   Y  |    Y     |     Y      |
- Optional  |   Y   |    Y    |   Y   |   Y  |    Y     |     Y      |
+           | Valid | Invalid | Empty | Null/nil | Boundary | Type Error |
+-----------+-------+---------+-------+----------+----------+------------+
+ Required  |   Y   |    Y    |   Y   |    Y     |    Y     |     Y      |
+ Optional  |   Y   |    Y    |   Y   |    Y     |    Y     |     Y      |
 ```
 
 ## DDD-Specific Testing
@@ -72,7 +73,18 @@ For each acceptance criterion, verify from **3 angles minimum**:
 2. **Negative test** — Does it fail correctly with invalid input?
 3. **Edge test** — Does it handle boundary conditions?
 
-## QA Report Template
+---
+
+## Python Test Commands
+
+```bash
+uv run pytest tests/ -v --cov=src --cov-report=term-missing
+uv run pytest tests/domain/ -v                    # Domain tests only
+uv run pytest tests/ -v --tb=short                # Compact failure output
+uv run ruff check . && uv run mypy . && uv run pytest  # Full quality gates
+```
+
+## Python QA Report Template
 
 ```markdown
 # QA Report: [Ticket ID] - [Title]
@@ -88,7 +100,6 @@ For each acceptance criterion, verify from **3 angles minimum**:
 | # | Criterion | Status | Notes |
 |---|-----------|--------|-------|
 | 1 | [criterion text] | PASS | Verified via test_xxx |
-| 2 | [criterion text] | FAIL | See Issue #1 |
 
 ## Issues Found
 
@@ -96,19 +107,80 @@ For each acceptance criterion, verify from **3 angles minimum**:
 - **Severity**: Critical / High / Medium / Low
 - **Root Cause**: [Technical explanation]
 - **Fix**: [Proposed solution]
-
-## Recommendations
-1. [Action item]
 ```
 
-## Test Commands
+---
+
+## Go Test Commands
 
 ```bash
-uv run pytest tests/ -v --cov=src --cov-report=term-missing
-uv run pytest tests/domain/ -v                    # Domain tests only
-uv run pytest tests/ -v --tb=short                # Compact failure output
-uv run ruff check . && uv run mypy . && uv run pytest  # Full quality gates
+go test ./internal/domain/... -v -race                    # Domain only
+go test ./internal/application/... -v -race               # Application only
+go test ./internal/infrastructure/... -v -race            # Infrastructure only
+go test ./... -v -race -coverprofile=coverage.out         # All + coverage
+go tool cover -func=coverage.out                          # Coverage by function
+go tool cover -html=coverage.out -o coverage.html         # Visual coverage
+go test ./... -bench=. -benchmem                          # Benchmarks
 ```
+
+## Go-Specific Edge Cases
+
+| Angle | Go-Specific Checks |
+|-------|--------------------|
+| Boundary | Zero values (empty string, nil slice, 0 int), pointer vs value receiver |
+| Concurrency | Race conditions (`-race`), goroutine leaks, channel deadlocks |
+| Error | nil error vs sentinel error, wrapped errors, error chains with `errors.Is()` |
+| Interface | Nil interface vs nil pointer, interface satisfaction |
+| Memory | Slice capacity vs length, map nil vs empty, defensive copies |
+
+## Python → Go Test Parity Verification
+
+For each bounded context during Go migration, verify:
+
+1. Count Python tests: `grep -c "def test_" tests/domain/test_xxx.py`
+2. Count Go tests: `grep -c "func Test" internal/{context}/domain/*_test.go`
+3. Compare: same assertions, same edge cases, same boundary conditions
+
+### Common Translation Patterns
+
+| Python | Go |
+|--------|-----|
+| `pytest.parametrize` | Table-driven tests with `t.Run()` |
+| `pytest.fixture` | testify `suite.Suite` with `SetupTest()` |
+| `conftest.py` | `TestMain(m *testing.M)` |
+| `pytest.raises` | `require.Error` + `errors.Is` |
+| `assert x == y` | `assert.Equal(t, expected, actual)` |
+| `mock.patch` | Interface mocks (manual or mockgen) |
+
+## Go QA Report Template
+
+```markdown
+# QA Report: Layer [N] — [LAYER_NAME]
+
+## Summary
+- **Status**: PASS / FAIL
+- **Go Tests**: X passed, Y failed
+- **Python Parity**: X/Y tests translated (Z missing)
+- **Coverage**: XX%
+- **Race Detector**: PASS / FAIL
+
+## Parity Check
+
+| Python Test File | Go Test File | Python Tests | Go Tests | Parity |
+|-----------------|-------------|-------------|----------|--------|
+| test_domain_model.py | domain_model_test.go | 30 | 30 | 100% |
+
+## Missing Tests
+- [list of Python tests not yet translated]
+
+## Issues Found
+### Issue #1: [title]
+- Severity: Critical / High / Medium / Low
+- Root Cause: [explanation]
+- Fix: [proposed solution]
+```
+
+---
 
 ## Key Rules
 
@@ -117,4 +189,5 @@ uv run ruff check . && uv run mypy . && uv run pytest  # Full quality gates
 3. **Investigate failures deeply** — find root cause, not symptoms.
 4. **Domain tests are king** — most tests should be pure domain unit tests.
 5. **Mock at boundaries** — mock infrastructure, not domain logic.
-6. **Do NOT commit or push** — the user handles that.
+6. **Always run Go tests with `-race`** — the race detector is invaluable.
+7. **Do NOT commit or push** — the user handles that.
