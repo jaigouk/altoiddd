@@ -846,6 +846,213 @@ func TestSnapshotOldWithoutModeDefaultsExpress(t *testing.T) {
 	assert.Equal(t, ModeExpress, restored.Mode())
 }
 
+// -- Missing parity tests from test_discovery_mode.py --
+
+func TestSetModeExpressInCreatedState(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeExpress))
+	assert.Equal(t, ModeExpress, session.Mode())
+}
+
+func TestSetModeInAnsweringStateReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.NoError(t, session.AnswerQuestion("Q1", "Users"))
+	err := session.SetMode(ModeDeep)
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestSetModeTwiceSameValueReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	err := session.SetMode(ModeDeep)
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDefaultModeAfterPersonaDetection(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	assert.Equal(t, ModeExpress, session.Mode())
+}
+
+func TestExplicitExpressModeCompleteSetCompleted(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeExpress))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	assert.Equal(t, StatusCompleted, session.Status())
+	assert.Len(t, session.Events(), 1)
+}
+
+func TestStartChallengeFromWrongStateReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	// Still in ANSWERING, not ROUND_1_COMPLETE
+	err := session.StartChallenge()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestCompleteChallengeFromWrongStateReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete()) // ROUND_1_COMPLETE
+	err := session.CompleteChallenge()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestStartSimulateBeforeRound2CompleteReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete()) // ROUND_1_COMPLETE
+	err := session.StartSimulate()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestStartSimulateInExpressModeReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	err := session.StartSimulate()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestCompleteSimulationFromWrongStateReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	require.NoError(t, session.StartChallenge())
+	require.NoError(t, session.CompleteChallenge())
+	// ROUND_2_COMPLETE, not SIMULATING
+	err := session.CompleteSimulation()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestSnapshotIncludesModeAndRound(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	snapshot := session.ToSnapshot()
+	assert.Equal(t, "deep", snapshot["mode"])
+}
+
+func TestSnapshotNoneModeWhenNotSet(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	snapshot := session.ToSnapshot()
+	assert.Nil(t, snapshot["mode"])
+	assert.Nil(t, snapshot["round"])
+}
+
+func TestSnapshotRoundTripExpressDefaultPreservesExpress(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	snapshot := session.ToSnapshot()
+	restored, err := FromSnapshot(snapshot)
+	require.NoError(t, err)
+	assert.Equal(t, ModeExpress, restored.Mode())
+}
+
+func TestSnapshotRoundTripDeepRound1Complete(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	snapshot := session.ToSnapshot()
+	restored, err := FromSnapshot(snapshot)
+	require.NoError(t, err)
+	assert.Equal(t, ModeDeep, restored.Mode())
+	assert.Equal(t, StatusRound1Complete, restored.Status())
+}
+
+func TestSnapshotRoundTripThroughFullDeepFlow(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	require.NoError(t, session.StartChallenge())
+	snapshot := session.ToSnapshot()
+	restored, err := FromSnapshot(snapshot)
+	require.NoError(t, err)
+	assert.Equal(t, StatusChallenging, restored.Status())
+	assert.Equal(t, ModeDeep, restored.Mode())
+}
+
+func TestDeepCompleteSimulationEventHasAllFields(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	require.NoError(t, session.StartChallenge())
+	require.NoError(t, session.CompleteChallenge())
+	require.NoError(t, session.StartSimulate())
+	require.NoError(t, session.CompleteSimulation())
+	require.Len(t, session.Events(), 1)
+	event := session.Events()[0]
+	assert.Equal(t, session.SessionID(), event.SessionID())
+	assert.Equal(t, PersonaDeveloper, event.Persona())
+	assert.Equal(t, RegisterTechnical, event.Register())
+	assert.NotEmpty(t, event.Answers())
+}
+
+func TestModeSurvivesPersonaDetection(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	assert.Equal(t, ModeDeep, session.Mode())
+}
+
+func TestModeSurvivesAnswering(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AnswerQuestion("Q1", "Users"))
+	assert.Equal(t, ModeDeep, session.Mode())
+}
+
+func TestDeepRound1CannotCompleteTwice(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("Idea")
+	require.NoError(t, session.SetMode(ModeDeep))
+	require.NoError(t, session.DetectPersona("1"))
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	err := session.Complete()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
 func TestDiscoveryCompletedEventCarriesTechStack(t *testing.T) {
 	t.Parallel()
 	session := sessionWithPersona("1")

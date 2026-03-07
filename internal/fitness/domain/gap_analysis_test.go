@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alty-cli/alty/internal/fitness/domain"
-	rescue "github.com/alty-cli/alty/internal/rescue/domain"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 )
 
@@ -384,7 +383,5 @@ func TestGapAnalysisUsesRescueEvent(t *testing.T) {
 	_ = a.BeginExecution()
 	_ = a.Complete()
 	event := a.Events()[0]
-	// Verify it's the rescue domain event type
-	_ = rescue.NewGapAnalysisCompleted("x", "y", 0, 0)
 	assert.Equal(t, a.AnalysisID(), event.AnalysisID())
 }

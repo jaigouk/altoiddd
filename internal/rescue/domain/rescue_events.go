@@ -1,33 +1,19 @@
 // Package domain provides the Rescue bounded context's core domain model.
 // It contains domain events for the rescue/gap-analysis workflow.
+//
+// GapAnalysisCompleted lives in the shared kernel (internal/shared/domain/events)
+// because it is consumed across context boundaries (fitness, integration tests).
+// This file re-exports the type for convenience within the rescue context.
 package domain
 
-// GapAnalysisCompleted is emitted when a rescue gap analysis completes execution.
-type GapAnalysisCompleted struct {
-	analysisID   string
-	projectDir   string
-	gapsFound    int
-	gapsResolved int
-}
+import (
+	sharedevents "github.com/alty-cli/alty/internal/shared/domain/events"
+)
 
-// NewGapAnalysisCompleted creates a GapAnalysisCompleted event.
+// GapAnalysisCompleted is a type alias for the shared kernel event.
+type GapAnalysisCompleted = sharedevents.GapAnalysisCompleted
+
+// NewGapAnalysisCompleted delegates to the shared kernel constructor.
 func NewGapAnalysisCompleted(analysisID, projectDir string, gapsFound, gapsResolved int) GapAnalysisCompleted {
-	return GapAnalysisCompleted{
-		analysisID:   analysisID,
-		projectDir:   projectDir,
-		gapsFound:    gapsFound,
-		gapsResolved: gapsResolved,
-	}
+	return sharedevents.NewGapAnalysisCompleted(analysisID, projectDir, gapsFound, gapsResolved)
 }
-
-// AnalysisID returns the analysis identifier.
-func (e GapAnalysisCompleted) AnalysisID() string { return e.analysisID }
-
-// ProjectDir returns the project directory.
-func (e GapAnalysisCompleted) ProjectDir() string { return e.projectDir }
-
-// GapsFound returns the number of gaps found.
-func (e GapAnalysisCompleted) GapsFound() int { return e.gapsFound }
-
-// GapsResolved returns the number of gaps resolved.
-func (e GapAnalysisCompleted) GapsResolved() int { return e.gapsResolved }

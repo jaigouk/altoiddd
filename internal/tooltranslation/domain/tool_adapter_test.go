@@ -378,4 +378,88 @@ func TestMemoryMd(t *testing.T) {
 			assert.Less(t, lineCount, 200, "MEMORY.md has %d lines, must be under 200", lineCount)
 		}
 	})
+
+	t.Run("multi context model includes all contexts", func(t *testing.T) {
+		t.Parallel()
+		m := makeMultiContextModel(t)
+		content := getMemoryContent(t, m, vo.PythonUvProfile{})
+		assert.Contains(t, content, "Orders")
+		assert.Contains(t, content, "Notifications")
+	})
+
+	t.Run("grooming has template compliance", func(t *testing.T) {
+		t.Parallel()
+		content := getMemoryContent(t, makeModel(t), vo.PythonUvProfile{})
+		lower := strings.ToLower(content)
+		assert.Contains(t, lower, "template compliance")
+	})
+
+	t.Run("grooming has prd traceability", func(t *testing.T) {
+		t.Parallel()
+		content := getMemoryContent(t, makeModel(t), vo.PythonUvProfile{})
+		assert.True(t, strings.Contains(content, "PRD traceability") || strings.Contains(content, "prd-traceability"))
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Roo/OpenCode generic profile tests
+// ---------------------------------------------------------------------------
+
+func TestRooCodeGenericProfile(t *testing.T) {
+	t.Parallel()
+	m := makeModel(t)
+	sections := domain.NewRooCodeAdapter().Translate(m, vo.GenericProfile{})
+	rules := sectionByPath(sections, ".roo/rules/project-conventions.md")
+	require.NotNil(t, rules)
+	assert.NotContains(t, rules.Content(), "Quality Gates")
+}
+
+func TestOpenCodeGenericProfile(t *testing.T) {
+	t.Parallel()
+	m := makeModel(t)
+	sections := domain.NewOpenCodeAdapter().Translate(m, vo.GenericProfile{})
+	rules := sectionByPath(sections, ".opencode/rules/project-conventions.md")
+	require.NotNil(t, rules)
+	assert.NotContains(t, rules.Content(), "Quality Gates")
+}
+
+func TestCursorGenericProfile(t *testing.T) {
+	t.Parallel()
+	m := makeModel(t)
+	sections := domain.NewCursorAdapter().Translate(m, vo.GenericProfile{})
+
+	mdc := sectionByPath(sections, ".cursor/rules/project-conventions.mdc")
+	require.NotNil(t, mdc)
+	assert.NotContains(t, mdc.Content(), "Quality Gates")
+
+	agents := sectionByPath(sections, "AGENTS.md")
+	require.NotNil(t, agents)
+	assert.NotContains(t, agents.Content(), "Quality Gates")
+}
+
+func TestPythonProfileOutputFormat(t *testing.T) {
+	t.Parallel()
+	m := makeModel(t)
+	sections := domain.NewClaudeCodeAdapter().Translate(m, vo.PythonUvProfile{})
+	content := sections[0].Content()
+	assert.Contains(t, content, "```bash")
+	assert.Contains(t, content, "uv run ruff check .")
+	assert.Contains(t, content, "uv run mypy .")
+	assert.Contains(t, content, "uv run pytest")
+}
+
+func TestAllAdaptersAcceptProfile(t *testing.T) {
+	t.Parallel()
+	m := makeModel(t)
+	profile := vo.PythonUvProfile{}
+	adapters := []domain.ToolAdapter{
+		domain.NewClaudeCodeAdapter(),
+		domain.NewCursorAdapter(),
+		domain.NewRooCodeAdapter(),
+		domain.NewOpenCodeAdapter(),
+	}
+	for _, adapter := range adapters {
+		sections := adapter.Translate(m, profile)
+		assert.GreaterOrEqual(t, len(sections), 1)
+	}
 }

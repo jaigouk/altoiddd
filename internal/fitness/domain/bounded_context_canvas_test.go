@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,4 +86,49 @@ func TestBoundedContextCanvas(t *testing.T) {
 		roles[0] = domain.RoleDraft
 		assert.Equal(t, domain.RoleExecution, canvas.Roles()[0])
 	})
+
+	t.Run("empty communications", func(t *testing.T) {
+		t.Parallel()
+		sc := domain.NewStrategicClassification(vo.SubdomainGeneric, "unclassified", "Commodity")
+		canvas := domain.NewBoundedContextCanvas("Logging", "Records events", sc,
+			[]domain.Role{domain.RoleGateway}, nil, nil, nil, nil, nil, nil)
+		assert.Empty(t, canvas.InboundCommunication())
+		assert.Empty(t, canvas.OutboundCommunication())
+	})
+
+	t.Run("special chars in name", func(t *testing.T) {
+		t.Parallel()
+		sc := domain.NewStrategicClassification(vo.SubdomainSupporting, "Compliance", "Product")
+		canvas := domain.NewBoundedContextCanvas(`Auth & Identity "Service"`, "Handles auth", sc,
+			[]domain.Role{domain.RoleSpecification}, nil, nil, nil, nil, nil, nil)
+		assert.Equal(t, `Auth & Identity "Service"`, canvas.ContextName())
+	})
+
+	t.Run("very long purpose", func(t *testing.T) {
+		t.Parallel()
+		longPurpose := strings.Repeat("A", 600)
+		sc := domain.NewStrategicClassification(vo.SubdomainCore, "Revenue", "Genesis")
+		canvas := domain.NewBoundedContextCanvas("Verbose", longPurpose, sc,
+			[]domain.Role{domain.RoleExecution}, nil, nil, nil, nil, nil, nil)
+		assert.Len(t, canvas.Purpose(), 600)
+	})
+}
+
+func TestStrategicClassificationEquality(t *testing.T) {
+	t.Parallel()
+	a := domain.NewStrategicClassification(vo.SubdomainCore, "Revenue", "Genesis")
+	b := domain.NewStrategicClassification(vo.SubdomainCore, "Revenue", "Genesis")
+	assert.Equal(t, a, b)
+}
+
+func TestRoleCount(t *testing.T) {
+	t.Parallel()
+	all := []domain.Role{
+		domain.RoleExecution,
+		domain.RoleAnalysis,
+		domain.RoleGateway,
+		domain.RoleSpecification,
+		domain.RoleDraft,
+	}
+	assert.Len(t, all, 5)
 }

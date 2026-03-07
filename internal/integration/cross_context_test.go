@@ -13,7 +13,6 @@ import (
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	"github.com/alty-cli/alty/internal/shared/domain/events"
@@ -227,9 +226,9 @@ func TestEventsCarryCorrectData(t *testing.T) {
 		assert.Equal(t, "/tmp/project", evt.ProjectDir())
 	})
 
-	t.Run("GapAnalysisCompleted event from rescue context", func(t *testing.T) {
+	t.Run("GapAnalysisCompleted event from shared events", func(t *testing.T) {
 		t.Parallel()
-		evt := rescuedomain.NewGapAnalysisCompleted("analysis-1", "/tmp/rescue", 5, 3)
+		evt := events.NewGapAnalysisCompleted("analysis-1", "/tmp/rescue", 5, 3)
 		assert.Equal(t, "analysis-1", evt.AnalysisID())
 		assert.Equal(t, "/tmp/rescue", evt.ProjectDir())
 		assert.Equal(t, 5, evt.GapsFound())

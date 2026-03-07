@@ -82,6 +82,36 @@ func (e DomainModelGenerated) AggregateDesigns() []vo.AggregateDesign {
 	return out
 }
 
+// GapAnalysisCompleted is emitted when a rescue gap analysis completes execution.
+type GapAnalysisCompleted struct {
+	analysisID   string
+	projectDir   string
+	gapsFound    int
+	gapsResolved int
+}
+
+// NewGapAnalysisCompleted creates a GapAnalysisCompleted event.
+func NewGapAnalysisCompleted(analysisID, projectDir string, gapsFound, gapsResolved int) GapAnalysisCompleted {
+	return GapAnalysisCompleted{
+		analysisID:   analysisID,
+		projectDir:   projectDir,
+		gapsFound:    gapsFound,
+		gapsResolved: gapsResolved,
+	}
+}
+
+// AnalysisID returns the analysis identifier.
+func (e GapAnalysisCompleted) AnalysisID() string { return e.analysisID }
+
+// ProjectDir returns the project directory.
+func (e GapAnalysisCompleted) ProjectDir() string { return e.projectDir }
+
+// GapsFound returns the number of gaps found.
+func (e GapAnalysisCompleted) GapsFound() int { return e.gapsFound }
+
+// GapsResolved returns the number of gaps resolved.
+func (e GapAnalysisCompleted) GapsResolved() int { return e.gapsResolved }
+
 // ConfigsGenerated is emitted when tool configs are approved and ready for output.
 type ConfigsGenerated struct {
 	toolNames   []string
