@@ -45,6 +45,7 @@ func TestNewApp_EventBusIsWired(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, app.EventBus)
+	assert.NotNil(t, app.Subscriber, "Subscriber")
 }
 
 func TestNewApp_Close_NoError(t *testing.T) {

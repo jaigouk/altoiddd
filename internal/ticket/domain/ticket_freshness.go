@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -34,6 +35,41 @@ func (d ContextDiff) TriggeringTicketID() string { return d.triggeringTicketID }
 
 // ProducedAt returns when the diff was produced.
 func (d ContextDiff) ProducedAt() string { return d.producedAt }
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (d ContextDiff) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Summary            string `json:"summary"`
+		TriggeringTicketID string `json:"triggering_ticket_id"`
+		ProducedAt         string `json:"produced_at"`
+	}
+	data, err := json.Marshal(proxy{
+		Summary:            d.summary,
+		TriggeringTicketID: d.triggeringTicketID,
+		ProducedAt:         d.producedAt,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling ContextDiff: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (d *ContextDiff) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Summary            string `json:"summary"`
+		TriggeringTicketID string `json:"triggering_ticket_id"`
+		ProducedAt         string `json:"produced_at"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling ContextDiff: %w", err)
+	}
+	d.summary = p.Summary
+	d.triggeringTicketID = p.TriggeringTicketID
+	d.producedAt = p.ProducedAt
+	return nil
+}
 
 // FreshnessFlag is a single flag indicating a ticket needs review.
 type FreshnessFlag struct {

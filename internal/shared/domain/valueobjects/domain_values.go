@@ -1,6 +1,11 @@
 // Package valueobjects provides shared value objects for the alty domain.
 package valueobjects
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // SubdomainClassification classifies a subdomain per Khononov's decision tree.
 type SubdomainClassification string
 
@@ -69,6 +74,49 @@ func (d DomainStory) Observations() []string {
 	return out
 }
 
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (d DomainStory) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Name         string   `json:"name"`
+		Actors       []string `json:"actors"`
+		Trigger      string   `json:"trigger"`
+		Steps        []string `json:"steps"`
+		Observations []string `json:"observations"`
+	}
+	data, err := json.Marshal(proxy{
+		Name:         d.name,
+		Actors:       d.actors,
+		Trigger:      d.trigger,
+		Steps:        d.steps,
+		Observations: d.observations,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling DomainStory: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (d *DomainStory) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Name         string   `json:"name"`
+		Actors       []string `json:"actors"`
+		Trigger      string   `json:"trigger"`
+		Steps        []string `json:"steps"`
+		Observations []string `json:"observations"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling DomainStory: %w", err)
+	}
+	d.name = p.Name
+	d.actors = p.Actors
+	d.trigger = p.Trigger
+	d.steps = p.Steps
+	d.observations = p.Observations
+	return nil
+}
+
 // DomainBoundedContext is a DDD bounded context value object for the domain model.
 // Named DomainBoundedContext to avoid collision with ddd.BoundedContext.
 type DomainBoundedContext struct {
@@ -116,6 +164,49 @@ func (bc DomainBoundedContext) Classification() *SubdomainClassification { retur
 // ClassificationRationale returns the rationale for the classification.
 func (bc DomainBoundedContext) ClassificationRationale() string { return bc.classificationRationale }
 
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (bc DomainBoundedContext) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Name                    string                   `json:"name"`
+		Responsibility          string                   `json:"responsibility"`
+		KeyDomainObjects        []string                 `json:"key_domain_objects"`
+		Classification          *SubdomainClassification `json:"classification"`
+		ClassificationRationale string                   `json:"classification_rationale"`
+	}
+	data, err := json.Marshal(proxy{
+		Name:                    bc.name,
+		Responsibility:          bc.responsibility,
+		KeyDomainObjects:        bc.keyDomainObjects,
+		Classification:          bc.classification,
+		ClassificationRationale: bc.classificationRationale,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling DomainBoundedContext: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (bc *DomainBoundedContext) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Name                    string                   `json:"name"`
+		Responsibility          string                   `json:"responsibility"`
+		KeyDomainObjects        []string                 `json:"key_domain_objects"`
+		Classification          *SubdomainClassification `json:"classification"`
+		ClassificationRationale string                   `json:"classification_rationale"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling DomainBoundedContext: %w", err)
+	}
+	bc.name = p.Name
+	bc.responsibility = p.Responsibility
+	bc.keyDomainObjects = p.KeyDomainObjects
+	bc.classification = p.Classification
+	bc.classificationRationale = p.ClassificationRationale
+	return nil
+}
+
 // ContextRelationship is a relationship between two bounded contexts.
 type ContextRelationship struct {
 	upstream           string
@@ -140,6 +231,41 @@ func (cr ContextRelationship) Downstream() string { return cr.downstream }
 
 // IntegrationPattern returns the integration pattern.
 func (cr ContextRelationship) IntegrationPattern() string { return cr.integrationPattern }
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (cr ContextRelationship) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Upstream           string `json:"upstream"`
+		Downstream         string `json:"downstream"`
+		IntegrationPattern string `json:"integration_pattern"`
+	}
+	data, err := json.Marshal(proxy{
+		Upstream:           cr.upstream,
+		Downstream:         cr.downstream,
+		IntegrationPattern: cr.integrationPattern,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling ContextRelationship: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (cr *ContextRelationship) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Upstream           string `json:"upstream"`
+		Downstream         string `json:"downstream"`
+		IntegrationPattern string `json:"integration_pattern"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling ContextRelationship: %w", err)
+	}
+	cr.upstream = p.Upstream
+	cr.downstream = p.Downstream
+	cr.integrationPattern = p.IntegrationPattern
+	return nil
+}
 
 // AggregateDesign is a design for an aggregate within a Core subdomain bounded context.
 type AggregateDesign struct {
@@ -211,4 +337,55 @@ func (a AggregateDesign) DomainEvents() []string {
 	out := make([]string, len(a.domainEvents))
 	copy(out, a.domainEvents)
 	return out
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (a AggregateDesign) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Name             string   `json:"name"`
+		ContextName      string   `json:"context_name"`
+		RootEntity       string   `json:"root_entity"`
+		ContainedObjects []string `json:"contained_objects"`
+		Invariants       []string `json:"invariants"`
+		Commands         []string `json:"commands"`
+		DomainEvents     []string `json:"domain_events"`
+	}
+	data, err := json.Marshal(proxy{
+		Name:             a.name,
+		ContextName:      a.contextName,
+		RootEntity:       a.rootEntity,
+		ContainedObjects: a.containedObjects,
+		Invariants:       a.invariants,
+		Commands:         a.commands,
+		DomainEvents:     a.domainEvents,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling AggregateDesign: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (a *AggregateDesign) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Name             string   `json:"name"`
+		ContextName      string   `json:"context_name"`
+		RootEntity       string   `json:"root_entity"`
+		ContainedObjects []string `json:"contained_objects"`
+		Invariants       []string `json:"invariants"`
+		Commands         []string `json:"commands"`
+		DomainEvents     []string `json:"domain_events"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling AggregateDesign: %w", err)
+	}
+	a.name = p.Name
+	a.contextName = p.ContextName
+	a.rootEntity = p.RootEntity
+	a.containedObjects = p.ContainedObjects
+	a.invariants = p.Invariants
+	a.commands = p.Commands
+	a.domainEvents = p.DomainEvents
+	return nil
 }

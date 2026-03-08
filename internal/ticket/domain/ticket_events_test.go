@@ -1,9 +1,11 @@
 package domain_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/alty-cli/alty/internal/ticket/domain"
 )
@@ -40,4 +42,23 @@ func TestTicketPlanApprovedDefensiveCopy(t *testing.T) {
 
 	assert.Equal(t, "t-1", event.ApprovedTicketIDs()[0])
 	assert.Equal(t, "t-3", event.DismissedTicketIDs()[0])
+}
+
+func TestTicketPlanApproved_JSONRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	original := domain.NewTicketPlanApproved("plan-rt", []string{"t-1", "t-2"}, []string{"t-3"})
+
+	data, err := json.Marshal(original)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"plan_id"`)
+	assert.Contains(t, string(data), `"approved_ticket_ids"`)
+
+	var restored domain.TicketPlanApproved
+	err = json.Unmarshal(data, &restored)
+	require.NoError(t, err)
+
+	assert.Equal(t, "plan-rt", restored.PlanID())
+	assert.Equal(t, original.ApprovedTicketIDs(), restored.ApprovedTicketIDs())
+	assert.Equal(t, original.DismissedTicketIDs(), restored.DismissedTicketIDs())
 }

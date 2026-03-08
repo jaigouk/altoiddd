@@ -1,6 +1,11 @@
 package domain
 
-import vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+import (
+	"encoding/json"
+	"fmt"
+
+	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+)
 
 // DiscoveryCompletedEvent is emitted when a discovery session completes successfully.
 type DiscoveryCompletedEvent struct {
@@ -94,4 +99,51 @@ func (e DiscoveryCompletedEvent) Equal(other DiscoveryCompletedEvent) bool {
 		return false
 	}
 	return true
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e DiscoveryCompletedEvent) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		TechStack             *vo.TechStack     `json:"tech_stack"`
+		SessionID             string            `json:"session_id"`
+		Persona               DiscoveryPersona  `json:"persona"`
+		Register              DiscoveryRegister `json:"register"`
+		Answers               []Answer          `json:"answers"`
+		PlaybackConfirmations []Playback        `json:"playback_confirmations"`
+	}
+	data, err := json.Marshal(proxy{
+		TechStack:             e.techStack,
+		SessionID:             e.sessionID,
+		Persona:               e.persona,
+		Register:              e.register,
+		Answers:               e.answers,
+		PlaybackConfirmations: e.playbackConfirmations,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling DiscoveryCompletedEvent: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *DiscoveryCompletedEvent) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		TechStack             *vo.TechStack     `json:"tech_stack"`
+		SessionID             string            `json:"session_id"`
+		Persona               DiscoveryPersona  `json:"persona"`
+		Register              DiscoveryRegister `json:"register"`
+		Answers               []Answer          `json:"answers"`
+		PlaybackConfirmations []Playback        `json:"playback_confirmations"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling DiscoveryCompletedEvent: %w", err)
+	}
+	e.techStack = p.TechStack
+	e.sessionID = p.SessionID
+	e.persona = p.Persona
+	e.register = p.Register
+	e.answers = p.Answers
+	e.playbackConfirmations = p.PlaybackConfirmations
+	return nil
 }

@@ -1,7 +1,10 @@
 // Package domain contains the Discovery bounded context domain model.
 package domain
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // DiscoveryPersona is the user's self-identified role during discovery.
 // NOTE: Named DiscoveryPersona to avoid collision with shared kernel PersonaType.
@@ -142,6 +145,37 @@ func (a Answer) Equal(other Answer) bool {
 	return a.questionID == other.questionID && a.responseText == other.responseText
 }
 
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (a Answer) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		QuestionID   string `json:"question_id"`
+		ResponseText string `json:"response_text"`
+	}
+	data, err := json.Marshal(proxy{
+		QuestionID:   a.questionID,
+		ResponseText: a.responseText,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling Answer: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (a *Answer) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		QuestionID   string `json:"question_id"`
+		ResponseText string `json:"response_text"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling Answer: %w", err)
+	}
+	a.questionID = p.QuestionID
+	a.responseText = p.ResponseText
+	return nil
+}
+
 // Playback is a playback summary shown to the user for confirmation.
 type Playback struct {
 	summaryText string
@@ -168,4 +202,39 @@ func (p Playback) Equal(other Playback) bool {
 	return p.summaryText == other.summaryText &&
 		p.confirmed == other.confirmed &&
 		p.corrections == other.corrections
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (p Playback) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		SummaryText string `json:"summary_text"`
+		Confirmed   bool   `json:"confirmed"`
+		Corrections string `json:"corrections"`
+	}
+	data, err := json.Marshal(proxy{
+		SummaryText: p.summaryText,
+		Confirmed:   p.confirmed,
+		Corrections: p.corrections,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling Playback: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (p *Playback) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		SummaryText string `json:"summary_text"`
+		Confirmed   bool   `json:"confirmed"`
+		Corrections string `json:"corrections"`
+	}
+	var pp proxy
+	if err := json.Unmarshal(data, &pp); err != nil {
+		return fmt.Errorf("unmarshaling Playback: %w", err)
+	}
+	p.summaryText = pp.SummaryText
+	p.confirmed = pp.Confirmed
+	p.corrections = pp.Corrections
+	return nil
 }

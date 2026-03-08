@@ -1,6 +1,9 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
+
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -105,6 +108,49 @@ func (c Contract) ForbiddenModules() []string {
 	return out
 }
 
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (c Contract) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Name             string       `json:"name"`
+		ContractType     ContractType `json:"contract_type"`
+		ContextName      string       `json:"context_name"`
+		Modules          []string     `json:"modules"`
+		ForbiddenModules []string     `json:"forbidden_modules"`
+	}
+	data, err := json.Marshal(proxy{
+		Name:             c.name,
+		ContractType:     c.contractType,
+		ContextName:      c.contextName,
+		Modules:          c.modules,
+		ForbiddenModules: c.forbiddenModules,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling Contract: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (c *Contract) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Name             string       `json:"name"`
+		ContractType     ContractType `json:"contract_type"`
+		ContextName      string       `json:"context_name"`
+		Modules          []string     `json:"modules"`
+		ForbiddenModules []string     `json:"forbidden_modules"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling Contract: %w", err)
+	}
+	c.name = p.Name
+	c.contractType = p.ContractType
+	c.contextName = p.ContextName
+	c.modules = p.Modules
+	c.forbiddenModules = p.ForbiddenModules
+	return nil
+}
+
 // ArchRule is a pytestarch rule for architecture boundary enforcement.
 type ArchRule struct {
 	name        string
@@ -125,3 +171,38 @@ func (r ArchRule) Assertion() string { return r.assertion }
 
 // ContextName returns the bounded context name.
 func (r ArchRule) ContextName() string { return r.contextName }
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (r ArchRule) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Name        string `json:"name"`
+		Assertion   string `json:"assertion"`
+		ContextName string `json:"context_name"`
+	}
+	data, err := json.Marshal(proxy{
+		Name:        r.name,
+		Assertion:   r.assertion,
+		ContextName: r.contextName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling ArchRule: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (r *ArchRule) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Name        string `json:"name"`
+		Assertion   string `json:"assertion"`
+		ContextName string `json:"context_name"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling ArchRule: %w", err)
+	}
+	r.name = p.Name
+	r.assertion = p.Assertion
+	r.contextName = p.ContextName
+	return nil
+}

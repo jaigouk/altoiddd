@@ -4,7 +4,9 @@
 package composition
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
 	bootstrapinfra "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
@@ -73,10 +75,14 @@ type App struct {
 	ChallengeHandler *challengeapp.ChallengeHandler
 
 	// --- Infrastructure ---
-	EventBus *eventbus.Bus
+	EventBus   *eventbus.Bus
+	Subscriber *eventbus.Subscriber
 
 	// --- Metadata ---
 	Version string
+
+	// cancelEvents cancels the subscriber context, signaling listener goroutines to exit.
+	cancelEvents context.CancelFunc
 }
 
 // NewApp creates a fully wired App with all dependencies injected.
@@ -117,8 +123,21 @@ func NewApp() (*App, error) {
 	// 11. Research infrastructure
 	spikeFollowUpAdapter := researchinfra.NewSpikeFollowUpAdapter()
 
-	// --- Event publisher ---
+	// --- Event publisher + subscriber ---
 	publisher := eventbus.NewPublisher(bus)
+
+	subscriber, err := wireEventSubscribers(bus, slog.Default())
+	if err != nil {
+		_ = bus.Close()
+		return nil, fmt.Errorf("wiring event subscribers: %w", err)
+	}
+
+	subCtx, cancelSub := context.WithCancel(context.Background())
+	if err := subscriber.Start(subCtx); err != nil {
+		cancelSub()
+		_ = bus.Close()
+		return nil, fmt.Errorf("starting event subscriber: %w", err)
+	}
 
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
@@ -160,12 +179,19 @@ func NewApp() (*App, error) {
 		RescueHandler:             rescueHandler,
 		ChallengeHandler:          challengeHandler,
 		EventBus:                  bus,
+		Subscriber:                subscriber,
 		Version:                   Version,
+		cancelEvents:              cancelSub,
 	}, nil
 }
 
-// Close shuts down the event bus and releases resources.
+// Close shuts down the event subscriber and bus in correct order:
+// 1. Cancel subscriber context (signals goroutines to exit)
+// 2. Wait for subscriber goroutines to finish
+// 3. Close the event bus
 func (a *App) Close() error {
+	a.cancelEvents()
+	a.Subscriber.Wait()
 	if err := a.EventBus.Close(); err != nil {
 		return fmt.Errorf("closing event bus: %w", err)
 	}

@@ -4,6 +4,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -81,6 +82,37 @@ func (e ConfigsGeneratedEvent) OutputPaths() []string {
 	out := make([]string, len(e.outputPaths))
 	copy(out, e.outputPaths)
 	return out
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e ConfigsGeneratedEvent) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		ToolNames   []string `json:"tool_names"`
+		OutputPaths []string `json:"output_paths"`
+	}
+	data, err := json.Marshal(proxy{
+		ToolNames:   e.toolNames,
+		OutputPaths: e.outputPaths,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling ConfigsGeneratedEvent: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *ConfigsGeneratedEvent) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		ToolNames   []string `json:"tool_names"`
+		OutputPaths []string `json:"output_paths"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling ConfigsGeneratedEvent: %w", err)
+	}
+	e.toolNames = p.ToolNames
+	e.outputPaths = p.OutputPaths
+	return nil
 }
 
 // ToolConfig is the aggregate root: generates and manages tool-native configuration sections.

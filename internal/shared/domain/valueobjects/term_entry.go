@@ -1,5 +1,10 @@
 package valueobjects
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // TermEntry is a single term in the ubiquitous language glossary.
 type TermEntry struct {
 	term              string
@@ -34,6 +39,45 @@ func (te TermEntry) SourceQuestionIDs() []string {
 	out := make([]string, len(te.sourceQuestionIDs))
 	copy(out, te.sourceQuestionIDs)
 	return out
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (te TermEntry) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		Term              string   `json:"term"`
+		Definition        string   `json:"definition"`
+		ContextName       string   `json:"context_name"`
+		SourceQuestionIDs []string `json:"source_question_ids"`
+	}
+	data, err := json.Marshal(proxy{
+		Term:              te.term,
+		Definition:        te.definition,
+		ContextName:       te.contextName,
+		SourceQuestionIDs: te.sourceQuestionIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling TermEntry: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (te *TermEntry) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		Term              string   `json:"term"`
+		Definition        string   `json:"definition"`
+		ContextName       string   `json:"context_name"`
+		SourceQuestionIDs []string `json:"source_question_ids"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling TermEntry: %w", err)
+	}
+	te.term = p.Term
+	te.definition = p.Definition
+	te.contextName = p.ContextName
+	te.sourceQuestionIDs = p.SourceQuestionIDs
+	return nil
 }
 
 // WithContextName returns a new TermEntry with a different context name.

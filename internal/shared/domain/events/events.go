@@ -2,6 +2,9 @@
 package events
 
 import (
+	"encoding/json"
+	"fmt"
+
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -139,4 +142,123 @@ func (e ConfigsGenerated) OutputPaths() []string {
 	out := make([]string, len(e.outputPaths))
 	copy(out, e.outputPaths)
 	return out
+}
+
+// --- JSON serialization (event bus roundtrip) ---
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e DomainModelGenerated) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		ModelID              string                    `json:"model_id"`
+		DomainStories        []vo.DomainStory          `json:"domain_stories"`
+		UbiquitousLanguage   []vo.TermEntry            `json:"ubiquitous_language"`
+		BoundedContexts      []vo.DomainBoundedContext `json:"bounded_contexts"`
+		ContextRelationships []vo.ContextRelationship  `json:"context_relationships"`
+		AggregateDesigns     []vo.AggregateDesign      `json:"aggregate_designs"`
+	}
+	data, err := json.Marshal(proxy{
+		ModelID:              e.modelID,
+		DomainStories:        e.domainStories,
+		UbiquitousLanguage:   e.ubiquitousLanguage,
+		BoundedContexts:      e.boundedContexts,
+		ContextRelationships: e.contextRelationships,
+		AggregateDesigns:     e.aggregateDesigns,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling DomainModelGenerated: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *DomainModelGenerated) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		ModelID              string                    `json:"model_id"`
+		DomainStories        []vo.DomainStory          `json:"domain_stories"`
+		UbiquitousLanguage   []vo.TermEntry            `json:"ubiquitous_language"`
+		BoundedContexts      []vo.DomainBoundedContext `json:"bounded_contexts"`
+		ContextRelationships []vo.ContextRelationship  `json:"context_relationships"`
+		AggregateDesigns     []vo.AggregateDesign      `json:"aggregate_designs"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling DomainModelGenerated: %w", err)
+	}
+	e.modelID = p.ModelID
+	e.domainStories = p.DomainStories
+	e.ubiquitousLanguage = p.UbiquitousLanguage
+	e.boundedContexts = p.BoundedContexts
+	e.contextRelationships = p.ContextRelationships
+	e.aggregateDesigns = p.AggregateDesigns
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e GapAnalysisCompleted) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		AnalysisID   string `json:"analysis_id"`
+		ProjectDir   string `json:"project_dir"`
+		GapsFound    int    `json:"gaps_found"`
+		GapsResolved int    `json:"gaps_resolved"`
+	}
+	data, err := json.Marshal(proxy{
+		AnalysisID:   e.analysisID,
+		ProjectDir:   e.projectDir,
+		GapsFound:    e.gapsFound,
+		GapsResolved: e.gapsResolved,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling GapAnalysisCompleted: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *GapAnalysisCompleted) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		AnalysisID   string `json:"analysis_id"`
+		ProjectDir   string `json:"project_dir"`
+		GapsFound    int    `json:"gaps_found"`
+		GapsResolved int    `json:"gaps_resolved"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling GapAnalysisCompleted: %w", err)
+	}
+	e.analysisID = p.AnalysisID
+	e.projectDir = p.ProjectDir
+	e.gapsFound = p.GapsFound
+	e.gapsResolved = p.GapsResolved
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e ConfigsGenerated) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		ToolNames   []string `json:"tool_names"`
+		OutputPaths []string `json:"output_paths"`
+	}
+	data, err := json.Marshal(proxy{
+		ToolNames:   e.toolNames,
+		OutputPaths: e.outputPaths,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling ConfigsGenerated: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *ConfigsGenerated) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		ToolNames   []string `json:"tool_names"`
+		OutputPaths []string `json:"output_paths"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling ConfigsGenerated: %w", err)
+	}
+	e.toolNames = p.ToolNames
+	e.outputPaths = p.OutputPaths
+	return nil
 }
