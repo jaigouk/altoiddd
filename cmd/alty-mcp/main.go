@@ -30,7 +30,10 @@ import (
 	mcptools "github.com/alty-cli/alty/internal/mcp"
 )
 
-const version = "0.1.0"
+const (
+	version              = "0.1.0"
+	defaultModelStoreTTL = 30 * time.Minute
+)
 
 func main() {
 	transport := flag.String("transport", "stdio", "Transport mode: stdio, sse, http, all")
@@ -92,6 +95,10 @@ func newServer(app *composition.App) *mcp.Server {
 	registerTools(server)
 	mcptools.RegisterResources(server, app)
 	mcptools.RegisterDiscoveryTools(server, app)
+
+	// Bootstrap + generation tools with shared model store.
+	modelStore := mcptools.NewModelStore(defaultModelStoreTTL)
+	mcptools.RegisterBootstrapTools(server, app, modelStore)
 
 	return server
 }
