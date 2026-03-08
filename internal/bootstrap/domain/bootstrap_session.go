@@ -3,9 +3,8 @@ package domain
 import (
 	"fmt"
 
-	"github.com/google/uuid"
-
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -36,7 +35,7 @@ type BootstrapSession struct {
 // NewBootstrapSession creates a new session in CREATED state.
 func NewBootstrapSession(projectDir string) *BootstrapSession {
 	return &BootstrapSession{
-		sessionID:  uuid.New().String(),
+		sessionID:  identity.NewID(),
 		projectDir: projectDir,
 		status:     SessionStatusCreated,
 	}

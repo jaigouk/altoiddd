@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -63,7 +62,7 @@ type DiscoverySession struct {
 // NewDiscoverySession creates a new session in CREATED state.
 func NewDiscoverySession(readmeContent string) *DiscoverySession {
 	return &DiscoverySession{
-		sessionID:     uuid.New().String(),
+		sessionID:     identity.NewID(),
 		readmeContent: readmeContent,
 		status:        StatusCreated,
 		skipped:       make(map[string]bool),

@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
@@ -96,7 +95,7 @@ type ToolConfig struct {
 // NewToolConfig creates a new ToolConfig aggregate root.
 func NewToolConfig(tool SupportedTool) *ToolConfig {
 	return &ToolConfig{
-		configID: uuid.New().String(),
+		configID: identity.NewID(),
 		tool:     tool,
 	}
 }

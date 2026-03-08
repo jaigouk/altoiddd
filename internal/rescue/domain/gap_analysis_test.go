@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/fitness/domain"
+	"github.com/alty-cli/alty/internal/rescue/domain"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 )
 

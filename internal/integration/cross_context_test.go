@@ -13,6 +13,7 @@ import (
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
+	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	"github.com/alty-cli/alty/internal/shared/domain/events"
@@ -293,7 +294,7 @@ func TestErrorSentinelPropagation(t *testing.T) {
 
 	t.Run("GapAnalysis state machine error unwraps to shared sentinel", func(t *testing.T) {
 		t.Parallel()
-		analysis := fitnessdomain.NewGapAnalysis("/tmp/project")
+		analysis := rescuedomain.NewGapAnalysis("/tmp/project")
 		// Try to complete from scanning state (should require executing)
 		err := analysis.Complete()
 		require.Error(t, err)
@@ -327,11 +328,11 @@ func TestErrorSentinelPropagation(t *testing.T) {
 func TestCrossContextTypeCompatibility(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Fitness uses shared GapAnalysisCompleted event", func(t *testing.T) {
+	t.Run("Rescue uses shared GapAnalysisCompleted event", func(t *testing.T) {
 		t.Parallel()
-		// GapAnalysis (in fitness) stores sharedevents.GapAnalysisCompleted events
-		analysis := fitnessdomain.NewGapAnalysis("/tmp/project")
-		scan := fitnessdomain.NewProjectScan(
+		// GapAnalysis (in rescue) stores sharedevents.GapAnalysisCompleted events
+		analysis := rescuedomain.NewGapAnalysis("/tmp/project")
+		scan := rescuedomain.NewProjectScan(
 			"/tmp/project",
 			[]string{"README.md"}, []string{".editorconfig"},
 			[]string{"src/"}, false, false, true, false, false,
@@ -339,7 +340,7 @@ func TestCrossContextTypeCompatibility(t *testing.T) {
 		require.NoError(t, analysis.SetScan(scan))
 		require.NoError(t, analysis.Analyze(nil))
 		require.NoError(t, analysis.CreatePlan(
-			fitnessdomain.NewMigrationPlan("plan-1", nil, "alty/init", false),
+			rescuedomain.NewMigrationPlan("plan-1", nil, "alty/init", false),
 		))
 		require.NoError(t, analysis.BeginExecution())
 		require.NoError(t, analysis.Complete())

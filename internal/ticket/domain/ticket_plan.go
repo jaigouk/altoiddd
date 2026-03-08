@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
@@ -24,7 +23,7 @@ type TicketPlan struct {
 
 // NewTicketPlan creates a new TicketPlan aggregate root.
 func NewTicketPlan() *TicketPlan {
-	return &TicketPlan{planID: uuid.New().String()}
+	return &TicketPlan{planID: identity.NewID()}
 }
 
 // PlanID returns the plan identifier.
@@ -103,7 +102,7 @@ func (p *TicketPlan) GeneratePlan(model *ddd.DomainModel, profile vo.StackProfil
 				bc.Name(), domainerrors.ErrInvariantViolation)
 		}
 
-		epicID := uuid.New().String()
+		epicID := identity.NewID()
 		epicIDByCtx[bc.Name()] = epicID
 		classification := *bc.Classification()
 
@@ -123,7 +122,7 @@ func (p *TicketPlan) GeneratePlan(model *ddd.DomainModel, profile vo.StackProfil
 			stubAgg := vo.NewAggregateDesign(bc.Name(), bc.Name(), bc.Name(), nil, nil, nil, nil)
 			stubDesc := RenderTicketDetail(stubAgg, vo.TicketDetailStub, profile)
 			p.tickets = append(p.tickets, NewGeneratedTicket(
-				uuid.New().String(),
+				identity.NewID(),
 				"Integrate "+bc.Name()+" boundary",
 				stubDesc,
 				vo.TicketDetailStub,
@@ -133,7 +132,7 @@ func (p *TicketPlan) GeneratePlan(model *ddd.DomainModel, profile vo.StackProfil
 			for _, agg := range ctxAggs {
 				desc := RenderTicketDetail(agg, detailLevel, profile)
 				p.tickets = append(p.tickets, NewGeneratedTicket(
-					uuid.New().String(),
+					identity.NewID(),
 					"Implement "+agg.Name()+" aggregate",
 					desc,
 					detailLevel,

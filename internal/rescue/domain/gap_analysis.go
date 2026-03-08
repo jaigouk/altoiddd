@@ -3,10 +3,8 @@ package domain
 import (
 	"fmt"
 
-	"github.com/google/uuid"
-
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	sharedevents "github.com/alty-cli/alty/internal/shared/domain/events"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 )
 
 // GapType classifies a structural gap found during project analysis.
@@ -210,13 +208,13 @@ type GapAnalysis struct {
 	gaps          []Gap
 	plan          *MigrationPlan
 	failureReason string
-	events        []sharedevents.GapAnalysisCompleted
+	events        []GapAnalysisCompleted
 }
 
 // NewGapAnalysis creates a new GapAnalysis aggregate root.
 func NewGapAnalysis(projectDir string) *GapAnalysis {
 	return &GapAnalysis{
-		analysisID: uuid.New().String(),
+		analysisID: identity.NewID(),
 		projectDir: projectDir,
 		status:     AnalysisStatusScanning,
 	}
@@ -245,8 +243,8 @@ func (a *GapAnalysis) Gaps() []Gap {
 func (a *GapAnalysis) Plan() *MigrationPlan { return a.plan }
 
 // Events returns a defensive copy of domain events.
-func (a *GapAnalysis) Events() []sharedevents.GapAnalysisCompleted {
-	out := make([]sharedevents.GapAnalysisCompleted, len(a.events))
+func (a *GapAnalysis) Events() []GapAnalysisCompleted {
+	out := make([]GapAnalysisCompleted, len(a.events))
 	copy(out, a.events)
 	return out
 }
@@ -300,7 +298,7 @@ func (a *GapAnalysis) Complete() error {
 		return fmt.Errorf("cannot complete in %s state: %w", string(a.status), domainerrors.ErrInvariantViolation)
 	}
 	a.status = AnalysisStatusCompleted
-	a.events = append(a.events, sharedevents.NewGapAnalysisCompleted(
+	a.events = append(a.events, NewGapAnalysisCompleted(
 		a.analysisID, a.projectDir, len(a.gaps), len(a.gaps),
 	))
 	return nil

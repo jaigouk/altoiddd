@@ -28,6 +28,25 @@ var validCategories = map[string]KnowledgeCategory{
 	"cross-tool":  CategoryCrossTool,
 }
 
+// AllCategoryValues returns all valid category string values.
+func AllCategoryValues() []string {
+	return []string{
+		string(CategoryDDD),
+		string(CategoryTools),
+		string(CategoryConventions),
+		string(CategoryCrossTool),
+	}
+}
+
+// ParseCategory parses a string into a KnowledgeCategory.
+func ParseCategory(s string) (KnowledgeCategory, error) {
+	cat, ok := validCategories[s]
+	if !ok {
+		return "", fmt.Errorf("invalid knowledge category %q: %w", s, domainerrors.ErrInvariantViolation)
+	}
+	return cat, nil
+}
+
 // KnowledgePath is an RLM-addressable path to a knowledge entry.
 type KnowledgePath struct {
 	raw string

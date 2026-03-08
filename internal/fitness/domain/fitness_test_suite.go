@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -56,7 +55,7 @@ type FitnessTestSuite struct {
 // NewFitnessTestSuite creates a new FitnessTestSuite aggregate root.
 func NewFitnessTestSuite(rootPackage string) *FitnessTestSuite {
 	return &FitnessTestSuite{
-		suiteID:     uuid.New().String(),
+		suiteID:     identity.NewID(),
 		rootPackage: rootPackage,
 	}
 }
