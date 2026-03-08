@@ -193,10 +193,17 @@ bd query label=review_needed
 ```
 For each flagged ticket:
 1. Read the ripple comments: `bd comments <id>`
-2. Compare the ticket's description and AC against the new context
-3. Draft suggested updates (or "no changes needed")
-4. **Present suggestions to the user for approval** -- never auto-update
-5. If approved: apply updates, then clear the flag
+2. **Surface review** — Compare the ticket's description and AC against the new context. Check for stale counts, renamed types, changed tool names, outdated assumptions.
+3. **Compatibility check** (MANDATORY for dependent tickets) — This is a mini implementation simulation scoped to the interface between the closed ticket and the flagged ticket. You MUST:
+   - Read every source file the closed ticket created or modified
+   - Read the flagged ticket's design section (constructors, ports, adapters)
+   - Trace the interface: do the flagged ticket's assumed methods/types/constructors still work with what was actually delivered?
+   - Check: Are package-private symbols assumed to be accessible? Are constructors assumed to exist? Do method signatures match?
+   - **Cite file:line for every claim.** Do NOT say "verified" without showing what you read.
+   - If ANY link in the chain is broken, the ticket NEEDS UPDATE — not just text fixes, but design changes.
+4. Draft suggested updates (or "no changes needed")
+5. **Present suggestions to the user for approval** -- never auto-update
+6. If approved: apply updates, then clear the flag
 
 ### 3. Follow-Up Tickets
 If closing produced new work:

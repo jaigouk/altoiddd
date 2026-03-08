@@ -52,7 +52,9 @@ After every `bd close <id>`, run these steps:
 
 1. **Ripple review** -- `bin/bd-ripple <id> "<what this ticket produced>"`
 2. **Review flagged tickets** -- `bd query label=review_needed`, read ripple comments,
-   draft updates, present to user for approval
+   draft updates, present to user for approval.
+   For **dependent tickets**: run a compatibility check -- read the delivered source files
+   and trace the interfaces the flagged ticket assumes. Cite file:line for every claim.
 3. **Follow-up tickets** -- create using beads templates, set dependencies
 4. **Groom next ticket** -- `bd ready`, run grooming checklist on top pick
 """
