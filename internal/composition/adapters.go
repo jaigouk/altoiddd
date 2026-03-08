@@ -5,12 +5,13 @@ package composition
 
 import (
 	"context"
+	"fmt"
 
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
+	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
 	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
 	dochealthinfra "github.com/alty-cli/alty/internal/dochealth/infrastructure"
-	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
@@ -29,12 +30,22 @@ type bootstrapToolDetectorAdapter struct {
 	scanner *discoveryinfra.FilesystemToolScanner
 }
 
+// Detect implements ToolDetector.
 func (a *bootstrapToolDetectorAdapter) Detect(projectDir string) ([]string, error) {
-	return a.scanner.Detect(context.Background(), projectDir)
+	tools, err := a.scanner.Detect(context.Background(), projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("detecting tools: %w", err)
+	}
+	return tools, nil
 }
 
+// ScanConflicts implements ToolDetector.
 func (a *bootstrapToolDetectorAdapter) ScanConflicts(projectDir string) ([]string, error) {
-	return a.scanner.ScanConflicts(context.Background(), projectDir)
+	conflicts, err := a.scanner.ScanConflicts(context.Background(), projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("scanning conflicts: %w", err)
+	}
+	return conflicts, nil
 }
 
 // Note: bootstrapToolDetectorAdapter also satisfies discoveryapp.ToolDetector
@@ -54,21 +65,32 @@ type docScannerAdapter struct {
 	scanner *dochealthinfra.FilesystemDocScanner
 }
 
+// LoadRegistry implements DocScanner.
 func (a *docScannerAdapter) LoadRegistry(
 	_ context.Context,
 	registryPath string,
 ) ([]dochealthdomain.DocRegistryEntry, error) {
-	return a.scanner.LoadRegistry(registryPath)
+	entries, err := a.scanner.LoadRegistry(registryPath)
+	if err != nil {
+		return nil, fmt.Errorf("loading registry: %w", err)
+	}
+	return entries, nil
 }
 
+// ScanRegistered implements DocScanner.
 func (a *docScannerAdapter) ScanRegistered(
 	_ context.Context,
 	entries []dochealthdomain.DocRegistryEntry,
 	projectDir string,
 ) ([]dochealthdomain.DocStatus, error) {
-	return a.scanner.ScanRegistered(entries, projectDir)
+	statuses, err := a.scanner.ScanRegistered(entries, projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("scanning registered docs: %w", err)
+	}
+	return statuses, nil
 }
 
+// ScanUnregistered implements DocScanner.
 func (a *docScannerAdapter) ScanUnregistered(
 	_ context.Context,
 	docsDir string,
@@ -80,7 +102,11 @@ func (a *docScannerAdapter) ScanUnregistered(
 	for _, p := range registeredPaths {
 		pathMap[p] = true
 	}
-	return a.scanner.ScanUnregistered(docsDir, pathMap, excludeDirs)
+	statuses, err := a.scanner.ScanUnregistered(docsDir, pathMap, excludeDirs)
+	if err != nil {
+		return nil, fmt.Errorf("scanning unregistered docs: %w", err)
+	}
+	return statuses, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -96,15 +122,17 @@ type ticketReaderAdapter struct {
 	reader *ticketinfra.BeadsTicketReader
 }
 
+// ReadOpenTickets implements TicketReader.
 func (a *ticketReaderAdapter) ReadOpenTickets(
-	_ context.Context,
+	ctx context.Context,
 ) ([]ticketdomain.OpenTicketData, error) {
-	return a.reader.ReadOpenTickets(), nil
+	return a.reader.ReadOpenTickets(ctx), nil
 }
 
+// ReadFlags implements TicketReader.
 func (a *ticketReaderAdapter) ReadFlags(
-	_ context.Context,
+	ctx context.Context,
 	ticketID string,
 ) ([]ticketdomain.FreshnessFlag, error) {
-	return a.reader.ReadFlags(ticketID), nil
+	return a.reader.ReadFlags(ctx, ticketID), nil
 }

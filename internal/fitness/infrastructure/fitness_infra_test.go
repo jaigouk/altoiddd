@@ -6,11 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
 	"github.com/alty-cli/alty/internal/fitness/infrastructure"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------

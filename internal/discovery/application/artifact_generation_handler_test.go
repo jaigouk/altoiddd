@@ -126,7 +126,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		assert.Equal(t, "# PRD", preview.PRDContent)
 		assert.Equal(t, "# DDD", preview.DDDContent)
 		assert.Equal(t, "# ARCH", preview.ArchitectureContent)
-		assert.Equal(t, 0, len(writer.written))
+		assert.Empty(t, writer.written)
 	})
 
 	t.Run("model is finalized", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		preview, err := handler.BuildPreview(context.Background(), event)
 
 		require.NoError(t, err)
-		assert.True(t, len(preview.Model.Events()) >= 1)
+		assert.GreaterOrEqual(t, len(preview.Model.Events()), 1)
 	})
 
 	t.Run("empty answers raises", func(t *testing.T) {
@@ -152,7 +152,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		_, err := handler.BuildPreview(context.Background(), event)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "No substantive answers")
+		assert.Contains(t, err.Error(), "no substantive answers")
 	})
 
 	t.Run("renderer called with model", func(t *testing.T) {
@@ -179,7 +179,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		preview, err := handler.BuildPreview(context.Background(), event)
 
 		require.NoError(t, err)
-		assert.Equal(t, 2, len(preview.Model.BoundedContexts()))
+		assert.Len(t, preview.Model.BoundedContexts(), 2)
 	})
 
 	t.Run("generates domain stories", func(t *testing.T) {
@@ -192,7 +192,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		preview, err := handler.BuildPreview(context.Background(), event)
 
 		require.NoError(t, err)
-		assert.True(t, len(preview.Model.DomainStories()) >= 1)
+		assert.GreaterOrEqual(t, len(preview.Model.DomainStories()), 1)
 	})
 }
 
@@ -214,7 +214,7 @@ func TestArtifactGenerationHandler_WriteArtifacts(t *testing.T) {
 		err := handler.WriteArtifacts(context.Background(), preview, "/tmp/test")
 
 		require.NoError(t, err)
-		assert.Equal(t, 3, len(writer.written))
+		assert.Len(t, writer.written, 3)
 		hasPRD := false
 		hasDDD := false
 		hasArch := false
@@ -292,8 +292,8 @@ func TestArtifactGenerationHandler_Generate(t *testing.T) {
 		model, err := handler.Generate(context.Background(), event, "/tmp/test")
 
 		require.NoError(t, err)
-		assert.True(t, len(model.Events()) >= 1)
-		assert.Equal(t, 3, len(writer.written))
+		assert.GreaterOrEqual(t, len(model.Events()), 1)
+		assert.Len(t, writer.written, 3)
 	})
 }
 
@@ -338,7 +338,7 @@ func TestArtifactGenerationHandler_NoArtificialRelationships(t *testing.T) {
 		preview, err := handler.BuildPreview(context.Background(), event)
 
 		require.NoError(t, err)
-		assert.Equal(t, 0, len(preview.Model.ContextRelationships()))
+		assert.Empty(t, preview.Model.ContextRelationships())
 	})
 }
 
@@ -406,7 +406,7 @@ func TestArtifactGenerationHandler_NoSilentSupportingDefault(t *testing.T) {
 
 		require.NoError(t, err)
 		bcs := preview.Model.BoundedContexts()
-		require.Equal(t, 1, len(bcs))
+		require.Len(t, bcs, 1)
 		assert.NotNil(t, bcs[0].Classification())
 	})
 }
@@ -435,8 +435,8 @@ func TestArtifactGenerationHandler_MVPQuestions(t *testing.T) {
 		preview, err := handler.BuildPreview(context.Background(), event)
 
 		require.NoError(t, err)
-		assert.True(t, len(preview.Model.Events()) >= 1)
-		assert.Equal(t, 1, len(preview.Model.BoundedContexts()))
+		assert.GreaterOrEqual(t, len(preview.Model.Events()), 1)
+		assert.Len(t, preview.Model.BoundedContexts(), 1)
 	})
 }
 

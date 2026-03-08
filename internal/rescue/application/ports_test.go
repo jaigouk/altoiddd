@@ -3,8 +3,8 @@ package application_test
 import (
 	"context"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	"github.com/alty-cli/alty/internal/rescue/application"
+	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 

@@ -4,6 +4,7 @@ package persistence
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -28,7 +29,10 @@ func NewFilesystemFileWriter() *FilesystemFileWriter {
 func (w *FilesystemFileWriter) WriteFile(_ context.Context, path string, content string) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
-	return os.WriteFile(path, []byte(content), 0o644)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("writing file %s: %w", path, err)
+	}
+	return nil
 }

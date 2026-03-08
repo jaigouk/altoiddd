@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
@@ -42,7 +43,7 @@ func (h *QualityGateHandler) Check(
 	for _, gate := range gatesToRun {
 		result, err := h.runner.Run(ctx, gate)
 		if err != nil {
-			return vo.QualityReport{}, err
+			return vo.QualityReport{}, fmt.Errorf("run gate %s: %w", gate, err)
 		}
 		results = append(results, result)
 	}

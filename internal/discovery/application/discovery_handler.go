@@ -36,7 +36,7 @@ func (h *DiscoveryHandler) DetectPersona(sessionID, choice string) (*domain.Disc
 		return nil, err
 	}
 	if err := session.DetectPersona(choice); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("detect persona: %w", err)
 	}
 	return session, nil
 }
@@ -48,7 +48,7 @@ func (h *DiscoveryHandler) AnswerQuestion(sessionID, questionID, answer string) 
 		return nil, err
 	}
 	if err := session.AnswerQuestion(questionID, answer); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("answer question %s: %w", questionID, err)
 	}
 	return session, nil
 }
@@ -60,7 +60,7 @@ func (h *DiscoveryHandler) SkipQuestion(sessionID, questionID, reason string) (*
 		return nil, err
 	}
 	if err := session.SkipQuestion(questionID, reason); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("skip question %s: %w", questionID, err)
 	}
 	return session, nil
 }
@@ -72,7 +72,7 @@ func (h *DiscoveryHandler) ConfirmPlayback(sessionID string, confirmed bool) (*d
 		return nil, err
 	}
 	if err := session.ConfirmPlayback(confirmed, ""); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("confirm playback: %w", err)
 	}
 	return session, nil
 }
@@ -84,7 +84,7 @@ func (h *DiscoveryHandler) Complete(sessionID string) (*domain.DiscoverySession,
 		return nil, err
 	}
 	if err := session.Complete(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("complete session: %w", err)
 	}
 	return session, nil
 }

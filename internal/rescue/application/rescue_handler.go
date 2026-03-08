@@ -49,26 +49,26 @@ func NewRescueHandler(
 func (h *RescueHandler) ValidatePreconditions(ctx context.Context, projectDir string) error {
 	hasGit, err := h.gitOps.HasGit(ctx, projectDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("check git repository: %w", err)
 	}
 	if !hasGit {
-		return fmt.Errorf("Not a git repository: %w", domainerrors.ErrInvariantViolation)
+		return fmt.Errorf("not a git repository: %w", domainerrors.ErrInvariantViolation)
 	}
 
 	isClean, err := h.gitOps.IsClean(ctx, projectDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("check working tree: %w", err)
 	}
 	if !isClean {
-		return fmt.Errorf("Working tree is dirty: %w", domainerrors.ErrInvariantViolation)
+		return fmt.Errorf("working tree is dirty: %w", domainerrors.ErrInvariantViolation)
 	}
 
 	exists, err := h.gitOps.BranchExists(ctx, projectDir, branchName)
 	if err != nil {
-		return err
+		return fmt.Errorf("check branch existence: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("Branch %s already exists. Delete it first or use --force-branch to override.: %w",
+		return fmt.Errorf("branch %s already exists, delete it first or use --force-branch to override: %w",
 			branchName, domainerrors.ErrInvariantViolation)
 	}
 
@@ -105,10 +105,10 @@ func (h *RescueHandler) Rescue(
 	// Build aggregate
 	analysis := rescuedomain.NewGapAnalysis(projectDir)
 	if err := analysis.SetScan(scan); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set scan: %w", err)
 	}
 	if err := analysis.Analyze(gaps); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("analyze gaps: %w", err)
 	}
 
 	if len(gaps) > 0 {
@@ -119,7 +119,7 @@ func (h *RescueHandler) Rescue(
 			scan.HasAgentsMD(),
 		)
 		if err := analysis.CreatePlan(plan); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create plan: %w", err)
 		}
 	}
 
@@ -129,22 +129,25 @@ func (h *RescueHandler) Rescue(
 // ExecutePlan executes a planned migration.
 func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.GapAnalysis) error {
 	if analysis.Status() != rescuedomain.AnalysisStatusPlanned {
-		return fmt.Errorf("Cannot execute plan in %s state: %w",
+		return fmt.Errorf("cannot execute plan in %s state: %w",
 			string(analysis.Status()), domainerrors.ErrInvariantViolation)
 	}
 
 	if h.fileWriter == nil {
-		return fmt.Errorf("No file writer configured for plan execution: %w",
+		return fmt.Errorf("no file writer configured for plan execution: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 
 	if err := analysis.BeginExecution(); err != nil {
-		return err
+		return fmt.Errorf("begin execution: %w", err)
 	}
 
 	plan := analysis.Plan()
 	if plan == nil {
-		return analysis.Fail("No plan available")
+		if err := analysis.Fail("no plan available"); err != nil {
+			return fmt.Errorf("fail analysis: %w", err)
+		}
+		return fmt.Errorf("no plan available: %w", domainerrors.ErrInvariantViolation)
 	}
 
 	for _, gap := range plan.Gaps() {
@@ -159,11 +162,14 @@ func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.
 		stem := strings.TrimSuffix(filepath.Base(gap.Path()), filepath.Ext(gap.Path()))
 		content := fmt.Sprintf("# %s\n\n> TODO: Fill in content.\n", stem)
 		if err := h.fileWriter.WriteFile(ctx, target, content); err != nil {
-			return err
+			return fmt.Errorf("write file %s: %w", gap.Path(), err)
 		}
 	}
 
-	return analysis.Complete()
+	if err := analysis.Complete(); err != nil {
+		return fmt.Errorf("complete analysis: %w", err)
+	}
+	return nil
 }
 
 func (h *RescueHandler) identifyGaps(

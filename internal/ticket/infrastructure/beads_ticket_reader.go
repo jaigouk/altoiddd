@@ -46,15 +46,15 @@ func NewBeadsTicketReader(beadsDir string) *BeadsTicketReader {
 }
 
 // ReadOpenTickets reads all open tickets from issues.jsonl, enriched with labels.
-func (r *BeadsTicketReader) ReadOpenTickets() []ticketdomain.OpenTicketData {
+func (r *BeadsTicketReader) ReadOpenTickets(ctx context.Context) []ticketdomain.OpenTicketData {
 	tickets := r.readTicketsFromJSONL()
-	flaggedIDs := r.getFlaggedIDs()
+	flaggedIDs := r.getFlaggedIDs(ctx)
 	return r.enrichLabels(tickets, flaggedIDs)
 }
 
 // ReadFlags reads freshness flags from ripple review comments.
-func (r *BeadsTicketReader) ReadFlags(ticketID string) []ticketdomain.FreshnessFlag {
-	flags := r.readFlagsFromBDComments(ticketID)
+func (r *BeadsTicketReader) ReadFlags(ctx context.Context, ticketID string) []ticketdomain.FreshnessFlag {
+	flags := r.readFlagsFromBDComments(ctx, ticketID)
 	if len(flags) > 0 {
 		return flags
 	}
@@ -77,7 +77,7 @@ func (r *BeadsTicketReader) readTicketsFromJSONL() []ticketdomain.OpenTicketData
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var tickets []ticketdomain.OpenTicketData
 	scanner := bufio.NewScanner(f)
@@ -110,7 +110,7 @@ func (r *BeadsTicketReader) readFlagsFromJSONL(ticketID string) []ticketdomain.F
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var flags []ticketdomain.FreshnessFlag
 	scanner := bufio.NewScanner(f)
@@ -150,8 +150,8 @@ func (r *BeadsTicketReader) readFlagsFromJSONL(ticketID string) []ticketdomain.F
 // bd CLI integration
 // ------------------------------------------------------------------
 
-func (r *BeadsTicketReader) getFlaggedIDs() map[string]struct{} {
-	ctx, cancel := context.WithTimeout(context.Background(), bdTimeoutSeconds*time.Second)
+func (r *BeadsTicketReader) getFlaggedIDs(ctx context.Context) map[string]struct{} {
+	ctx, cancel := context.WithTimeout(ctx, bdTimeoutSeconds*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "bd", "query", "label=review_needed")
@@ -182,8 +182,8 @@ func (r *BeadsTicketReader) enrichLabels(tickets []ticketdomain.OpenTicketData, 
 	return enriched
 }
 
-func (r *BeadsTicketReader) readFlagsFromBDComments(ticketID string) []ticketdomain.FreshnessFlag {
-	ctx, cancel := context.WithTimeout(context.Background(), bdTimeoutSeconds*time.Second)
+func (r *BeadsTicketReader) readFlagsFromBDComments(ctx context.Context, ticketID string) []ticketdomain.FreshnessFlag {
+	ctx, cancel := context.WithTimeout(ctx, bdTimeoutSeconds*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "bd", "comments", ticketID)

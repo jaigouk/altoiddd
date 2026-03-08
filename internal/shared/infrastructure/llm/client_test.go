@@ -2,12 +2,12 @@ package llm_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
 )
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ func TestProviderValues(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
-		provider llm.LLMProvider
+		provider llm.Provider
 		want     string
 	}{
 		{"anthropic", llm.ProviderAnthropic, "anthropic"},
@@ -48,9 +48,9 @@ func TestConfigDefaults(t *testing.T) {
 	t.Parallel()
 	cfg := llm.DefaultConfig()
 	assert.Equal(t, llm.ProviderNone, cfg.Provider())
-	assert.Equal(t, "", cfg.Model())
-	assert.Equal(t, "", cfg.APIKey())
-	assert.Equal(t, 30.0, cfg.Timeout())
+	assert.Empty(t, cfg.Model())
+	assert.Empty(t, cfg.APIKey())
+	assert.InDelta(t, 30.0, cfg.Timeout(), 0)
 }
 
 func TestConfigCustomValues(t *testing.T) {
@@ -59,7 +59,7 @@ func TestConfigCustomValues(t *testing.T) {
 	assert.Equal(t, llm.ProviderAnthropic, cfg.Provider())
 	assert.Equal(t, "claude-sonnet-4-20250514", cfg.Model())
 	assert.Equal(t, "sk-test", cfg.APIKey())
-	assert.Equal(t, 60.0, cfg.Timeout())
+	assert.InDelta(t, 60.0, cfg.Timeout(), 0)
 }
 
 func TestConfigStringMasksAPIKey(t *testing.T) {
@@ -111,7 +111,7 @@ func TestNoopStructuredOutputReturnsLLMUnavailable(t *testing.T) {
 	client := &llm.NoopClient{}
 	_, err := client.StructuredOutput(context.Background(), "test", map[string]any{"type": "object"})
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, llm.ErrLLMUnavailable))
+	require.ErrorIs(t, err, llm.ErrLLMUnavailable)
 	assert.Contains(t, err.Error(), "not configured")
 }
 
@@ -120,7 +120,7 @@ func TestNoopTextCompletionReturnsLLMUnavailable(t *testing.T) {
 	client := &llm.NoopClient{}
 	_, err := client.TextCompletion(context.Background(), "test")
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, llm.ErrLLMUnavailable))
+	require.ErrorIs(t, err, llm.ErrLLMUnavailable)
 	assert.Contains(t, err.Error(), "not configured")
 }
 

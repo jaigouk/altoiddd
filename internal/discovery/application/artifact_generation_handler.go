@@ -15,16 +15,16 @@ import (
 
 // classificationKeywords maps keywords to subdomain classifications.
 var classificationKeywords = map[string]vo.SubdomainClassification{
-	"core":           vo.SubdomainCore,
-	"secret sauce":   vo.SubdomainCore,
-	"competitive":    vo.SubdomainCore,
-	"supporting":     vo.SubdomainSupporting,
-	"plumbing":       vo.SubdomainSupporting,
-	"necessary":      vo.SubdomainSupporting,
-	"generic":        vo.SubdomainGeneric,
-	"off-the-shelf":  vo.SubdomainGeneric,
-	"commodity":      vo.SubdomainGeneric,
-	"buy":            vo.SubdomainGeneric,
+	"core":          vo.SubdomainCore,
+	"secret sauce":  vo.SubdomainCore,
+	"competitive":   vo.SubdomainCore,
+	"supporting":    vo.SubdomainSupporting,
+	"plumbing":      vo.SubdomainSupporting,
+	"necessary":     vo.SubdomainSupporting,
+	"generic":       vo.SubdomainGeneric,
+	"off-the-shelf": vo.SubdomainGeneric,
+	"commodity":     vo.SubdomainGeneric,
+	"buy":           vo.SubdomainGeneric,
 }
 
 // ArtifactPreview holds rendered artifact content ready for user review.
@@ -59,26 +59,26 @@ func (h *ArtifactGenerationHandler) BuildPreview(
 ) (*ArtifactPreview, error) {
 	answers := event.Answers()
 	if len(answers) == 0 {
-		return nil, fmt.Errorf("No substantive answers to generate artifacts from: %w",
+		return nil, fmt.Errorf("no substantive answers to generate artifacts from: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 
 	model, err := buildModel(event)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build domain model: %w", err)
 	}
 
 	prd, err := h.renderer.RenderPRD(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render PRD: %w", err)
 	}
 	dddContent, err := h.renderer.RenderDDD(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render DDD: %w", err)
 	}
 	arch, err := h.renderer.RenderArchitecture(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render architecture: %w", err)
 	}
 
 	return &ArtifactPreview{
@@ -96,12 +96,15 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 	outputDir string,
 ) error {
 	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "PRD.md"), preview.PRDContent); err != nil {
-		return err
+		return fmt.Errorf("write PRD: %w", err)
 	}
 	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "DDD.md"), preview.DDDContent); err != nil {
-		return err
+		return fmt.Errorf("write DDD: %w", err)
 	}
-	return h.writer.WriteFile(ctx, filepath.Join(outputDir, "ARCHITECTURE.md"), preview.ArchitectureContent)
+	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "ARCHITECTURE.md"), preview.ArchitectureContent); err != nil {
+		return fmt.Errorf("write architecture: %w", err)
+	}
+	return nil
 }
 
 // Generate is a convenience method that builds preview and writes in one step.
@@ -170,38 +173,51 @@ func buildModel(event discoverydomain.DiscoveryCompletedEvent) (*ddd.DomainModel
 	}
 
 	// Extract contexts FIRST so terms get correct context names.
-	extractContexts(model, answersMap)
+	if err := extractContexts(model, answersMap); err != nil {
+		return nil, fmt.Errorf("extract contexts: %w", err)
+	}
 
 	// Stories from Q1, Q3, Q5.
-	extractStories(model, answersMap)
+	if err := extractStories(model, answersMap); err != nil {
+		return nil, fmt.Errorf("extract stories: %w", err)
+	}
 
 	// Terms from Q2.
-	extractTerms(model, answersMap)
+	if err := extractTerms(model, answersMap); err != nil {
+		return nil, fmt.Errorf("extract terms: %w", err)
+	}
 
 	// Classifications from Q10.
-	extractClassifications(model, answersMap)
+	if err := extractClassifications(model, answersMap); err != nil {
+		return nil, fmt.Errorf("extract classifications: %w", err)
+	}
 
 	// Aggregates from Q4, Q6 for Core subdomains.
-	extractAggregates(model, answersMap)
+	if err := extractAggregates(model, answersMap); err != nil {
+		return nil, fmt.Errorf("extract aggregates: %w", err)
+	}
 
 	if err := model.Finalize(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("finalize domain model: %w", err)
 	}
 	return model, nil
 }
 
-func extractContexts(model *ddd.DomainModel, answers map[string]string) {
+func extractContexts(model *ddd.DomainModel, answers map[string]string) error {
 	contexts := SplitAnswer(answers["Q9"])
 	for _, ctxName := range contexts {
 		ctxName = strings.TrimSpace(ctxName)
 		if ctxName != "" {
 			bc := vo.NewDomainBoundedContext(ctxName, "Manages "+ctxName+" domain", nil, nil, "")
-			model.AddBoundedContext(bc)
+			if err := model.AddBoundedContext(bc); err != nil {
+				return fmt.Errorf("add bounded context %q: %w", ctxName, err)
+			}
 		}
 	}
+	return nil
 }
 
-func extractStories(model *ddd.DomainModel, answers map[string]string) {
+func extractStories(model *ddd.DomainModel, answers map[string]string) error {
 	actors := SplitAnswer(answers["Q1"])
 	primarySteps := SplitAnswer(answers["Q3"])
 
@@ -212,7 +228,9 @@ func extractStories(model *ddd.DomainModel, answers map[string]string) {
 		}
 		trigger := primarySteps[0]
 		story := vo.NewDomainStory("Primary Flow", actorList, trigger, primarySteps, nil)
-		model.AddDomainStory(story)
+		if err := model.AddDomainStory(story); err != nil {
+			return fmt.Errorf("add primary flow story: %w", err)
+		}
 	}
 
 	secondary := SplitAnswer(answers["Q5"])
@@ -222,11 +240,14 @@ func extractStories(model *ddd.DomainModel, answers map[string]string) {
 			actorList = []string{"User"}
 		}
 		story := vo.NewDomainStory("Secondary Flows", actorList, "Various", secondary, nil)
-		model.AddDomainStory(story)
+		if err := model.AddDomainStory(story); err != nil {
+			return fmt.Errorf("add secondary flows story: %w", err)
+		}
 	}
+	return nil
 }
 
-func extractTerms(model *ddd.DomainModel, answers map[string]string) {
+func extractTerms(model *ddd.DomainModel, answers map[string]string) error {
 	entities := SplitAnswer(answers["Q2"])
 	bcs := model.BoundedContexts()
 	contextName := "General"
@@ -237,15 +258,18 @@ func extractTerms(model *ddd.DomainModel, answers map[string]string) {
 	for _, entity := range entities {
 		entity = strings.TrimSpace(entity)
 		if entity != "" {
-			model.AddTerm(entity, entity+" entity", contextName, []string{"Q2"})
+			if err := model.AddTerm(entity, entity+" entity", contextName, []string{"Q2"}); err != nil {
+				return fmt.Errorf("add term %q: %w", entity, err)
+			}
 		}
 	}
+	return nil
 }
 
-func extractClassifications(model *ddd.DomainModel, answers map[string]string) {
+func extractClassifications(model *ddd.DomainModel, answers map[string]string) error {
 	q10 := strings.ToLower(answers["Q10"])
 	if q10 == "" {
-		return
+		return nil
 	}
 
 	for _, ctx := range model.BoundedContexts() {
@@ -255,14 +279,17 @@ func extractClassifications(model *ddd.DomainModel, answers map[string]string) {
 		ctxLower := strings.ToLower(ctx.Name())
 		for keyword, cls := range classificationKeywords {
 			if strings.Contains(q10, keyword) && strings.Contains(q10, ctxLower) {
-				model.ClassifySubdomain(ctx.Name(), cls, fmt.Sprintf("Classified as %s based on Q10 answer", cls))
+				if err := model.ClassifySubdomain(ctx.Name(), cls, fmt.Sprintf("Classified as %s based on Q10 answer", cls)); err != nil {
+					return fmt.Errorf("classify subdomain %q: %w", ctx.Name(), err)
+				}
 				break
 			}
 		}
 	}
+	return nil
 }
 
-func extractAggregates(model *ddd.DomainModel, answers map[string]string) {
+func extractAggregates(model *ddd.DomainModel, answers map[string]string) error {
 	invariants := SplitAnswer(answers["Q4"])
 	domainEvents := SplitAnswer(answers["Q6"])
 
@@ -279,6 +306,9 @@ func extractAggregates(model *ddd.DomainModel, answers map[string]string) {
 			nil,
 			domainEvents,
 		)
-		model.DesignAggregate(agg)
+		if err := model.DesignAggregate(agg); err != nil {
+			return fmt.Errorf("design aggregate for %q: %w", ctx.Name(), err)
+		}
 	}
+	return nil
 }

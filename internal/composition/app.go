@@ -4,6 +4,8 @@
 package composition
 
 import (
+	"fmt"
+
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
 	bootstrapinfra "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
 	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
@@ -18,12 +20,11 @@ import (
 	knowledgeinfra "github.com/alty-cli/alty/internal/knowledge/infrastructure"
 	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
 	rescueinfra "github.com/alty-cli/alty/internal/rescue/infrastructure"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
 	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
-
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 )
 
 // Version is the application version. Set via ldflags at build time.
@@ -146,5 +147,8 @@ func NewApp() (*App, error) {
 
 // Close shuts down the event bus and releases resources.
 func (a *App) Close() error {
-	return a.EventBus.Close()
+	if err := a.EventBus.Close(); err != nil {
+		return fmt.Errorf("closing event bus: %w", err)
+	}
+	return nil
 }

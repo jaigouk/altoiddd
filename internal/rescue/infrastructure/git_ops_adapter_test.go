@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	"github.com/alty-cli/alty/internal/rescue/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	"github.com/alty-cli/alty/internal/rescue/infrastructure"
 )
 
 func TestGitOpsAdapterImplementsPort(t *testing.T) {
@@ -25,7 +26,7 @@ func TestGitOpsAdapterImplementsPort(t *testing.T) {
 func initGitRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	cmd := exec.Command("git", "init", dir)
+	cmd := exec.CommandContext(context.Background(), "git", "init", dir)
 	cmd.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "HOME="+dir)
 	require.NoError(t, cmd.Run())
 
@@ -34,16 +35,16 @@ func initGitRepo(t *testing.T) string {
 		{"user.email", "test@test.com"},
 		{"user.name", "Test"},
 	} {
-		c := exec.Command("git", "-C", dir, "config", kv[0], kv[1])
+		c := exec.CommandContext(context.Background(), "git", "-C", dir, "config", kv[0], kv[1])
 		require.NoError(t, c.Run())
 	}
 
 	// Create an initial commit so branches can be created
 	emptyFile := filepath.Join(dir, ".gitkeep")
 	require.NoError(t, os.WriteFile(emptyFile, []byte(""), 0o644))
-	c := exec.Command("git", "-C", dir, "add", ".")
+	c := exec.CommandContext(context.Background(), "git", "-C", dir, "add", ".")
 	require.NoError(t, c.Run())
-	c = exec.Command("git", "-C", dir, "commit", "-m", "init")
+	c = exec.CommandContext(context.Background(), "git", "-C", dir, "commit", "-m", "init")
 	c.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "HOME="+dir)
 	require.NoError(t, c.Run())
 
@@ -106,7 +107,7 @@ func TestBranchExistsReturnsTrueForExistingBranch(t *testing.T) {
 	adapter := &infrastructure.GitOpsAdapter{}
 
 	// Create a branch to check
-	cmd := exec.Command("git", "-C", dir, "branch", "test-branch")
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "branch", "test-branch")
 	require.NoError(t, cmd.Run())
 
 	result, err := adapter.BranchExists(context.Background(), dir, "test-branch")
@@ -164,7 +165,7 @@ func TestInvalidBranchNameRaises(t *testing.T) {
 	invalidNames := []string{"alty init", "branch;rm -rf /", ""}
 	for _, name := range invalidNames {
 		_, err := adapter.BranchExists(context.Background(), dir, name)
-		assert.Error(t, err, "branch name %q should be invalid", name)
+		require.Error(t, err, "branch name %q should be invalid", name)
 		assert.Contains(t, err.Error(), "invalid branch name")
 	}
 }
@@ -175,6 +176,6 @@ func TestCreateBranchValidatesName(t *testing.T) {
 	adapter := &infrastructure.GitOpsAdapter{}
 
 	err := adapter.CreateBranch(context.Background(), dir, "bad;name")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid branch name")
 }

@@ -100,7 +100,7 @@ func (h *BootstrapHandler) Confirm(sessionID string) (*domain.BootstrapSession, 
 		return nil, err
 	}
 	if err := session.Confirm(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("confirm session: %w", err)
 	}
 	return session, nil
 }
@@ -112,7 +112,7 @@ func (h *BootstrapHandler) Cancel(sessionID string) (*domain.BootstrapSession, e
 		return nil, err
 	}
 	if err := session.Cancel(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cancel session: %w", err)
 	}
 	return session, nil
 }
@@ -124,10 +124,10 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 		return nil, err
 	}
 	if err := session.BeginExecution(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("begin execution: %w", err)
 	}
 	if err := session.Complete(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("complete session: %w", err)
 	}
 	return session, nil
 }

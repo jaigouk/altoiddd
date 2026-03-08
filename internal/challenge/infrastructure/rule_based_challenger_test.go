@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	"github.com/alty-cli/alty/internal/challenge/infrastructure"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func makeModelWithGaps(t *testing.T) *ddd.DomainModel {
@@ -73,5 +74,5 @@ func TestRuleBasedChallengerEmptyModelReturnsNoChallenges(t *testing.T) {
 	model := ddd.NewDomainModel("empty")
 	challenges, err := adapter.GenerateChallenges(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Len(t, challenges, 0)
+	assert.Empty(t, challenges)
 }

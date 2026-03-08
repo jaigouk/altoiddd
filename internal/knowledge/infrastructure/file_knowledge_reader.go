@@ -66,7 +66,7 @@ func (r *FileKnowledgeReader) ListTopics(_ context.Context, category knowledgedo
 	case knowledgedomain.CategoryDDD:
 		scanDir = filepath.Join(r.root, "ddd")
 		pattern = "*.md"
-	default: // conventions
+	case knowledgedomain.CategoryConventions:
 		scanDir = filepath.Join(r.root, "conventions")
 		pattern = "*.md"
 	}
@@ -77,7 +77,7 @@ func (r *FileKnowledgeReader) ListTopics(_ context.Context, category knowledgedo
 
 	matches, err := filepath.Glob(filepath.Join(scanDir, pattern))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("globbing %s: %w", scanDir, err)
 	}
 
 	topics := make([]string, 0, len(matches))
@@ -118,12 +118,12 @@ func (r *FileKnowledgeReader) resolveFilePath(path knowledgedomain.KnowledgePath
 func (r *FileKnowledgeReader) readTOMLEntry(path knowledgedomain.KnowledgePath, filePath string) (knowledgedomain.KnowledgeEntry, error) {
 	rawText, err := os.ReadFile(filePath)
 	if err != nil {
-		return knowledgedomain.KnowledgeEntry{}, err
+		return knowledgedomain.KnowledgeEntry{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 
 	var data map[string]any
 	if _, err := toml.Decode(string(rawText), &data); err != nil {
-		return knowledgedomain.KnowledgeEntry{}, err
+		return knowledgedomain.KnowledgeEntry{}, fmt.Errorf("decoding TOML %s: %w", filePath, err)
 	}
 
 	metadata := extractMetadata(data)
@@ -139,7 +139,7 @@ func (r *FileKnowledgeReader) readTOMLEntry(path knowledgedomain.KnowledgePath, 
 func (r *FileKnowledgeReader) readMarkdownEntry(path knowledgedomain.KnowledgePath, filePath string) (knowledgedomain.KnowledgeEntry, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return knowledgedomain.KnowledgeEntry{}, err
+		return knowledgedomain.KnowledgeEntry{}, fmt.Errorf("reading %s: %w", filePath, err)
 	}
 	return knowledgedomain.NewKnowledgeEntry(path, path.Topic(), string(content), nil, "markdown"), nil
 }

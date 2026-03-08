@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alty-cli/alty/internal/shared/domain/identity"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 

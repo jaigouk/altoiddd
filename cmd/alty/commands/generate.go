@@ -3,8 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/composition"
 	"github.com/spf13/cobra"
+
+	"github.com/alty-cli/alty/internal/composition"
 )
 
 // NewGenerateCmd creates the "alty generate" command group.

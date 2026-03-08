@@ -108,13 +108,13 @@ func (a *AnthropicClient) doRequest(ctx context.Context, prompt, system string) 
 
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
-		return Response{}, fmt.Errorf("%w: %s", ErrLLMUnavailable, err)
+		return Response{}, fmt.Errorf("%w: %w", ErrLLMUnavailable, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return Response{}, fmt.Errorf("%w: reading response: %s", ErrLLMUnavailable, err)
+		return Response{}, fmt.Errorf("%w: reading response: %w", ErrLLMUnavailable, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -124,7 +124,7 @@ func (a *AnthropicClient) doRequest(ctx context.Context, prompt, system string) 
 
 	var apiResp anthropicResponse
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
-		return Response{}, fmt.Errorf("%w: parsing response: %s", ErrLLMUnavailable, err)
+		return Response{}, fmt.Errorf("%w: parsing response: %w", ErrLLMUnavailable, err)
 	}
 
 	if len(apiResp.Content) == 0 {

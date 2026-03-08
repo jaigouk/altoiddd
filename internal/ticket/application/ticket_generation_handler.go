@@ -35,12 +35,12 @@ func (h *TicketGenerationHandler) BuildPreview(
 ) (*TicketPreview, error) {
 	plan := ticketdomain.NewTicketPlan()
 	if err := plan.GeneratePlan(model, profile); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generating ticket plan: %w", err)
 	}
 
 	summary, err := plan.Preview()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("previewing ticket plan: %w", err)
 	}
 
 	validation := ticketdomain.ValidateImplementabilityPlan(plan.Tickets())
@@ -60,7 +60,7 @@ func (h *TicketGenerationHandler) ApproveAndWrite(
 	approvedIDs []string,
 ) error {
 	if err := preview.Plan.Approve(approvedIDs); err != nil {
-		return err
+		return fmt.Errorf("approving ticket plan: %w", err)
 	}
 
 	events := preview.Plan.Events()
@@ -77,11 +77,14 @@ func (h *TicketGenerationHandler) ApproveAndWrite(
 		if approvedSet[ticket.TicketID()] {
 			ticketPath := filepath.Join(outputDir, "tickets", ticket.TicketID()+".md")
 			if err := h.fileWriter.WriteFile(ctx, ticketPath, ticket.Description()); err != nil {
-				return err
+				return fmt.Errorf("writing ticket %s: %w", ticket.TicketID(), err)
 			}
 		}
 	}
 
 	summaryPath := filepath.Join(outputDir, "tickets", "PLAN_SUMMARY.md")
-	return h.fileWriter.WriteFile(ctx, summaryPath, preview.Summary)
+	if err := h.fileWriter.WriteFile(ctx, summaryPath, preview.Summary); err != nil {
+		return fmt.Errorf("writing plan summary: %w", err)
+	}
+	return nil
 }

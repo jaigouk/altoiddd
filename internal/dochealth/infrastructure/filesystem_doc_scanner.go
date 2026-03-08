@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	frontmatterRE   = regexp.MustCompile(`(?s)^---\s*\n(.*?)\n---`)
-	lastReviewedRE  = regexp.MustCompile(`(?m)^last_reviewed:\s*(.+)$`)
-	placeholderRE   = regexp.MustCompile(`^[A-Z]{4}-[A-Z]{2}-[A-Z]{2}$`)
-	markdownLinkRE  = regexp.MustCompile(`(?:^|[^!])\[([^\]]*)\]\(([^)]*)\)`)
+	frontmatterRE  = regexp.MustCompile(`(?s)^---\s*\n(.*?)\n---`)
+	lastReviewedRE = regexp.MustCompile(`(?m)^last_reviewed:\s*(.+)$`)
+	placeholderRE  = regexp.MustCompile(`^[A-Z]{4}-[A-Z]{2}-[A-Z]{2}$`)
+	markdownLinkRE = regexp.MustCompile(`(?:^|[^!])\[([^\]]*)\]\(([^)]*)\)`)
 )
 
 // FilesystemDocScanner scans the filesystem for document health status.
@@ -128,7 +128,7 @@ func (s *FilesystemDocScanner) ScanUnregistered(
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("walking docs directory: %w", err)
 	}
 	sort.Strings(mdFiles)
 

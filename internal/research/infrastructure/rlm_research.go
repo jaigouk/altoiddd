@@ -88,8 +88,8 @@ func (r *RlmResearchAdapter) researchArea(ctx context.Context, area string) []re
 	if err != nil {
 		results2 = nil
 	}
-	allResults := append(results, results2...)
-	return r.buildFindings(area, allResults, researchdomain.ConfidenceMedium)
+	results = append(results, results2...)
+	return r.buildFindings(area, results, researchdomain.ConfidenceMedium)
 }
 
 func (r *RlmResearchAdapter) synthesisPrompt(area string, results []researchdomain.WebSearchResult) string {

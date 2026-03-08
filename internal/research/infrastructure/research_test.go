@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	researchapp "github.com/alty-cli/alty/internal/research/application"
 	researchdomain "github.com/alty-cli/alty/internal/research/domain"
 	"github.com/alty-cli/alty/internal/research/infrastructure"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -94,8 +95,8 @@ func TestNoopResearchReturnsEmptyBriefing(t *testing.T) {
 	model := ddd.NewDomainModel("empty")
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Len(t, briefing.Findings(), 0)
-	assert.Equal(t, "", briefing.Summary())
+	assert.Empty(t, briefing.Findings())
+	assert.Empty(t, briefing.Summary())
 }
 
 func TestNoopResearchContextNamesAsNoData(t *testing.T) {
@@ -115,7 +116,7 @@ func TestNoopResearchEmptyModelReturnsEmptyNoData(t *testing.T) {
 	model := ddd.NewDomainModel("empty")
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Len(t, briefing.NoDataAreas(), 0)
+	assert.Empty(t, briefing.NoDataAreas())
 }
 
 // ---------------------------------------------------------------------------
@@ -153,8 +154,8 @@ func TestRlmResearchReturnsBriefingWithFindings(t *testing.T) {
 
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Greater(t, len(briefing.Findings()), 0)
-	assert.Len(t, briefing.NoDataAreas(), 0)
+	assert.NotEmpty(t, briefing.Findings())
+	assert.Empty(t, briefing.NoDataAreas())
 }
 
 func TestRlmResearchSummaryFromLLM(t *testing.T) {
@@ -228,7 +229,7 @@ func TestRlmResearchEveryFindingHasSourceURL(t *testing.T) {
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
 	for _, finding := range briefing.Findings() {
-		assert.True(t, len(finding.Source().URL()) > 0, "finding should have source URL")
+		assert.NotEmpty(t, finding.Source().URL(), "finding should have source URL")
 	}
 }
 
@@ -273,7 +274,7 @@ func TestRlmResearchLLMUnavailableReturnsRawResults(t *testing.T) {
 
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Greater(t, len(briefing.Findings()), 0)
+	assert.NotEmpty(t, briefing.Findings())
 	for _, finding := range briefing.Findings() {
 		assert.Equal(t, researchdomain.ConfidenceLow, finding.Source().Confidence())
 		assert.Equal(t, researchdomain.TrustAIInferred, finding.TrustLevel())
@@ -293,7 +294,7 @@ func TestRlmResearchCompleteSearchFailureAllNoData(t *testing.T) {
 
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Len(t, briefing.Findings(), 0)
+	assert.Empty(t, briefing.Findings())
 	assert.Contains(t, briefing.NoDataAreas(), "Sales")
 	assert.Contains(t, briefing.NoDataAreas(), "Billing")
 }
@@ -324,7 +325,7 @@ func TestRlmResearchPartialFailureMixedResults(t *testing.T) {
 
 	briefing, err := adapter.Research(context.Background(), model, 5)
 	require.NoError(t, err)
-	assert.Greater(t, len(briefing.Findings()), 0)
+	assert.NotEmpty(t, briefing.Findings())
 	assert.Contains(t, briefing.NoDataAreas(), "Billing")
 	findingAreas := make(map[string]bool)
 	for _, f := range briefing.Findings() {

@@ -3,17 +3,17 @@ package application_test
 import (
 	"context"
 
-	researchdomain "github.com/alty-cli/alty/internal/research/domain"
 	"github.com/alty-cli/alty/internal/research/application"
+	researchdomain "github.com/alty-cli/alty/internal/research/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 )
 
 // Compile-time interface satisfaction checks.
 var (
-	_ application.DomainResearch   = (*mockDomainResearch)(nil)
-	_ application.SpikeFollowUp    = (*mockSpikeFollowUp)(nil)
+	_ application.DomainResearch    = (*mockDomainResearch)(nil)
+	_ application.SpikeFollowUp     = (*mockSpikeFollowUp)(nil)
 	_ application.SpikeReportParser = (*mockSpikeReportParser)(nil)
-	_ application.WebSearch        = (*mockWebSearch)(nil)
+	_ application.WebSearch         = (*mockWebSearch)(nil)
 )
 
 // --- mockDomainResearch ---

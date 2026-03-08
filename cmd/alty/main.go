@@ -4,23 +4,31 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alty-cli/alty/cmd/alty/commands"
 	"github.com/alty-cli/alty/internal/composition"
-	"github.com/spf13/cobra"
 )
 
 func main() {
-	app, err := composition.NewApp()
-	if err != nil {
+	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	defer app.Close()
+}
+
+func run() error {
+	app, err := composition.NewApp()
+	if err != nil {
+		return fmt.Errorf("initializing app: %w", err)
+	}
+	defer func() { _ = app.Close() }()
 
 	rootCmd := newRootCmd(app)
 	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+		return fmt.Errorf("executing command: %w", err)
 	}
+	return nil
 }
 
 func newRootCmd(app *composition.App) *cobra.Command {

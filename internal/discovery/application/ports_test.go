@@ -3,8 +3,8 @@ package application_test
 import (
 	"context"
 
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	"github.com/alty-cli/alty/internal/discovery/application"
+	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 )
 

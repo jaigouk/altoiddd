@@ -9,8 +9,8 @@ import (
 )
 
 type sessionEntry struct {
-	value     any
-	storedAt  time.Time
+	value    any
+	storedAt time.Time
 }
 
 // SessionStore is an in-memory session store with TTL-based expiration.

@@ -59,7 +59,7 @@ func TestChallengeHandler_Generate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, fake.called)
 		assert.Equal(t, 5, fake.lastMax)
-		assert.Equal(t, len(expected), len(result))
+		assert.Len(t, result, len(expected))
 	})
 
 	t.Run("custom max per type", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestChallengeHandler_Generate(t *testing.T) {
 		require.NoError(t, err)
 
 		iteration := handler.Complete()
-		assert.Equal(t, 2, len(iteration.Challenges()))
+		assert.Len(t, iteration.Challenges(), 2)
 	})
 }
 
@@ -110,7 +110,7 @@ func TestChallengeHandler_RecordResponse(t *testing.T) {
 		handler.RecordResponse(response)
 
 		iteration := handler.Complete()
-		assert.Equal(t, 1, len(iteration.Responses()))
+		assert.Len(t, iteration.Responses(), 1)
 		assert.True(t, iteration.Responses()[0].Accepted())
 	})
 
@@ -125,7 +125,7 @@ func TestChallengeHandler_RecordResponse(t *testing.T) {
 		handler.RecordResponse(challengedomain.NewChallengeResponse("c2", "No", false, nil))
 
 		iteration := handler.Complete()
-		assert.Equal(t, 2, len(iteration.Responses()))
+		assert.Len(t, iteration.Responses(), 2)
 	})
 }
 
@@ -189,7 +189,7 @@ func TestChallengeHandler_Complete(t *testing.T) {
 		_, _ = handler.GenerateChallenges(context.Background(), model, 5)
 
 		iteration := handler.Complete()
-		assert.Equal(t, 0, len(iteration.Responses()))
+		assert.Empty(t, iteration.Responses())
 		assert.Equal(t, 0, iteration.ConvergenceDelta())
 	})
 }

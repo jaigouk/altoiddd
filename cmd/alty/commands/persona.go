@@ -7,8 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/composition"
 	"github.com/spf13/cobra"
+
+	"github.com/alty-cli/alty/internal/composition"
 )
 
 // NewPersonaCmd creates the "alty persona" command group.

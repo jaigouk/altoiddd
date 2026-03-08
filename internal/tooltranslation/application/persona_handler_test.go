@@ -43,7 +43,7 @@ func TestPersonaHandler_ListPersonas(t *testing.T) {
 
 		result := handler.ListPersonas()
 
-		assert.Equal(t, 5, len(result))
+		assert.Len(t, result, 5)
 	})
 
 	t.Run("correct registers", func(t *testing.T) {
@@ -117,7 +117,7 @@ func TestPersonaHandler_BuildPreview(t *testing.T) {
 
 		handler.BuildPreview("Solo Developer", "claude-code")
 
-		assert.Equal(t, 0, len(writer.written))
+		assert.Empty(t, writer.written)
 	})
 }
 
@@ -136,7 +136,7 @@ func TestPersonaHandler_BuildPreviewInvalid(t *testing.T) {
 		_, err := handler.BuildPreview("nonexistent", "claude-code")
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Unknown persona")
+		assert.Contains(t, err.Error(), "unknown persona")
 	})
 
 	t.Run("unknown tool raises", func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestPersonaHandler_BuildPreviewInvalid(t *testing.T) {
 		_, err := handler.BuildPreview("Solo Developer", "unknown-tool")
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Unsupported tool")
+		assert.Contains(t, err.Error(), "unsupported tool")
 	})
 }
 
@@ -159,10 +159,10 @@ func TestPersonaHandler_TargetPaths(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		tool       string
-		prefix     string
-		suffix     string
+		name   string
+		tool   string
+		prefix string
+		suffix string
 	}{
 		{"claude-code", "claude-code", ".claude/agents/", ".md"},
 		{"cursor", "cursor", ".cursor/rules/", ".mdc"},
@@ -203,7 +203,7 @@ func TestPersonaHandler_ApproveAndWrite(t *testing.T) {
 		err := handler.ApproveAndWrite(context.Background(), preview, "/project")
 
 		require.NoError(t, err)
-		assert.Equal(t, 1, len(writer.written))
+		assert.Len(t, writer.written, 1)
 		for path, content := range writer.written {
 			assert.Contains(t, path, preview.TargetPath)
 			assert.Equal(t, preview.Content, content)

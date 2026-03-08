@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	"github.com/alty-cli/alty/internal/rescue/application"
+	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -52,11 +52,12 @@ func defaultFakeGitOps() *fakeGitOps {
 	return newFakeGitOps(true, true, false)
 }
 
-func (f *fakeGitOps) HasGit(_ context.Context, _ string) (bool, error) { return f.hasGit, nil }
+func (f *fakeGitOps) HasGit(_ context.Context, _ string) (bool, error)  { return f.hasGit, nil }
 func (f *fakeGitOps) IsClean(_ context.Context, _ string) (bool, error) { return f.isClean, nil }
 func (f *fakeGitOps) BranchExists(_ context.Context, _ string, _ string) (bool, error) {
 	return f.branchExists, nil
 }
+
 func (f *fakeGitOps) CreateBranch(_ context.Context, _ string, branchName string) error {
 	f.createdBranches = append(f.createdBranches, branchName)
 	return nil
@@ -87,7 +88,7 @@ func TestRescueHandler_ValidatePreconditions(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(false, true, false), nil)
 		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj")
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Not a git repository")
+		assert.Contains(t, err.Error(), "not a git repository")
 	})
 
 	t.Run("raises on dirty tree", func(t *testing.T) {
@@ -129,7 +130,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 		assert.Equal(t, rescuedomain.AnalysisStatusPlanned, analysis.Status())
 		assert.NotNil(t, analysis.Scan())
 		assert.NotNil(t, analysis.Plan())
-		assert.True(t, len(analysis.Gaps()) > 0)
+		assert.NotEmpty(t, analysis.Gaps())
 	})
 
 	t.Run("creates branch before scanning", func(t *testing.T) {
@@ -163,7 +164,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 				knowledgeGaps = append(knowledgeGaps, g)
 			}
 		}
-		assert.Equal(t, 1, len(knowledgeGaps))
+		assert.Len(t, knowledgeGaps, 1)
 		assert.Equal(t, ".alty/knowledge/", knowledgeGaps[0].Path())
 	})
 
@@ -180,7 +181,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
 		require.NoError(t, err)
 		assert.Equal(t, rescuedomain.AnalysisStatusAnalyzed, analysis.Status())
-		assert.Equal(t, 0, len(analysis.Gaps()))
+		assert.Empty(t, analysis.Gaps())
 		assert.Nil(t, analysis.Plan())
 	})
 
@@ -252,7 +253,7 @@ func TestRescueHandler_ValidatedParameter(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil)
 		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, true)
 		require.NoError(t, err)
-		assert.True(t, len(analysis.Gaps()) > 0)
+		assert.NotEmpty(t, analysis.Gaps())
 	})
 
 	t.Run("default validates preconditions", func(t *testing.T) {
@@ -261,7 +262,7 @@ func TestRescueHandler_ValidatedParameter(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil)
 		_, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Not a git repository")
+		assert.Contains(t, err.Error(), "not a git repository")
 	})
 }
 
@@ -281,7 +282,7 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.NoError(t, err)
 		assert.Equal(t, rescuedomain.AnalysisStatusCompleted, analysis.Status())
-		assert.Equal(t, 1, len(analysis.Events()))
+		assert.Len(t, analysis.Events(), 1)
 	})
 
 	t.Run("writes files", func(t *testing.T) {
@@ -291,7 +292,7 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
 
 		handler.ExecutePlan(context.Background(), analysis)
-		assert.True(t, len(writer.writtenFiles) > 0)
+		assert.NotEmpty(t, writer.writtenFiles)
 	})
 
 	t.Run("without file writer raises", func(t *testing.T) {
@@ -301,7 +302,7 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "No file writer")
+		assert.Contains(t, err.Error(), "no file writer")
 	})
 
 	t.Run("wrong state raises", func(t *testing.T) {
@@ -319,7 +320,7 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Cannot execute plan")
+		assert.Contains(t, err.Error(), "cannot execute plan")
 	})
 
 	t.Run("skips agents md when flagged", func(t *testing.T) {

@@ -3,6 +3,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
@@ -31,7 +32,7 @@ func (h *ChallengeHandler) GenerateChallenges(
 ) ([]challengedomain.Challenge, error) {
 	challenges, err := h.challenger.GenerateChallenges(ctx, model, maxPerType)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generate challenges: %w", err)
 	}
 	h.challenges = challenges
 	return challenges, nil

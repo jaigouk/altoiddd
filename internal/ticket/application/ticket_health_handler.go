@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alty-cli/alty/internal/ticket/domain"
 )
@@ -32,7 +33,7 @@ func NewTicketHealthHandler(reader TicketReader) *TicketHealthHandler {
 func (h *TicketHealthHandler) Report(ctx context.Context) (domain.TicketHealthReport, error) {
 	openTickets, err := h.reader.ReadOpenTickets(ctx)
 	if err != nil {
-		return domain.TicketHealthReport{}, err
+		return domain.TicketHealthReport{}, fmt.Errorf("reading open tickets: %w", err)
 	}
 
 	var flagged []domain.FlaggedTicket
@@ -40,7 +41,7 @@ func (h *TicketHealthHandler) Report(ctx context.Context) (domain.TicketHealthRe
 		if hasLabel(ticket.Labels(), "review_needed") {
 			flags, err := h.reader.ReadFlags(ctx, ticket.TicketID())
 			if err != nil {
-				return domain.TicketHealthReport{}, err
+				return domain.TicketHealthReport{}, fmt.Errorf("reading flags for ticket %s: %w", ticket.TicketID(), err)
 			}
 			flagged = append(flagged, domain.NewFlaggedTicket(
 				ticket.TicketID(),

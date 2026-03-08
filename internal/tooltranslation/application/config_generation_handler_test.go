@@ -74,7 +74,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, preview)
-		assert.Equal(t, 1, len(preview.Configs))
+		assert.Len(t, preview.Configs, 1)
 		assert.NotEmpty(t, preview.Summary)
 	})
 
@@ -86,7 +86,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 
 		handler.BuildPreview(model, []ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
 
-		assert.Equal(t, 0, len(writer.written))
+		assert.Empty(t, writer.written)
 	})
 
 	t.Run("preview for multiple tools", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode, ttdomain.ToolCursor}, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, 2, len(preview.Configs))
+		assert.Len(t, preview.Configs, 2)
 		assert.Contains(t, preview.Summary, "claude-code")
 		assert.Contains(t, preview.Summary, "cursor")
 	})
@@ -113,7 +113,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 		_, err := handler.BuildPreview(model, []ttdomain.SupportedTool{}, nil)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "No tools")
+		assert.Contains(t, err.Error(), "no tools")
 	})
 }
 
@@ -135,7 +135,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 		err := handler.ApproveAndWrite(context.Background(), preview, "/project")
 
 		require.NoError(t, err)
-		assert.True(t, len(writer.written) >= 1)
+		assert.GreaterOrEqual(t, len(writer.written), 1)
 		hasClaude := false
 		for p := range writer.written {
 			if strings.Contains(p, "CLAUDE.md") {
@@ -156,7 +156,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 		handler.ApproveAndWrite(context.Background(), preview, "/project")
 
 		for _, config := range preview.Configs {
-			assert.Equal(t, 1, len(config.Events()))
+			assert.Len(t, config.Events(), 1)
 		}
 	})
 
@@ -189,7 +189,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 		for p := range writer.written {
 			paths = append(paths, p)
 		}
-		assert.True(t, len(paths) >= 3) // Claude: 2 files, Cursor: 2 files
+		assert.GreaterOrEqual(t, len(paths), 3) // Claude: 2 files, Cursor: 2 files
 		hasClaude := false
 		hasCursor := false
 		for _, p := range paths {
@@ -215,10 +215,10 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 		}
 		preview, err := handler.BuildPreview(model, allTools, nil)
 		require.NoError(t, err)
-		assert.Equal(t, 4, len(preview.Configs))
+		assert.Len(t, preview.Configs, 4)
 
 		handler.ApproveAndWrite(context.Background(), preview, "/project")
-		assert.True(t, len(writer.written) >= 7)
+		assert.GreaterOrEqual(t, len(writer.written), 7)
 	})
 
 	t.Run("written content not empty", func(t *testing.T) {

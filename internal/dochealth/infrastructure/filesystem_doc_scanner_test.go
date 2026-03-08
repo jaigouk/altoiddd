@@ -28,30 +28,6 @@ func writeDocWithFrontmatter(t *testing.T, path, lastReviewed string) {
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
 
-func writeRegistryTOML(t *testing.T, path string, entries []map[string]any) {
-	t.Helper()
-	dir := filepath.Dir(path)
-	require.NoError(t, os.MkdirAll(dir, 0o755))
-	var lines []string
-	for _, entry := range entries {
-		lines = append(lines, "[[docs]]")
-		for k, v := range entry {
-			switch val := v.(type) {
-			case string:
-				lines = append(lines, k+" = \""+val+"\"")
-			case int:
-				lines = append(lines, k+" = "+string(rune('0'+val)))
-			}
-		}
-		lines = append(lines, "")
-	}
-	content := ""
-	for _, l := range lines {
-		content += l + "\n"
-	}
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
-}
-
 // -- Registry loading --
 
 func TestDocScanner_LoadsRegistryFromTOML(t *testing.T) {
@@ -71,7 +47,7 @@ func TestDocScanner_LoadsRegistryFromTOML(t *testing.T) {
 	assert.Equal(t, "pm", entries[0].Owner())
 	assert.Equal(t, 14, entries[0].ReviewIntervalDays())
 	assert.Equal(t, "docs/DDD.md", entries[1].Path())
-	assert.Equal(t, "", entries[1].Owner())
+	assert.Empty(t, entries[1].Owner())
 	assert.Equal(t, 30, entries[1].ReviewIntervalDays())
 }
 

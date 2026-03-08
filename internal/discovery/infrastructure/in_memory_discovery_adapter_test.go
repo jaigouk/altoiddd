@@ -1,6 +1,7 @@
 package infrastructure_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -127,7 +128,7 @@ func TestHappyPath_GetSession(t *testing.T) {
 	session, err := adapter.StartSession(testREADME)
 	require.NoError(t, err)
 	// GetSession is an adapter-only method (not on the Discovery port)
-	retrieved, err := adapter.GetSession(nil, session.SessionID())
+	retrieved, err := adapter.GetSession(context.TODO(), session.SessionID())
 	require.NoError(t, err)
 	assert.Equal(t, session.SessionID(), retrieved.SessionID())
 }
@@ -147,7 +148,7 @@ func TestHappyPath_MultipleSessions(t *testing.T) {
 func TestError_GetSessionNotFound(t *testing.T) {
 	t.Parallel()
 	adapter := makeAdapter()
-	_, err := adapter.GetSession(nil, "nonexistent-id")
+	_, err := adapter.GetSession(context.TODO(), "nonexistent-id")
 	require.ErrorIs(t, err, domainerrors.ErrNotFound)
 }
 

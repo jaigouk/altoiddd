@@ -81,7 +81,7 @@ func TestDiscoveryHandler_AnswerQuestion(t *testing.T) {
 		handler.DetectPersona(session.SessionID(), "1")
 		result, err := handler.AnswerQuestion(session.SessionID(), "Q1", "Users and admins")
 		require.NoError(t, err)
-		assert.Equal(t, 1, len(result.Answers()))
+		assert.Len(t, result.Answers(), 1)
 		assert.Equal(t, "Q1", result.Answers()[0].QuestionID())
 	})
 
@@ -204,7 +204,7 @@ func TestDiscoveryHandler_Complete(t *testing.T) {
 		result, err := handler.Complete(session.SessionID())
 		require.NoError(t, err)
 		assert.Equal(t, domain.StatusCompleted, result.Status())
-		assert.Equal(t, 1, len(result.Events()))
+		assert.Len(t, result.Events(), 1)
 	})
 
 	t.Run("not found raises", func(t *testing.T) {

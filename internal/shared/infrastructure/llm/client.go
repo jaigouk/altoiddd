@@ -6,32 +6,32 @@ import (
 	"fmt"
 )
 
-// LLMProvider enumerates supported LLM provider backends.
-type LLMProvider string
+// Provider enumerates supported LLM provider backends.
+type Provider string
 
 // LLM provider constants.
 const (
-	ProviderAnthropic LLMProvider = "anthropic"
-	ProviderOllama    LLMProvider = "ollama"
-	ProviderVertexAI  LLMProvider = "vertexai"
-	ProviderNone      LLMProvider = "none"
+	ProviderAnthropic Provider = "anthropic"
+	ProviderOllama    Provider = "ollama"
+	ProviderVertexAI  Provider = "vertexai"
+	ProviderNone      Provider = "none"
 )
 
-// AllProviders returns all valid LLMProvider values.
-func AllProviders() []LLMProvider {
-	return []LLMProvider{ProviderAnthropic, ProviderOllama, ProviderVertexAI, ProviderNone}
+// AllProviders returns all valid Provider values.
+func AllProviders() []Provider {
+	return []Provider{ProviderAnthropic, ProviderOllama, ProviderVertexAI, ProviderNone}
 }
 
 // Config holds configuration for LLM client creation.
 type Config struct {
-	provider LLMProvider
+	provider Provider
 	model    string
 	apiKey   string
 	timeout  float64
 }
 
 // NewConfig creates a Config with the given values.
-func NewConfig(provider LLMProvider, model, apiKey string, timeout float64) Config {
+func NewConfig(provider Provider, model, apiKey string, timeout float64) Config {
 	return Config{provider: provider, model: model, apiKey: apiKey, timeout: timeout}
 }
 
@@ -41,7 +41,7 @@ func DefaultConfig() Config {
 }
 
 // Provider returns the LLM provider.
-func (c Config) Provider() LLMProvider { return c.provider }
+func (c Config) Provider() Provider { return c.provider }
 
 // Model returns the model name.
 func (c Config) Model() string { return c.model }

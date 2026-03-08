@@ -2,7 +2,6 @@ package application_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -47,8 +46,8 @@ func newMockKnowledgeReader() *mockKnowledgeReader {
 			),
 		},
 		topics: map[string][]string{
-			"ddd":                {"tactical-patterns", "strategic-patterns"},
-			"tools:claude-code":  {"agent-format", "config-structure"},
+			"ddd":               {"tactical-patterns", "strategic-patterns"},
+			"tools:claude-code": {"agent-format", "config-structure"},
 		},
 	}
 }
@@ -149,7 +148,7 @@ func TestKnowledgeLookupHandler(t *testing.T) {
 		_, err := handler.Lookup(context.Background(), "", "current")
 
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, domainerrors.ErrInvariantViolation))
+		assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
 	})
 
 	t.Run("lookup nonexistent entry raises error", func(t *testing.T) {
@@ -160,7 +159,7 @@ func TestKnowledgeLookupHandler(t *testing.T) {
 		_, err := handler.Lookup(context.Background(), "ddd/nonexistent-topic", "current")
 
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, domainerrors.ErrNotFound))
+		assert.ErrorIs(t, err, domainerrors.ErrNotFound)
 	})
 
 	t.Run("list topics invalid category raises error", func(t *testing.T) {
@@ -171,6 +170,6 @@ func TestKnowledgeLookupHandler(t *testing.T) {
 		_, err := handler.ListTopics(context.Background(), "invalid-category", nil)
 
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, domainerrors.ErrInvariantViolation))
+		assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
 	})
 }

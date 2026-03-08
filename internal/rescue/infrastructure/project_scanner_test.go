@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	"github.com/alty-cli/alty/internal/rescue/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	"github.com/alty-cli/alty/internal/rescue/infrastructure"
 )
 
 func TestProjectScannerImplementsPort(t *testing.T) {
@@ -29,9 +30,9 @@ func TestScanEmptyProject(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, dir, scan.ProjectDir())
-	assert.Len(t, scan.ExistingDocs(), 0)
-	assert.Len(t, scan.ExistingConfigs(), 0)
-	assert.Len(t, scan.ExistingStructure(), 0)
+	assert.Empty(t, scan.ExistingDocs())
+	assert.Empty(t, scan.ExistingConfigs())
+	assert.Empty(t, scan.ExistingStructure())
 	assert.False(t, scan.HasKnowledgeDir())
 	assert.False(t, scan.HasAgentsMD())
 	assert.False(t, scan.HasGit())

@@ -18,13 +18,13 @@ var _ ticketapp.TicketHealth = (*BeadsTicketHealthAdapter)(nil)
 
 // Report generates a ticket health report for the project.
 func (a *BeadsTicketHealthAdapter) Report(
-	_ context.Context,
+	ctx context.Context,
 	projectDir string,
 ) (ticketdomain.TicketHealthReport, error) {
 	beadsDir := filepath.Join(projectDir, ".beads")
 	reader := NewBeadsTicketReader(beadsDir)
 
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 	totalOpen := len(tickets)
 
 	var flaggedTickets []ticketdomain.FlaggedTicket
@@ -38,7 +38,7 @@ func (a *BeadsTicketHealthAdapter) Report(
 			}
 		}
 		if hasReviewNeeded {
-			flags := reader.ReadFlags(t.TicketID())
+			flags := reader.ReadFlags(ctx, t.TicketID())
 			status := ticketdomain.FreshnessStatusReviewNeeded
 			if len(flags) == 0 {
 				status = ticketdomain.FreshnessStatusNeverReviewed

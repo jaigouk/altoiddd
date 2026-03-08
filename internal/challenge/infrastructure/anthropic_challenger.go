@@ -81,7 +81,7 @@ func (a *AnthropicChallengerAdapter) llmGenerate(
 	prompt := buildPrompt(model, maxPerType)
 	response, err := a.llm.StructuredOutput(ctx, prompt, challengeSchema)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("LLM structured output: %w", err)
 	}
 
 	var data llmChallengesResponse
@@ -99,7 +99,7 @@ func (a *AnthropicChallengerAdapter) llmGenerate(
 			item.Evidence,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("creating challenge %q: %w", item.ChallengeType, err)
 		}
 		challenges = append(challenges, c)
 	}

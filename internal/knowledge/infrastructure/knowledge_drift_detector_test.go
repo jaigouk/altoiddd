@@ -96,7 +96,7 @@ func TestDriftDetector_NoDriftWhenCurrentMatchesLatest(t *testing.T) {
 	require.NoError(t, err)
 
 	versionSignals := filterByType(report, knowledgedomain.DriftVersionChange)
-	assert.Equal(t, 0, len(versionSignals))
+	assert.Empty(t, versionSignals)
 }
 
 // -- Staleness --
@@ -140,7 +140,7 @@ func TestDriftDetector_NoStalenessWhenFutureReviewDate(t *testing.T) {
 	require.NoError(t, err)
 
 	staleSignals := filterByType(report, knowledgedomain.DriftStale)
-	assert.Equal(t, 0, len(staleSignals))
+	assert.Empty(t, staleSignals)
 }
 
 // -- Edge cases --
@@ -244,7 +244,7 @@ func TestDriftDetector_CrossToolNotScanned(t *testing.T) {
 	require.NoError(t, err)
 
 	versionSignals := filterByType(report, knowledgedomain.DriftVersionChange)
-	assert.Equal(t, 0, len(versionSignals))
+	assert.Empty(t, versionSignals)
 }
 
 // -- Test helpers --

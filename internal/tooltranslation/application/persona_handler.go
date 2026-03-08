@@ -77,7 +77,10 @@ func (h *PersonaHandler) ApproveAndWrite(
 	outputDir string,
 ) error {
 	target := filepath.Join(outputDir, preview.TargetPath)
-	return h.fileWriter.WriteFile(ctx, target, preview.Content)
+	if err := h.fileWriter.WriteFile(ctx, target, preview.Content); err != nil {
+		return fmt.Errorf("writing persona file %s: %w", target, err)
+	}
+	return nil
 }
 
 func resolvePersona(personaName string) (*vo.PersonaDefinition, error) {
@@ -102,7 +105,7 @@ func resolvePersona(personaName string) (*vo.PersonaDefinition, error) {
 	for _, defn := range registry {
 		names = append(names, "'"+defn.Name()+"'")
 	}
-	return nil, fmt.Errorf("Unknown persona '%s'. Valid personas: %s: %w",
+	return nil, fmt.Errorf("unknown persona '%s', valid personas: %s: %w",
 		personaName, strings.Join(names, ", "), domainerrors.ErrInvariantViolation)
 }
 
@@ -112,6 +115,6 @@ func validateTool(tool string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Unsupported tool '%s'. Valid tools: %s: %w",
+	return fmt.Errorf("unsupported tool '%s', valid tools: %s: %w",
 		tool, strings.Join(vo.SupportedTools(), ", "), domainerrors.ErrInvariantViolation)
 }

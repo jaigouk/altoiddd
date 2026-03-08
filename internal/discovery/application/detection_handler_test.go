@@ -56,8 +56,8 @@ func TestDetectionHandler(t *testing.T) {
 		result, err := handler.Detect("/tmp/proj")
 
 		require.NoError(t, err)
-		assert.Equal(t, 0, len(result.DetectedTools()))
-		assert.Equal(t, 0, len(result.Conflicts()))
+		assert.Empty(t, result.DetectedTools())
+		assert.Empty(t, result.Conflicts())
 	})
 
 	t.Run("with tools", func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestDetectionHandler(t *testing.T) {
 		result, err := handler.Detect("/tmp/proj")
 
 		require.NoError(t, err)
-		assert.Equal(t, 2, len(result.DetectedTools()))
+		assert.Len(t, result.DetectedTools(), 2)
 		names := make([]string, 0)
 		for _, dt := range result.DetectedTools() {
 			names = append(names, dt.Name())
@@ -88,7 +88,7 @@ func TestDetectionHandler(t *testing.T) {
 		result, err := handler.Detect("/tmp/proj")
 
 		require.NoError(t, err)
-		assert.Equal(t, 1, len(result.Conflicts()))
+		assert.Len(t, result.Conflicts(), 1)
 		severityMap := result.SeverityMap()
 		hasWarning := false
 		for _, sev := range severityMap {

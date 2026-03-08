@@ -15,9 +15,10 @@ func (f Factory) Create(config Config) Client {
 			return &NoopClient{}
 		}
 		return NewAnthropicClient(config.APIKey(), config.Model(), config.Timeout())
+	case ProviderOllama, ProviderVertexAI:
+		return &NoopClient{}
 	case ProviderNone:
 		return &NoopClient{}
-	default:
-		return &NoopClient{}
 	}
+	return &NoopClient{}
 }

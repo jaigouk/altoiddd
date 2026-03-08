@@ -89,7 +89,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 
 		handler.BuildPreview(model, "myapp", nil)
 
-		assert.Equal(t, 0, len(writer.written))
+		assert.Empty(t, writer.written)
 	})
 
 	t.Run("contains all bc names", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 		_, err := handler.BuildPreview(model, "myapp", nil)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "No bounded contexts")
+		assert.Contains(t, err.Error(), "no bounded contexts")
 	})
 
 	t.Run("returns nil when fitness not available", func(t *testing.T) {
@@ -149,7 +149,7 @@ func TestFitnessGenerationHandler_WriteFiles(t *testing.T) {
 		err := handler.WriteFiles(context.Background(), preview, "/project")
 
 		require.NoError(t, err)
-		assert.True(t, len(writer.written) >= 2)
+		assert.GreaterOrEqual(t, len(writer.written), 2)
 
 		hasToml := false
 		hasTest := false
@@ -199,8 +199,8 @@ func TestFitnessGenerationHandler_ApproveAndWrite(t *testing.T) {
 		err := handler.ApproveAndWrite(context.Background(), preview, "/project")
 
 		require.NoError(t, err)
-		assert.True(t, len(preview.Suite.Events()) > 0)
-		assert.True(t, len(writer.written) >= 2)
+		assert.NotEmpty(t, preview.Suite.Events())
+		assert.GreaterOrEqual(t, len(writer.written), 2)
 	})
 
 	t.Run("approve twice raises", func(t *testing.T) {

@@ -7,10 +7,11 @@ import (
 	"runtime"
 	"testing"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	"github.com/alty-cli/alty/internal/discovery/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
+	"github.com/alty-cli/alty/internal/discovery/infrastructure"
 )
 
 func TestFilesystemToolScannerImplementsPort(t *testing.T) {
@@ -28,7 +29,7 @@ func TestDetectNoToolsInstalled(t *testing.T) {
 	scanner := infrastructure.NewFilesystemToolScanner(homeDir)
 	result, err := scanner.Detect(context.Background(), homeDir)
 	require.NoError(t, err)
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 func TestDetectClaudeCode(t *testing.T) {
@@ -104,7 +105,7 @@ func TestNoConflictsWhenNoTools(t *testing.T) {
 	scanner := infrastructure.NewFilesystemToolScanner(homeDir)
 	result, err := scanner.ScanConflicts(context.Background(), homeDir)
 	require.NoError(t, err)
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 func TestCursorSQLiteProducesWarning(t *testing.T) {
@@ -149,7 +150,7 @@ func TestHomeDirNotSet(t *testing.T) {
 	scanner := infrastructure.NewFilesystemToolScanner(nonexistent)
 	result, err := scanner.Detect(context.Background(), nonexistent)
 	require.NoError(t, err)
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 func TestDefaultHomeDirUsesRealHome(t *testing.T) {

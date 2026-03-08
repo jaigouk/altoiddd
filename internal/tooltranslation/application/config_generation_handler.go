@@ -44,7 +44,7 @@ func (h *ConfigGenerationHandler) BuildPreview(
 	profile vo.StackProfile,
 ) (*ConfigPreview, error) {
 	if len(tools) == 0 {
-		return nil, fmt.Errorf("No tools specified for config generation: %w",
+		return nil, fmt.Errorf("no tools specified for config generation: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 
@@ -64,11 +64,11 @@ func (h *ConfigGenerationHandler) BuildPreview(
 		adapter := factory()
 		config := ttdomain.NewToolConfig(tool)
 		if err := config.BuildSections(model, adapter, profile); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("building sections for %s: %w", tool, err)
 		}
 		preview, err := config.Preview()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("previewing config for %s: %w", tool, err)
 		}
 		configs = append(configs, config)
 		summaryLines = append(summaryLines, preview, "")
@@ -88,12 +88,12 @@ func (h *ConfigGenerationHandler) ApproveAndWrite(
 ) error {
 	for _, config := range preview.Configs {
 		if err := config.Approve(); err != nil {
-			return err
+			return fmt.Errorf("approving config for %s: %w", config.Tool(), err)
 		}
 		for _, section := range config.Sections() {
 			target := filepath.Join(outputDir, section.FilePath())
 			if err := h.fileWriter.WriteFile(ctx, target, section.Content()); err != nil {
-				return err
+				return fmt.Errorf("writing config file %s: %w", target, err)
 			}
 		}
 	}

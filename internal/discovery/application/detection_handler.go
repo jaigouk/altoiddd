@@ -1,6 +1,8 @@
 package application
 
 import (
+	"fmt"
+
 	"github.com/alty-cli/alty/internal/discovery/domain"
 )
 
@@ -29,11 +31,11 @@ func NewDetectionHandler(toolDetection ToolDetector) *DetectionHandler {
 func (h *DetectionHandler) Detect(projectDir string) (domain.DetectionResult, error) {
 	toolNames, err := h.toolDetection.Detect(projectDir)
 	if err != nil {
-		return domain.DetectionResult{}, err
+		return domain.DetectionResult{}, fmt.Errorf("detect tools: %w", err)
 	}
 	conflicts, err := h.toolDetection.ScanConflicts(projectDir)
 	if err != nil {
-		return domain.DetectionResult{}, err
+		return domain.DetectionResult{}, fmt.Errorf("scan conflicts: %w", err)
 	}
 	return h.scanner.BuildResult(toolNames, conflicts), nil
 }

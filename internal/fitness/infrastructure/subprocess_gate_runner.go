@@ -3,6 +3,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -81,11 +82,12 @@ func (r *SubprocessGateRunner) Run(
 	}
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			_ = exitErr
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return vo.NewGateResult(gate, false, string(output), durationMS), nil
 		}
-		if _, ok := err.(*exec.Error); ok {
+		var execErr *exec.Error
+		if errors.As(err, &execErr) {
 			return vo.NewGateResult(gate, false,
 				fmt.Sprintf("Command not found: %s", cmd[0]), durationMS), nil
 		}

@@ -3,6 +3,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/alty-cli/alty/internal/dochealth/domain"
@@ -48,7 +49,7 @@ func (h *DocHealthHandler) Handle(ctx context.Context, projectDir string) (domai
 	registryPath := filepath.Join(projectDir, ".alty", "maintenance", "doc-registry.toml")
 	entries, err := h.scanner.LoadRegistry(ctx, registryPath)
 	if err != nil {
-		return domain.DocHealthReport{}, err
+		return domain.DocHealthReport{}, fmt.Errorf("load registry: %w", err)
 	}
 
 	if len(entries) == 0 {
@@ -57,7 +58,7 @@ func (h *DocHealthHandler) Handle(ctx context.Context, projectDir string) (domai
 
 	registeredStatuses, err := h.scanner.ScanRegistered(ctx, entries, projectDir)
 	if err != nil {
-		return domain.DocHealthReport{}, err
+		return domain.DocHealthReport{}, fmt.Errorf("scan registered docs: %w", err)
 	}
 
 	registeredPaths := make([]string, len(entries))
@@ -69,7 +70,7 @@ func (h *DocHealthHandler) Handle(ctx context.Context, projectDir string) (domai
 	excludeDirs := []string{"templates", "beads_templates"}
 	unregisteredStatuses, err := h.scanner.ScanUnregistered(ctx, docsDir, registeredPaths, excludeDirs)
 	if err != nil {
-		return domain.DocHealthReport{}, err
+		return domain.DocHealthReport{}, fmt.Errorf("scan unregistered docs: %w", err)
 	}
 
 	allStatuses := make([]domain.DocStatus, 0, len(registeredStatuses)+len(unregisteredStatuses))

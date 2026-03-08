@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alty-cli/alty/internal/knowledge/domain"
 )
@@ -32,9 +33,13 @@ func NewKnowledgeLookupHandler(reader KnowledgeReader) *KnowledgeLookupHandler {
 func (h *KnowledgeLookupHandler) Lookup(ctx context.Context, pathStr string, version string) (domain.KnowledgeEntry, error) {
 	path, err := domain.NewKnowledgePath(pathStr)
 	if err != nil {
-		return domain.KnowledgeEntry{}, err
+		return domain.KnowledgeEntry{}, fmt.Errorf("parse knowledge path: %w", err)
 	}
-	return h.reader.ReadEntry(ctx, path, version)
+	entry, err := h.reader.ReadEntry(ctx, path, version)
+	if err != nil {
+		return domain.KnowledgeEntry{}, fmt.Errorf("read entry: %w", err)
+	}
+	return entry, nil
 }
 
 // ListCategories returns all available knowledge category values.
@@ -46,7 +51,11 @@ func (h *KnowledgeLookupHandler) ListCategories() []string {
 func (h *KnowledgeLookupHandler) ListTopics(ctx context.Context, category string, tool *string) ([]string, error) {
 	cat, err := domain.ParseCategory(category)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse category: %w", err)
 	}
-	return h.reader.ListTopics(ctx, cat, tool)
+	topics, err := h.reader.ListTopics(ctx, cat, tool)
+	if err != nil {
+		return nil, fmt.Errorf("list topics: %w", err)
+	}
+	return topics, nil
 }

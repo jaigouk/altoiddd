@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alty-cli/alty/internal/shared/application"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 )
 
 // testEvent is a simple event used in tests.
@@ -66,7 +67,7 @@ func TestMarshal_PreservesAllFields(t *testing.T) {
 	var raw map[string]any
 	err = json.Unmarshal(msg.Payload, &raw)
 	require.NoError(t, err)
-	assert.Equal(t, float64(42), raw["code"])
+	assert.InDelta(t, float64(42), raw["code"].(float64), 0)
 	assert.Equal(t, "test info", raw["info"])
 }
 

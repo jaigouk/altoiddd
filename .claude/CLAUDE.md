@@ -1,19 +1,26 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with this repository.
+This file provides guidance to Claude Code when working on the alty project.
 
 ## Project Overview
 
-<!-- CUSTOMIZE: Replace with your project description -->
-> **TODO:** Describe your project here. What problem does it solve? Who is it for?
+alty is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Roo Code, and OpenCode.
+
+**Key interfaces:** CLI (`cmd/alty`) and MCP server (planned).
 
 ## Quick Reference
 
 ```bash
 # Quality gates (run before completing any task)
-uv run ruff check .              # Lint (auto-fix: --fix)
-uv run mypy .                    # Type check
-uv run pytest                    # Tests
+go build ./...                   # Build
+go vet ./...                     # Vet
+go test ./... -race              # Tests with race detector
+golangci-lint run ./...          # Lint (auto-fix: --fix)
+
+# CLI testing
+go run ./cmd/alty help           # Show commands
+go run ./cmd/alty init           # Test new project flow
+go run ./cmd/alty doc-health     # Test doc health check
 
 # Issue tracking (Beads)
 bd ready                         # Find available work
@@ -25,10 +32,150 @@ bd query label=review_needed     # See tickets needing review
 bd update <id> --remove-label review_needed  # Clear flag after review
 bd label add <id> <label>        # Add label to issue
 bd label remove <id> <label>     # Remove label from issue
-bd export                        # Export Dolt DB → JSONL (manual sync)
-# NOTE: bd sync is deprecated. Git hooks handle Dolt↔JSONL sync automatically.
+bd export                        # Export Dolt DB -> JSONL (manual sync)
+# NOTE: bd sync is deprecated. Git hooks handle Dolt<->JSONL sync automatically.
+```
+
+## Enforced Principles
+
+These are non-negotiable. Every ticket, every PR, every code change.
+
+### DDD (Domain-Driven Design)
+
+| Principle | Enforcement |
+|-----------|-------------|
+| **Ubiquitous Language** | Type/method names = domain expert terminology |
+| **Value Objects first** | Default to immutable value objects; entities only when identity needed |
+| **Rich Domain Model** | Business logic lives in domain objects, not services |
+| **Aggregate boundaries** | One aggregate per transaction; reference others by ID |
+| **Bounded Contexts** | Each context has its own `domain/`, `application/`, `infrastructure/` |
+| **Layer Rules** | Dependencies flow inward: infrastructure -> application -> domain |
+
+### TDD (Test-Driven Development)
+
+| Phase | Action |
+|-------|--------|
+| RED | Write failing test first |
+| GREEN | Minimal code to pass |
+| REFACTOR | Clean up, tests stay green |
+
+### BDD (Behavior-Driven Development)
+
+| Principle | Enforcement |
+|-----------|-------------|
+| **Given/When/Then** | Integration tests use this structure |
+| **User behavior** | Test observable behavior, not implementation |
+| **Acceptance criteria** | Written as BDD scenarios before implementation |
+
+### SOLID
+
+| Principle | Rule | Go Enforcement |
+|-----------|------|----------------|
+| **S**ingle Responsibility | One struct, one job | One handler per use case |
+| **O**pen/Closed | Extend via composition | New adapters, not modifying existing |
+| **L**iskov Substitution | Subtypes honor contracts | All adapters pass port interface tests |
+| **I**nterface Segregation | Focused interfaces | One interface per concern (ISP) |
+| **D**ependency Inversion | Depend on abstractions | Handlers depend on port interfaces, never concrete adapters |
+
+### CQRS-lite
+
+| Principle | Enforcement |
+|-----------|-------------|
+| **Separation** | Command handlers and query handlers are structurally separated |
+| **Commands** | May return domain objects (not strict "error only") |
+| **Queries** | Have no side effects |
+| **Event bus** | Watermill GoChannel routes events asynchronously |
+| **Not event sourcing** | State is mutable, events are notifications |
+
+### Linting
+
+All enforced by `.golangci.yml` v2 config:
+
+| Category | Linters | Why |
+|----------|---------|-----|
+| Error handling | `errcheck`, `errorlint`, `wrapcheck` | All errors checked and wrapped |
+| Context propagation | `noctx`, `contextcheck` | Context passed through all layers |
+| Code quality | `revive`, `gocritic`, `exhaustive`, `staticcheck` | Idiomatic Go |
+| Testing | `testifylint` | Idiomatic testify assertions |
+| DDD boundaries | `depguard` | Domain cannot import application/infrastructure |
+| Formatting | `gci`, `gofumpt` | Consistent import ordering and formatting |
+
+**Rule: `golangci-lint run ./...` must report 0 issues before any task is complete.**
+
+## Architecture
+
+### Project Structure
 
 ```
+alty/
+├── cmd/alty/                    # CLI entry point (Cobra)
+├── internal/
+│   ├── bootstrap/               # Bootstrap bounded context
+│   │   ├── domain/              # Entities, VOs, aggregates
+│   │   ├── application/         # Handlers + port interfaces
+│   │   └── infrastructure/      # Adapters
+│   ├── discovery/               # Discovery bounded context
+│   ├── challenge/               # DDD Challenge bounded context
+│   ├── fitness/                 # Architecture Fitness bounded context
+│   ├── dochealth/               # Doc Health bounded context
+│   ├── knowledge/               # Knowledge Base bounded context
+│   ├── rescue/                  # Rescue Mode bounded context
+│   ├── research/                # Research bounded context
+│   ├── ticket/                  # Ticket Pipeline bounded context
+│   ├── tooltranslation/         # Tool Translation bounded context
+│   ├── shared/                  # Shared kernel
+│   │   ├── domain/              # Shared VOs, events, errors, DDD types
+│   │   ├── application/         # Shared ports (FileWriter)
+│   │   └── infrastructure/      # Event bus, LLM client, persistence
+│   ├── composition/             # Composition root (DI wiring)
+│   └── integration/             # Cross-context integration tests
+├── docs/
+│   ├── PRD.md                   # Product requirements
+│   ├── templates/               # PRD, DDD Story, Architecture templates
+│   ├── beads_templates/         # Epic, spike, ticket templates
+│   ├── spikes/                  # Research spike definitions
+│   └── research/                # Spike output reports
+├── .claude/
+│   ├── CLAUDE.md                # This file
+│   ├── agents/                  # Agent personas
+│   └── commands/                # Slash commands
+├── .golangci.yml                # Lint config (v2, strict)
+├── go.mod / go.sum              # Go module
+└── Makefile                     # Build targets
+```
+
+### Layer Rules
+
+- `internal/{context}/domain/` has ZERO external dependencies
+- `internal/{context}/application/` depends on domain + ports only
+- `internal/{context}/infrastructure/` implements ports, external deps allowed
+- `internal/shared/` is the shared kernel (errors, VOs, events, DDD types)
+- Dependencies flow inward: infrastructure -> application -> domain
+- **Enforced by `depguard` in `.golangci.yml`**
+
+### Key Documents
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Public-facing description |
+| `docs/PRD.md` | Product requirements |
+| `docs/DDD.md` | Domain model, bounded contexts, ubiquitous language |
+| `docs/ARCHITECTURE.md` | Technical architecture |
+
+## Development Rules
+
+- **TDD required** -- Write test first, then implementation
+- **DDD + SOLID enforced** -- Domain logic in `internal/{context}/domain/`, no framework leakage
+- **Go 1.26+** with modules
+- **Do not commit/push** without explicit user permission
+- **Do not proceed** to next ticket without explicit user permission
+- **Dogfooding rule** -- When we encounter a process problem, fix it for ourselves AND for the product. Update the relevant ticket via `/prd-traceability` to find it, or create a new ticket if none exists.
+
+## What alty IS and IS NOT
+
+**IS:** The architect that runs before builders. It produces blueprints, guardrails, and structured tickets for AI coding tools to execute.
+
+**IS NOT:** Another AI coding tool. It does not write application code. It produces project structure, domain models, configs, and tickets.
 
 ## After-Close Protocol
 
@@ -49,221 +196,127 @@ For each flagged ticket:
 2. Compare the ticket's description and AC against the new context
 3. Draft suggested updates (or "no changes needed")
 4. **Present suggestions to the user for approval** -- never auto-update
-5. If approved: apply updates, then clear the flag:
-   ```bash
-   bd update <id> --description "<updated description>"
-   bd label remove <id> review_needed
-   bd comments add <id> "**Reviewed:** <date>\n**Triggered by:** \`<closed-id>\`\n**Verdict:** <updated|unchanged|dismissed>\n**Changes:** <summary>"
-   ```
+5. If approved: apply updates, then clear the flag
 
 ### 3. Follow-Up Tickets
 If closing produced new work:
-1. Create tickets using the appropriate template (never empty descriptions):
-   - Tasks/Features: `docs/beads_templates/beads-ticket-template.md`
-   - Spikes: `docs/beads_templates/beads-spike-template.md`
-   - Far-term stubs: `docs/beads_templates/beads-stub-template.md`
+1. Create tickets using the appropriate template (never empty descriptions)
 2. Set formal dependencies: `bd dep add <new-id> <depends-on-id>`
 3. Verify with `bd blocked` that the graph is correct
-4. **Spike audit:** If the closed ticket was a spike, verify its research report's follow-up intents were all created as tickets. Orphaned follow-ups (defined in the report but never created) represent lost work items.
+4. **Spike audit:** If the closed ticket was a spike, verify its research report's follow-up intents were all created as tickets.
 
 ### 4. Groom Next Ticket
 ```bash
 bd ready
 ```
-Pick the highest-priority ready ticket and run the full grooming checklist:
-1. **Template compliance** -- description follows the beads template
-2. **Freshness check** -- `bd label list <id>` for `review_needed`
-3. **PRD traceability** -- `/prd-traceability <id>` to verify capability coverage
-4. **DDD alignment** -- bounded context boundaries respected
-5. **Ubiquitous language** -- terms match `docs/DDD.md` glossary
-6. **TDD & SOLID** -- RED/GREEN/REFACTOR phases documented
-7. **Acceptance criteria** -- testable checkboxes, edge cases, coverage >= 80%
-
-Present grooming results and ask the user if they want to start the ticket.
-
-## Development Rules
-
-- **TDD required** — Write test first, then implementation
-- **DDD + SOLID enforced** — Domain logic in `src/domain/`, no framework leakage
-- **Python 3.12+** with `uv` package manager
-- **No personal info** — No real names, emails, paths, or hardware specs in code
-- **Do not commit/push** without explicit user permission
-- **Do not proceed** to next ticket without explicit user permission
-- **Dogfooding rule** — When you encounter a process problem (missing templates, broken workflow, enforcement gap), fix it for yourself AND capture it as a ticket. Use PRD traceability to find the related ticket, or create a new one. If the problem affects users, update the PRD.
-
-## Project Lifecycle
-
-Projects follow this progression. Do NOT skip steps:
-
-```
-1. README.md        → Initial idea (a few sentences)
-2. docs/PRD.md      → Refined requirements (use docs/templates/PRD_TEMPLATE.md)
-3. DDD Artifacts    → Domain stories, bounded contexts, ubiquitous language
-                      (use docs/templates/DDD_STORY_TEMPLATE.md)
-4. Architecture     → Technical design informed by DDD
-                      (use docs/templates/ARCHITECTURE_TEMPLATE.md)
-5. Spikes           → Time-boxed research for unknowns (docs/spikes/)
-6. Implementation   → Beads tickets with DDD + TDD + SOLID
-```
-
-## Architecture
-
-<!-- CUSTOMIZE: Fill in after completing DDD and architecture phases -->
-
-### DDD Layer Structure
-
-```
-src/
-├── domain/              # Core business logic (NO external dependencies)
-│   ├── models/          # Entities, Value Objects, Aggregates
-│   ├── services/        # Domain Services (stateless business operations)
-│   └── events/          # Domain Events
-├── application/         # Use cases / orchestration
-│   ├── commands/        # Write operations (Command handlers)
-│   ├── queries/         # Read operations (Query handlers)
-│   └── ports/           # Interfaces (Protocols) for infrastructure
-├── infrastructure/      # Adapters for external concerns
-│   ├── persistence/     # Database, file storage implementations
-│   ├── messaging/       # Message bus, event publishing
-│   └── external/        # External API clients, third-party integrations
-└── tests/
-    ├── domain/          # Unit tests for domain logic
-    ├── application/     # Unit tests for use cases
-    ├── infrastructure/  # Integration tests for adapters
-    └── integration/     # End-to-end tests
-```
-
-**Layer Rules:**
-- `domain/` has ZERO external dependencies (no frameworks, no DB, no HTTP)
-- `application/` depends on `domain/` and `ports/` (interfaces only)
-- `infrastructure/` implements `ports/` and depends on external libraries
-- Dependencies flow inward: infrastructure → application → domain
-
-### Key Documents
-
-| Document | Purpose |
-|----------|---------|
-| `docs/PRD.md` | Product requirements |
-| `docs/DDD.md` | Domain model, bounded contexts, ubiquitous language |
-| `docs/ARCHITECTURE.md` | Technical architecture |
-| `docs/architecture/*.md` | Detailed architecture sections |
+Pick the highest-priority ready ticket and run the full grooming checklist.
 
 ## Workflow
 
 ### Agent Selection
 
-| Ticket Type  | Agent             | Purpose                              |
-| ------------ | ----------------- | ------------------------------------ |
-| Spike / ADR  | `researcher`      | Library evaluation, research reports |
-| Task / Bug   | `developer`       | TDD implementation                   |
-| Task (tests) | `qa-engineer`     | Coverage, edge cases                 |
-| Review       | `tech-lead`       | Architecture compliance, code review |
-| Planning     | `project-manager` | Tickets, backlog grooming            |
+| Ticket Type | Agent | Purpose |
+|-------------|-------|---------|
+| Spike / ADR | `researcher` | Library evaluation, research reports |
+| Task / Bug | `developer` | TDD implementation |
+| Task (tests) | `qa-engineer` | Coverage, edge cases |
+| Review | `tech-lead` | Architecture compliance, code review |
+| Planning | `project-manager` | Tickets, backlog grooming |
 
 ### Ticket Grooming Checklist
 
 Before claiming a ticket:
 
-1. **Template Compliance** — Description MUST follow the appropriate beads template:
-   - Tasks/Features → `docs/beads_templates/beads-ticket-template.md` (Goal, DDD Alignment, Design, SOLID Mapping, TDD Workflow, Steps, AC, Edge Cases, Quality Gates)
-   - Spikes → `docs/beads_templates/beads-spike-template.md` (Research Question, Timebox, Background, Investigation Approach, Expected Deliverables)
-   - If the description is missing or doesn't follow the template, populate it BEFORE any other grooming step.
-2. **Freshness Check** — Run `bd label list <id>`. If `review_needed` is present, read the ripple comments (`bd comments <id>`) to see what changed. Present suggested updates to the user for approval before starting work. Clear with `bd update <id> --remove-label review_needed` after review.
-3. **PRD Traceability** — Run `/prd-traceability <id>` to cross-reference the ticket's deliverables/AC against PRD capabilities. Ripple review catches *freshness* (did something change?), but not *completeness* (was something missing from the start). The capability map in `.claude/commands/prd-traceability.md` maps each PRD P0/P1 item to bounded contexts and expected ticket scope.
-4. **DDD Alignment** — Does the ticket respect bounded context boundaries?
-5. **Ubiquitous Language** — Do class/method names match domain language?
-6. **TDD & SOLID Compliance** — RED/GREEN/REFACTOR phases documented
-7. **Acceptance Criteria** — Testable checkboxes, edge cases, coverage >= 80%
-8. **Implementation Simulation** — Mentally trace the implementation: constructor → dependencies → method calls → return values. For each dependency, ask: "does this exist? what interface does it have?" For each new injection point, ask: "what existing tests break?" If any step is "magic happens here" (e.g., "adapter does web search" without specifying what port/library does the searching), the ticket is NOT groomed. Cross-reference within the ticket: does the Design section match the SOLID/ISP line? Does the sequence diagram match the port signature?
+1. **Template Compliance** -- Description follows the beads template
+2. **Freshness Check** -- `bd label list <id>` for `review_needed`
+3. **PRD Traceability** -- `/prd-traceability <id>` to verify capability coverage
+4. **DDD Alignment** -- Bounded context boundaries respected
+5. **Ubiquitous Language** -- Names match `docs/DDD.md` glossary
+6. **TDD & SOLID** -- RED/GREEN/REFACTOR phases documented
+7. **Acceptance Criteria** -- Testable, edge cases, coverage >= 80%
+8. **Implementation Simulation** -- Mentally trace: constructor -> deps -> calls -> returns. No "magic happens here" steps.
 
-If incomplete, update via `bd update <id> --description` before claiming.
+## Go Conventions
 
-## Coding Standards
+### Import Order (enforced by gci)
 
-> **Reference**: Rules enforced via `pyproject.toml`. Auto-fix: `uv run ruff check --fix .`
+```go
+import (
+    "context"                    // 1. Standard library
+    "fmt"
 
-### TDD (Test-Driven Development)
+    "github.com/stretchr/testify/assert"  // 2. Third-party
 
-| Phase           | Action                     |
-| --------------- | -------------------------- |
-| RED             | Write failing test first   |
-| GREEN           | Minimal code to pass       |
-| REFACTOR        | Clean up, tests stay green |
-
-### SOLID Principles
-
-| Principle                 | Rule                     | Example                                   |
-| ------------------------- | ------------------------ | ----------------------------------------- |
-| **S**ingle Responsibility | One class, one job       | `OrderValidator` only validates orders     |
-| **O**pen/Closed           | Extend via composition   | `Notifier(channels=[email, slack])`        |
-| **L**iskov Substitution   | Subtypes honor contracts | `PostgresRepo(Repository)` same interface  |
-| **I**nterface Segregation | Focused interfaces       | `Protocol` with single method              |
-| **D**ependency Inversion  | Depend on abstractions   | `def process(repo: Repository)` not `PostgresRepo` |
-
-### DDD Principles
-
-| Principle | Rule |
-|-----------|------|
-| **Ubiquitous Language** | Class/method names = domain expert terminology |
-| **Value Objects first** | Default to immutable value objects; entities only when identity needed |
-| **Rich Domain Model** | Business logic lives in domain objects, not services |
-| **Aggregate boundaries** | One aggregate per transaction; reference others by ID |
-| **Repositories for Roots** | Only aggregate roots get repositories |
-
-### Python Conventions
-
-**Import Order** (ruff I):
-
-```python
-from __future__ import annotations    # 1. Future
-import sys                            # 2. Stdlib
-from pydantic import BaseModel        # 3. Third-party
-from src.domain.models import Order   # 4. Local
+    "github.com/alty-cli/alty/internal/shared/domain/errors"  // 3. Local
+)
 ```
 
-**Type Annotations** (mypy strict):
+### Naming
 
-```python
-def process(data: dict[str, Any]) -> list[str]: ...
-def get_value(key: str) -> str | None: ...
-class Config:
-    DEFAULTS: ClassVar[dict[str, int]] = {}
+- Types/Interfaces: `PascalCase` (`DiscoverySession`, `ToolDetector`)
+- Functions/methods: `PascalCase` exported, `camelCase` unexported
+- Constants: `PascalCase` (`QualityGateLint`, `SubdomainCore`)
+- Packages: `lowercase` single word (`domain`, `application`, `infrastructure`)
+
+### Error Handling
+
+```go
+// Always wrap errors with context
+if err := h.repo.Save(ctx, entity); err != nil {
+    return fmt.Errorf("saving entity: %w", err)
+}
+
+// Error strings: lowercase, no punctuation
+fmt.Errorf("invalid session state: %w", ErrInvariantViolation)
+
+// Use errors.As for type assertions on errors
+var exitErr *exec.ExitError
+if errors.As(err, &exitErr) { ... }
+
+// Use context.TODO() instead of nil context
+session, err := adapter.GetSession(context.TODO(), id)
 ```
 
-**Naming**:
+### Port/Adapter Pattern
 
-- Classes: `PascalCase`
-- Functions/variables: `snake_case`
-- Constants: `UPPER_SNAKE_CASE`
-- Private: `_underscore_prefix`
-- Unused: `_underscore_prefix`
+```go
+// Port (interface in application layer)
+type ToolDetector interface {
+    Detect(projectDir string) ([]string, error)
+}
 
-### Avoid
+// Adapter (concrete in infrastructure layer)
+type FileSystemToolDetector struct { ... }
+func (d *FileSystemToolDetector) Detect(projectDir string) ([]string, error) { ... }
 
-```python
-# Mutable default              # Use None instead
-def f(items=[]):               def f(items=None):
-    ...                            items = items or []
+// Handler (depends on port, never adapter)
+type BootstrapHandler struct {
+    toolDetection ToolDetector  // interface, not concrete
+}
+```
 
-# Broad except                 # Specific exceptions
-except Exception:              except (ValueError, KeyError):
+### Testing
 
-# Magic values                 # Constants/Enums
-if status == "active":         if status == Status.ACTIVE:
-
-# Anemic domain model          # Rich domain model
-order.status = "cancelled"     order.cancel(reason=reason)
+```go
+// Use testify idioms (enforced by testifylint)
+assert.Len(t, items, 3)           // not assert.Equal(t, 3, len(items))
+assert.Empty(t, items)            // not assert.Len(t, items, 0)
+assert.NotEmpty(t, items)         // not assert.True(t, len(items) > 0)
+assert.ErrorIs(t, err, ErrFoo)   // not assert.True(t, errors.Is(err, ErrFoo))
+require.Error(t, err)            // not assert.Error(t, err) for preconditions
+assert.InDelta(t, 42.0, val, 0)  // not assert.Equal(t, 42.0, val)
 ```
 
 ## Quality Gates
 
 **All must pass before task completion:**
 
-| Gate  | Command               | Requirement        |
-| ----- | --------------------- | ------------------ |
-| Lint  | `uv run ruff check .` | Zero errors        |
-| Types | `uv run mypy .`       | Zero errors        |
-| Tests | `uv run pytest`       | All pass, no skips |
+| Gate | Command | Requirement |
+|------|---------|-------------|
+| Build | `go build ./...` | Zero errors |
+| Vet | `go vet ./...` | Zero errors |
+| Lint | `golangci-lint run ./...` | Zero issues |
+| Tests | `go test ./... -race` | All pass |
 
 **If any fail, you are NOT DONE.**
 
@@ -274,10 +327,14 @@ order.status = "cancelled"     order.cancel(reason=reason)
 - NEVER amend unless explicitly asked
 - Stage specific files, not `git add -A`
 - Commit format: `<type>: <description>` (feat/fix/test/refactor/docs/chore)
+- No GitHub -- repo is on private Git server. Do not use `gh` CLI.
 
 ## Tooling
 
-- **Beads** (`bd`) — Issue tracking in `.beads/issues.jsonl`
-- **Context7** — MCP server for library docs
-- **Templates** — `docs/beads_templates/` (epic, spike, ticket)
-- **Doc Templates** — `docs/templates/` (PRD, DDD Story, Architecture)
+- **Beads** (`bd`) -- Issue tracking in `.beads/issues.jsonl`
+- **Context7** -- MCP server for library docs
+- **Templates** -- `docs/beads_templates/` (epic, spike, ticket)
+- **Doc Templates** -- `docs/templates/` (PRD, DDD Story, Architecture)
+- **golangci-lint v2** -- Strict lint config in `.golangci.yml`
+- **Watermill** -- Event bus (GoChannel for local, NATS for distributed)
+- **Cobra** -- CLI framework

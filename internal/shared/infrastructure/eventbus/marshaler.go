@@ -39,5 +39,8 @@ func (m *JSONMarshaler) Marshal(eventType string, event any) (*message.Message, 
 
 // Unmarshal deserializes a Watermill message payload into the given target.
 func (m *JSONMarshaler) Unmarshal(msg *message.Message, target any) error {
-	return json.Unmarshal(msg.Payload, target)
+	if err := json.Unmarshal(msg.Payload, target); err != nil {
+		return fmt.Errorf("unmarshaling event: %w", err)
+	}
+	return nil
 }

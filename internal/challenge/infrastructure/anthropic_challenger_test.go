@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	"github.com/alty-cli/alty/internal/challenge/infrastructure"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alty-cli/alty/internal/composition"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/spf13/cobra"
 )
 
 // NewCheckCmd creates the "alty check" command.

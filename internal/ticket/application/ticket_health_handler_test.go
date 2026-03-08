@@ -107,7 +107,7 @@ func TestTicketHealthHandler(t *testing.T) {
 		report, err := handler.Report(context.Background())
 
 		require.NoError(t, err)
-		require.Equal(t, 1, len(report.FlaggedTickets()))
+		require.Len(t, report.FlaggedTickets(), 1)
 		flagged := report.FlaggedTickets()[0]
 		assert.Equal(t, "Added new aggregate", flagged.Flags()[0].ContextDiff().Summary())
 	})

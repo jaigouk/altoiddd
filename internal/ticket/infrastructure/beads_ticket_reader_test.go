@@ -1,15 +1,19 @@
 package infrastructure_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/alty-cli/alty/internal/ticket/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alty-cli/alty/internal/ticket/infrastructure"
 )
+
+var ctx = context.Background()
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,7 +62,7 @@ func TestReaderReadsOpenTickets(t *testing.T) {
 		openIssue("k7m.20", "Ticket Gen"),
 	})
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 
 	assert.Len(t, tickets, 2)
 	ids := make(map[string]bool)
@@ -77,7 +81,7 @@ func TestReaderFiltersClosedTickets(t *testing.T) {
 		closedIssue("k7m.19", "Closed ticket"),
 	})
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 
 	assert.Len(t, tickets, 1)
 	assert.Equal(t, "k7m.25", tickets[0].TicketID())
@@ -87,9 +91,9 @@ func TestReaderHandlesMissingDir(t *testing.T) {
 	t.Parallel()
 	beadsDir := filepath.Join(t.TempDir(), ".beads") // does not exist
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 
-	assert.Len(t, tickets, 0)
+	assert.Empty(t, tickets)
 }
 
 func TestReaderHandlesCorruptedLines(t *testing.T) {
@@ -106,7 +110,7 @@ func TestReaderHandlesCorruptedLines(t *testing.T) {
 	f.Close()
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 	assert.Len(t, tickets, 2)
 }
 
@@ -117,7 +121,7 @@ func TestReaderExtractsTitle(t *testing.T) {
 		openIssue("k7m.25", "My Title"),
 	})
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 	assert.Equal(t, "My Title", tickets[0].Title())
 }
 
@@ -136,7 +140,7 @@ func TestReaderSkipsBlankLines(t *testing.T) {
 	f.Close()
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
+	tickets := reader.ReadOpenTickets(ctx)
 	assert.Len(t, tickets, 2)
 }
 
@@ -147,8 +151,8 @@ func TestReaderHandlesEmptyFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(beadsDir, "issues.jsonl"), []byte(""), 0o644))
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	tickets := reader.ReadOpenTickets()
-	assert.Len(t, tickets, 0)
+	tickets := reader.ReadOpenTickets(ctx)
+	assert.Empty(t, tickets)
 }
 
 // ---------------------------------------------------------------------------
@@ -161,8 +165,8 @@ func TestReaderReadsFlagsEmpty(t *testing.T) {
 	require.NoError(t, os.MkdirAll(beadsDir, 0o755))
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
-	assert.Len(t, flags, 0)
+	flags := reader.ReadFlags(ctx, "k7m.25")
+	assert.Empty(t, flags)
 }
 
 func TestReaderReadsFlagsFromInteractions(t *testing.T) {
@@ -181,7 +185,7 @@ func TestReaderReadsFlagsFromInteractions(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(beadsDir, "interactions.jsonl"), append(data, '\n'), 0o644))
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
+	flags := reader.ReadFlags(ctx, "k7m.25")
 
 	assert.Len(t, flags, 1)
 	assert.Contains(t, flags[0].ContextDiff().Summary(), "fitness")
@@ -211,7 +215,7 @@ func TestReaderReadsFlagsFiltersByTicket(t *testing.T) {
 	f.Close()
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
+	flags := reader.ReadFlags(ctx, "k7m.25")
 	assert.Len(t, flags, 1)
 	assert.Contains(t, flags[0].ContextDiff().Summary(), "25")
 }
@@ -222,8 +226,8 @@ func TestReaderHandlesMissingInteractionsFile(t *testing.T) {
 	require.NoError(t, os.MkdirAll(beadsDir, 0o755))
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
-	assert.Len(t, flags, 0)
+	flags := reader.ReadFlags(ctx, "k7m.25")
+	assert.Empty(t, flags)
 }
 
 func TestReaderHandlesEmptyInteractionsFile(t *testing.T) {
@@ -233,8 +237,8 @@ func TestReaderHandlesEmptyInteractionsFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(beadsDir, "interactions.jsonl"), []byte(""), 0o644))
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
-	assert.Len(t, flags, 0)
+	flags := reader.ReadFlags(ctx, "k7m.25")
+	assert.Empty(t, flags)
 }
 
 func TestReaderHandlesCorruptedInteractionLines(t *testing.T) {
@@ -255,7 +259,7 @@ func TestReaderHandlesCorruptedInteractionLines(t *testing.T) {
 	f.Close()
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
+	flags := reader.ReadFlags(ctx, "k7m.25")
 	assert.Len(t, flags, 1)
 	assert.Contains(t, flags[0].ContextDiff().Summary(), "fitness")
 }
@@ -284,7 +288,7 @@ func TestReaderMultipleRippleComments(t *testing.T) {
 	f.Close()
 
 	reader := infrastructure.NewBeadsTicketReader(beadsDir)
-	flags := reader.ReadFlags("k7m.25")
+	flags := reader.ReadFlags(ctx, "k7m.25")
 	assert.Len(t, flags, 2)
 	summaries := make(map[string]bool)
 	for _, fl := range flags {

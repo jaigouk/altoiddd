@@ -16,13 +16,12 @@ import (
 // ---------------------------------------------------------------------------
 
 type mockDocScanner struct {
-	registryEntries      []domain.DocRegistryEntry
-	registeredStatuses   []domain.DocStatus
-	unregisteredStatuses []domain.DocStatus
-
-	loadRegistryCalls      []string
-	scanRegisteredCalls    []scanRegisteredCall
-	scanUnregisteredCalls  []scanUnregisteredCall
+	registryEntries       []domain.DocRegistryEntry
+	registeredStatuses    []domain.DocStatus
+	unregisteredStatuses  []domain.DocStatus
+	loadRegistryCalls     []string
+	scanRegisteredCalls   []scanRegisteredCall
+	scanUnregisteredCalls []scanUnregisteredCall
 }
 
 type scanRegisteredCall struct {
@@ -78,7 +77,7 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		report, err := handler.Handle(context.Background(), "/project")
 
 		require.NoError(t, err)
-		assert.Equal(t, 1, len(scanner.scanRegisteredCalls))
+		assert.Len(t, scanner.scanRegisteredCalls, 1)
 		assert.NotNil(t, report)
 	})
 
@@ -98,9 +97,9 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		_, err := handler.Handle(context.Background(), "/project")
 
 		require.NoError(t, err)
-		require.Equal(t, 1, len(scanner.scanRegisteredCalls))
+		require.Len(t, scanner.scanRegisteredCalls, 1)
 		entriesUsed := scanner.scanRegisteredCalls[0].entries
-		assert.Equal(t, 3, len(entriesUsed))
+		assert.Len(t, entriesUsed, 3)
 		paths := make(map[string]bool)
 		for _, e := range entriesUsed {
 			paths[e.Path()] = true
@@ -123,7 +122,7 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		_, err = handler.Handle(context.Background(), "/project")
 
 		require.NoError(t, err)
-		require.Equal(t, 1, len(scanner.scanUnregisteredCalls))
+		require.Len(t, scanner.scanUnregisteredCalls, 1)
 		excludeDirs := scanner.scanUnregisteredCalls[0].excludeDirs
 		assert.Contains(t, excludeDirs, "templates")
 		assert.Contains(t, excludeDirs, "beads_templates")
@@ -207,10 +206,10 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		_, err = handler.Handle(context.Background(), "/project")
 
 		require.NoError(t, err)
-		require.Equal(t, 1, len(scanner.scanUnregisteredCalls))
+		require.Len(t, scanner.scanUnregisteredCalls, 1)
 		registeredPaths := scanner.scanUnregisteredCalls[0].registeredPaths
 		assert.Contains(t, registeredPaths, "docs/PRD.md")
 		assert.Contains(t, registeredPaths, "docs/DDD.md")
-		assert.Equal(t, 2, len(registeredPaths))
+		assert.Len(t, registeredPaths, 2)
 	})
 }

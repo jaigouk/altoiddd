@@ -37,7 +37,8 @@ func (f *fakeFileWriterT) WriteFile(_ context.Context, path, content string) err
 func makeTicketModel(contexts []struct {
 	Name           string
 	Classification vo.SubdomainClassification
-}) *ddd.DomainModel {
+},
+) *ddd.DomainModel {
 	model := ddd.NewDomainModel("ticket-test")
 
 	names := make([]string, len(contexts))
@@ -102,7 +103,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 
 		handler.BuildPreview(model, nil)
 
-		assert.Equal(t, 0, len(writer.written))
+		assert.Empty(t, writer.written)
 	})
 
 	t.Run("contains bc names", func(t *testing.T) {
@@ -148,7 +149,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 		preview, err := handler.BuildPreview(model, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, len(preview.Plan.Tickets()), len(preview.Validation))
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
 	})
 
 	t.Run("validation ticket ids match plan", func(t *testing.T) {
@@ -196,7 +197,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 		err := handler.ApproveAndWrite(context.Background(), preview, "/project", nil)
 
 		require.NoError(t, err)
-		assert.True(t, len(writer.written) >= 2)
+		assert.GreaterOrEqual(t, len(writer.written), 2)
 		hasSummary := false
 		hasTicket := false
 		for p := range writer.written {
@@ -223,7 +224,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 
 		handler.ApproveAndWrite(context.Background(), preview, "/project", nil)
 
-		assert.Equal(t, 1, len(preview.Plan.Events()))
+		assert.Len(t, preview.Plan.Events(), 1)
 	})
 
 	t.Run("approve twice raises", func(t *testing.T) {
@@ -262,6 +263,6 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 
 		require.NoError(t, err)
 		// Summary + 1 approved ticket = 2 files
-		assert.Equal(t, 2, len(writer.written))
+		assert.Len(t, writer.written, 2)
 	})
 }

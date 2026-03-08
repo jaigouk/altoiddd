@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/alty-cli/alty/internal/composition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alty-cli/alty/internal/composition"
 )
 
 func TestNewRootCmd_HasExpectedSubcommands(t *testing.T) {

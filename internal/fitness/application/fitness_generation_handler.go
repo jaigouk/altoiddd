@@ -48,7 +48,7 @@ func (h *FitnessGenerationHandler) BuildPreview(
 
 	bcs := model.BoundedContexts()
 	if len(bcs) == 0 {
-		return nil, fmt.Errorf("No bounded contexts found in model: %w",
+		return nil, fmt.Errorf("no bounded contexts found in model: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 
@@ -70,22 +70,22 @@ func (h *FitnessGenerationHandler) BuildPreview(
 	}
 
 	if err := suite.GenerateContracts(inputs); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generate contracts: %w", err)
 	}
 
 	tomlContent, err := suite.RenderImportLinterTOML()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render import linter TOML: %w", err)
 	}
 
 	testContent, err := suite.RenderPytestarchTests()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render pytestarch tests: %w", err)
 	}
 
 	summary, err := suite.Preview()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generate preview: %w", err)
 	}
 
 	// Add BC names to summary
@@ -119,7 +119,7 @@ func (h *FitnessGenerationHandler) ApproveAndWrite(
 	projectDir string,
 ) error {
 	if err := preview.Suite.Approve(); err != nil {
-		return err
+		return fmt.Errorf("approve suite: %w", err)
 	}
 	return h.writePreviewFiles(ctx, preview, projectDir)
 }
@@ -131,12 +131,12 @@ func (h *FitnessGenerationHandler) writePreviewFiles(
 ) error {
 	tomlPath := filepath.Join(projectDir, ".importlinter")
 	if err := h.fileWriter.WriteFile(ctx, tomlPath, preview.TomlContent); err != nil {
-		return err
+		return fmt.Errorf("write import linter config: %w", err)
 	}
 
 	testPath := filepath.Join(projectDir, "tests", "architecture", "test_fitness.py")
 	if err := h.fileWriter.WriteFile(ctx, testPath, preview.TestContent); err != nil {
-		return err
+		return fmt.Errorf("write fitness tests: %w", err)
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/ThreeDotsLabs/watermill/message"
+
 	"github.com/alty-cli/alty/internal/shared/application"
 )
 

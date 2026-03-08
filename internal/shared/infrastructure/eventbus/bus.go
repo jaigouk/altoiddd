@@ -1,6 +1,7 @@
 package eventbus
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/ThreeDotsLabs/watermill"
@@ -33,7 +34,10 @@ func (b *Bus) PubSub() *gochannel.GoChannel {
 
 // Close shuts down the GoChannel backend.
 func (b *Bus) Close() error {
-	return b.pubsub.Close()
+	if err := b.pubsub.Close(); err != nil {
+		return fmt.Errorf("closing event bus: %w", err)
+	}
+	return nil
 }
 
 // EventTypeName returns the fully qualified type name for an event value.

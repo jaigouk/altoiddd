@@ -50,7 +50,7 @@ func (a *InMemoryDiscoveryAdapter) DetectPersona(sessionID string, choice string
 		return nil, err
 	}
 	if err := session.DetectPersona(choice); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("detecting persona: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -63,7 +63,7 @@ func (a *InMemoryDiscoveryAdapter) AnswerQuestion(sessionID string, questionID s
 		return nil, err
 	}
 	if err := session.AnswerQuestion(questionID, answer); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("answering question: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -76,7 +76,7 @@ func (a *InMemoryDiscoveryAdapter) SkipQuestion(sessionID string, questionID str
 		return nil, err
 	}
 	if err := session.SkipQuestion(questionID, reason); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("skipping question: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -89,7 +89,7 @@ func (a *InMemoryDiscoveryAdapter) ConfirmPlayback(sessionID string, confirmed b
 		return nil, err
 	}
 	if err := session.ConfirmPlayback(confirmed, ""); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("confirming playback: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -102,7 +102,7 @@ func (a *InMemoryDiscoveryAdapter) Complete(sessionID string) (*discoverydomain.
 		return nil, err
 	}
 	if err := session.Complete(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("completing session: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -122,7 +122,7 @@ func (a *InMemoryDiscoveryAdapter) SetTechStack(_ context.Context, sessionID str
 		return nil, err
 	}
 	if err := session.SetTechStack(&techStack); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setting tech stack: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil
@@ -135,7 +135,7 @@ func (a *InMemoryDiscoveryAdapter) SetMode(_ context.Context, sessionID string, 
 		return nil, err
 	}
 	if err := session.SetMode(mode); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setting mode: %w", err)
 	}
 	a.store.Put(sessionID, session)
 	return session, nil

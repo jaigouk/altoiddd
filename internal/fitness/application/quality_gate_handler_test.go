@@ -54,7 +54,7 @@ func TestQualityGateHandler_RunAllGates(t *testing.T) {
 		report, err := handler.Check(context.Background(), nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, 4, len(runner.called))
+		assert.Len(t, runner.called, 4)
 		assert.True(t, report.Passed())
 	})
 
@@ -67,7 +67,7 @@ func TestQualityGateHandler_RunAllGates(t *testing.T) {
 
 		require.NoError(t, err)
 		results := report.Results()
-		assert.Equal(t, 4, len(results))
+		assert.Len(t, results, 4)
 		gatesInReport := make(map[vo.QualityGate]bool)
 		for _, r := range results {
 			gatesInReport[r.Gate()] = true
@@ -96,9 +96,9 @@ func TestQualityGateHandler_RunSpecificGates(t *testing.T) {
 		})
 
 		require.NoError(t, err)
-		assert.Equal(t, 2, len(runner.called))
+		assert.Len(t, runner.called, 2)
 		assert.Equal(t, []vo.QualityGate{vo.QualityGateLint, vo.QualityGateTypes}, runner.called)
-		assert.Equal(t, 2, len(report.Results()))
+		assert.Len(t, report.Results(), 2)
 	})
 
 	t.Run("single gate", func(t *testing.T) {
@@ -109,7 +109,7 @@ func TestQualityGateHandler_RunSpecificGates(t *testing.T) {
 		report, err := handler.Check(context.Background(), []vo.QualityGate{vo.QualityGateTests})
 
 		require.NoError(t, err)
-		assert.Equal(t, 1, len(runner.called))
+		assert.Len(t, runner.called, 1)
 		assert.Equal(t, vo.QualityGateTests, runner.called[0])
 		assert.True(t, report.Passed())
 	})
@@ -130,7 +130,7 @@ func TestQualityGateHandler_ContinuesAfterFailure(t *testing.T) {
 		report, err := handler.Check(context.Background(), nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, 4, len(runner.called))
+		assert.Len(t, runner.called, 4)
 		assert.False(t, report.Passed())
 
 		results := report.Results()
@@ -152,7 +152,7 @@ func TestQualityGateHandler_ContinuesAfterFailure(t *testing.T) {
 		report, err := handler.Check(context.Background(), nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, 4, len(runner.called))
+		assert.Len(t, runner.called, 4)
 		assert.False(t, report.Passed())
 
 		failedGates := make(map[vo.QualityGate]bool)
@@ -184,7 +184,7 @@ func TestQualityGateHandler_ReportCorrectness(t *testing.T) {
 
 		require.NoError(t, err)
 		results := report.Results()
-		assert.Equal(t, 2, len(results))
+		assert.Len(t, results, 2)
 		assert.Equal(t, vo.QualityGateLint, results[0].Gate())
 		assert.True(t, results[0].Passed())
 		assert.Equal(t, vo.QualityGateFitness, results[1].Gate())
@@ -199,8 +199,8 @@ func TestQualityGateHandler_ReportCorrectness(t *testing.T) {
 		report, err := handler.Check(context.Background(), []vo.QualityGate{})
 
 		require.NoError(t, err)
-		assert.Equal(t, 0, len(report.Results()))
+		assert.Empty(t, report.Results())
 		assert.True(t, report.Passed())
-		assert.Equal(t, 0, len(runner.called))
+		assert.Empty(t, runner.called)
 	})
 }

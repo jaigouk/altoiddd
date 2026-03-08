@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/composition"
 	"github.com/spf13/cobra"
+
+	"github.com/alty-cli/alty/internal/composition"
 )
 
 // NewDocHealthCmd creates the "alty doc-health" command.

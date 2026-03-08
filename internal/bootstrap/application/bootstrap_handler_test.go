@@ -101,7 +101,7 @@ func TestBootstrapHandler_Preview(t *testing.T) {
 			wantStatus: domain.SessionStatusPreviewed,
 		},
 		{
-			name: "stores detected tools on session",
+			name:  "stores detected tools on session",
 			tools: []string{"claude", "cursor"},
 			setupDir: func(t *testing.T, dir string) {
 				t.Helper()
@@ -141,7 +141,7 @@ func TestBootstrapHandler_Preview(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, session.Status())
 
 			if tt.wantToolCnt > 0 {
-				assert.Equal(t, tt.wantToolCnt, len(session.DetectedTools()))
+				assert.Len(t, session.DetectedTools(), tt.wantToolCnt)
 			}
 		})
 	}
@@ -167,7 +167,7 @@ func TestBootstrapHandler_FullFlow(t *testing.T) {
 		session, err = handler.Execute(session.SessionID())
 		require.NoError(t, err)
 		assert.Equal(t, domain.SessionStatusCompleted, session.Status())
-		assert.Equal(t, 1, len(session.Events()))
+		assert.Len(t, session.Events(), 1)
 	})
 
 	t.Run("cancel flow", func(t *testing.T) {
