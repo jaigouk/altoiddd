@@ -26,6 +26,9 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/alty-cli/alty/internal/composition"
+	mcptools "github.com/alty-cli/alty/internal/mcp"
 )
 
 const version = "0.1.0"
@@ -44,12 +47,18 @@ func main() {
 		"implementation", "alty-mcp",
 	)
 
-	server := newServer()
-
+	app, err := composition.NewApp()
+	if err != nil {
+		log.Fatalf("creating app: %v", err)
+	}
 	validTransports := map[string]bool{"stdio": true, "sse": true, "http": true, "all": true}
 	if !validTransports[*transport] {
 		log.Fatalf("unknown transport: %s (valid: stdio, sse, http, all)", *transport)
 	}
+
+	defer func() { _ = app.Close() }()
+
+	server := newServer(app)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -67,7 +76,7 @@ func main() {
 }
 
 // newServer creates the MCP server with all tools and resources registered.
-func newServer() *mcp.Server {
+func newServer(app *composition.App) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "alty-mcp",
 		Version: version,
@@ -78,6 +87,7 @@ func newServer() *mcp.Server {
 
 	registerTools(server)
 	registerResources(server)
+	mcptools.RegisterDiscoveryTools(server, app)
 
 	return server
 }

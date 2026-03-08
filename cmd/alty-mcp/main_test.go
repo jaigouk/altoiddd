@@ -13,7 +13,15 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alty-cli/alty/internal/composition"
+	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
 )
+
+// testApp creates a minimal App for tests (only DiscoveryHandler, zero deps).
+func testApp() *composition.App {
+	return &composition.App{DiscoveryHandler: discoveryapp.NewDiscoveryHandler()}
+}
 
 // --- In-Memory Transport Tests ---
 
@@ -58,8 +66,16 @@ func TestListTools_InMemory(t *testing.T) {
 
 	result, err := session.ListTools(ctx, nil)
 	require.NoError(t, err)
-	require.Len(t, result.Tools, 1)
-	assert.Equal(t, "echo", result.Tools[0].Name)
+	require.Len(t, result.Tools, 8) // echo + 7 guide_* tools
+	// Find echo tool in the list
+	var foundEcho bool
+	for _, tool := range result.Tools {
+		if tool.Name == "echo" {
+			foundEcho = true
+			break
+		}
+	}
+	assert.True(t, foundEcho, "echo tool should be registered")
 	assert.NotEmpty(t, result.Tools[0].Description)
 	assert.NotNil(t, result.Tools[0].InputSchema, "auto-schema should be populated")
 }
@@ -265,7 +281,7 @@ func TestConcurrentToolCalls_NoRace(t *testing.T) {
 func TestAuthMiddleware_RejectsUnauthenticated(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	server := newServer()
+	server := newServer(testApp())
 	handler := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return server
 	}, nil)
@@ -315,7 +331,7 @@ func TestAuthMiddleware_RejectsUnauthenticated(t *testing.T) {
 func TestAuthMiddleware_AcceptsValidToken(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	server := newServer()
+	server := newServer(testApp())
 	handler := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return server
 	}, nil)
@@ -387,7 +403,7 @@ func (t *bearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, err
 
 func connectInMemory(t *testing.T, ctx context.Context) *mcp.ClientSession {
 	t.Helper()
-	server := newServer()
+	server := newServer(testApp())
 	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "1.0"}, nil)
 	ct, st := mcp.NewInMemoryTransports()
 	go func() {
@@ -401,7 +417,7 @@ func connectInMemory(t *testing.T, ctx context.Context) *mcp.ClientSession {
 
 func connectStreamableHTTP(t *testing.T, ctx context.Context) *mcp.ClientSession {
 	t.Helper()
-	server := newServer()
+	server := newServer(testApp())
 	handler := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return server
 	}, nil)
@@ -432,7 +448,7 @@ func connectStreamableHTTP(t *testing.T, ctx context.Context) *mcp.ClientSession
 
 func connectSSE(t *testing.T, ctx context.Context) *mcp.ClientSession {
 	t.Helper()
-	server := newServer()
+	server := newServer(testApp())
 	handler := mcp.NewSSEHandler(func(_ *http.Request) *mcp.Server {
 		return server
 	}, nil)
