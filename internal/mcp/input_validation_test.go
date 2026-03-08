@@ -3,6 +3,7 @@ package mcp_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,43 @@ func TestSafeComponent_WithBackslash(t *testing.T) {
 func TestSafeComponent_NullByte(t *testing.T) {
 	t.Parallel()
 	require.Error(t, mcp.SafeComponent("foo\x00bar"))
+}
+
+// ---------------------------------------------------------------------------
+// SafeTicketID tests
+// ---------------------------------------------------------------------------
+
+func TestSafeTicketID_ValidIDs(t *testing.T) {
+	t.Parallel()
+	assert.NoError(t, mcp.SafeTicketID("alty-0m9.5"))
+	assert.NoError(t, mcp.SafeTicketID("k7m.12"))
+	assert.NoError(t, mcp.SafeTicketID("abc-123"))
+	assert.NoError(t, mcp.SafeTicketID("a"))
+}
+
+func TestSafeTicketID_Empty(t *testing.T) {
+	t.Parallel()
+	require.Error(t, mcp.SafeTicketID(""))
+}
+
+func TestSafeTicketID_ShellInjection(t *testing.T) {
+	t.Parallel()
+	require.Error(t, mcp.SafeTicketID("'; cat /etc/passwd"))
+	require.Error(t, mcp.SafeTicketID("id; rm -rf /"))
+	require.Error(t, mcp.SafeTicketID("$(whoami)"))
+	require.Error(t, mcp.SafeTicketID("id | cat"))
+}
+
+func TestSafeTicketID_PathTraversal(t *testing.T) {
+	t.Parallel()
+	require.Error(t, mcp.SafeTicketID("../../../etc"))
+	require.Error(t, mcp.SafeTicketID("/absolute"))
+}
+
+func TestSafeTicketID_TooLong(t *testing.T) {
+	t.Parallel()
+	long := "a" + strings.Repeat("b", 64) // 65 chars total
+	require.Error(t, mcp.SafeTicketID(long))
 }
 
 // ---------------------------------------------------------------------------

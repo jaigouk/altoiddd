@@ -19,7 +19,6 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -86,7 +85,7 @@ func newServer(app *composition.App) *mcp.Server {
 	server.AddReceivingMiddleware(loggingMiddleware())
 
 	registerTools(server)
-	registerResources(server)
+	mcptools.RegisterResources(server, app)
 	mcptools.RegisterDiscoveryTools(server, app)
 
 	return server
@@ -115,53 +114,6 @@ func echoHandler(_ context.Context, _ *mcp.CallToolRequest, input EchoInput) (*m
 			&mcp.TextContent{Text: "Echo: " + input.Message},
 		},
 	}, nil, nil
-}
-
-// --- Resources ---
-
-func registerResources(server *mcp.Server) {
-	// Static resource.
-	server.AddResource(&mcp.Resource{
-		Name:     "Hello Resource",
-		MIMEType: "text/plain",
-		URI:      "alty://test/hello",
-	}, helloResourceHandler)
-
-	// Resource template with dynamic URI parameter.
-	server.AddResourceTemplate(&mcp.ResourceTemplate{
-		Name:        "Test Resource Template",
-		Description: "A test resource template with dynamic name parameter",
-		MIMEType:    "text/plain",
-		URITemplate: "alty://test/{name}",
-	}, testTemplateHandler)
-}
-
-func helloResourceHandler(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	return &mcp.ReadResourceResult{
-		Contents: []*mcp.ResourceContents{
-			{URI: req.Params.URI, MIMEType: "text/plain", Text: "Hello from alty-mcp!"},
-		},
-	}, nil
-}
-
-func testTemplateHandler(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	u, err := url.Parse(req.Params.URI)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URI: %w", err)
-	}
-	// alty://test/{name} parses as: scheme=alty, host=test, path=/{name}
-	name := u.Path
-	if len(name) > 0 && name[0] == '/' {
-		name = name[1:]
-	}
-	if name == "" {
-		return nil, fmt.Errorf("name parameter is required")
-	}
-	return &mcp.ReadResourceResult{
-		Contents: []*mcp.ResourceContents{
-			{URI: req.Params.URI, MIMEType: "text/plain", Text: fmt.Sprintf("Hello, %s! (from template)", name)},
-		},
-	}, nil
 }
 
 // --- Transport runners ---

@@ -16,11 +16,56 @@ import (
 
 	"github.com/alty-cli/alty/internal/composition"
 	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
+	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
+	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
+	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
+	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
 )
 
-// testApp creates a minimal App for tests (only DiscoveryHandler, zero deps).
+// stubKnowledgeReader implements knowledgeapp.KnowledgeReader for testing.
+type stubKnowledgeReader struct {
+	entries map[string]knowledgedomain.KnowledgeEntry
+}
+
+func (s *stubKnowledgeReader) ReadEntry(_ context.Context, path knowledgedomain.KnowledgePath, _ string) (knowledgedomain.KnowledgeEntry, error) {
+	entry, ok := s.entries[path.Raw()]
+	if !ok {
+		return knowledgedomain.KnowledgeEntry{}, fmt.Errorf("entry not found: %s", path.Raw())
+	}
+	return entry, nil
+}
+
+func (s *stubKnowledgeReader) ListTopics(_ context.Context, _ knowledgedomain.KnowledgeCategory, _ *string) ([]string, error) {
+	return nil, nil
+}
+
+// stubTicketReader implements ticketapp.TicketReader for testing.
+type stubTicketReader struct{}
+
+func (s *stubTicketReader) ReadOpenTickets(_ context.Context) ([]ticketdomain.OpenTicketData, error) {
+	return nil, nil
+}
+
+func (s *stubTicketReader) ReadFlags(_ context.Context, _ string) ([]ticketdomain.FreshnessFlag, error) {
+	return nil, nil
+}
+
+// stubFileWriter implements sharedapp.FileWriter for testing.
+type stubFileWriter struct{}
+
+func (s *stubFileWriter) WriteFile(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
+// testApp creates a minimal App for tests with all required handlers.
 func testApp() *composition.App {
-	return &composition.App{DiscoveryHandler: discoveryapp.NewDiscoveryHandler()}
+	return &composition.App{
+		DiscoveryHandler:       discoveryapp.NewDiscoveryHandler(),
+		KnowledgeLookupHandler: knowledgeapp.NewKnowledgeLookupHandler(&stubKnowledgeReader{entries: map[string]knowledgedomain.KnowledgeEntry{}}),
+		TicketHealthHandler:    ticketapp.NewTicketHealthHandler(&stubTicketReader{}),
+		PersonaHandler:         ttapp.NewPersonaHandler(&stubFileWriter{}),
+	}
 }
 
 // --- In-Memory Transport Tests ---
@@ -86,23 +131,11 @@ func TestStaticResource_InMemory(t *testing.T) {
 	session := connectInMemory(t, ctx)
 	defer session.Close()
 
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://test/hello"})
+	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://tickets/ready"})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
-	assert.Equal(t, "Hello from alty-mcp!", result.Contents[0].Text)
+	assert.Contains(t, result.Contents[0].Text, "Ticket Health Report")
 	assert.Equal(t, "text/plain", result.Contents[0].MIMEType)
-}
-
-func TestResourceTemplate_InMemory(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	session := connectInMemory(t, ctx)
-	defer session.Close()
-
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://test/spike"})
-	require.NoError(t, err)
-	require.Len(t, result.Contents, 1)
-	assert.Equal(t, "Hello, spike! (from template)", result.Contents[0].Text)
 }
 
 func TestListResources_InMemory(t *testing.T) {
@@ -114,7 +147,7 @@ func TestListResources_InMemory(t *testing.T) {
 	result, err := session.ListResources(ctx, nil)
 	require.NoError(t, err)
 	require.Len(t, result.Resources, 1)
-	assert.Equal(t, "alty://test/hello", result.Resources[0].URI)
+	assert.Equal(t, "alty://tickets/ready", result.Resources[0].URI)
 }
 
 func TestListResourceTemplates_InMemory(t *testing.T) {
@@ -125,8 +158,8 @@ func TestListResourceTemplates_InMemory(t *testing.T) {
 
 	result, err := session.ListResourceTemplates(ctx, nil)
 	require.NoError(t, err)
-	require.Len(t, result.ResourceTemplates, 1)
-	assert.Equal(t, "alty://test/{name}", result.ResourceTemplates[0].URITemplate)
+	// 4 knowledge + 3 project + 1 ticket by ID + 1 persona = 9 templates
+	assert.Len(t, result.ResourceTemplates, 9)
 }
 
 // --- Streamable HTTP Transport Tests ---
@@ -156,22 +189,10 @@ func TestStaticResource_StreamableHTTP(t *testing.T) {
 	session := connectStreamableHTTP(t, ctx)
 	defer session.Close()
 
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://test/hello"})
+	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://tickets/ready"})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
-	assert.Equal(t, "Hello from alty-mcp!", result.Contents[0].Text)
-}
-
-func TestResourceTemplate_StreamableHTTP(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	session := connectStreamableHTTP(t, ctx)
-	defer session.Close()
-
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://test/http-user"})
-	require.NoError(t, err)
-	require.Len(t, result.Contents, 1)
-	assert.Equal(t, "Hello, http-user! (from template)", result.Contents[0].Text)
+	assert.Contains(t, result.Contents[0].Text, "Ticket Health Report")
 }
 
 // --- SSE Transport Tests ---
@@ -201,10 +222,10 @@ func TestStaticResource_SSE(t *testing.T) {
 	session := connectSSE(t, ctx)
 	defer session.Close()
 
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://test/hello"})
+	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "alty://tickets/ready"})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
-	assert.Equal(t, "Hello from alty-mcp!", result.Contents[0].Text)
+	assert.Contains(t, result.Contents[0].Text, "Ticket Health Report")
 }
 
 // --- Error handling tests ---

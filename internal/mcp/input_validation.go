@@ -5,6 +5,7 @@ package mcp
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -22,6 +23,22 @@ func SafeComponent(name string) error {
 	}
 	if strings.ContainsRune(name, 0) {
 		return fmt.Errorf("component name must not contain null bytes: %q", name)
+	}
+	return nil
+}
+
+// safeTicketIDPattern matches valid beads ticket IDs: alphanumeric start,
+// then alphanumeric, dots, hyphens, or underscores, up to 64 chars.
+var safeTicketIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`)
+
+// SafeTicketID validates that a ticket ID matches the expected beads format.
+// Rejects shell metacharacters, path traversal, and empty strings.
+func SafeTicketID(id string) error {
+	if id == "" {
+		return fmt.Errorf("ticket ID must not be empty")
+	}
+	if !safeTicketIDPattern.MatchString(id) {
+		return fmt.Errorf("invalid ticket ID format: %q", id)
 	}
 	return nil
 }
