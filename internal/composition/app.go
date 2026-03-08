@@ -20,6 +20,8 @@ import (
 	knowledgeinfra "github.com/alty-cli/alty/internal/knowledge/infrastructure"
 	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
 	rescueinfra "github.com/alty-cli/alty/internal/rescue/infrastructure"
+	researchapp "github.com/alty-cli/alty/internal/research/application"
+	researchinfra "github.com/alty-cli/alty/internal/research/infrastructure"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
@@ -56,6 +58,10 @@ type App struct {
 
 	// --- DocHealth ---
 	DocHealthHandler *dochealthapp.DocHealthHandler
+	DocReviewHandler *dochealthapp.DocReviewHandler
+
+	// --- Research ---
+	SpikeFollowUpHandler *researchapp.SpikeFollowUpHandler
 
 	// --- Knowledge ---
 	KnowledgeLookupHandler *knowledgeapp.KnowledgeLookupHandler
@@ -105,6 +111,12 @@ func NewApp() (*App, error) {
 	// 9. Challenge infrastructure
 	challenger := &challengeinfra.RuleBasedChallengerAdapter{}
 
+	// 10. DocReview infrastructure (reuses the same scanner as DocHealth)
+	docReviewAdapter := dochealthinfra.NewDocReviewAdapter(docScanner)
+
+	// 11. Research infrastructure
+	spikeFollowUpAdapter := researchinfra.NewSpikeFollowUpAdapter()
+
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
@@ -121,7 +133,9 @@ func NewApp() (*App, error) {
 	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter)
 	personaHandler := ttapp.NewPersonaHandler(fileWriter)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
+	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
+	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
 	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter)
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
 
@@ -137,6 +151,8 @@ func NewApp() (*App, error) {
 		ConfigGenerationHandler:   configGenerationHandler,
 		PersonaHandler:            personaHandler,
 		DocHealthHandler:          docHealthHandler,
+		DocReviewHandler:          docReviewHandler,
+		SpikeFollowUpHandler:      spikeFollowUpHandler,
 		KnowledgeLookupHandler:    knowledgeLookupHandler,
 		RescueHandler:             rescueHandler,
 		ChallengeHandler:          challengeHandler,

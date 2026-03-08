@@ -168,6 +168,33 @@ func TestDiscoveryHandler_ConfirmPlayback(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Tests — GetSession
+// ---------------------------------------------------------------------------
+
+func TestDiscoveryHandler_GetSession_Found(t *testing.T) {
+	t.Parallel()
+	handler := application.NewDiscoveryHandler()
+	session, err := handler.StartSession("An idea")
+	require.NoError(t, err)
+
+	found, err := handler.GetSession(session.SessionID())
+
+	require.NoError(t, err)
+	assert.Equal(t, session.SessionID(), found.SessionID())
+	assert.Equal(t, "An idea", found.ReadmeContent())
+}
+
+func TestDiscoveryHandler_GetSession_NotFound(t *testing.T) {
+	t.Parallel()
+	handler := application.NewDiscoveryHandler()
+
+	_, err := handler.GetSession("nonexistent-id")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active discovery session")
+}
+
+// ---------------------------------------------------------------------------
 // Tests — Complete
 // ---------------------------------------------------------------------------
 

@@ -31,7 +31,7 @@ func (h *DiscoveryHandler) StartSession(readmeContent string) (*domain.Discovery
 
 // DetectPersona detects user persona for the given session.
 func (h *DiscoveryHandler) DetectPersona(sessionID, choice string) (*domain.DiscoverySession, error) {
-	session, err := h.getSession(sessionID)
+	session, err := h.GetSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (h *DiscoveryHandler) DetectPersona(sessionID, choice string) (*domain.Disc
 
 // AnswerQuestion submits an answer to a discovery question.
 func (h *DiscoveryHandler) AnswerQuestion(sessionID, questionID, answer string) (*domain.DiscoverySession, error) {
-	session, err := h.getSession(sessionID)
+	session, err := h.GetSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (h *DiscoveryHandler) AnswerQuestion(sessionID, questionID, answer string) 
 
 // SkipQuestion skips a question with an explicit reason.
 func (h *DiscoveryHandler) SkipQuestion(sessionID, questionID, reason string) (*domain.DiscoverySession, error) {
-	session, err := h.getSession(sessionID)
+	session, err := h.GetSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (h *DiscoveryHandler) SkipQuestion(sessionID, questionID, reason string) (*
 
 // ConfirmPlayback confirms or rejects a playback summary.
 func (h *DiscoveryHandler) ConfirmPlayback(sessionID string, confirmed bool) (*domain.DiscoverySession, error) {
-	session, err := h.getSession(sessionID)
+	session, err := h.GetSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (h *DiscoveryHandler) ConfirmPlayback(sessionID string, confirmed bool) (*d
 
 // Complete completes the discovery session.
 func (h *DiscoveryHandler) Complete(sessionID string) (*domain.DiscoverySession, error) {
-	session, err := h.getSession(sessionID)
+	session, err := h.GetSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,8 @@ func (h *DiscoveryHandler) Complete(sessionID string) (*domain.DiscoverySession,
 	return session, nil
 }
 
-func (h *DiscoveryHandler) getSession(sessionID string) (*domain.DiscoverySession, error) {
+// GetSession retrieves an active discovery session by ID.
+func (h *DiscoveryHandler) GetSession(sessionID string) (*domain.DiscoverySession, error) {
 	h.mu.Lock()
 	session, ok := h.sessions[sessionID]
 	h.mu.Unlock()

@@ -37,7 +37,7 @@ List all changed files with `git diff --stat` for the relevant range.
 For EACH changed file, read:
 1. The full diff (what changed)
 2. The full file (surrounding context)
-3. Related test files (same name with `test_` prefix in `tests/` mirror)
+3. Related test files (same package, `_test.go` suffix)
 
 ### Step 3 — Review Checklist
 
@@ -72,11 +72,12 @@ Evaluate every change against these categories. Report findings per file.
 
 - [ ] Domain layer has ZERO external dependencies
 - [ ] Business logic lives in domain objects, not services or handlers
-- [ ] Value Objects are frozen (`@dataclass(frozen=True)`)
+- [ ] Value Objects are immutable (unexported fields, constructor validation)
 - [ ] Ubiquitous language — do names match `docs/DDD.md` glossary?
 - [ ] Aggregate boundaries — one aggregate per transaction
 - [ ] Dependencies flow inward: infrastructure → application → domain
-- [ ] Ports are Protocols in `application/ports/`, adapters in `infrastructure/`
+- [ ] Ports are interfaces in `application/ports.go`, adapters in `infrastructure/`
+- [ ] Compile-time interface checks: `var _ Port = (*Adapter)(nil)`
 
 #### E. SOLID Compliance
 
@@ -91,7 +92,7 @@ Evaluate every change against these categories. Report findings per file.
 - [ ] Tests follow RED/GREEN/REFACTOR — test was written first?
 - [ ] Tests are independent (no shared mutable state between tests)
 - [ ] Tests cover happy path AND edge cases from ticket
-- [ ] Test names describe the scenario: `test_<action>_<condition>_<expected>`
+- [ ] Test names describe the scenario: `Test<Type>_<Method>_<Condition>`
 - [ ] No logic in tests (no if/else, minimal setup)
 - [ ] Mocks are minimal — only mock infrastructure, never domain
 
@@ -106,7 +107,7 @@ Evaluate every change against these categories. Report findings per file.
 #### H. Security (lightweight)
 
 - [ ] No secrets, credentials, or PII in code or comments
-- [ ] No `eval()`, `exec()`, or dynamic code execution
+- [ ] No `exec.Command` with unsanitized input
 - [ ] File paths are validated/sanitized before use
 - [ ] Serialization/deserialization handles malformed input gracefully
 - [ ] Error messages don't leak internal state or stack traces to users
@@ -138,9 +139,10 @@ Output a structured report:
 
 | Gate | Result |
 |------|--------|
-| `uv run ruff check .` | PASS/FAIL |
-| `uv run mypy .` | PASS/FAIL |
-| `uv run pytest` | PASS/FAIL |
+| `go build ./...` | PASS/FAIL |
+| `go vet ./...` | PASS/FAIL |
+| `golangci-lint run` | PASS/FAIL |
+| `go test -race ./...` | PASS/FAIL |
 
 ### Recommendations
 1. [Actionable recommendation]
