@@ -25,12 +25,14 @@ type FitnessPreview struct {
 // using the preview-before-action pattern.
 type FitnessGenerationHandler struct {
 	fileWriter sharedapp.FileWriter
+	publisher  sharedapp.EventPublisher
 }
 
 // NewFitnessGenerationHandler creates a new FitnessGenerationHandler.
-func NewFitnessGenerationHandler(fileWriter sharedapp.FileWriter) *FitnessGenerationHandler {
+func NewFitnessGenerationHandler(fileWriter sharedapp.FileWriter, publisher sharedapp.EventPublisher) *FitnessGenerationHandler {
 	return &FitnessGenerationHandler{
 		fileWriter: fileWriter,
+		publisher:  publisher,
 	}
 }
 
@@ -121,7 +123,13 @@ func (h *FitnessGenerationHandler) ApproveAndWrite(
 	if err := preview.Suite.Approve(); err != nil {
 		return fmt.Errorf("approve suite: %w", err)
 	}
-	return h.writePreviewFiles(ctx, preview, projectDir)
+	if err := h.writePreviewFiles(ctx, preview, projectDir); err != nil {
+		return err
+	}
+	for _, event := range preview.Suite.Events() {
+		_ = h.publisher.Publish(ctx, event)
+	}
+	return nil
 }
 
 func (h *FitnessGenerationHandler) writePreviewFiles(

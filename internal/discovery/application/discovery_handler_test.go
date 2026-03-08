@@ -1,6 +1,7 @@
 package application_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,16 @@ import (
 	"github.com/alty-cli/alty/internal/discovery/application"
 	"github.com/alty-cli/alty/internal/discovery/domain"
 )
+
+// fakePublisher is a spy that records published events.
+type fakePublisher struct {
+	published []any
+}
+
+func (f *fakePublisher) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
+}
 
 // ---------------------------------------------------------------------------
 // Tests — Start Session
@@ -19,7 +30,7 @@ func TestDiscoveryHandler_StartSession(t *testing.T) {
 
 	t.Run("returns session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, err := handler.StartSession("A project idea in 4-5 sentences.")
 		require.NoError(t, err)
 		assert.Equal(t, domain.StatusCreated, session.Status())
@@ -28,7 +39,7 @@ func TestDiscoveryHandler_StartSession(t *testing.T) {
 
 	t.Run("creates unique ids", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		s1, _ := handler.StartSession("Idea A")
 		s2, _ := handler.StartSession("Idea B")
 		assert.NotEqual(t, s1.SessionID(), s2.SessionID())
@@ -44,7 +55,7 @@ func TestDiscoveryHandler_DetectPersona(t *testing.T) {
 
 	t.Run("returns updated session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		result, err := handler.DetectPersona(session.SessionID(), "1")
 		require.NoError(t, err)
@@ -61,7 +72,7 @@ func TestDiscoveryHandler_DetectPersona(t *testing.T) {
 
 	t.Run("not found raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		_, err := handler.DetectPersona("nonexistent-id", "1")
 		require.Error(t, err)
 	})
@@ -76,7 +87,7 @@ func TestDiscoveryHandler_AnswerQuestion(t *testing.T) {
 
 	t.Run("returns updated session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 		result, err := handler.AnswerQuestion(session.SessionID(), "Q1", "Users and admins")
@@ -87,7 +98,7 @@ func TestDiscoveryHandler_AnswerQuestion(t *testing.T) {
 
 	t.Run("not found raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		_, err := handler.AnswerQuestion("nonexistent-id", "Q1", "Answer")
 		require.Error(t, err)
 	})
@@ -102,7 +113,7 @@ func TestDiscoveryHandler_SkipQuestion(t *testing.T) {
 
 	t.Run("returns updated session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 		result, err := handler.SkipQuestion(session.SessionID(), "Q1", "Not relevant")
@@ -112,14 +123,14 @@ func TestDiscoveryHandler_SkipQuestion(t *testing.T) {
 
 	t.Run("not found raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		_, err := handler.SkipQuestion("nonexistent-id", "Q1", "Reason")
 		require.Error(t, err)
 	})
 
 	t.Run("empty reason raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 		_, err := handler.SkipQuestion(session.SessionID(), "Q1", "")
@@ -129,7 +140,7 @@ func TestDiscoveryHandler_SkipQuestion(t *testing.T) {
 
 	t.Run("unknown question raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 		_, err := handler.SkipQuestion(session.SessionID(), "Q999", "Reason")
@@ -147,7 +158,7 @@ func TestDiscoveryHandler_ConfirmPlayback(t *testing.T) {
 
 	t.Run("returns updated session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 		handler.AnswerQuestion(session.SessionID(), "Q1", "Users")
@@ -161,7 +172,7 @@ func TestDiscoveryHandler_ConfirmPlayback(t *testing.T) {
 
 	t.Run("not found raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		_, err := handler.ConfirmPlayback("nonexistent-id", true)
 		require.Error(t, err)
 	})
@@ -173,7 +184,7 @@ func TestDiscoveryHandler_ConfirmPlayback(t *testing.T) {
 
 func TestDiscoveryHandler_GetSession_Found(t *testing.T) {
 	t.Parallel()
-	handler := application.NewDiscoveryHandler()
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	session, err := handler.StartSession("An idea")
 	require.NoError(t, err)
 
@@ -186,7 +197,7 @@ func TestDiscoveryHandler_GetSession_Found(t *testing.T) {
 
 func TestDiscoveryHandler_GetSession_NotFound(t *testing.T) {
 	t.Parallel()
-	handler := application.NewDiscoveryHandler()
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
 
 	_, err := handler.GetSession("nonexistent-id")
 
@@ -203,7 +214,7 @@ func TestDiscoveryHandler_Complete(t *testing.T) {
 
 	t.Run("returns completed session", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		session, _ := handler.StartSession("Idea")
 		handler.DetectPersona(session.SessionID(), "1")
 
@@ -236,8 +247,42 @@ func TestDiscoveryHandler_Complete(t *testing.T) {
 
 	t.Run("not found raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewDiscoveryHandler()
+		handler := application.NewDiscoveryHandler(&fakePublisher{})
 		_, err := handler.Complete("nonexistent-id")
 		require.Error(t, err)
 	})
+}
+
+func TestDiscoveryHandler_Complete_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	pub := &fakePublisher{}
+	handler := application.NewDiscoveryHandler(pub)
+	session, err := handler.StartSession("Idea")
+	require.NoError(t, err)
+	handler.DetectPersona(session.SessionID(), "1")
+
+	for _, qid := range []string{"Q1", "Q2", "Q3"} {
+		handler.AnswerQuestion(session.SessionID(), qid, "Answer "+qid)
+	}
+	handler.ConfirmPlayback(session.SessionID(), true)
+
+	for _, qid := range []string{"Q4", "Q5", "Q6"} {
+		handler.AnswerQuestion(session.SessionID(), qid, "Answer "+qid)
+	}
+	handler.ConfirmPlayback(session.SessionID(), true)
+
+	for _, qid := range []string{"Q7", "Q8", "Q9"} {
+		handler.AnswerQuestion(session.SessionID(), qid, "Answer "+qid)
+	}
+	handler.ConfirmPlayback(session.SessionID(), true)
+
+	handler.AnswerQuestion(session.SessionID(), "Q10", "Answer Q10")
+
+	_, err = handler.Complete(session.SessionID())
+	require.NoError(t, err)
+
+	require.Len(t, pub.published, 1)
+	_, ok := pub.published[0].(domain.DiscoveryCompletedEvent)
+	assert.True(t, ok, "expected DiscoveryCompletedEvent, got %T", pub.published[0])
 }

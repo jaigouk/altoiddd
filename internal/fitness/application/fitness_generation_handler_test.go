@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alty-cli/alty/internal/fitness/application"
+	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
@@ -16,6 +17,15 @@ import (
 // ---------------------------------------------------------------------------
 // Fake file writer
 // ---------------------------------------------------------------------------
+
+type fakePublisherF struct {
+	published []any
+}
+
+func (f *fakePublisherF) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
+}
 
 type fakeFileWriterF struct {
 	written map[string]string
@@ -69,7 +79,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("returns preview", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		preview, err := handler.BuildPreview(model, "myapp", nil)
@@ -84,7 +94,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("does not write", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		handler.BuildPreview(model, "myapp", nil)
@@ -95,7 +105,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("contains all bc names", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders", "Notifications"})
 
 		preview, err := handler.BuildPreview(model, "myapp", nil)
@@ -109,7 +119,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("no contexts raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := ddd.NewDomainModel("empty")
 
 		_, err := handler.BuildPreview(model, "myapp", nil)
@@ -121,7 +131,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("returns nil when fitness not available", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 		profile := vo.GenericProfile{} // FitnessAvailable() = false
 
@@ -142,7 +152,7 @@ func TestFitnessGenerationHandler_WriteFiles(t *testing.T) {
 	t.Run("creates toml and test files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		preview, _ := handler.BuildPreview(model, "myapp", nil)
@@ -168,7 +178,7 @@ func TestFitnessGenerationHandler_WriteFiles(t *testing.T) {
 	t.Run("content matches preview", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		preview, _ := handler.BuildPreview(model, "myapp", nil)
@@ -192,7 +202,7 @@ func TestFitnessGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("calls approve and writes files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		preview, _ := handler.BuildPreview(model, "myapp", nil)
@@ -206,7 +216,7 @@ func TestFitnessGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("approve twice raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
-		handler := application.NewFitnessGenerationHandler(writer)
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
 		model := makeModelWithContexts([]string{"Orders"})
 
 		preview, _ := handler.BuildPreview(model, "myapp", nil)
@@ -221,4 +231,23 @@ func TestFitnessGenerationHandler_ApproveAndWrite(t *testing.T) {
 		// Verify FitnessGenerationHandler doesn't have a Generate method
 		// This is enforced by not defining one; the test is implicit.
 	})
+}
+
+func TestFitnessGenerationHandler_ApproveAndWrite_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	pub := &fakePublisherF{}
+	writer := newFakeFileWriterF()
+	handler := application.NewFitnessGenerationHandler(writer, pub)
+	model := makeModelWithContexts([]string{"Orders"})
+
+	preview, err := handler.BuildPreview(model, "myapp", nil)
+	require.NoError(t, err)
+
+	err = handler.ApproveAndWrite(context.Background(), preview, "/project")
+	require.NoError(t, err)
+
+	require.GreaterOrEqual(t, len(pub.published), 1)
+	_, ok := pub.published[0].(fitnessdomain.FitnessTestsGenerated)
+	assert.True(t, ok, "expected FitnessTestsGenerated, got %T", pub.published[0])
 }

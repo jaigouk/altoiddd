@@ -1,22 +1,26 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	"github.com/alty-cli/alty/internal/discovery/domain"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 )
 
 // DiscoveryHandler orchestrates the discovery session lifecycle.
 type DiscoveryHandler struct {
-	mu       sync.Mutex
-	sessions map[string]*domain.DiscoverySession
+	publisher sharedapp.EventPublisher
+	mu        sync.Mutex
+	sessions  map[string]*domain.DiscoverySession
 }
 
 // NewDiscoveryHandler creates a new DiscoveryHandler.
-func NewDiscoveryHandler() *DiscoveryHandler {
+func NewDiscoveryHandler(publisher sharedapp.EventPublisher) *DiscoveryHandler {
 	return &DiscoveryHandler{
-		sessions: make(map[string]*domain.DiscoverySession),
+		publisher: publisher,
+		sessions:  make(map[string]*domain.DiscoverySession),
 	}
 }
 
@@ -85,6 +89,9 @@ func (h *DiscoveryHandler) Complete(sessionID string) (*domain.DiscoverySession,
 	}
 	if err := session.Complete(); err != nil {
 		return nil, fmt.Errorf("complete session: %w", err)
+	}
+	for _, event := range session.Events() {
+		_ = h.publisher.Publish(context.Background(), event)
 	}
 	return session, nil
 }

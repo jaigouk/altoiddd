@@ -51,6 +51,11 @@ func (s *stubTicketReader) ReadFlags(_ context.Context, _ string) ([]ticketdomai
 	return nil, nil
 }
 
+// stubPublisher implements sharedapp.EventPublisher for testing.
+type stubPublisher struct{}
+
+func (s *stubPublisher) Publish(_ context.Context, _ any) error { return nil }
+
 // stubFileWriter implements sharedapp.FileWriter for testing.
 type stubFileWriter struct{}
 
@@ -61,7 +66,7 @@ func (s *stubFileWriter) WriteFile(_ context.Context, _ string, _ string) error 
 // testApp creates a minimal App for tests with all required handlers.
 func testApp() *composition.App {
 	return &composition.App{
-		DiscoveryHandler:       discoveryapp.NewDiscoveryHandler(),
+		DiscoveryHandler:       discoveryapp.NewDiscoveryHandler(&stubPublisher{}),
 		KnowledgeLookupHandler: knowledgeapp.NewKnowledgeLookupHandler(&stubKnowledgeReader{entries: map[string]knowledgedomain.KnowledgeEntry{}}),
 		TicketHealthHandler:    ticketapp.NewTicketHealthHandler(&stubTicketReader{}),
 		PersonaHandler:         ttapp.NewPersonaHandler(&stubFileWriter{}),

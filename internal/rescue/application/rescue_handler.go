@@ -30,6 +30,7 @@ type RescueHandler struct {
 	projectScan ProjectScan
 	gitOps      GitOps
 	fileWriter  sharedapp.FileWriter
+	publisher   sharedapp.EventPublisher
 }
 
 // NewRescueHandler creates a new RescueHandler with injected dependencies.
@@ -37,11 +38,13 @@ func NewRescueHandler(
 	projectScan ProjectScan,
 	gitOps GitOps,
 	fileWriter sharedapp.FileWriter,
+	publisher sharedapp.EventPublisher,
 ) *RescueHandler {
 	return &RescueHandler{
 		projectScan: projectScan,
 		gitOps:      gitOps,
 		fileWriter:  fileWriter,
+		publisher:   publisher,
 	}
 }
 
@@ -168,6 +171,9 @@ func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.
 
 	if err := analysis.Complete(); err != nil {
 		return fmt.Errorf("complete analysis: %w", err)
+	}
+	for _, event := range analysis.Events() {
+		_ = h.publisher.Publish(ctx, event)
 	}
 	return nil
 }

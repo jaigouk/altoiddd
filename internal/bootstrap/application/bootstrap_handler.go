@@ -2,11 +2,13 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
 
 	"github.com/alty-cli/alty/internal/bootstrap/domain"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -38,15 +40,17 @@ var plannedFiles = []string{
 type BootstrapHandler struct {
 	toolDetection ToolDetector
 	fileChecker   FileChecker
+	publisher     sharedapp.EventPublisher
 	mu            sync.Mutex
 	sessions      map[string]*domain.BootstrapSession
 }
 
 // NewBootstrapHandler creates a new BootstrapHandler with injected dependencies.
-func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker) *BootstrapHandler {
+func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, publisher sharedapp.EventPublisher) *BootstrapHandler {
 	return &BootstrapHandler{
 		toolDetection: toolDetection,
 		fileChecker:   fileChecker,
+		publisher:     publisher,
 		sessions:      make(map[string]*domain.BootstrapSession),
 	}
 }
@@ -128,6 +132,9 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 	}
 	if err := session.Complete(); err != nil {
 		return nil, fmt.Errorf("complete session: %w", err)
+	}
+	for _, event := range session.Events() {
+		_ = h.publisher.Publish(context.Background(), event)
 	}
 	return session, nil
 }

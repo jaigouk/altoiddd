@@ -117,26 +117,29 @@ func NewApp() (*App, error) {
 	// 11. Research infrastructure
 	spikeFollowUpAdapter := researchinfra.NewSpikeFollowUpAdapter()
 
+	// --- Event publisher ---
+	publisher := eventbus.NewPublisher(bus)
+
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
 
 	fileChecker := &bootstrapinfra.OSFileChecker{}
-	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker)
+	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher)
 	detectionHandler := discoveryapp.NewDetectionHandler(toolDetector)
-	discoveryHandler := discoveryapp.NewDiscoveryHandler()
-	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter)
-	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter)
+	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher)
+	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
+	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter, publisher)
 	qualityGateHandler := fitnessapp.NewQualityGateHandler(gateRunner)
-	ticketGenerationHandler := ticketapp.NewTicketGenerationHandler(fileWriter)
+	ticketGenerationHandler := ticketapp.NewTicketGenerationHandler(fileWriter, publisher)
 	ticketHealthHandler := ticketapp.NewTicketHealthHandler(&ticketReaderAdapter{reader: ticketReader})
-	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter)
+	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter, publisher)
 	personaHandler := ttapp.NewPersonaHandler(fileWriter)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
 	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
-	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter)
+	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher)
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
 
 	return &App{

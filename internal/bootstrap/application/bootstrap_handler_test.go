@@ -1,6 +1,7 @@
 package application_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,6 +13,16 @@ import (
 	"github.com/alty-cli/alty/internal/bootstrap/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
+
+// fakePublisher is a spy that records published events.
+type fakePublisher struct {
+	published []any
+}
+
+func (f *fakePublisher) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
+}
 
 // ---------------------------------------------------------------------------
 // Mock tool detection
@@ -128,7 +139,7 @@ func TestBootstrapHandler_Preview(t *testing.T) {
 			tt.setupDir(t, dir)
 
 			fake := newFakeToolDetection(tt.tools, tt.conflicts)
-			handler := application.NewBootstrapHandler(fake, osFileChecker{})
+			handler := application.NewBootstrapHandler(fake, osFileChecker{}, &fakePublisher{})
 
 			session, err := handler.Preview(dir)
 
@@ -155,7 +166,7 @@ func TestBootstrapHandler_FullFlow(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("My project idea"), 0o644))
 
-		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 
 		session, err := handler.Preview(dir)
 		require.NoError(t, err)
@@ -175,7 +186,7 @@ func TestBootstrapHandler_FullFlow(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
 
-		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 
 		session, err := handler.Preview(dir)
 		require.NoError(t, err)
@@ -189,7 +200,7 @@ func TestBootstrapHandler_FullFlow(t *testing.T) {
 func TestBootstrapHandler_SessionNotFound(t *testing.T) {
 	t.Parallel()
 
-	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 
 	tests := []struct {
 		name string
@@ -218,7 +229,7 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
 
-		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 		session, err := handler.Preview(dir)
 		require.NoError(t, err)
 		preview := session.Preview()
@@ -236,7 +247,7 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
 
-		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+		handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 		session, err := handler.Preview(dir)
 		require.NoError(t, err)
 		preview := session.Preview()
@@ -258,7 +269,7 @@ func TestBootstrapHandler_SkipsExistingFiles(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "PRD.md"), []byte("existing"), 0o644))
 
-	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{})
+	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{})
 	session, err := handler.Preview(dir)
 	require.NoError(t, err)
 	preview := session.Preview()
@@ -272,13 +283,34 @@ func TestBootstrapHandler_SkipsExistingFiles(t *testing.T) {
 	}
 }
 
+func TestBootstrapHandler_Execute_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	pub := &fakePublisher{}
+	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, pub)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+
+	require.Len(t, pub.published, 1)
+	_, ok := pub.published[0].(domain.BootstrapCompletedEvent)
+	assert.True(t, ok, "expected BootstrapCompletedEvent, got %T", pub.published[0])
+}
+
 func TestBootstrapHandler_ConflictDescriptions(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
 
-	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, []string{"Global cursor setting overrides local"}), osFileChecker{})
+	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, []string{"Global cursor setting overrides local"}), osFileChecker{}, &fakePublisher{})
 	session, err := handler.Preview(dir)
 	require.NoError(t, err)
 	preview := session.Preview()

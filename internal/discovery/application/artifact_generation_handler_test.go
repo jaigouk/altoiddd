@@ -11,6 +11,7 @@ import (
 	"github.com/alty-cli/alty/internal/discovery/application"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	"github.com/alty-cli/alty/internal/shared/domain/events"
 )
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,15 @@ func (f *fakeArtifactRenderer) RenderArchitecture(_ context.Context, model *ddd.
 	f.callCount["RenderArchitecture"]++
 	f.calledModel = model
 	return f.archContent, nil
+}
+
+type fakePublisherA struct {
+	published []any
+}
+
+func (f *fakePublisherA) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
 }
 
 type fakeFileWriterA struct {
@@ -117,7 +127,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -133,7 +143,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -146,7 +156,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeEventWithAnswers(nil)
 
 		_, err := handler.BuildPreview(context.Background(), event)
@@ -159,7 +169,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		handler.BuildPreview(context.Background(), event)
@@ -173,7 +183,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -186,7 +196,7 @@ func TestArtifactGenerationHandler_BuildPreview(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -207,7 +217,7 @@ func TestArtifactGenerationHandler_WriteArtifacts(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 		preview, _ := handler.BuildPreview(context.Background(), event)
 
@@ -238,7 +248,7 @@ func TestArtifactGenerationHandler_WriteArtifacts(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("PRD body", "DDD body", "ARCH body")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 		preview, _ := handler.BuildPreview(context.Background(), event)
 
@@ -261,7 +271,7 @@ func TestArtifactGenerationHandler_WriteArtifacts(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 		preview, _ := handler.BuildPreview(context.Background(), event)
 
@@ -286,7 +296,7 @@ func TestArtifactGenerationHandler_Generate(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		model, err := handler.Generate(context.Background(), event, "/tmp/test")
@@ -308,7 +318,7 @@ func TestArtifactGenerationHandler_NoDefaultContext(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -332,7 +342,7 @@ func TestArtifactGenerationHandler_NoArtificialRelationships(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		event := makeStandardEvent()
 
 		preview, err := handler.BuildPreview(context.Background(), event)
@@ -353,7 +363,7 @@ func TestArtifactGenerationHandler_NoSilentSupportingDefault(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "Customer"),
 			discoverydomain.NewAnswer("Q3", "Customer places order"),
@@ -373,7 +383,7 @@ func TestArtifactGenerationHandler_NoSilentSupportingDefault(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "Customer"),
 			discoverydomain.NewAnswer("Q3", "Customer places order"),
@@ -392,7 +402,7 @@ func TestArtifactGenerationHandler_NoSilentSupportingDefault(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "Customer"),
 			discoverydomain.NewAnswer("Q3", "Customer places order"),
@@ -422,7 +432,7 @@ func TestArtifactGenerationHandler_MVPQuestions(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
-		handler := application.NewArtifactGenerationHandler(renderer, writer)
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "Customer"),
 			discoverydomain.NewAnswer("Q3", "Customer places order, System confirms"),
@@ -443,6 +453,23 @@ func TestArtifactGenerationHandler_MVPQuestions(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Tests — SplitAnswer
 // ---------------------------------------------------------------------------
+
+func TestArtifactGenerationHandler_BuildPreview_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	pub := &fakePublisherA{}
+	renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, pub)
+	event := makeStandardEvent()
+
+	_, err := handler.BuildPreview(context.Background(), event)
+	require.NoError(t, err)
+
+	require.GreaterOrEqual(t, len(pub.published), 1)
+	_, ok := pub.published[0].(events.DomainModelGenerated)
+	assert.True(t, ok, "expected DomainModelGenerated, got %T", pub.published[0])
+}
 
 func TestSplitAnswer(t *testing.T) {
 	t.Parallel()

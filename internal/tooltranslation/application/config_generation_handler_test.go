@@ -18,6 +18,15 @@ import (
 // Fakes
 // ---------------------------------------------------------------------------
 
+type fakePublisherC struct {
+	published []any
+}
+
+func (f *fakePublisherC) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
+}
+
 type fakeFileWriterC struct {
 	written map[string]string
 }
@@ -67,7 +76,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("returns config preview", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 
 		preview, err := handler.BuildPreview(model, []ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -81,7 +90,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("does not write", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 
 		handler.BuildPreview(model, []ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -92,7 +101,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("preview for multiple tools", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 
 		preview, err := handler.BuildPreview(model,
@@ -107,7 +116,7 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("empty tools raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 
 		_, err := handler.BuildPreview(model, []ttdomain.SupportedTool{}, nil)
@@ -127,7 +136,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("writes files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		preview, _ := handler.BuildPreview(model,
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -148,7 +157,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("emits events", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		preview, _ := handler.BuildPreview(model,
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -163,7 +172,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("approve twice raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		preview, _ := handler.BuildPreview(model,
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -178,7 +187,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("multiple tools writes all files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		preview, _ := handler.BuildPreview(model,
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode, ttdomain.ToolCursor}, nil)
@@ -207,7 +216,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("all four tools", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		allTools := []ttdomain.SupportedTool{
 			ttdomain.ToolClaudeCode, ttdomain.ToolCursor,
@@ -224,7 +233,7 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("written content not empty", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterC()
-		handler := application.NewConfigGenerationHandler(writer)
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
 		model := makeConfigModel([]string{"Orders"})
 		preview, _ := handler.BuildPreview(model,
 			[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
@@ -235,4 +244,23 @@ func TestConfigGenerationHandler_ApproveAndWrite(t *testing.T) {
 			assert.NotEmpty(t, content)
 		}
 	})
+}
+
+func TestConfigGenerationHandler_ApproveAndWrite_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	pub := &fakePublisherC{}
+	writer := newFakeFileWriterC()
+	handler := application.NewConfigGenerationHandler(writer, pub)
+	model := makeConfigModel([]string{"Orders"})
+	preview, err := handler.BuildPreview(model,
+		[]ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
+	require.NoError(t, err)
+
+	err = handler.ApproveAndWrite(context.Background(), preview, "/project")
+	require.NoError(t, err)
+
+	require.Len(t, pub.published, 1)
+	_, ok := pub.published[0].(ttdomain.ConfigsGeneratedEvent)
+	assert.True(t, ok, "expected ConfigsGeneratedEvent, got %T", pub.published[0])
 }

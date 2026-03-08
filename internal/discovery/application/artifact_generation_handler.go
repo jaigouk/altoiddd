@@ -37,18 +37,21 @@ type ArtifactPreview struct {
 
 // ArtifactGenerationHandler transforms DiscoveryCompleted into DDD artifacts.
 type ArtifactGenerationHandler struct {
-	renderer ArtifactRenderer
-	writer   sharedapp.FileWriter
+	renderer  ArtifactRenderer
+	writer    sharedapp.FileWriter
+	publisher sharedapp.EventPublisher
 }
 
 // NewArtifactGenerationHandler creates a new ArtifactGenerationHandler.
 func NewArtifactGenerationHandler(
 	renderer ArtifactRenderer,
 	writer sharedapp.FileWriter,
+	publisher sharedapp.EventPublisher,
 ) *ArtifactGenerationHandler {
 	return &ArtifactGenerationHandler{
-		renderer: renderer,
-		writer:   writer,
+		renderer:  renderer,
+		writer:    writer,
+		publisher: publisher,
 	}
 }
 
@@ -79,6 +82,10 @@ func (h *ArtifactGenerationHandler) BuildPreview(
 	arch, err := h.renderer.RenderArchitecture(ctx, model)
 	if err != nil {
 		return nil, fmt.Errorf("render architecture: %w", err)
+	}
+
+	for _, event := range model.Events() {
+		_ = h.publisher.Publish(ctx, event)
 	}
 
 	return &ArtifactPreview{

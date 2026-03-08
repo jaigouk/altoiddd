@@ -15,6 +15,11 @@ import (
 	mcptools "github.com/alty-cli/alty/internal/mcp"
 )
 
+// stubDiscoveryPublisher implements sharedapp.EventPublisher for testing.
+type stubDiscoveryPublisher struct{}
+
+func (s *stubDiscoveryPublisher) Publish(_ context.Context, _ any) error { return nil }
+
 // --- Test helpers ---
 
 // setupDiscoveryServer creates a test MCP server with discovery tools registered.
@@ -22,7 +27,7 @@ func setupDiscoveryServer(t *testing.T) *mcp.ClientSession {
 	t.Helper()
 	ctx := context.Background()
 
-	handler := discoveryapp.NewDiscoveryHandler()
+	handler := discoveryapp.NewDiscoveryHandler(&stubDiscoveryPublisher{})
 	app := &composition.App{DiscoveryHandler: handler}
 
 	server := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "0.0.1"}, nil)

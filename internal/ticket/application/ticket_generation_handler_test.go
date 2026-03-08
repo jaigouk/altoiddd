@@ -11,11 +11,21 @@ import (
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/ticket/application"
+	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 )
 
 // ---------------------------------------------------------------------------
 // Fakes
 // ---------------------------------------------------------------------------
+
+type fakePublisherT struct {
+	published []any
+}
+
+func (f *fakePublisherT) Publish(_ context.Context, event any) error {
+	f.published = append(f.published, event)
+	return nil
+}
 
 type fakeFileWriterT struct {
 	written map[string]string
@@ -78,7 +88,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("returns preview", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -95,7 +105,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("does not write", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -109,7 +119,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("contains bc names", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -128,7 +138,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("empty model raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := ddd.NewDomainModel("empty")
 
 		_, err := handler.BuildPreview(model, nil)
@@ -140,7 +150,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("includes validation", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -155,7 +165,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 	t.Run("validation ticket ids match plan", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -187,7 +197,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("writes files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -215,7 +225,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("emits event", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -230,7 +240,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("approve twice raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -247,7 +257,7 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 	t.Run("approve subset only writes approved", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
-		handler := application.NewTicketGenerationHandler(writer)
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
 		model := makeTicketModel([]struct {
 			Name           string
 			Classification vo.SubdomainClassification
@@ -265,4 +275,25 @@ func TestTicketGenerationHandler_ApproveAndWrite(t *testing.T) {
 		// Summary + 1 approved ticket = 2 files
 		assert.Len(t, writer.written, 2)
 	})
+}
+
+func TestTicketGenerationHandler_ApproveAndWrite_PublishesEvent(t *testing.T) {
+	t.Parallel()
+
+	pub := &fakePublisherT{}
+	writer := newFakeFileWriterT()
+	handler := application.NewTicketGenerationHandler(writer, pub)
+	model := makeTicketModel([]struct {
+		Name           string
+		Classification vo.SubdomainClassification
+	}{{"Orders", vo.SubdomainCore}})
+	preview, err := handler.BuildPreview(model, nil)
+	require.NoError(t, err)
+
+	err = handler.ApproveAndWrite(context.Background(), preview, "/project", nil)
+	require.NoError(t, err)
+
+	require.Len(t, pub.published, 1)
+	_, ok := pub.published[0].(ticketdomain.TicketPlanApproved)
+	assert.True(t, ok, "expected TicketPlanApproved, got %T", pub.published[0])
 }

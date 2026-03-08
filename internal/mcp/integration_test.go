@@ -67,6 +67,11 @@ func (s *integrationTicketReader) ReadFlags(_ context.Context, _ string) ([]tick
 	return nil, nil
 }
 
+// integrationPublisher implements sharedapp.EventPublisher for testing.
+type integrationPublisher struct{}
+
+func (s *integrationPublisher) Publish(_ context.Context, _ any) error { return nil }
+
 // integrationFileWriter implements sharedapp.FileWriter for testing.
 type integrationFileWriter struct{}
 
@@ -188,7 +193,7 @@ func setupIntegrationServer(t *testing.T, app *composition.App) *gomcp.ClientSes
 func testIntegrationApp() *composition.App {
 	return &composition.App{
 		DetectionHandler:   discoveryapp.NewDetectionHandler(&stubToolDetector{tools: []string{"claude-code"}}),
-		DiscoveryHandler:   discoveryapp.NewDiscoveryHandler(),
+		DiscoveryHandler:   discoveryapp.NewDiscoveryHandler(&integrationPublisher{}),
 		QualityGateHandler: fitnessapp.NewQualityGateHandler(&stubGateRunner{}),
 		KnowledgeLookupHandler: knowledgeapp.NewKnowledgeLookupHandler(&integrationKnowledgeReader{
 			entries: map[string]knowledgedomain.KnowledgeEntry{

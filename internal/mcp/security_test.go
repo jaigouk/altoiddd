@@ -34,7 +34,7 @@ func setupSecurityServer(t *testing.T) *gomcp.ClientSession {
 
 	app := &composition.App{
 		DetectionHandler:   discoveryapp.NewDetectionHandler(&stubToolDetector{tools: []string{"claude-code"}}),
-		DiscoveryHandler:   discoveryapp.NewDiscoveryHandler(),
+		DiscoveryHandler:   discoveryapp.NewDiscoveryHandler(&integrationPublisher{}),
 		QualityGateHandler: fitnessapp.NewQualityGateHandler(&stubGateRunner{}),
 		KnowledgeLookupHandler: knowledgeapp.NewKnowledgeLookupHandler(&integrationKnowledgeReader{
 			entries: map[string]knowledgedomain.KnowledgeEntry{},

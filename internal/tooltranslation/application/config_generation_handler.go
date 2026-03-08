@@ -30,11 +30,12 @@ type ConfigPreview struct {
 // ConfigGenerationHandler orchestrates tool config generation from a DomainModel.
 type ConfigGenerationHandler struct {
 	fileWriter sharedapp.FileWriter
+	publisher  sharedapp.EventPublisher
 }
 
 // NewConfigGenerationHandler creates a new ConfigGenerationHandler.
-func NewConfigGenerationHandler(fileWriter sharedapp.FileWriter) *ConfigGenerationHandler {
-	return &ConfigGenerationHandler{fileWriter: fileWriter}
+func NewConfigGenerationHandler(fileWriter sharedapp.FileWriter, publisher sharedapp.EventPublisher) *ConfigGenerationHandler {
+	return &ConfigGenerationHandler{fileWriter: fileWriter, publisher: publisher}
 }
 
 // BuildPreview generates tool configs for preview without writing files.
@@ -95,6 +96,9 @@ func (h *ConfigGenerationHandler) ApproveAndWrite(
 			if err := h.fileWriter.WriteFile(ctx, target, section.Content()); err != nil {
 				return fmt.Errorf("writing config file %s: %w", target, err)
 			}
+		}
+		for _, event := range config.Events() {
+			_ = h.publisher.Publish(ctx, event)
 		}
 	}
 	return nil

@@ -215,7 +215,7 @@ func guideCompleteHandler(app *composition.App) func(context.Context, *mcp.CallT
 			return r, m, e
 		}
 
-		session, err := app.DiscoveryHandler.Complete(input.SessionID)
+		session, err := app.DiscoveryHandler.Complete(input.SessionID) //nolint:contextcheck // Complete uses context.Background() for event publishing; adding ctx param deferred to future ticket
 		if err != nil {
 			return toolError(err.Error())
 		}

@@ -21,11 +21,12 @@ type TicketPreview struct {
 // TicketGenerationHandler orchestrates ticket pipeline generation from a DomainModel.
 type TicketGenerationHandler struct {
 	fileWriter sharedapp.FileWriter
+	publisher  sharedapp.EventPublisher
 }
 
 // NewTicketGenerationHandler creates a new TicketGenerationHandler.
-func NewTicketGenerationHandler(fileWriter sharedapp.FileWriter) *TicketGenerationHandler {
-	return &TicketGenerationHandler{fileWriter: fileWriter}
+func NewTicketGenerationHandler(fileWriter sharedapp.FileWriter, publisher sharedapp.EventPublisher) *TicketGenerationHandler {
+	return &TicketGenerationHandler{fileWriter: fileWriter, publisher: publisher}
 }
 
 // BuildPreview generates a ticket plan for preview without writing files.
@@ -85,6 +86,9 @@ func (h *TicketGenerationHandler) ApproveAndWrite(
 	summaryPath := filepath.Join(outputDir, "tickets", "PLAN_SUMMARY.md")
 	if err := h.fileWriter.WriteFile(ctx, summaryPath, preview.Summary); err != nil {
 		return fmt.Errorf("writing plan summary: %w", err)
+	}
+	for _, event := range preview.Plan.Events() {
+		_ = h.publisher.Publish(ctx, event)
 	}
 	return nil
 }
