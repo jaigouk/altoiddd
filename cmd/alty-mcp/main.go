@@ -81,8 +81,13 @@ func newServer(app *composition.App) *mcp.Server {
 		Version: version,
 	}, nil)
 
-	// Add MCP-level logging middleware.
-	server.AddReceivingMiddleware(loggingMiddleware())
+	// Add MCP-level security middleware.
+	server.AddReceivingMiddleware(
+		mcptools.AuditMiddleware(slog.Default()),
+		mcptools.ErrorSanitizeMiddleware(),
+		mcptools.OutputSanitizeMiddleware(),
+		mcptools.ContentTagMiddleware(),
+	)
 
 	registerTools(server)
 	mcptools.RegisterResources(server, app)
@@ -195,35 +200,5 @@ func serveHTTP(ctx context.Context, handler http.Handler, addr string) {
 	slog.Info("HTTP server listening", "addr", addr)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("HTTP server failed: %v", err)
-	}
-}
-
-// --- Middleware ---
-
-func loggingMiddleware() mcp.Middleware {
-	return func(next mcp.MethodHandler) mcp.MethodHandler {
-		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-			start := time.Now()
-			sessionID := req.GetSession().ID()
-
-			result, err := next(ctx, method, req)
-
-			duration := time.Since(start)
-			if err != nil {
-				slog.Error("MCP request failed",
-					"session", sessionID,
-					"method", method,
-					"duration", duration,
-					"error", err,
-				)
-			} else {
-				slog.Info("MCP request",
-					"session", sessionID,
-					"method", method,
-					"duration", duration,
-				)
-			}
-			return result, err
-		}
 	}
 }

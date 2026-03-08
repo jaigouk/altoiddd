@@ -86,7 +86,7 @@ func TestEchoTool_InMemory(t *testing.T) {
 
 	text, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok, "content should be TextContent")
-	assert.Equal(t, "Echo: hello from test", text.Text)
+	assert.Contains(t, text.Text, "Echo: hello from test")
 }
 
 func TestEchoTool_EmptyMessage_ReturnsError(t *testing.T) {
@@ -180,7 +180,7 @@ func TestEchoTool_StreamableHTTP(t *testing.T) {
 
 	text, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
-	assert.Equal(t, "Echo: hello via HTTP", text.Text)
+	assert.Contains(t, text.Text, "Echo: hello via HTTP")
 }
 
 func TestStaticResource_StreamableHTTP(t *testing.T) {
@@ -213,7 +213,7 @@ func TestEchoTool_SSE(t *testing.T) {
 
 	text, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
-	assert.Equal(t, "Echo: hello via SSE", text.Text)
+	assert.Contains(t, text.Text, "Echo: hello via SSE")
 }
 
 func TestStaticResource_SSE(t *testing.T) {
@@ -407,7 +407,7 @@ func TestAuthMiddleware_AcceptsValidToken(t *testing.T) {
 	require.False(t, result.IsError)
 	text, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
-	assert.Equal(t, "Echo: authenticated", text.Text)
+	assert.Contains(t, text.Text, "Echo: authenticated")
 }
 
 // bearerTokenTransport injects a Bearer token into every HTTP request.
