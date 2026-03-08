@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -290,6 +291,27 @@ func TestPubSub_UntypedSubscribe_ReceivesMap(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for untyped event")
 	}
+}
+
+func TestNewBus_NoStderrOutput(t *testing.T) {
+	// Capture stderr to verify bus lifecycle produces no log output.
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+
+	os.Stderr = w
+
+	bus := eventbus.NewBus()
+	bus.Close()
+
+	w.Close()
+	os.Stderr = oldStderr
+
+	var buf [1024]byte
+	n, _ := r.Read(buf[:])
+	r.Close()
+
+	assert.Equal(t, 0, n, "expected no stderr output from bus lifecycle, got: %s", string(buf[:n]))
 }
 
 func TestEventTypeName_ReturnsFullyQualifiedName(t *testing.T) {

@@ -76,6 +76,27 @@ func TestKnowledgePath(t *testing.T) {
 		assert.Contains(t, err.Error(), "category")
 	})
 
+	t.Run("rejects single segment tools", func(t *testing.T) {
+		t.Parallel()
+		_, err := domain.NewKnowledgePath("tools")
+		require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+		assert.Contains(t, err.Error(), "category/topic")
+	})
+
+	t.Run("rejects single segment ddd", func(t *testing.T) {
+		t.Parallel()
+		_, err := domain.NewKnowledgePath("ddd")
+		require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+		assert.Contains(t, err.Error(), "category/topic")
+	})
+
+	t.Run("rejects empty topic", func(t *testing.T) {
+		t.Parallel()
+		_, err := domain.NewKnowledgePath("tools/")
+		require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+		assert.Contains(t, err.Error(), "category/topic")
+	})
+
 	t.Run("category extraction", func(t *testing.T) {
 		t.Parallel()
 		tests := []struct {

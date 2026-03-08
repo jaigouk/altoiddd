@@ -21,7 +21,7 @@ func NewBus() *Bus {
 			Persistent:                     false,
 			BlockPublishUntilSubscriberAck: true,
 		},
-		watermill.NewStdLogger(false, false),
+		watermill.NopLogger{},
 	)
 	return &Bus{pubsub: pubsub}
 }

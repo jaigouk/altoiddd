@@ -69,6 +69,11 @@ func NewKnowledgePath(raw string) (KnowledgePath, error) {
 			"knowledge path must start with a valid category (%s), got '%s': %w",
 			strings.Join(sorted, ", "), segments[0], domainerrors.ErrInvariantViolation)
 	}
+	if len(segments) < 2 || segments[1] == "" {
+		return KnowledgePath{}, fmt.Errorf(
+			"knowledge path requires category/topic format, got %q: %w",
+			raw, domainerrors.ErrInvariantViolation)
+	}
 	return KnowledgePath{raw: raw}, nil
 }
 
