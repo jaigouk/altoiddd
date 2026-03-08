@@ -19,7 +19,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Setup Go
         uses: https://github.com/actions/setup-go@v5
@@ -42,7 +42,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Setup Go
         uses: https://github.com/actions/setup-go@v5
@@ -88,7 +88,7 @@ jobs:
 
       - name: Checkout
         if: env.SKIP_SECURITY != 'true'
-        uses: actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install Trivy
         if: env.SKIP_SECURITY != 'true'
