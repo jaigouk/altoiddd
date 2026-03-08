@@ -452,14 +452,20 @@ func TestAllAdaptersAcceptProfile(t *testing.T) {
 	t.Parallel()
 	m := makeModel(t)
 	profile := vo.PythonUvProfile{}
-	adapters := []domain.ToolAdapter{
-		domain.NewClaudeCodeAdapter(),
-		domain.NewCursorAdapter(),
-		domain.NewRooCodeAdapter(),
-		domain.NewOpenCodeAdapter(),
+	adapters := []struct {
+		name    string
+		adapter domain.ToolAdapter
+	}{
+		{"ClaudeCode", domain.NewClaudeCodeAdapter()},
+		{"Cursor", domain.NewCursorAdapter()},
+		{"RooCode", domain.NewRooCodeAdapter()},
+		{"OpenCode", domain.NewOpenCodeAdapter()},
 	}
-	for _, adapter := range adapters {
-		sections := adapter.Translate(m, profile)
-		assert.GreaterOrEqual(t, len(sections), 1)
+	for _, tt := range adapters {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			sections := tt.adapter.Translate(m, profile)
+			assert.GreaterOrEqual(t, len(sections), 1)
+		})
 	}
 }

@@ -16,6 +16,11 @@ const (
 	RoleDraft         Role = "draft"
 )
 
+// AllRoles returns all defined Role values.
+func AllRoles() []Role {
+	return []Role{RoleExecution, RoleAnalysis, RoleGateway, RoleSpecification, RoleDraft}
+}
+
 // StrategicClassification is the strategic classification of a bounded context.
 type StrategicClassification struct {
 	domain        vo.SubdomainClassification

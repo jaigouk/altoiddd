@@ -1041,6 +1041,16 @@ func TestModeSurvivesAnswering(t *testing.T) {
 	assert.Equal(t, ModeDeep, session.Mode())
 }
 
+func TestExpressCannotCompleteTwice(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	answerAllQuestions(session)
+	require.NoError(t, session.Complete())
+	err := session.Complete()
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
 func TestDeepRound1CannotCompleteTwice(t *testing.T) {
 	t.Parallel()
 	session := NewDiscoverySession("Idea")

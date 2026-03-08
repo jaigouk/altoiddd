@@ -121,14 +121,13 @@ func TestStrategicClassificationEquality(t *testing.T) {
 	assert.Equal(t, a, b)
 }
 
-func TestRoleCount(t *testing.T) {
+func TestAllRolesReturnsAllConstants(t *testing.T) {
 	t.Parallel()
-	all := []domain.Role{
-		domain.RoleExecution,
-		domain.RoleAnalysis,
-		domain.RoleGateway,
-		domain.RoleSpecification,
-		domain.RoleDraft,
-	}
+	all := domain.AllRoles()
 	assert.Len(t, all, 5)
+	assert.Contains(t, all, domain.RoleExecution)
+	assert.Contains(t, all, domain.RoleAnalysis)
+	assert.Contains(t, all, domain.RoleGateway)
+	assert.Contains(t, all, domain.RoleSpecification)
+	assert.Contains(t, all, domain.RoleDraft)
 }

@@ -327,9 +327,9 @@ func TestErrorSentinelPropagation(t *testing.T) {
 func TestCrossContextTypeCompatibility(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Fitness imports rescue event type", func(t *testing.T) {
+	t.Run("Fitness uses shared GapAnalysisCompleted event", func(t *testing.T) {
 		t.Parallel()
-		// GapAnalysis (in fitness) stores rescue.GapAnalysisCompleted events
+		// GapAnalysis (in fitness) stores sharedevents.GapAnalysisCompleted events
 		analysis := fitnessdomain.NewGapAnalysis("/tmp/project")
 		scan := fitnessdomain.NewProjectScan(
 			"/tmp/project",
@@ -346,7 +346,7 @@ func TestCrossContextTypeCompatibility(t *testing.T) {
 
 		evts := analysis.Events()
 		require.Len(t, evts, 1)
-		// The event type is rescue.GapAnalysisCompleted
+		// The event type is sharedevents.GapAnalysisCompleted
 		assert.Equal(t, analysis.AnalysisID(), evts[0].AnalysisID())
 		assert.Equal(t, "/tmp/project", evts[0].ProjectDir())
 	})

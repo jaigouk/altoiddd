@@ -107,6 +107,26 @@ func (s ProjectScan) ExistingDocs() []string {
 	return out
 }
 
+// ExistingConfigs returns a defensive copy of existing config file paths.
+func (s ProjectScan) ExistingConfigs() []string {
+	out := make([]string, len(s.existingConfigs))
+	copy(out, s.existingConfigs)
+	return out
+}
+
+// ExistingStructure returns a defensive copy of existing directory paths.
+func (s ProjectScan) ExistingStructure() []string {
+	out := make([]string, len(s.existingStructure))
+	copy(out, s.existingStructure)
+	return out
+}
+
+// HasAltyConfig returns whether the project has .alty/config.toml.
+func (s ProjectScan) HasAltyConfig() bool { return s.hasAltyConfig }
+
+// HasMaintenanceDir returns whether the project has .alty/maintenance/.
+func (s ProjectScan) HasMaintenanceDir() bool { return s.hasMaintenanceDir }
+
 // Gap is a single structural gap found during project analysis.
 type Gap struct {
 	gapID       string
@@ -183,13 +203,14 @@ func (p MigrationPlan) Gaps() []Gap {
 
 // GapAnalysis is the aggregate root for the rescue flow.
 type GapAnalysis struct {
-	analysisID string
-	projectDir string
-	status     AnalysisStatus
-	scan       *ProjectScan
-	gaps       []Gap
-	plan       *MigrationPlan
-	events     []sharedevents.GapAnalysisCompleted
+	analysisID    string
+	projectDir    string
+	status        AnalysisStatus
+	scan          *ProjectScan
+	gaps          []Gap
+	plan          *MigrationPlan
+	failureReason string
+	events        []sharedevents.GapAnalysisCompleted
 }
 
 // NewGapAnalysis creates a new GapAnalysis aggregate root.
@@ -285,11 +306,15 @@ func (a *GapAnalysis) Complete() error {
 	return nil
 }
 
-// Fail marks as failed. Only from EXECUTING.
+// Fail marks as failed and records the reason. Only from EXECUTING.
 func (a *GapAnalysis) Fail(reason string) error {
 	if a.status != AnalysisStatusExecuting {
 		return fmt.Errorf("cannot fail in %s state: %w", string(a.status), domainerrors.ErrInvariantViolation)
 	}
 	a.status = AnalysisStatusFailed
+	a.failureReason = reason
 	return nil
 }
+
+// FailureReason returns the reason for failure, or empty string if not failed.
+func (a *GapAnalysis) FailureReason() string { return a.failureReason }

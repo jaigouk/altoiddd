@@ -313,6 +313,24 @@ func TestGapAnalysisFail(t *testing.T) {
 		assert.Equal(t, domain.AnalysisStatusFailed, a.Status())
 	})
 
+	t.Run("fail stores reason", func(t *testing.T) {
+		t.Parallel()
+		a := domain.NewGapAnalysis("/tmp/proj")
+		_ = a.SetScan(makeScan())
+		_ = a.Analyze([]domain.Gap{makeGap()})
+		_ = a.CreatePlan(makePlan(nil))
+		_ = a.BeginExecution()
+		err := a.Fail("disk full")
+		require.NoError(t, err)
+		assert.Equal(t, "disk full", a.FailureReason())
+	})
+
+	t.Run("failure reason empty before fail", func(t *testing.T) {
+		t.Parallel()
+		a := domain.NewGapAnalysis("/tmp/proj")
+		assert.Empty(t, a.FailureReason())
+	})
+
 	t.Run("fail wrong state raises", func(t *testing.T) {
 		t.Parallel()
 		a := domain.NewGapAnalysis("/tmp/proj")
