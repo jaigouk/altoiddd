@@ -62,10 +62,13 @@ func TestGapSeverityValues(t *testing.T) {
 	assert.Equal(t, "optional", string(domain.GapSeverityOptional))
 }
 
-func TestGapSeverityCount(t *testing.T) {
+func TestAllGapSeveritiesReturnsAllConstants(t *testing.T) {
 	t.Parallel()
 	all := domain.AllGapSeverities()
 	assert.Len(t, all, 3)
+	assert.Contains(t, all, domain.GapSeverityRequired)
+	assert.Contains(t, all, domain.GapSeverityRecommended)
+	assert.Contains(t, all, domain.GapSeverityOptional)
 }
 
 // ---------------------------------------------------------------------------
@@ -389,10 +392,10 @@ func TestGapConflictType(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Use rescue event type
+// Uses shared GapAnalysisCompleted event
 // ---------------------------------------------------------------------------
 
-func TestGapAnalysisUsesRescueEvent(t *testing.T) {
+func TestGapAnalysisUsesSharedEvent(t *testing.T) {
 	t.Parallel()
 	a := domain.NewGapAnalysis("/tmp/proj")
 	_ = a.SetScan(makeScan())
