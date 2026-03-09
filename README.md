@@ -58,6 +58,29 @@ alty doc-health
 
 **`alty init` guides you through everything.** It shows you what it will do, asks you to confirm, and never touches files without your permission.
 
+## Installation
+
+### From Source (requires Go 1.25+)
+
+```bash
+git clone <your-repo-url>
+cd alty-cli
+make release
+./bin/alty version
+```
+
+This produces two binaries in `bin/`:
+- `alty` — CLI tool
+- `alty-mcp` — MCP server for AI tool integration
+
+### Cross-Platform Binaries
+
+```bash
+make release-all
+```
+
+Builds for 5 platforms: Linux (amd64/arm64), macOS (amd64/arm64), Windows (amd64).
+
 ## How It Works (The Simple Version)
 
 ```
@@ -136,9 +159,29 @@ Already have a codebase that's become hard to change? `alty init --existing` ana
 - **Existing projects stay safe** — Always works on a new branch, never on your main code
 - **Your tests must still pass** — If anything breaks, everything rolls back automatically
 
+## Development
+
+### Prerequisites
+
+- Go 1.25+
+- golangci-lint (for linting)
+- gofumpt (for formatting)
+
+### Common Commands
+
+```bash
+make build      # Quick build (no optimization)
+make test       # Run tests with race detector
+make lint       # Run golangci-lint
+make check      # All quality gates: build → vet → test → lint → deadcode
+make ci         # Alias for check (CI-friendly)
+make fmt        # Format code with gofumpt
+make clean      # Remove build artifacts
+```
+
 ## Status
 
-Early development. The foundation is being built.
+Go implementation complete. Core CLI commands (`init`, `doc-health`, `detect`) are functional.
 
 ## License
 
