@@ -1,22 +1,22 @@
 ---
-name: code-review
+name: review
 description: Structured code review based on Hartwork methodology — bugs, clarity, DDD/SOLID, tests
 allowed-tools: Read, Grep, Glob, Bash
 ---
 
-# /code-review <target>
+# /review <target>
 
 Structured code review following Sebastian Pipping's methodology, adapted for DDD + TDD projects.
 
 ## Usage
 
 ```
-/code-review                          # Review all uncommitted changes (staged + unstaged)
-/code-review --staged                 # Review only staged changes
-/code-review <commit-sha>             # Review a specific commit
-/code-review <branch>                 # Review branch diff against main
-/code-review <file-path>              # Review a specific file
-/code-review <ticket-id>              # Review all changes related to a ticket
+/review                          # Review all uncommitted changes (staged + unstaged)
+/review --staged                 # Review only staged changes
+/review <commit-sha>             # Review a specific commit
+/review <branch>                 # Review branch diff against main
+/review <file-path>              # Review a specific file
+/review <ticket-id>              # Review all changes related to a ticket
 ```
 
 ## Process
