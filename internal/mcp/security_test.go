@@ -248,47 +248,7 @@ func TestSecurity_ContentTagging_ToolOutput(t *testing.T) {
 	assert.Contains(t, tc.Text, "[TOOL OUTPUT END]")
 }
 
-// --- 5. Scope Enforcement Tests (MCP02) ---
-
-func TestSecurity_TierEnforcement_BlocksRestrictedTool(t *testing.T) {
-	t.Parallel()
-
-	// Create a server with tier enforcement at TierRead — check_quality needs TierExec.
-	policy := NewTierPolicy(TierRead, map[string]Tier{
-		"check_quality": TierExec,
-		"detect_tools":  TierRead,
-	})
-
-	server := gomcp.NewServer(&gomcp.Implementation{Name: "tier-test", Version: "0.0.1"}, nil)
-	server.AddReceivingMiddleware(TierEnforceMiddleware(policy))
-
-	gomcp.AddTool(server, &gomcp.Tool{Name: "check_quality", Description: "test"}, func(_ context.Context, _ *gomcp.CallToolRequest, _ struct{}) (*gomcp.CallToolResult, any, error) {
-		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: "ok"}}}, nil, nil
-	})
-	gomcp.AddTool(server, &gomcp.Tool{Name: "detect_tools", Description: "test"}, func(_ context.Context, _ *gomcp.CallToolRequest, _ struct{}) (*gomcp.CallToolResult, any, error) {
-		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: "ok"}}}, nil, nil
-	})
-
-	ctx := context.Background()
-	client := gomcp.NewClient(&gomcp.Implementation{Name: "tier-client", Version: "0.0.1"}, nil)
-	ct, st := gomcp.NewInMemoryTransports()
-	go func() { _ = server.Run(ctx, st) }()
-	session, err := client.Connect(ctx, ct, nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = session.Close() })
-
-	// check_quality should be blocked (requires Exec, only Read allowed).
-	_, err = session.CallTool(ctx, &gomcp.CallToolParams{Name: "check_quality"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "higher access tier")
-
-	// detect_tools should be allowed (requires Read, Read is allowed).
-	result, err := session.CallTool(ctx, &gomcp.CallToolParams{Name: "detect_tools"})
-	require.NoError(t, err)
-	assert.False(t, result.IsError)
-}
-
-// --- 6. Session Security Tests (MCP10/F3/F4) ---
+// --- 5. Session Security Tests (MCP10/F3/F4) ---
 
 func TestSecurity_SessionTTL_ExpiredSession(t *testing.T) {
 	t.Parallel()
@@ -328,40 +288,7 @@ func TestSecurity_SessionConcurrency_NoRace(t *testing.T) {
 	}
 }
 
-// --- 7. Rate Limiting Tests (MCP05/DoS) ---
-
-func TestSecurity_RateLimit_BurstTraffic(t *testing.T) {
-	t.Parallel()
-
-	limiter := NewRateLimiter(3, time.Minute)
-	server := gomcp.NewServer(&gomcp.Implementation{Name: "rate-test", Version: "0.0.1"}, nil)
-	server.AddReceivingMiddleware(RateLimitMiddleware(limiter))
-
-	gomcp.AddTool(server, &gomcp.Tool{Name: "ping", Description: "test"}, func(_ context.Context, _ *gomcp.CallToolRequest, _ struct{}) (*gomcp.CallToolResult, any, error) {
-		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: "pong"}}}, nil, nil
-	})
-
-	ctx := context.Background()
-	client := gomcp.NewClient(&gomcp.Implementation{Name: "rate-client", Version: "0.0.1"}, nil)
-	ct, st := gomcp.NewInMemoryTransports()
-	go func() { _ = server.Run(ctx, st) }()
-	session, err := client.Connect(ctx, ct, nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = session.Close() })
-
-	// First 3 should succeed.
-	for i := range 3 {
-		_, callErr := session.CallTool(ctx, &gomcp.CallToolParams{Name: "ping"})
-		require.NoError(t, callErr, "call %d should succeed", i)
-	}
-
-	// 4th should be rate limited.
-	_, err = session.CallTool(ctx, &gomcp.CallToolParams{Name: "ping"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "rate limit")
-}
-
-// --- 8. Audit Logging Tests (MCP08) ---
+// --- 6. Audit Logging Tests (MCP08) ---
 
 func TestSecurity_AuditLog_ToolCallLogged(t *testing.T) {
 	t.Parallel()

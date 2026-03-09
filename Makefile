@@ -1,4 +1,4 @@
-.PHONY: build test lint vet fmt check release clean
+.PHONY: build test lint vet fmt deadcode check release clean
 
 # Build binaries
 build:
@@ -21,8 +21,14 @@ vet:
 fmt:
 	gofumpt -w .
 
-# Run all quality gates (build + vet + test + lint)
-check: build vet test lint
+# Detect dead code (production only, from main entry points)
+# Pinned version requires Go 1.25+ (deadcode@latest built with Go 1.24)
+DEADCODE_VERSION := v0.42.1-0.20260306220548-ff454944261a
+deadcode:
+	go run golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION) ./cmd/...
+
+# Run all quality gates (build + vet + test + lint + deadcode)
+check: build vet test lint deadcode
 
 # Build release binaries
 release:

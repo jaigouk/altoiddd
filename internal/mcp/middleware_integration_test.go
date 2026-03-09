@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
@@ -131,85 +130,11 @@ func TestErrorSanitizeMiddleware_SanitizesProtocolError(t *testing.T) {
 	assert.NotContains(t, err.Error(), "goroutine")
 }
 
-// --- RateLimitMiddleware integration ---
-
-func TestRateLimitMiddleware_BlocksExcessRequests(t *testing.T) {
-	limiter := NewRateLimiter(2, time.Minute)
-	_, connect := setupMiddlewareServer(t, RateLimitMiddleware(limiter))
-	ctx := context.Background()
-	session := connect(ctx)
-	defer session.Close()
-
-	// First 2 calls should succeed.
-	for i := range 2 {
-		_, err := session.CallTool(ctx, &gomcp.CallToolParams{
-			Name:      "greet",
-			Arguments: map[string]any{"name": fmt.Sprintf("user-%d", i)},
-		})
-		require.NoError(t, err, "call %d should succeed", i)
-	}
-
-	// 3rd call should be rate limited (protocol error).
-	_, err := session.CallTool(ctx, &gomcp.CallToolParams{
-		Name:      "greet",
-		Arguments: map[string]any{"name": "blocked"},
-	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "rate limit")
-}
-
-// --- TierEnforceMiddleware integration ---
-
-func TestTierEnforceMiddleware_BlocksRestrictedTool(t *testing.T) {
-	policy := NewTierPolicy(TierRead, map[string]Tier{
-		"greet":       TierWrite,
-		"secret_tool": TierExec,
-	})
-	_, connect := setupMiddlewareServer(t, TierEnforceMiddleware(policy))
-	ctx := context.Background()
-	session := connect(ctx)
-	defer session.Close()
-
-	// "greet" requires TierWrite but policy only allows TierRead.
-	_, err := session.CallTool(ctx, &gomcp.CallToolParams{
-		Name:      "greet",
-		Arguments: map[string]any{"name": "blocked"},
-	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "higher access tier")
-}
-
-func TestTierEnforceMiddleware_AllowsPermittedTool(t *testing.T) {
-	policy := NewTierPolicy(TierWrite, map[string]Tier{
-		"greet":       TierRead,
-		"secret_tool": TierExec,
-	})
-	_, connect := setupMiddlewareServer(t, TierEnforceMiddleware(policy))
-	ctx := context.Background()
-	session := connect(ctx)
-	defer session.Close()
-
-	// "greet" requires TierRead, policy allows up to TierWrite.
-	result, err := session.CallTool(ctx, &gomcp.CallToolParams{
-		Name:      "greet",
-		Arguments: map[string]any{"name": "allowed"},
-	})
-	require.NoError(t, err)
-	assert.False(t, result.IsError)
-}
-
 // --- Composed middleware stack ---
 
 func TestMiddlewareStack_AllApplied(t *testing.T) {
-	limiter := NewRateLimiter(100, time.Second)
-	policy := NewTierPolicy(TierExec, map[string]Tier{
-		"greet": TierRead,
-	})
-
 	_, connect := setupMiddlewareServer(t,
 		ErrorSanitizeMiddleware(),
-		RateLimitMiddleware(limiter),
-		TierEnforceMiddleware(policy),
 		OutputSanitizeMiddleware(),
 		ContentTagMiddleware(),
 	)
