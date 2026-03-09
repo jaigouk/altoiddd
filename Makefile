@@ -1,4 +1,4 @@
-.PHONY: build test lint vet fmt deadcode check ci release release-all clean
+.PHONY: build test smoke lint vet fmt deadcode check ci release release-all clean
 
 # Version injection
 VERSION_PKG := github.com/alty-cli/alty/internal/composition
@@ -16,6 +16,10 @@ build:
 # Run all tests with race detector
 test:
 	go test ./... -v -race -count=1
+
+# Run smoke tests (requires building binary first via TestMain)
+smoke:
+	go test -tags smoke -v -timeout 60s ./cmd/alty/
 
 # Run golangci-lint v2
 lint:
