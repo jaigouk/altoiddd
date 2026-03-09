@@ -9,18 +9,27 @@ import (
 	bootstrapdomain "github.com/alty-cli/alty/internal/bootstrap/domain"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/events"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
 )
 
-// wireEventSubscribers creates a Subscriber with observability logging handlers
-// for all domain events. Each handler logs the event type and key scalar fields
-// using structured logging (Tier 1 — observability only).
-func wireEventSubscribers(bus *eventbus.Bus, logger *slog.Logger) (*eventbus.Subscriber, error) {
+// wireEventSubscribers creates a Subscriber with handlers for all domain events.
+// Tier 1: Observability logging (structured slog output for each event).
+// Tier 2: Readiness tracking (updates SessionTracker based on workflow events).
+func wireEventSubscribers(
+	bus *eventbus.Bus,
+	logger *slog.Logger,
+	tracker *shareddomain.SessionTracker,
+) (*eventbus.Subscriber, error) {
 	sub := eventbus.NewSubscriber(bus)
 	var errs []error
+
+	// ===========================================================================
+	// Tier 1 — Observability (logging only)
+	// ===========================================================================
 
 	// --- Shared events ---
 
@@ -122,6 +131,47 @@ func wireEventSubscribers(bus *eventbus.Bus, logger *slog.Logger) (*eventbus.Sub
 			"type", "ConfigsGeneratedEvent",
 			"tool_count", len(evt.ToolNames()),
 		)
+		return nil
+	}))
+
+	// ===========================================================================
+	// Tier 2 — Readiness tracking (updates SessionTracker)
+	// ===========================================================================
+
+	// DiscoveryCompleted → artifact_generation is ready
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(_ context.Context, evt *discoverydomain.DiscoveryCompletedEvent) error {
+		tracker.MarkReady(evt.SessionID(), shareddomain.StepArtifactGeneration)
+		return nil
+	}))
+
+	// DomainModelGenerated → fitness, tickets, configs are ready
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(_ context.Context, evt *events.DomainModelGenerated) error {
+		tracker.MarkReady(evt.ModelID(),
+			shareddomain.StepFitness,
+			shareddomain.StepTickets,
+			shareddomain.StepConfigs,
+		)
+		return nil
+	}))
+
+	// TicketPlanApproved → ripple_review is ready
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(_ context.Context, evt *ticketdomain.TicketPlanApproved) error {
+		tracker.MarkReady(evt.PlanID(), shareddomain.StepRippleReview)
+		return nil
+	}))
+
+	// FitnessTestsGenerated → fitness is completed
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(_ context.Context, evt *fitnessdomain.FitnessTestsGenerated) error {
+		tracker.MarkCompleted(evt.SuiteID(), shareddomain.StepFitness)
+		return nil
+	}))
+
+	// ConfigsGenerated (shared) → configs is completed
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(_ context.Context, evt *events.ConfigsGenerated) error {
+		// ConfigsGenerated doesn't have a session ID, so we use tool names as a proxy
+		// In practice, this event is correlated with a session via the caller
+		// For now, this is a no-op until we add session context to the event
+		_ = evt
 		return nil
 	}))
 

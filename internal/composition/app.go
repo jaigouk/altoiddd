@@ -24,6 +24,7 @@ import (
 	rescueinfra "github.com/alty-cli/alty/internal/rescue/infrastructure"
 	researchapp "github.com/alty-cli/alty/internal/research/application"
 	researchinfra "github.com/alty-cli/alty/internal/research/infrastructure"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
@@ -75,8 +76,9 @@ type App struct {
 	ChallengeHandler *challengeapp.ChallengeHandler
 
 	// --- Infrastructure ---
-	EventBus   *eventbus.Bus
-	Subscriber *eventbus.Subscriber
+	EventBus       *eventbus.Bus
+	Subscriber     *eventbus.Subscriber
+	SessionTracker *shareddomain.SessionTracker
 
 	// --- Metadata ---
 	Version string
@@ -123,10 +125,13 @@ func NewApp() (*App, error) {
 	// 11. Research infrastructure
 	spikeFollowUpAdapter := researchinfra.NewSpikeFollowUpAdapter()
 
+	// 12. Session tracking (Tier 2 readiness)
+	sessionTracker := shareddomain.NewSessionTracker()
+
 	// --- Event publisher + subscriber ---
 	publisher := eventbus.NewPublisher(bus)
 
-	subscriber, err := wireEventSubscribers(bus, slog.Default())
+	subscriber, err := wireEventSubscribers(bus, slog.Default(), sessionTracker)
 	if err != nil {
 		_ = bus.Close()
 		return nil, fmt.Errorf("wiring event subscribers: %w", err)
@@ -180,6 +185,7 @@ func NewApp() (*App, error) {
 		ChallengeHandler:          challengeHandler,
 		EventBus:                  bus,
 		Subscriber:                subscriber,
+		SessionTracker:            sessionTracker,
 		Version:                   Version,
 		cancelEvents:              cancelSub,
 	}, nil

@@ -22,3 +22,17 @@ type FileWriter interface {
 	// WriteFile writes content to a file at the given path.
 	WriteFile(ctx context.Context, path string, content string) error
 }
+
+// ReadinessQuerier queries workflow readiness state for a session.
+// Used by MCP/CLI to determine what actions are available next.
+type ReadinessQuerier interface {
+	// ReadyActions returns the list of actions currently available for the session.
+	// Returns an empty slice for unknown sessions.
+	ReadyActions(sessionID string) []ReadyAction
+}
+
+// ReadyAction represents an action that is available for the user to take.
+// This is a simplified interface matching the domain ReadyAction value object.
+type ReadyAction interface {
+	Name() string
+}
