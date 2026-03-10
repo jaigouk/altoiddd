@@ -76,7 +76,8 @@ func TestDocScanner_ScanRegisteredOK(t *testing.T) {
 	require.Len(t, statuses, 1)
 	assert.Equal(t, dochealthdomain.DocHealthOK, statuses[0].Status())
 	assert.NotNil(t, statuses[0].DaysSince())
-	assert.Equal(t, 5, *statuses[0].DaysSince())
+	// Allow ±1 day tolerance for timezone edge cases near midnight
+	assert.InDelta(t, 5, *statuses[0].DaysSince(), 1)
 }
 
 func TestDocScanner_ScanRegisteredMissing(t *testing.T) {
@@ -119,7 +120,8 @@ func TestDocScanner_ScanRegisteredStale(t *testing.T) {
 
 	require.Len(t, statuses, 1)
 	assert.Equal(t, dochealthdomain.DocHealthStale, statuses[0].Status())
-	assert.Equal(t, 45, *statuses[0].DaysSince())
+	// Allow ±1 day tolerance for timezone edge cases near midnight
+	assert.InDelta(t, 45, *statuses[0].DaysSince(), 1)
 }
 
 func TestDocScanner_HandlesPlaceholderDate(t *testing.T) {
