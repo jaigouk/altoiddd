@@ -19,8 +19,8 @@ status: draft
 ## 1. Design Principles
 
 1. **Domain purity** -- Domain layer has zero external dependencies. No frameworks, no
-   I/O, no file access. Business logic is expressed purely in Python data structures
-   and functions. _(Source: DDD.md layer rules; PRD section 6)_
+   I/O, no file access. Business logic is expressed purely in Go types and
+   functions. _(Source: DDD.md layer rules; PRD section 6)_
 
 2. **Local-first** -- Express mode (default) runs entirely locally with zero network calls.
    Deep mode (optional) may use LLM APIs and web search for AI-assisted challenge,
@@ -40,7 +40,7 @@ status: draft
    context map)_
 
 5. **Testability** -- Every component is testable in isolation with dependency injection.
-   Application layer depends on port interfaces (Protocols), not concrete implementations.
+   Application layer depends on port interfaces, not concrete implementations.
    _(Source: PRD section 5 P0 quality gates)_
 
 6. **Complexity budget enforcement** -- Architecture treatment level (hexagonal, layered,
@@ -63,20 +63,20 @@ status: draft
           +------------------+------------------+
           |                  |                  |
       CLI (vs)        MCP Server         VS Code Extension
-     [Typer]         (alty-mcp)          (alty-vscode-extension)
-     [Python]        [FastMCP]           [TypeScript + Svelte]
+     [Cobra]         (alty-mcp)          (alty-vscode-extension)
+     [Go]            [mcp-go]            [TypeScript + Svelte]
           |               |                     |
           |               |              MCP Client (stdio)
           |               |                     |
           +-------+-------+---------------------+
                   |
          Application Layer
-        (Ports / Protocols)
+        (Ports / Interfaces)
                   |
    +--------------+---------------+
    |              |               |
 Domain Layer  Infrastructure   .alty/
-(Pure Python)   Adapters       (Project State)
+(Pure Go)       Adapters       (Project State)
    |              |               |
    | Guided      |    +-----------+---------+
    | Discovery   |    | domain-model.yaml   |
@@ -105,7 +105,7 @@ Domain Layer  Infrastructure   .alty/
 | 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
 | DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
 | DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
-| FitnessTestSuite      | Generate import-linter + pytestarch from context map    | Architecture Testing | Core           |
+| FitnessTestSuite      | Generate depguard + arch tests from context map         | Architecture Testing | Core           |
 | TicketPlan            | Dependency-ordered ticket generation with 3-tier detail | Ticket Pipeline      | Core           |
 | RippleReview          | Event-driven freshness flagging on ticket close         | Ticket Freshness     | Core           |
 | ToolConfig            | Domain model to tool-native config translation          | Tool Translation     | Supporting     |
@@ -123,7 +123,7 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 +----------------------------------------------------------------------+
 |                         Infrastructure                               |
 |  +------------------------------------------------------------------+|
-|  |  CLI Adapter (Typer)  |  MCP Adapter (FastMCP)  |  File I/O      ||
+|  |  CLI Adapter (Cobra)  |  MCP Adapter (mcp-go)   |  File I/O      ||
 |  |  Beads CLI Adapter    |  Git Adapter            |  Template Eng. ||
 |  +------------------------------------------------------------------+|
 |  +------------------------------------------------------------------+|
@@ -131,7 +131,7 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 |  |  +--------------------------------------------------------------+||
 |  |  |  Commands (write operations)                                 |||
 |  |  |  Queries (read operations)                                   |||
-|  |  |  Ports (13 Protocol interfaces)                              |||
+|  |  |  Ports (13 Go interfaces)                                     |||
 |  |  +--------------------------------------------------------------+||
 |  |  +--------------------------------------------------------------+||
 |  |  |                      Domain Layer                            |||
@@ -147,103 +147,106 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 
 | Layer          | Can Depend On                     | Cannot Depend On                           | Enforced By                                   |
 | -------------- | --------------------------------- | ------------------------------------------ | --------------------------------------------- |
-| Domain         | Nothing (pure Python stdlib only) | Application, Infrastructure, any framework | import-linter `forbidden` + pytestarch `Rule` |
-| Application    | Domain, Ports (interfaces only)   | Infrastructure, frameworks                 | import-linter `layers` contract               |
+| Domain         | Nothing (pure Go stdlib only)     | Application, Infrastructure, any framework | depguard `forbidden` + arch test `Rule`       |
+| Application    | Domain, Ports (interfaces only)   | Infrastructure, frameworks                 | depguard `layers` contract                    |
 | Infrastructure | Application, Domain               | -- (outermost layer)                       | --                                            |
 
 ### Source Layout
 
 ```
-src/
-+-- domain/
-|   +-- models/
-|   |   +-- discovery_session.py    # DiscoverySession aggregate (Guided Discovery)
-|   |   +-- domain_model.py         # DomainModel aggregate (Domain Model)
-|   |   +-- fitness_test_suite.py   # FitnessTestSuite aggregate (Architecture Testing)
-|   |   +-- ticket_plan.py          # TicketPlan aggregate (Ticket Pipeline)
-|   |   +-- ripple_review.py        # RippleReview aggregate (Ticket Freshness)
-|   |   +-- persona.py              # Persona, Register value objects
-|   |   +-- question.py             # Question, QuestionPhase entities
-|   |   +-- contract.py             # Contract, ArchRule entities
-|   |   +-- classification.py       # Classification enum, ContractStrictness VO
-|   |   +-- bounded_context_spec.py # BoundedContextSpec, ContextRelationship VOs
-|   |   +-- generated_ticket.py     # GeneratedEpic, GeneratedTicket entities
-|   |   +-- tool_config.py          # ToolConfig aggregate
-|   |   +-- knowledge_entry.py      # KnowledgeEntry entity
-|   |   +-- bootstrap_session.py    # BootstrapSession aggregate
-|   |   +-- gap_analysis.py         # GapAnalysis aggregate
-|   +-- services/
-|   |   +-- dependency_sorter.py    # Topological sort (Kahn's algorithm)
-|   |   +-- complexity_budget.py    # Classification -> treatment level mapping
-|   |   +-- contract_generator.py   # BoundedContextMap -> Contract/ArchRule generation
-|   |   +-- ticket_generator.py     # DomainModel -> GeneratedEpic/GeneratedTicket
-|   +-- events/
-|       +-- discovery_events.py     # PersonaDetected, DiscoveryCompleted, etc.
-|       +-- model_events.py         # DomainModelGenerated
-|       +-- testing_events.py       # FitnessTestsGenerated
-|       +-- pipeline_events.py      # TicketPlanApproved
-|       +-- freshness_events.py     # TicketFlagged, FlagCleared
-|       +-- translation_events.py   # ConfigsGenerated
-|       +-- bootstrap_events.py     # BootstrapCompleted
-+-- application/
-|   +-- commands/
-|   |   +-- start_discovery.py      # Begin guided DDD session
-|   |   +-- answer_question.py      # Process user answer
-|   |   +-- generate_artifacts.py   # Produce DDD.md + domain-model.yaml
-|   |   +-- generate_fitness.py     # Produce import-linter TOML + pytestarch tests
-|   |   +-- generate_tickets.py     # Produce dependency-ordered beads tickets
-|   |   +-- generate_configs.py     # Produce tool-native config files
-|   |   +-- init_project.py         # Bootstrap orchestration
-|   |   +-- run_ripple.py           # Flag dependents after ticket close
-|   +-- queries/
-|   |   +-- current_question.py     # What question to ask next
-|   |   +-- playback_summary.py     # Summary of answers for confirmation
-|   |   +-- ticket_health.py        # Freshness report (flagged count, oldest)
-|   |   +-- doc_health.py           # Document freshness report
-|   |   +-- knowledge_lookup.py     # RLM knowledge query
-|   |   +-- format_output.py        # Persona-aware output formatting
-|   +-- ports/
-|       +-- bootstrap_port.py       # BootstrapPort
-|       +-- rescue_port.py          # RescuePort
-|       +-- discovery_port.py       # DiscoveryPort
-|       +-- artifact_generation_port.py  # ArtifactGenerationPort
-|       +-- fitness_generation_port.py   # FitnessGenerationPort
-|       +-- ticket_generation_port.py    # TicketGenerationPort
-|       +-- config_generation_port.py    # ConfigGenerationPort
-|       +-- tool_detection_port.py  # ToolDetectionPort
-|       +-- quality_gate_port.py    # QualityGatePort
-|       +-- knowledge_lookup_port.py # KnowledgeLookupPort
-|       +-- doc_health_port.py      # DocHealthPort
-|       +-- doc_review_port.py     # DocReviewPort
-|       +-- ticket_health_port.py   # TicketHealthPort
-|       +-- persona_port.py         # PersonaPort
-+-- infrastructure/
-    +-- cli/
-    |   +-- main.py                 # Typer app, subcommand groups
-    |   +-- init_cmd.py             # alty init
-    |   +-- guide_cmd.py            # alty guide
-    |   +-- generate_cmd.py         # alty generate {artifacts,fitness,tickets,configs}
-    |   +-- detect_cmd.py           # alty detect
-    |   +-- check_cmd.py            # alty check
-    |   +-- kb_cmd.py               # alty kb <topic>
-    |   +-- doc_health_cmd.py       # alty doc-health
-    |   +-- ticket_health_cmd.py    # alty ticket-health
-    |   +-- persona_cmd.py          # alty persona {list,generate}
-    +-- mcp/
-    |   +-- server.py               # FastMCP server, tool/resource registration
-    |   +-- tools.py                # MCP tool implementations
-    |   +-- resources.py            # MCP resource handlers
-    +-- persistence/
-    |   +-- file_scaffold.py        # FileScaffoldService (template rendering, file writes)
-    |   +-- yaml_parser.py          # BoundedContextMapParser (YAML IR reader)
-    |   +-- toml_renderer.py        # ImportLinterContractRenderer (TOML writer)
-    |   +-- test_renderer.py        # PyTestArchTestRenderer (Python file writer)
-    |   +-- knowledge_store.py      # FileKnowledgeService (TOML/Markdown reader)
-    +-- external/
-    |   +-- beads_writer.py         # BeadsCliWriter (bd create, bd dep add via subprocess)
-    |   +-- git_adapter.py          # Git operations (branch, status, diff)
-    |   +-- tool_detector.py        # Detect installed AI tools + global configs
-    +-- composition.py              # Composition root: wire all ports to implementations
+cmd/
++-- alty/                           # CLI entry point (Cobra)
+|   +-- main.go                     # Cobra root command
+|   +-- commands/                   # Subcommand implementations
+|       +-- init.go                 # alty init
+|       +-- guide.go                # alty guide
+|       +-- doc_health.go           # alty doc-health
+|       +-- detect.go               # alty detect
++-- alty-mcp/                       # MCP server entry point
+    +-- main.go                     # mcp-go server startup
+internal/
++-- bootstrap/                      # Bootstrap bounded context
+|   +-- domain/                     # Aggregates, VOs, events
+|   +-- application/                # Handlers + port interfaces
+|   +-- infrastructure/             # Adapters
++-- discovery/                      # Guided Discovery bounded context
+|   +-- domain/
+|   |   +-- discovery_session.go    # DiscoverySession aggregate
+|   |   +-- discovery_values.go     # Persona, Register, TechStack VOs
+|   |   +-- question.go             # Question, QuestionPhase
+|   |   +-- discovery_events.go     # PersonaDetected, DiscoveryCompleted
+|   +-- application/
+|   |   +-- discovery_handler.go    # Command handlers
+|   |   +-- detection_handler.go    # Tool detection handler
+|   |   +-- ports.go                # Port interfaces
+|   +-- infrastructure/
+|       +-- filesystem_tool_scanner.go  # Tool detection adapter
+|       +-- markdown_artifact_renderer.go
++-- challenge/                      # DDD Challenge bounded context
+|   +-- domain/
+|   +-- application/
+|   +-- infrastructure/
++-- fitness/                        # Architecture Testing bounded context
+|   +-- domain/
+|   |   +-- fitness_test_suite.go   # FitnessTestSuite aggregate
+|   |   +-- fitness_values.go       # Contract, ArchRule, ContractStrictness
+|   |   +-- bounded_context_canvas.go
+|   +-- application/
+|   |   +-- quality_gate_handler.go
+|   |   +-- fitness_generation_handler.go
+|   |   +-- ports.go
+|   +-- infrastructure/
+|       +-- subprocess_gate_runner.go
+|       +-- codebase_port_scanner.go
++-- ticket/                         # Ticket Pipeline bounded context
+|   +-- domain/
+|   +-- application/
+|   +-- infrastructure/
++-- dochealth/                      # Doc Health bounded context
+|   +-- domain/
+|   |   +-- doc_health.go           # DocHealthReport aggregate
+|   +-- application/
+|   |   +-- doc_health_handler.go
+|   |   +-- doc_review_handler.go
+|   |   +-- ports.go
+|   +-- infrastructure/
+|       +-- filesystem_doc_scanner.go
++-- knowledge/                      # Knowledge Base bounded context
+|   +-- domain/
+|   |   +-- knowledge_entry.go
+|   |   +-- drift_detection.go
+|   +-- application/
+|   |   +-- knowledge_lookup_handler.go
+|   |   +-- ports.go
+|   +-- infrastructure/
+|       +-- file_knowledge_reader.go
++-- rescue/                         # Rescue Mode bounded context
+|   +-- domain/
+|   +-- application/
+|   +-- infrastructure/
++-- tooltranslation/                # Tool Translation bounded context
+|   +-- domain/
+|   +-- application/
+|   +-- infrastructure/
++-- shared/                         # Shared kernel
+|   +-- domain/
+|   |   +-- errors/                 # Domain errors
+|   |   +-- events/                 # Base event types
+|   |   +-- identity/               # ID value objects
+|   |   +-- valueobjects/           # Common VOs
+|   |   +-- ddd/                    # DDD base types
+|   +-- application/                # Shared ports (FileWriter)
+|   +-- infrastructure/
+|       +-- eventbus/               # Watermill event bus
+|       +-- llm/                    # LLM client adapters
+|       +-- persistence/            # File I/O adapters
++-- mcp/                            # MCP server implementation
+|   +-- server.go                   # Tool/resource registration
+|   +-- input_validation.go
+|   +-- error_sanitizer.go
++-- composition/                    # Composition root (DI wiring)
+    +-- adapters.go
++-- integration/                    # Cross-context integration tests
 ```
 
 ### Architecture Treatment by Classification
@@ -304,7 +307,7 @@ The complete `alty init` flow crosses all bounded contexts in this order:
    writes: docs/DDD.md + .alty/domain-model.yaml
    emits: DomainModelGenerated
 5. Architecture Testing -> generate fitness functions (FitnessGenerationPort)
-   writes: pyproject.toml [tool.importlinter] + tests/architecture/*.py
+   writes: .golangci.yml [depguard] + internal/**/architecture_test.go
    emits: FitnessTestsGenerated
 6. Ticket Pipeline -> generate tickets (TicketGenerationPort)
    writes: beads epics + tasks via bd create + bd dep add
@@ -326,7 +329,7 @@ Each step shows a preview and waits for user approval before proceeding.
 | ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
 | DiscoverySession | In-memory (session duration)              | Stateful conversation; persisted only when complete         |
 | DomainModel      | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
-| FitnessTestSuite | In-memory during generation               | Output written to `pyproject.toml` + `tests/architecture/`  |
+| FitnessTestSuite | In-memory during generation               | Output written to `.golangci.yml` + `*_test.go` files       |
 | TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
 | RippleReview     | Beads labels + comments                   | Uses existing beads features; no custom storage needed      |
 | ToolConfig       | In-memory during generation               | Output written to `.claude/`, `.cursor/`, etc.              |
@@ -341,7 +344,7 @@ downstream generators. It is produced by `alty generate artifacts` (Domain Model
 and consumed by:
 
 - **Architecture Testing** -- reads `bounded_contexts` and `subdomains` to generate
-  import-linter contracts and pytestarch tests
+  depguard rules and architecture tests
 - **Ticket Pipeline** -- reads the full model to generate dependency-ordered tickets
   with classification-driven detail levels
 - **Tool Translation** -- reads `terms`, `bounded_contexts`, and `subdomains` to
@@ -413,12 +416,12 @@ The fitness function generator uses a subset of the same YAML with additional fi
 ```yaml
 project:
   name: "myproject"
-  root_package: "myproject" # Python package name (import-linter root_package)
-  src_path: "src" # Relative path to source root (pytestarch scanner)
+  module_path: "github.com/example/myproject" # Go module path
+  internal_path: "internal" # Relative path to internal packages
 
 bounded_contexts:
   - name: "Guided Discovery"
-    module_path: "guided_discovery" # Python module under root_package
+    package_path: "discovery" # Package under internal/
     classification: core
     layers: [domain, application, infrastructure]
     aggregates: ["discovery_session"]
@@ -457,7 +460,7 @@ Each CLI command maps to one bounded context entry point. Commands are thin infr
 adapters calling application-layer command/query handlers via ports.
 
 ```
-vs
+alty
 +-- init                          # Bootstrap context (orchestrator)
 |   +-- --existing                # -> delegates to Rescue context
 +-- guide                         # Guided Discovery context
@@ -466,15 +469,15 @@ vs
 |   +-- --persona <type>          # Force persona (developer|po|expert)
 +-- generate                      # Group: generation commands
 |   +-- artifacts                 # Domain Model -> PRD, DDD.md, ARCHITECTURE.md
-|   +-- fitness                   # Architecture Testing -> import-linter + pytestarch
+|   +-- fitness                   # Architecture Testing -> depguard + arch tests
 |   +-- tickets                   # Ticket Pipeline -> beads epics + tasks
 |   +-- configs                   # Tool Translation -> .claude/, .cursor/, etc.
 +-- detect                        # Bootstrap -> global settings detection
 +-- check                         # Architecture Testing -> quality gate runner
-|   +-- --lint                    # ruff check
-|   +-- --types                   # mypy
-|   +-- --tests                   # pytest
-|   +-- --fitness                 # import-linter + pytestarch
+|   +-- --lint                    # golangci-lint run
+|   +-- --vet                     # go vet
+|   +-- --tests                   # go test -race
+|   +-- --fitness                 # depguard + arch tests
 +-- kb                            # Knowledge Base -> RLM lookup
 |   +-- <topic>                   # e.g., alty kb ddd/aggregate
 +-- doc-health                    # Knowledge Base -> freshness report
@@ -489,7 +492,7 @@ vs
 
 ### 6.2 Command to Port Mapping
 
-| Command                   | Bounded Context        | Port (Protocol)          | Aggregate                  |
+| Command                   | Bounded Context        | Port (Interface)         | Aggregate                  |
 | ------------------------- | ---------------------- | ------------------------ | -------------------------- |
 | `alty init`               | Bootstrap              | `BootstrapPort`          | BootstrapSession           |
 | `alty init --existing`    | Rescue (via Bootstrap) | `RescuePort`             | GapAnalysis                |
@@ -510,11 +513,16 @@ _(Source: CLI+MCP design spike section 2)_
 
 ### 6.3 CLI Entry Points
 
-```toml
-# pyproject.toml
-[project.scripts]
-alty = "src.infrastructure.cli.main:app"
-alty-mcp = "src.infrastructure.mcp.server:main"
+```go
+// cmd/alty/main.go
+func main() {
+    cmd.Execute() // Cobra root command
+}
+
+// cmd/alty-mcp/main.go
+func main() {
+    server.Run() // mcp-go server
+}
 ```
 
 ### 6.4 MCP Server
@@ -559,11 +567,11 @@ Both CLI and MCP adapters depend on the same application-layer ports. Neither co
 business logic. The composition root wires ports to implementations at startup.
 
 ```
-CLI (Typer)  ---+
-                +--> Application Ports (Protocols) --> Domain Models
-MCP (FastMCP) --+           |
+CLI (Cobra)  ---+
+                +--> Application Ports (Interfaces) --> Domain Models
+MCP (mcp-go) ---+           |
                       Infrastructure Adapters
-                      (implement Protocols)
+                      (implement Interfaces)
 ```
 
 **Rules:**
@@ -575,25 +583,26 @@ MCP (FastMCP) --+           |
 
 **Composition Root:**
 
-```python
-# src/infrastructure/composition.py
-def create_app() -> AppContext:
-    """Wire all ports to their implementations."""
-    knowledge_service = FileKnowledgeService(Path(".alty/knowledge"))
-    scaffold_service = FileScaffoldService()
-    beads_service = BeadsCliWriter()
-    # ... wire all ports
-    return AppContext(
-        bootstrap_handler=BootstrapHandler(scaffold_service, ...),
-        discovery_handler=DiscoveryHandler(knowledge_service, ...),
-        fitness_handler=FitnessHandler(scaffold_service, ...),
-        ticket_handler=TicketHandler(beads_service, ...),
-        # ...
-    )
+```go
+// internal/composition/adapters.go
+func NewAppContext() *AppContext {
+    // Wire all ports to their implementations
+    knowledgeService := knowledge.NewFileKnowledgeReader(".alty/knowledge")
+    scaffoldService := persistence.NewFileScaffoldService()
+    beadsService := external.NewBeadsCliWriter()
+    // ... wire all ports
+    return &AppContext{
+        BootstrapHandler:  bootstrap.NewHandler(scaffoldService, ...),
+        DiscoveryHandler:  discovery.NewHandler(knowledgeService, ...),
+        FitnessHandler:    fitness.NewHandler(scaffoldService, ...),
+        TicketHandler:     ticket.NewHandler(beadsService, ...),
+        // ...
+    }
+}
 ```
 
-Both CLI (`main.py`) and MCP (`server.py`) call `create_app()` at startup to get the
-same wired application context.
+Both CLI (`cmd/alty/main.go`) and MCP (`cmd/alty-mcp/main.go`) call `NewAppContext()` at
+startup to get the same wired application context.
 
 _(Source: CLI+MCP design spike sections 4, 7)_
 
@@ -617,7 +626,7 @@ _(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)_
 
 **PRD reference:** Section 5 P0 "Architecture fitness function generation"
 **Spike source:** `docs/research/20260223_fitness_function_design.md`
-**ADR:** Hybrid approach accepted -- generate both import-linter TOML and pytestarch tests
+**ADR:** Hybrid approach accepted -- generate both depguard config and architecture tests
 
 #### Pipeline
 
@@ -636,16 +645,16 @@ FitnessTestSuite Aggregate (Domain: pure business logic)
    +----+-----+
    |           |
    v           v
-ImportLinter    PyTestArch
-Contract        Test
+Depguard        Architecture
+Config          Test
 Renderer        Renderer
-(TOML ->        (Python ->
-pyproject.toml) tests/architecture/*.py)
+(YAML ->        (Go ->
+.golangci.yml)  *_architecture_test.go)
 ```
 
 #### Contract Generation by Classification
 
-| Classification | import-linter Contracts                                                                                       | pytestarch Rules                                                                       |
+| Classification | depguard Rules                                                                                                | Architecture Tests                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Core**       | layers + forbidden (cross-context) + forbidden (domain purity) + independence (aggregates) + acyclic_siblings | LayeredArchitecture + cross-context boundary + domain purity + per-aggregate isolation |
 | **Supporting** | layers + forbidden (cross-context)                                                                            | LayeredArchitecture + cross-context boundary                                           |
@@ -664,9 +673,9 @@ file is written (fail-fast design).
 
 #### Output
 
-- ~28 import-linter contracts in `pyproject.toml` under `[tool.importlinter]`
-- ~35 pytestarch tests across `tests/architecture/test_*.py` files
-- Shared `tests/architecture/conftest.py` with session-scoped `EvaluableArchitecture` fixture
+- ~28 depguard rules in `.golangci.yml` under `linters-settings.depguard`
+- ~35 architecture tests across `internal/**/architecture_test.go` files
+- Shared test helpers in `internal/shared/testing/` for architecture validation
 
 _(Source: fitness function spike sections 3, 4, 6, 7)_
 
@@ -680,7 +689,7 @@ _(Source: fitness function spike sections 3, 4, 6, 7)_
 ```
 .alty/domain-model.yaml
         |
-[1. Parse and Validate]     -- Pydantic models in domain layer
+[1. Parse and Validate]     -- Go structs in domain layer
         |
 [2. Classify Detail Levels] -- subdomain.treatment.ticket_detail
         |
@@ -725,14 +734,15 @@ intra-epic deps, (4) set cross-epic deps, (5) verify with `bd dep cycles` and `b
 
 #### BeadsWriterPort Interface
 
-```python
-class BeadsWriterPort(Protocol):
-    def create_epic(self, title: str, description: str, priority: int = 1) -> str: ...
-    def create_ticket(self, title: str, description: str, parent_id: str, ...) -> str: ...
-    def set_dependency(self, ticket_id: str, depends_on_id: str) -> None: ...
-    def verify_no_cycles(self) -> list[str]: ...
-    def get_blocked(self) -> list[str]: ...
-    def get_ready(self) -> list[str]: ...
+```go
+type BeadsWriterPort interface {
+    CreateEpic(ctx context.Context, title, description string, priority int) (string, error)
+    CreateTicket(ctx context.Context, title, description, parentID string) (string, error)
+    SetDependency(ctx context.Context, ticketID, dependsOnID string) error
+    VerifyNoCycles(ctx context.Context) ([]string, error)
+    GetBlocked(ctx context.Context) ([]string, error)
+    GetReady(ctx context.Context) ([]string, error)
+}
 ```
 
 _(Source: ticket pipeline spike sections 2, 4, 5, 9)_
@@ -944,7 +954,7 @@ _(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety 
   conventions/
     tdd.md                        # RED/GREEN/REFACTOR reference
     solid.md                      # SOLID principles reference
-    quality-gates.md              # ruff + mypy + pytest conventions
+    quality-gates.md              # go vet + golangci-lint + go test conventions
 ```
 
 #### RLM Addressing Scheme
@@ -957,14 +967,16 @@ alty://knowledge/{category}/{tool_or_topic}/{subtopic}?version={version}
 
 Resolution is O(1) -- direct path construction, no search, no index scan:
 
-```python
-def _resolve_path(self, category: str, topic: str, version: str) -> Path:
-    base = self.knowledge_dir / category
-    if category == "tools":
-        tool, subtopic = topic.split("/", 1)
-        return base / tool / version / f"{subtopic}.toml"
-    else:
-        return base / f"{topic}.md"
+```go
+func (r *FileKnowledgeReader) resolvePath(category, topic, version string) string {
+    base := filepath.Join(r.knowledgeDir, category)
+    if category == "tools" {
+        parts := strings.SplitN(topic, "/", 2)
+        tool, subtopic := parts[0], parts[1]
+        return filepath.Join(base, tool, version, subtopic+".toml")
+    }
+    return filepath.Join(base, topic+".md")
+}
 ```
 
 #### Versioning
@@ -1096,42 +1108,42 @@ with a shared infrastructure client, enabling provider swaps without domain chan
 #### Layer Separation
 
 ```
-Domain Layer (pure Python, no LLM awareness)
+Domain Layer (pure Go, no LLM awareness)
   ChallengerService     — generates challenge questions from model gaps
   SimulatorService      — generates scenarios from model entities
   (no LLM imports, no network imports, no provider awareness)
         |
-Application Layer (Protocols only)
-  ChallengerPort        — analyze_and_challenge(model_data) -> list[Challenge]
-  DomainResearchPort    — research(domain, areas) -> ResearchBriefing
-  SimulatorPort         — generate_scenarios(model_data) -> list[Scenario]
+Application Layer (Interfaces only)
+  ChallengerPort        — AnalyzeAndChallenge(modelData) -> []Challenge
+  DomainResearchPort    — Research(domain, areas) -> ResearchBriefing
+  SimulatorPort         — GenerateScenarios(modelData) -> []Scenario
         |
 Infrastructure Layer (adapters + shared client)
-  llm_client.py         — LLMClient Protocol (send_prompt -> structured response)
-  anthropic_adapter.py  — AnthropicLLMClient (uses `anthropic` SDK)
-  ollama_adapter.py     — OllamaLLMClient (future: local LLM via Ollama)
-  vertexai_adapter.py   — VertexAILLMClient (future: Google Vertex AI)
-  challenger_adapter.py — Implements ChallengerPort using LLMClient
-  simulator_adapter.py  — Implements SimulatorPort using LLMClient
-  research_adapter.py   — Implements DomainResearchPort using LLMClient + web search
-  rule_based_challenger.py — Implements ChallengerPort without LLM (local fallback)
-  rule_based_simulator.py  — Implements SimulatorPort without LLM (local fallback)
+  llm_client.go         — LLMClient interface (SendPrompt -> structured response)
+  anthropic_adapter.go  — AnthropicLLMClient (uses anthropic-go SDK)
+  ollama_adapter.go     — OllamaLLMClient (future: local LLM via Ollama)
+  vertexai_adapter.go   — VertexAILLMClient (future: Google Vertex AI)
+  challenger_adapter.go — Implements ChallengerPort using LLMClient
+  simulator_adapter.go  — Implements SimulatorPort using LLMClient
+  research_adapter.go   — Implements DomainResearchPort using LLMClient + web search
+  rule_based_challenger.go — Implements ChallengerPort without LLM (local fallback)
+  rule_based_simulator.go  — Implements SimulatorPort without LLM (local fallback)
 ```
 
-#### LLMClient Protocol (Infrastructure-Internal)
+#### LLMClient Interface (Infrastructure-Internal)
 
-```python
-# src/infrastructure/external/llm_client.py
-class LLMClient(Protocol):
-    """Infrastructure-internal abstraction for LLM providers.
-    NOT a domain or application port — this is an infrastructure detail."""
-
-    async def structured_output(
-        self,
-        prompt: str,
-        system: str,
-        output_schema: dict[str, Any],
-    ) -> dict[str, Any]: ...
+```go
+// internal/shared/infrastructure/llm/llm_client.go
+type LLMClient interface {
+    // Infrastructure-internal abstraction for LLM providers.
+    // NOT a domain or application port — this is an infrastructure detail.
+    StructuredOutput(
+        ctx context.Context,
+        prompt string,
+        system string,
+        outputSchema map[string]any,
+    ) (map[string]any, error)
+}
 ```
 
 This is **not** an application port — it's an infrastructure-internal abstraction.
@@ -1177,9 +1189,9 @@ model = "gemini-2.0-flash"
 |-----------|-----|
 | **S** | Each adapter has one job: translate between port interface and LLM client |
 | **O** | New providers added by implementing LLMClient, no existing code changes |
-| **L** | All LLMClient implementations honor the same Protocol contract |
+| **L** | All LLMClient implementations honor the same interface contract |
 | **I** | Domain-specific ports expose only domain-relevant methods |
-| **D** | Domain depends on ChallengerPort Protocol, not anthropic SDK |
+| **D** | Domain depends on ChallengerPort interface, not anthropic SDK |
 
 _(Source: AI-assisted DDD discovery spike section 9; Claude Agent SDK evaluation)_
 
@@ -1213,11 +1225,11 @@ _(Source: PRD section 5.1; knowledge base spike section 4)_
 | ---------------- | ---------------------------------------------------------------- | --------------------------- | ------------ | -------------------------------------- |
 | Beads (`bd` CLI) | Issue tracking: create/read/update tickets, dependencies, labels | subprocess CLI calls        | None (local) | Ticket Pipeline, Ticket Freshness      |
 | Git              | Branch management for rescue mode; status checks                 | subprocess (`git`)          | None (local) | Rescue, Bootstrap                      |
-| ruff             | Python linting quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
-| mypy             | Type checking quality gate                                       | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
-| pytest           | Test execution quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
-| import-linter    | Architecture fitness function execution                          | subprocess (`lint-imports`) | None (local) | Architecture Testing                   |
-| pytestarch       | Architecture fitness function execution                          | pytest (in-process)         | None (local) | Architecture Testing                   |
+| golangci-lint    | Go linting quality gate                                          | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| go vet           | Static analysis quality gate                                     | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| go test          | Test execution quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
+| depguard         | Architecture fitness function execution (via golangci-lint)      | subprocess                  | None (local) | Architecture Testing                   |
+| arch tests       | Architecture fitness function execution                          | go test (in-process)        | None (local) | Architecture Testing                   |
 | Anthropic API    | LLM for Deep mode (Challenger, Simulator, Research)              | `anthropic` SDK (HTTPS)     | API key (env) | Guided Discovery (Deep mode only)     |
 | Ollama (future)  | Local LLM alternative for Deep mode                             | HTTP REST API               | None (local) | Guided Discovery (Deep mode only)      |
 | Web search       | Domain research via RLM adapter                                  | HTTPS                       | None          | Guided Discovery (Deep mode only)      |
@@ -1245,7 +1257,7 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 
 | Concern                       | Mitigation                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Input validation              | All user input (README content, question answers, persona selection) validated by Pydantic models in the domain layer before processing                                                     |
+| Input validation              | All user input (README content, question answers, persona selection) validated by domain types and value objects before processing                                                           |
 | File safety                   | Never overwrite existing files. Conflict rename: `filename_alty.md`. Preview all writes. Explicit confirm before any action. _(PRD section 6 file safety rules)_                            |
 | Subprocess injection          | All subprocess calls use list-form arguments (not shell=True). Ticket content written to temp files via `--body-file`, never passed as shell arguments. _(ticket pipeline spike section 4)_ |
 | Branch safety                 | `alty init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. _(PRD section 4 scenario 2)_     |
@@ -1258,38 +1270,42 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 
 | Aspect               | Choice                                                     | Rationale                                                                                          |
 | -------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Runtime              | Python 3.12+                                               | Target audience and our own stack _(PRD section 6)_                                                |
-| Package manager      | uv                                                         | Speed, reproducibility, modern standard _(PRD section 6)_                                          |
-| CLI framework        | Typer 0.24.1 (MIT)                                         | Type hints = CLI interface; Rich bundled; CliRunner for testing _(CLI framework spike ADR)_        |
-| MCP framework        | `mcp` SDK 1.26.0 (MIT), pin `>=1.26,<2.0`                  | Official SDK; FastMCP API; stdio transport _(MCP SDK spike ADR)_                                   |
-| Architecture testing | import-linter 2.10 (BSD-2) + pytestarch 4.0.1 (Apache-2.0) | Complementary coverage: TOML config + Python tests _(fitness function spike ADR)_                  |
-| TOML editing         | tomlkit (MIT)                                              | Round-trip preservation of existing pyproject.toml formatting _(fitness function spike section 8)_ |
+| Runtime              | Go 1.26+                                                   | Target audience and our own stack _(PRD section 6)_                                                |
+| Package manager      | Go modules                                                 | Standard Go dependency management                                                                   |
+| CLI framework        | Cobra                                                      | Industry standard; subcommands; integrated help _(CLI framework spike ADR)_                        |
+| MCP framework        | mcp-go                                                     | Go MCP SDK; stdio transport _(MCP SDK spike ADR)_                                                  |
+| Architecture testing | depguard + architecture tests                              | Complementary coverage: lint config + Go tests _(fitness function spike ADR)_                      |
+| YAML editing         | gopkg.in/yaml.v3                                           | Round-trip preservation of formatting                                                              |
 | Issue tracking       | Beads v0.55.4+                                             | Git-native, works offline, embedded Dolt backend                                                   |
-| Distribution         | PyPI package                                               | `uv tool install alty` or `pip install alty`                                                       |
-| Entry points         | `vs` (CLI) + `alty-mcp` (MCP server)                       | Both defined in `pyproject.toml [project.scripts]`                                                 |
+| Distribution         | Go binary                                                  | `go install github.com/alty-cli/alty@latest`                                                       |
+| Entry points         | `alty` (CLI) + `alty-mcp` (MCP server)                     | Both compiled from `cmd/alty` and `cmd/alty-mcp`                                                   |
 
 ### Dependencies
 
-```toml
-# pyproject.toml
-[project]
-dependencies = [
-    "typer>=0.24,<1.0",          # CLI framework (includes click, rich, shellingham)
-    "mcp>=1.26,<2.0",            # MCP server SDK
-    "pydantic>=2.0",             # Domain model validation
-    "tomlkit>=0.12",             # Round-trip TOML editing for pyproject.toml
-    "pyyaml>=6.0",               # YAML IR parsing
-]
+```go
+// go.mod
+module github.com/alty-cli/alty
 
-[project.optional-dependencies]
-dev = [
-    "ruff",
-    "mypy",
-    "pytest",
-    "pytest-cov",
-    "import-linter>=2.10",       # Architecture fitness functions
-    "pytestarch>=4.0",           # Architecture fitness functions
-]
+go 1.26
+
+require (
+    github.com/spf13/cobra v1.8.0           // CLI framework
+    github.com/mark3labs/mcp-go v0.7.0      // MCP server SDK
+    github.com/ThreeDotsLabs/watermill v1.4.4 // Event bus
+    gopkg.in/yaml.v3 v3.0.1                 // YAML parsing
+    github.com/stretchr/testify v1.9.0      // Testing
+)
+```
+
+**Linting via `.golangci.yml`:**
+```yaml
+# See .golangci.yml for full configuration
+linters:
+  enable:
+    - depguard    # Architecture fitness functions
+    - errcheck    # Error handling
+    - govet       # Static analysis
+    - staticcheck # Additional checks
 ```
 
 ## 12. Constraints and Budgets
@@ -1303,7 +1319,7 @@ From `docs/PRD.md` section 6:
 | Tool coverage         | 4 tools                                          | Claude Code, Cursor, Roo Code, OpenCode _(PRD NFR)_            |
 | Cloud dependencies    | Zero                                             | Everything runs locally _(PRD section 6)_                      |
 | Paid API dependencies | Zero                                             | Core functionality requires no paid services _(PRD section 6)_ |
-| Python version        | 3.12+                                            | Target audience stack _(PRD section 6)_                        |
+| Go version            | 1.26+                                            | Target audience stack _(PRD section 6)_                        |
 | File safety           | Never overwrite, preview first, explicit confirm | 9 file safety rules _(PRD section 6)_                          |
 | Test regression       | Zero on `alty init --existing`                   | Hard gate, no exceptions _(PRD section 6)_                     |
 
@@ -1311,32 +1327,31 @@ From `docs/PRD.md` section 6:
 
 | ADR     | Decision                                                                                       | Status   | Source                                                          |
 | ------- | ---------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------- |
-| ADR-001 | CLI framework: Typer 0.24.1 (MIT) over Click and argparse                                      | Accepted | `docs/research/20260222_cli_framework_comparison.md`            |
-| ADR-002 | MCP framework: official `mcp` SDK v1.26.0 (MIT) with FastMCP, pin `>=1.26,<2.0`                | Accepted | `docs/research/20260222_mcp_server_python_sdk.md`               |
-| ADR-003 | Architecture testing: hybrid import-linter TOML + pytestarch Python tests                      | Accepted | `docs/research/20260223_fitness_function_design.md` section 5   |
+| ADR-001 | CLI framework: Cobra (MIT)                                                                     | Accepted | `docs/research/20260222_cli_framework_comparison.md`            |
+| ADR-002 | MCP framework: mcp-go SDK                                                                      | Accepted | `docs/research/20260308_go_mcp_sdk_spike.md`                    |
+| ADR-003 | Architecture testing: hybrid depguard config + Go architecture tests                           | Accepted | `docs/research/20260223_fitness_function_design.md` section 5   |
 | ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human)      | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
 | ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation)              | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4    |
 | ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes)          | Accepted | `docs/research/20260223_ripple_review_design.md` section 1      |
 | ADR-007 | Shared YAML IR at `.alty/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
 | ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs                           | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3  |
-| ADR-009 | TOML editing: tomlkit for round-trip pyproject.toml preservation                               | Accepted | `docs/research/20260223_fitness_function_design.md` section 8   |
-| ADR-010 | 13 application-layer ports (Protocols) shared between CLI and MCP                              | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
-| ADR-011 | Composition root at `src/infrastructure/composition.py`                                        | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
+| ADR-009 | YAML editing: gopkg.in/yaml.v3 for round-trip preservation                                     | Accepted | `docs/research/20260223_fitness_function_design.md` section 8   |
+| ADR-010 | 13 application-layer ports (Go interfaces) shared between CLI and MCP                          | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
+| ADR-011 | Composition root at `internal/composition/adapters.go`                                         | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
 | ADR-012 | MCP server is an infrastructure adapter, not a bounded context                                 | Accepted | `docs/research/20260222_cli_mcp_design.md` section 7            |
-| ADR-013 | LLM via `anthropic` SDK (not Agent SDK) behind infrastructure-internal LLMClient Protocol. Domain-specific ports (ChallengerPort, SimulatorPort) at app layer. Provider-swappable: Anthropic (default), Ollama, Vertex AI. Every Deep mode feature has local rule-based fallback. | Accepted | `docs/research/20260305_ai_assisted_ddd_session_design.md`; Claude Agent SDK evaluation |
+| ADR-013 | LLM via Go SDK behind infrastructure-internal LLMClient interface. Domain-specific ports (ChallengerPort, SimulatorPort) at app layer. Provider-swappable: Anthropic (default), Ollama, Vertex AI. Every Deep mode feature has local rule-based fallback. | Accepted | `docs/research/20260305_ai_assisted_ddd_session_design.md`; Claude Agent SDK evaluation |
 
 ## 14. Open Architecture Decisions
 
 Decisions resolved by spikes but requiring validation during implementation:
 
-- [ ] **pytestarch module resolution** -- `pytestarch` resolves modules relative to the scan
-      path. If `src_path = "src"`, modules may be `src.myproject.domain` not `myproject.domain`.
-      Verify correct path convention during implementation. _(fitness function spike section 9)_
+- [ ] **Architecture test package resolution** -- Architecture tests resolve packages relative
+      to the module path. Verify correct path convention during implementation.
+      _(fitness function spike section 9)_
 
-- [ ] **Import-linter `include_external_packages`** -- Should domain purity contracts
-      default to `include_external_packages = true` to catch framework imports (django,
-      sqlalchemy)? Likely yes, but needs implementation validation. _(fitness function spike
-      section 9)_
+- [ ] **Depguard external package rules** -- Should domain purity rules
+      catch all external imports? Likely yes, but needs implementation validation.
+      _(fitness function spike section 9)_
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
       tests. Regeneration should preserve user-added items. Design a `# alty:generated`

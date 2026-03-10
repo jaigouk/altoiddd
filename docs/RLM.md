@@ -12,7 +12,7 @@
 
 **Prerequisites:**
 
-- Basic Python knowledge
+- Basic Go knowledge
 - Familiarity with LLM APIs (OpenAI, Anthropic)
 - No prior RLM experience required
 
@@ -44,15 +44,15 @@ Consider any question that requires reasoning across multiple knowledge sources:
 
 **Option A: Stuff everything into the prompt**
 
-```python
-response = llm.complete(f"""
+```go
+response, err := llm.Complete(ctx, fmt.Sprintf(`
 Here's all the documentation:
-{doc_1}  # 50KB
-{doc_2}  # 30KB
-{doc_3}  # 20KB
+%s  // 50KB
+%s  // 30KB
+%s  // 20KB
 
-Question: {user_question}
-""")
+Question: %s
+`, doc1, doc2, doc3, userQuestion))
 ```
 
 Problems:
@@ -64,19 +64,20 @@ Problems:
 
 **Option B: Traditional RAG (Retrieval-Augmented Generation)**
 
-```python
-# 1. Chunk the documentation
-chunks = split_into_chunks(all_docs, size=500)
+```go
+// 1. Chunk the documentation
+chunks := splitIntoChunks(allDocs, 500)
 
-# 2. Embed and store
-for chunk in chunks:
-    vector_db.add(embed(chunk))
+// 2. Embed and store
+for _, chunk := range chunks {
+    vectorDB.Add(embed(chunk))
+}
 
-# 3. Retrieve relevant chunks
-relevant = vector_db.search(user_question, top_k=5)
+// 3. Retrieve relevant chunks
+relevant := vectorDB.Search(userQuestion, 5)
 
-# 4. Generate answer from fragments
-response = llm.complete(f"Based on these excerpts: {relevant}\n\nAnswer: ...")
+// 4. Generate answer from fragments
+response, _ := llm.Complete(ctx, fmt.Sprintf("Based on these excerpts: %v\n\nAnswer: ...", relevant))
 ```
 
 This is better, but has fundamental limitations.
@@ -129,29 +130,29 @@ RAG's similarity search might not surface these if the query doesn't match the e
 
 ### 2.1 The Key Insight
 
-> Instead of reading information linearly, we treat it as a **variable in a Python environment**. The LLM acts as a reasoning engine that writes code to explore that variable.
+> Instead of reading information linearly, we treat it as a **variable in a runtime environment**. The LLM acts as a reasoning engine that writes code to explore that variable.
 
 This is the core insight from the RLM paper (Zhang et al., 2025).
 
 **Traditional approach:**
 
-```python
-# Context goes INTO the prompt
-llm.complete(prompt + context)
+```go
+// Context goes INTO the prompt
+llm.Complete(ctx, prompt + context)
 ```
 
 **RLM approach:**
 
-```python
-# Context is a VARIABLE the LLM can explore via code
-context = {"query": user_question, "data": initial_data}
+```go
+// Context is a VARIABLE the LLM can explore via code
+context := map[string]any{"query": userQuestion, "data": initialData}
 
-# LLM writes code to explore it
-rlm.complete("Answer the user's query")
-# -> LLM generates: result = search_database(query)
-# -> LLM generates: details = fetch_details(result['id'])
-# -> LLM generates: related = find_related(details)
-# -> etc.
+// LLM writes code to explore it
+rlm.Complete("Answer the user's query")
+// -> LLM generates: result := searchDatabase(query)
+// -> LLM generates: details := fetchDetails(result["id"])
+// -> LLM generates: related := findRelated(details)
+// -> etc.
 ```
 
 ### 2.2 The Detective Analogy
@@ -243,11 +244,11 @@ The LLM writes code in specially marked blocks:
 I'll start by examining the data.
 
 ```repl
-# Check what we're working with
-print(f"Query: {context['query']}")
-result = search_database(context['query'])
-print(f"Found {len(result)} matches")
-print(result[:3])  # Preview first 3
+// Check what we're working with
+console.log("Query:", context.query);
+let result = searchDatabase(context.query);
+console.log("Found", result.length, "matches");
+console.log(result.slice(0, 3));  // Preview first 3
 ```
 ````
 
@@ -255,14 +256,15 @@ The system:
 
 1. Extracts code between ` ```repl ` and ` ``` `
 2. Executes it in a sandboxed environment
-3. Captures `print()` output
+3. Captures `console.log()` output
 4. Sends output back to the LLM
 
 ### 3.3 The FINAL Answer Pattern
 
 When the LLM has gathered enough information, it signals completion:
 
-```python
+```go
+// LLM outputs this text (not Go code - just structured output)
 FINAL({
     "answer": "Yes, this is possible with configuration X",
     "recommendation": "Use option A with setting B for best results",
@@ -281,16 +283,15 @@ The `FINAL(...)` marker tells the system to stop the loop and parse the answer.
 
 Sometimes the LLM needs focused analysis on a specific piece:
 
-````python
+````markdown
 ```repl
-# This section is complex. Let me analyze it separately.
-detailed_analysis = llm_query(
+// This section is complex. Let me analyze it separately.
+detailed_analysis := llm_query(
     "What are the key constraints in this configuration?",
-    config_text
+    config_text,
 )
-print(detailed_analysis)
-````
-
+fmt.Println(detailed_analysis)
+```
 ````
 
 The `llm_query()` function spawns a sub-RLM call with a focused prompt. This is the "recursive" in Recursive Language Model — the system can call itself to analyze sub-problems.
@@ -304,14 +305,14 @@ The `llm_query()` function spawns a sub-RLM call with a focused prompt. This is 
 
 Beyond raw code execution, RLM environments expose domain-specific tool functions:
 
-```python
-# Example tools in the REPL namespace
-search_database(query)       # Search your data
-fetch_details(id)            # Get detailed information
-check_status()               # Check system/resource state
-fetch_documentation(topic)   # Get relevant docs
-llm_query(prompt, context)   # Recursive sub-call
-````
+```go
+// Example tools in the REPL namespace
+searchDatabase(query)       // Search your data
+fetchDetails(id)            // Get detailed information
+checkStatus()               // Check system/resource state
+fetchDocumentation(topic)   // Get relevant docs
+llmQuery(prompt, context)   // Recursive sub-call
+```
 
 **Key principle:** Only expose **read-only tools**. The RLM provides recommendations but never executes mutations (modifying data, starting processes, etc.).
 
@@ -323,35 +324,35 @@ llm_query(prompt, context)   # Recursive sub-call
 
 The system prompt teaches the LLM how to use the REPL:
 
-````python
-SYSTEM_PROMPT = """
+````go
+const systemPrompt = `
 You are an assistant operating inside a REPL environment.
 
 ## Available Functions
 
-Call these directly in ```repl``` code blocks:
+Call these directly in '''repl''' code blocks:
 
 | Function               | Description                          |
 |------------------------|--------------------------------------|
-| `search(query)`        | Search the knowledge base            |
-| `fetch(id)`            | Get detailed information by ID       |
-| `status()`             | Check current system state           |
-| `docs(topic)`          | Fetch documentation on a topic       |
+| search(query)          | Search the knowledge base            |
+| fetch(id)              | Get detailed information by ID       |
+| status()               | Check current system state           |
+| docs(topic)            | Fetch documentation on a topic       |
 
-You also have `json`, `re`, and `math` available as modules.
+You also have json and math functions available.
 
 ## Rules
 
 1. **Explore first.** Always call at least one function before answering.
 2. **Cite sources.** Reference which function call provided each fact.
-3. **No imports.** Do not use `import`, `exec`, `eval`, or `open`.
+3. **No imports.** Do not use import, exec, eval, or open.
 4. **No mutations.** You only provide recommendations; the user decides.
 5. **Be concise.** Keep code blocks short and focused.
-6. **Use print().** Print intermediate results so you can reason over them.
+6. **Use fmt.Println().** Print intermediate results so you can reason over them.
 
 ## Workflow
 
-1. Examine the `context` variable (your query + any pre-loaded data).
+1. Examine the context variable (your query + any pre-loaded data).
 2. Call tool functions to gather data.
 3. Reason over results step-by-step.
 4. When ready, provide your final answer using:
@@ -361,7 +362,7 @@ FINAL({
   "reasoning_steps": ["step 1", "step 2"],
   "sources": ["source 1", "source 2"]
 })
-"""
+`
 ````
 
 **Key elements:**
@@ -375,34 +376,48 @@ FINAL({
 
 The orchestrator manages the RLM lifecycle:
 
-```python
-class RLMOrchestrator:
-    def consult(self, query: str, max_turns: int = 5) -> Result:
-        # 1. Create sandboxed environment
-        env = SafeREPLEnv(tool_wrappers=self._tools)
+```go
+type RLMOrchestrator struct {
+    tools []ToolWrapper
+    llm   LLMClient
+}
 
-        # 2. Initialize message history
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Answer: {query}"}
-        ]
+func (o *RLMOrchestrator) Consult(ctx context.Context, query string, maxTurns int) (Result, error) {
+    // 1. Create sandboxed environment
+    env := NewSafeREPLEnv(o.tools)
 
-        # 3. Run the REPL loop
-        for turn in range(max_turns):
-            response = llm.complete(messages)
+    // 2. Initialize message history
+    messages := []Message{
+        {Role: "system", Content: systemPrompt},
+        {Role: "user", Content: fmt.Sprintf("Answer: %s", query)},
+    }
 
-            # Check for final answer
-            if "FINAL(" in response:
-                return parse_final_answer(response)
+    // 3. Run the REPL loop
+    for turn := 0; turn < maxTurns; turn++ {
+        response, err := o.llm.Complete(ctx, messages)
+        if err != nil {
+            return Result{}, fmt.Errorf("llm completion: %w", err)
+        }
 
-            # Extract and execute code blocks
-            code_blocks = find_code_blocks(response)
-            for code in code_blocks:
-                output = env.execute_code(code)
-                messages.append({"role": "user", "content": f"Output: {output}"})
+        // Check for final answer
+        if strings.Contains(response, "FINAL(") {
+            return parseFinalAnswer(response)
+        }
 
-        # 4. Force final answer if max turns reached
-        return force_final_answer(messages)
+        // Extract and execute code blocks
+        codeBlocks := findCodeBlocks(response)
+        for _, code := range codeBlocks {
+            output := env.ExecuteCode(code)
+            messages = append(messages, Message{
+                Role:    "user",
+                Content: fmt.Sprintf("Output: %s", output),
+            })
+        }
+    }
+
+    // 4. Force final answer if max turns reached
+    return forceFinalAnswer(messages)
+}
 ```
 
 ### 4.3 The Environment
@@ -411,33 +426,43 @@ The environment provides:
 
 1. **Namespace isolation** — code runs in a restricted scope
 2. **Tool injection** — whitelisted functions are available
-3. **Safe builtins** — only safe Python builtins allowed
+3. **Safe builtins** — only safe functions allowed
 4. **Output capture** — stdout/stderr are captured and returned
 
-```python
-class SafeREPLEnv:
-    WHITELISTED_TOOLS = frozenset({
-        "search",
-        "fetch",
-        "status",
-        "docs",
-    })
+```go
+type SafeREPLEnv struct {
+    namespace map[string]any
+    tools     map[string]ToolFunc
+}
 
-    BLOCKED_TOOLS = frozenset({
-        "delete",      # Mutating!
-        "update",      # Mutating!
-        "execute",     # Mutating!
-    })
+var whitelistedTools = map[string]bool{
+    "search": true,
+    "fetch":  true,
+    "status": true,
+    "docs":   true,
+}
 
-    def execute_code(self, code: str) -> REPLResult:
-        # 1. Validate code via AST analysis
-        validate_code(code)  # Raises SecurityError if unsafe
+var blockedTools = map[string]bool{
+    "delete":  true, // Mutating!
+    "update":  true, // Mutating!
+    "execute": true, // Mutating!
+}
 
-        # 2. Execute in restricted namespace
-        exec(code, self._namespace, self._locals)
+func (e *SafeREPLEnv) ExecuteCode(code string) REPLResult {
+    // 1. Validate code via AST analysis
+    if err := validateCode(code); err != nil {
+        return REPLResult{Stderr: err.Error()}
+    }
 
-        # 3. Capture and return output
-        return REPLResult(stdout=..., stderr=...)
+    // 2. Execute in restricted namespace (using embedded JS runtime like goja)
+    output, err := e.runtime.RunString(code)
+    if err != nil {
+        return REPLResult{Stderr: err.Error()}
+    }
+
+    // 3. Capture and return output
+    return REPLResult{Stdout: output}
+}
 ```
 
 ### 4.4 Message Flow Diagram
@@ -453,8 +478,8 @@ class SafeREPLEnv:
 │                                                                          │
 │  [Assistant] I'll start by understanding the requirements.               │
 │              ```repl                                                     │
-│              info = fetch("requirements")                                │
-│              print(json.dumps(info, indent=2))                           │
+│              let info = fetch("requirements");                           │
+│              console.log(JSON.stringify(info, null, 2));                 │
 │              ```                                                         │
 │                                                                          │
 │  [User] Code executed:                                                   │
@@ -466,9 +491,10 @@ class SafeREPLEnv:
 │                                                                          │
 │  [Assistant] I see the requirements. Let me check available options.     │
 │              ```repl                                                     │
-│              options = search("compatible configurations")               │
-│              for opt in options[:5]:                                     │
-│                  print(f"{opt['name']}: {opt['memory']}MB")              │
+│              let options = search("compatible configurations");          │
+│              options.slice(0, 5).forEach(opt => {                        │
+│                  console.log(opt.name + ": " + opt.memory + "MB");       │
+│              });                                                         │
 │              ```                                                         │
 │                                                                          │
 │  [User] Code executed:                                                   │
@@ -499,7 +525,7 @@ RLM executes LLM-generated code. This is inherently risky:
 - **Arbitrary code execution** — LLM could generate malicious code
 - **Resource exhaustion** — infinite loops, memory bombs
 - **Data exfiltration** — accessing files, network requests
-- **Sandbox escape** — exploiting Python internals
+- **Sandbox escape** — exploiting runtime internals
 
 ### 5.2 Defense in Depth
 
@@ -507,131 +533,180 @@ Use multiple layers of protection:
 
 #### Layer 1: Safe Builtins
 
-Only expose a subset of Python builtins:
+Only expose a subset of safe functions. In Go, this is typically done via an embedded scripting runtime (like goja for JavaScript or Yaegi for Go):
 
-```python
-_SAFE_BUILTINS = {
-    # Allowed
-    "print": print,
-    "len": len,
-    "str": str,
-    "int": int,
-    "float": float,
-    "list": list,
-    "dict": dict,
-    "set": set,
-    "tuple": tuple,
-    "bool": bool,
-    "range": range,
-    "enumerate": enumerate,
-    "zip": zip,
-    "sorted": sorted,
-    "reversed": reversed,
-    "min": min,
-    "max": max,
-    "sum": sum,
-    "abs": abs,
-    "round": round,
-    "any": any,
-    "all": all,
+```go
+// SafeBuiltins defines functions available in the sandbox
+var safeBuiltins = map[string]any{
+    // Allowed - output
+    "print":   sandboxPrint,
+    "println": sandboxPrintln,
 
-    # Explicitly blocked (set to None)
-    "input": None,      # No user input
-    "eval": None,       # No dynamic eval
-    "exec": None,       # No dynamic exec
-    "compile": None,    # No code compilation
-    "open": None,       # No file access
-    "__import__": None, # No imports
-    "globals": None,    # No namespace access
-    "locals": None,     # No namespace access
+    // Allowed - type conversions
+    "parseInt":   parseInt,
+    "parseFloat": parseFloat,
+    "toString":   toString,
+
+    // Allowed - collections
+    "len":    safeLen,
+    "keys":   safeKeys,
+    "values": safeValues,
+
+    // Allowed - math
+    "min":   safeMin,
+    "max":   safeMax,
+    "abs":   safeAbs,
+    "round": safeRound,
+
+    // Allowed - iteration helpers
+    "range":   safeRange,
+    "forEach": safeForEach,
+    "map":     safeMap,
+    "filter":  safeFilter,
+}
+
+// blockedFunctions are explicitly denied
+var blockedFunctions = map[string]bool{
+    "require": true, // No module loading
+    "import":  true, // No dynamic imports
+    "eval":    true, // No dynamic eval
+    "exec":    true, // No command execution
+    "open":    true, // No file access
+    "fetch":   true, // No network access (unless explicitly provided as tool)
 }
 ```
 
 **Subtle security decisions (important lessons):**
 
-```python
-# "format" is REMOVED — enables sandbox escape:
-# "{0.__class__.__bases__[0].__subclasses__()}".format([])
-# This exposes all Python classes!
+```go
+// In Go with embedded JS (goja), block prototype access:
+// obj.__proto__ or Object.getPrototypeOf() can escape sandbox
+// Block these via runtime.SetFieldNameMapper or property interceptors
 
-# "hasattr" is REMOVED — enables attribute probing:
-# hasattr(obj, "__class__")  # Can probe for dangerous attributes
+// For Go interpreters (Yaegi), restrict package imports:
+// Only allow specific packages, never "os", "syscall", "unsafe"
 ```
 
 #### Layer 2: AST Validation
 
-Before execution, analyze the code's Abstract Syntax Tree:
+Before execution, analyze the code's Abstract Syntax Tree. For embedded JS in Go, use a parser like esprima or the goja runtime's built-in capabilities:
 
-```python
-import ast
+```go
+import "github.com/dop251/goja/parser"
 
-def validate_code(code: str) -> None:
-    tree = ast.parse(code)
+func validateCode(code string) error {
+    // Parse the code into an AST
+    program, err := parser.ParseFile(nil, "", code, 0)
+    if err != nil {
+        return fmt.Errorf("parse error: %w", err)
+    }
 
-    for node in ast.walk(tree):
-        # Block imports
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            raise SecurityError("Imports are not allowed")
+    // Walk the AST looking for dangerous patterns
+    for _, stmt := range program.Body {
+        if err := validateStatement(stmt); err != nil {
+            return err
+        }
+    }
+    return nil
+}
 
-        # Block dangerous attribute access
-        if isinstance(node, ast.Attribute):
-            if node.attr.startswith('_'):
-                raise SecurityError(f"Dunder access blocked: {node.attr}")
-
-        # Block exec/eval calls
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name):
-                if node.func.id in ('exec', 'eval', 'compile'):
-                    raise SecurityError(f"Blocked function: {node.func.id}")
+func validateStatement(stmt ast.Statement) error {
+    switch s := stmt.(type) {
+    case *ast.CallExpression:
+        // Block dangerous function calls
+        if ident, ok := s.Callee.(*ast.Identifier); ok {
+            if blockedFunctions[ident.Name] {
+                return fmt.Errorf("blocked function: %s", ident.Name)
+            }
+        }
+    case *ast.MemberExpression:
+        // Block dunder/prototype access
+        if prop, ok := s.Property.(*ast.Identifier); ok {
+            if strings.HasPrefix(prop.Name, "_") || prop.Name == "__proto__" {
+                return fmt.Errorf("private access blocked: %s", prop.Name)
+            }
+        }
+    }
+    return nil
+}
 ```
 
 #### Layer 3: Function Whitelisting
 
 Only specific tool functions are injected into the namespace:
 
-```python
-WHITELISTED_TOOLS = frozenset({
-    "search",       # Read-only
-    "fetch",        # Read-only
-    "status",       # Read-only
-})
+```go
+var whitelistedTools = map[string]bool{
+    "search": true, // Read-only
+    "fetch":  true, // Read-only
+    "status": true, // Read-only
+}
 
-BLOCKED_TOOLS = frozenset({
-    "delete",       # Mutating!
-    "update",       # Mutating!
-    "execute",      # Mutating!
-})
+var blockedTools = map[string]bool{
+    "delete":  true, // Mutating!
+    "update":  true, // Mutating!
+    "execute": true, // Mutating!
+}
+
+func (e *SafeREPLEnv) injectTools(runtime *goja.Runtime) {
+    for name, fn := range e.tools {
+        if whitelistedTools[name] {
+            runtime.Set(name, fn)
+        }
+    }
+    // Blocked tools are simply not injected - calling them returns undefined
+}
 ```
 
-If the LLM tries to call a blocked function, it gets a `NameError` because the function simply doesn't exist in the namespace.
+If the LLM tries to call a blocked function, it gets an "undefined" error because the function simply doesn't exist in the namespace.
 
 #### Layer 4: Execution Timeout
 
-```python
-CODE_TIMEOUT_SECONDS = 5
+```go
+const codeTimeoutSeconds = 5
 
-def execute_code(self, code: str) -> REPLResult:
-    start = time.perf_counter()
+func (e *SafeREPLEnv) ExecuteCode(code string) REPLResult {
+    ctx, cancel := context.WithTimeout(context.Background(), codeTimeoutSeconds*time.Second)
+    defer cancel()
 
-    # ... execute code ...
+    resultCh := make(chan REPLResult, 1)
 
-    elapsed = time.perf_counter() - start
-    if elapsed > self._timeout:
-        stderr += f"\nTimeoutWarning: execution took {elapsed:.1f}s"
+    go func() {
+        // Execute in goroutine
+        output, err := e.runtime.RunString(code)
+        if err != nil {
+            resultCh <- REPLResult{Stderr: err.Error()}
+            return
+        }
+        resultCh <- REPLResult{Stdout: output}
+    }()
+
+    select {
+    case result := <-resultCh:
+        return result
+    case <-ctx.Done():
+        // For goja, use runtime.Interrupt() to stop execution
+        e.runtime.Interrupt("execution timeout")
+        return REPLResult{Stderr: "TimeoutError: execution exceeded 5s limit"}
+    }
+}
 ```
 
-Note: Python threads can't be forcibly killed. The timeout is a "soft" limit that warns but doesn't terminate. For true isolation, consider OS-level sandboxing.
+Note: Go's goroutines can be interrupted via runtime-specific mechanisms (e.g., goja.Runtime.Interrupt()). For true isolation, consider OS-level sandboxing.
 
 #### Layer 5: Output Truncation
 
 Long outputs can overwhelm the context window:
 
-```python
-MAX_OUTPUT_CHARS = 10000
+```go
+const maxOutputChars = 10000
 
-output = stdout_buf.getvalue()
-if len(output) > MAX_OUTPUT_CHARS:
-    output = output[:MAX_OUTPUT_CHARS] + "\n... (truncated)"
+func truncateOutput(output string) string {
+    if len(output) > maxOutputChars {
+        return output[:maxOutputChars] + "\n... (truncated)"
+    }
+    return output
+}
 ```
 
 ### 5.3 Advanced: OS-Level Sandboxing
@@ -644,11 +719,11 @@ For production systems, consider [sandbox-runtime (srt)](https://github.com/anth
 | macOS    | sandbox-exec | Seatbelt profiles        |
 
 ```bash
-# Run Python in sandbox with no network, limited filesystem
-srt --network=deny --write=/tmp python script.py
+# Run process in sandbox with no network, limited filesystem
+srt --network=deny --write=/tmp ./myapp
 ```
 
-This provides true isolation at the OS level, preventing escapes that Python-level sandboxing might miss.
+This provides true isolation at the OS level, preventing escapes that language-level sandboxing might miss.
 
 ---
 
@@ -680,23 +755,32 @@ RLM works best for questions that require:
 
 List the read-only operations your RLM needs:
 
-```python
-# Example tool definitions
-def search(query: str) -> list[dict]:
-    """Search the knowledge base. Returns list of matches."""
-    pass
+```go
+// Example tool definitions
 
-def fetch(id: str) -> dict:
-    """Get detailed information by ID."""
-    pass
+// Search searches the knowledge base. Returns list of matches.
+func (t *Tools) Search(query string) ([]map[string]any, error) {
+    // Implementation here
+    return nil, nil
+}
 
-def status() -> dict:
-    """Check current system/resource state."""
-    pass
+// Fetch gets detailed information by ID.
+func (t *Tools) Fetch(id string) (map[string]any, error) {
+    // Implementation here
+    return nil, nil
+}
 
-def docs(topic: str) -> str:
-    """Fetch documentation on a topic."""
-    pass
+// Status checks current system/resource state.
+func (t *Tools) Status() (map[string]any, error) {
+    // Implementation here
+    return nil, nil
+}
+
+// Docs fetches documentation on a topic.
+func (t *Tools) Docs(topic string) (string, error) {
+    // Implementation here
+    return "", nil
+}
 ```
 
 **Design principles:**
@@ -710,8 +794,11 @@ def docs(topic: str) -> str:
 
 Customize the template for your domain:
 
-```python
-SYSTEM_PROMPT = f"""
+```go
+func buildSystemPrompt(tools []ToolDefinition) string {
+    functionTable := generateFunctionTable(tools)
+
+    return fmt.Sprintf(`
 You are a [DOMAIN] assistant operating inside a REPL environment.
 Your job is to [PRIMARY TASK] by exploring available data and tools.
 
@@ -719,18 +806,18 @@ Your job is to [PRIMARY TASK] by exploring available data and tools.
 
 | Function | Description |
 |----------|-------------|
-{generate_function_table(your_tools)}
+%s
 
-Available modules: `json`, `re`, `math`
+Available utilities: JSON parsing, math functions
 
 ## Rules
 
 1. **Explore first.** Always call at least one function before answering.
 2. **Cite sources.** Reference which function call provided each fact.
-3. **No imports.** Do not use `import`, `exec`, `eval`, or `open`.
+3. **No imports.** Do not use import, exec, eval, or open.
 4. **No mutations.** You only provide recommendations; the user decides.
 5. **Be concise.** Keep code blocks short and focused.
-6. **Use print().** Print intermediate results so you can reason over them.
+6. **Use console.log().** Print intermediate results so you can reason over them.
 
 ## Domain-Specific Guidance
 
@@ -738,17 +825,18 @@ Available modules: `json`, `re`, `math`
 
 ## Workflow
 
-1. Examine the `context` variable (query + pre-loaded data).
+1. Examine the context variable (query + pre-loaded data).
 2. Call tool functions to gather data.
 3. Reason over results step-by-step.
 4. When ready, provide your final answer as:
 
-FINAL({{
+FINAL({
   "answer": "...",
   "reasoning_steps": ["step 1", "step 2"],
   "sources": ["source 1", "source 2"]
-}})
-"""
+})
+`, functionTable)
+}
 ```
 
 ### 6.4 Step 4: Example Exploration Trajectory
@@ -761,9 +849,9 @@ Query: "[Your typical user question]"
 Turn 1: Understand the request
 ─────────────────────────────────
 ```repl
-print(f"Query: {context['query']}")
-initial = search(context['query'])
-print(f"Found {len(initial)} relevant items")
+console.log("Query:", context.query);
+let initial = search(context.query);
+console.log("Found", initial.length, "relevant items");
 ```
 
 Output: Found 5 relevant items
@@ -771,9 +859,10 @@ Output: Found 5 relevant items
 Turn 2: Gather details
 ─────────────────────────
 ```repl
-for item in initial[:3]:
-    details = fetch(item['id'])
-    print(f"{item['name']}: {details['key_property']}")
+initial.slice(0, 3).forEach(item => {
+    let details = fetch(item.id);
+    console.log(item.name + ": " + details.key_property);
+});
 ```
 
 Output:
@@ -784,9 +873,9 @@ Item C: value_c
 Turn 3: Check constraints
 ─────────────────────────
 ```repl
-current = status()
-print(f"Available: {current['available']}")
-print(f"Required: {details['requirement']}")
+let current = status();
+console.log("Available:", current.available);
+console.log("Required:", details.requirement);
 ```
 
 Output:
@@ -821,204 +910,286 @@ FINAL({
 
 The minimal implementation:
 
-````python
-import re
-from typing import Any
+```go
+import (
+    "context"
+    "fmt"
+    "regexp"
+    "strings"
+)
 
-def run_rlm(
-    query: str,
-    tools: dict[str, callable],
-    llm_client,
-    max_turns: int = 5
-) -> dict:
-    """Minimal RLM implementation."""
+// RunRLM executes the RLM loop.
+func RunRLM(
+    ctx context.Context,
+    query string,
+    tools map[string]ToolFunc,
+    llmClient LLMClient,
+    maxTurns int,
+) (map[string]any, error) {
+    // Build REPL environment
+    env := NewSafeREPLEnv(tools)
+    env.Set("context", map[string]any{"query": query})
 
-    # Build REPL namespace
-    namespace = {
-        "context": {"query": query},
-        "print": print,
-        "len": len,
-        "json": __import__("json"),
-        "re": __import__("re"),
-        "math": __import__("math"),
-        **tools,  # Inject tool functions
+    messages := []Message{
+        {Role: "system", Content: systemPrompt},
+        {Role: "user", Content: fmt.Sprintf("Query: %s", query)},
     }
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": f"Query: {query}"}
-    ]
+    codeBlockRe := regexp.MustCompile("(?s)```repl(.*?)```")
 
-    for turn in range(max_turns):
-        # Get LLM response
-        response = llm_client.complete(messages)
+    for turn := 0; turn < maxTurns; turn++ {
+        // Get LLM response
+        response, err := llmClient.Complete(ctx, messages)
+        if err != nil {
+            return nil, fmt.Errorf("llm completion: %w", err)
+        }
 
-        # Check for final answer
-        if "FINAL(" in response:
-            return parse_final_answer(response)
+        // Check for final answer
+        if strings.Contains(response, "FINAL(") {
+            return parseFinalAnswer(response)
+        }
 
-        # Find and execute code blocks
-        code_blocks = re.findall(r"```repl(.*?)```", response, re.DOTALL)
+        // Find and execute code blocks
+        matches := codeBlockRe.FindAllStringSubmatch(response, -1)
 
-        if code_blocks:
-            for code in code_blocks:
-                output = execute_sandboxed(code.strip(), namespace)
-                messages.append({"role": "assistant", "content": response})
-                messages.append({"role": "user", "content": f"Output:\n{output}"})
-        else:
-            # No code - nudge the LLM
-            messages.append({"role": "assistant", "content": response})
-            messages.append({
-                "role": "user",
-                "content": "Use ```repl``` blocks to explore, or provide FINAL(...)"
+        if len(matches) > 0 {
+            for _, match := range matches {
+                code := strings.TrimSpace(match[1])
+                output := env.ExecuteCode(code)
+                messages = append(messages, Message{Role: "assistant", Content: response})
+                messages = append(messages, Message{
+                    Role:    "user",
+                    Content: fmt.Sprintf("Output:\n%s", output),
+                })
+            }
+        } else {
+            // No code - nudge the LLM
+            messages = append(messages, Message{Role: "assistant", Content: response})
+            messages = append(messages, Message{
+                Role:    "user",
+                Content: "Use ```repl``` blocks to explore, or provide FINAL(...)",
             })
+        }
+    }
 
-    # Max turns reached
-    return {"error": "Max turns reached", "partial": messages}
-````
+    // Max turns reached
+    return map[string]any{
+        "error":   "Max turns reached",
+        "partial": messages,
+    }, nil
+}
+```
 
 ### 7.2 Structured Result Parsing
 
 Parse FINAL answers robustly:
 
-```python
-import json
+```go
+import (
+    "encoding/json"
+    "regexp"
+)
 
-def parse_final_answer(response: str) -> dict:
-    """Parse FINAL(...) with fallbacks."""
+// parseFinalAnswer parses FINAL(...) from response with fallbacks.
+func parseFinalAnswer(response string) (map[string]any, error) {
+    // Extract content between FINAL( and )
+    finalRe := regexp.MustCompile(`(?s)FINAL\((.*)\)`)
+    match := finalRe.FindStringSubmatch(response)
+    if match == nil {
+        return map[string]any{"answer": response, "raw": true}, nil
+    }
 
-    # Extract content between FINAL( and )
-    match = re.search(r"FINAL\((.*)\)", response, re.DOTALL)
-    if not match:
-        return {"answer": response, "raw": True}
+    content := strings.TrimSpace(match[1])
 
-    content = match.group(1).strip()
+    // Try JSON parse
+    var result map[string]any
+    if err := json.Unmarshal([]byte(content), &result); err == nil {
+        return result, nil
+    }
 
-    # Try JSON parse
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        pass
+    // Try finding JSON object within the content
+    jsonRe := regexp.MustCompile(`(?s)\{.*\}`)
+    jsonMatch := jsonRe.FindString(content)
+    if jsonMatch != "" {
+        if err := json.Unmarshal([]byte(jsonMatch), &result); err == nil {
+            return result, nil
+        }
+    }
 
-    # Try finding JSON within the content
-    json_match = re.search(r"\{.*\}", content, re.DOTALL)
-    if json_match:
-        try:
-            return json.loads(json_match.group())
-        except json.JSONDecodeError:
-            pass
-
-    # Fallback: treat as plain text
-    return {"answer": content, "raw": True}
+    // Fallback: treat as plain text
+    return map[string]any{"answer": content, "raw": true}, nil
+}
 ```
 
 ### 7.3 Tool Wrapper Pattern
 
 Wrap your functions for safe injection:
 
-```python
-def create_tool_wrappers(backend) -> dict[str, callable]:
-    """Create tool wrappers with consistent interface."""
+```go
+// ToolWrappers creates tool functions with consistent interface.
+type ToolWrappers struct {
+    backend Backend
+}
 
-    def search(query: str, limit: int = 10) -> list[dict]:
-        """Search the knowledge base (read-only)."""
-        results = backend.search(query, limit=limit)
-        # Truncate to prevent context overflow
-        return results[:limit]
-
-    def fetch(id: str) -> dict:
-        """Fetch details by ID (read-only)."""
-        return backend.get_by_id(id)
-
-    def status() -> dict:
-        """Get current status (read-only)."""
-        return backend.get_status()
-
-    # Only return read-only tools!
-    return {
-        "search": search,
-        "fetch": fetch,
-        "status": status,
+// CreateToolWrappers builds the tool function map.
+func (w *ToolWrappers) CreateToolWrappers() map[string]ToolFunc {
+    return map[string]ToolFunc{
+        "search": w.search,
+        "fetch":  w.fetch,
+        "status": w.status,
     }
+}
+
+// search searches the knowledge base (read-only).
+func (w *ToolWrappers) search(args ...any) (any, error) {
+    query, _ := args[0].(string)
+    limit := 10
+    if len(args) > 1 {
+        limit, _ = args[1].(int)
+    }
+
+    results, err := w.backend.Search(query, limit)
+    if err != nil {
+        return nil, err
+    }
+    // Truncate to prevent context overflow
+    if len(results) > limit {
+        results = results[:limit]
+    }
+    return results, nil
+}
+
+// fetch gets details by ID (read-only).
+func (w *ToolWrappers) fetch(args ...any) (any, error) {
+    id, _ := args[0].(string)
+    return w.backend.GetByID(id)
+}
+
+// status gets current status (read-only).
+func (w *ToolWrappers) status(args ...any) (any, error) {
+    return w.backend.GetStatus()
+}
 ```
 
 ### 7.4 Sub-Query Implementation
 
 Implement recursive `llm_query`:
 
-```python
-def create_llm_query(llm_client, depth_limit: int = 2):
-    """Create an llm_query function with depth limiting."""
+```go
+// LLMQueryFactory creates an llm_query function with depth limiting.
+type LLMQueryFactory struct {
+    llmClient    LLMClient
+    depthLimit   int
+    currentDepth int
+    mu           sync.Mutex
+}
 
-    current_depth = 0
+// NewLLMQueryFactory creates a factory with the given depth limit.
+func NewLLMQueryFactory(llmClient LLMClient, depthLimit int) *LLMQueryFactory {
+    return &LLMQueryFactory{
+        llmClient:  llmClient,
+        depthLimit: depthLimit,
+    }
+}
 
-    def llm_query(prompt: str, context: str = "") -> str:
-        nonlocal current_depth
+// LLMQuery performs a sub-query with depth tracking.
+func (f *LLMQueryFactory) LLMQuery(ctx context.Context, prompt, queryContext string) (string, error) {
+    f.mu.Lock()
+    if f.currentDepth >= f.depthLimit {
+        f.mu.Unlock()
+        return "Error: Maximum recursion depth reached", nil
+    }
+    f.currentDepth++
+    f.mu.Unlock()
 
-        if current_depth >= depth_limit:
-            return "Error: Maximum recursion depth reached"
+    defer func() {
+        f.mu.Lock()
+        f.currentDepth--
+        f.mu.Unlock()
+    }()
 
-        current_depth += 1
-        try:
-            full_prompt = f"Sub-task: {prompt}"
-            if context:
-                full_prompt += f"\n\nContext:\n{context[:2000]}"  # Truncate
+    fullPrompt := fmt.Sprintf("Sub-task: %s", prompt)
+    if queryContext != "" {
+        // Truncate context to 2000 chars
+        if len(queryContext) > 2000 {
+            queryContext = queryContext[:2000]
+        }
+        fullPrompt += fmt.Sprintf("\n\nContext:\n%s", queryContext)
+    }
 
-            response = llm_client.complete([
-                {"role": "user", "content": full_prompt}
-            ])
-            return response
-        finally:
-            current_depth -= 1
-
-    return llm_query
+    return f.llmClient.Complete(ctx, []Message{
+        {Role: "user", Content: fullPrompt},
+    })
+}
 ```
 
 ### 7.5 Sandboxed Execution
 
-Execute code safely:
+Execute code safely using an embedded runtime like goja (JavaScript) or similar:
 
-```python
-import io
-import sys
+```go
+import (
+    "context"
+    "strings"
+    "time"
 
-def execute_sandboxed(code: str, namespace: dict, timeout: float = 5.0) -> str:
-    """Execute code with output capture and safety checks."""
+    "github.com/dop251/goja"
+)
 
-    # 1. AST validation
-    validate_code(code)  # Raises if unsafe
+// ExecuteSandboxed executes code with output capture and safety checks.
+func ExecuteSandboxed(code string, namespace map[string]any, timeout time.Duration) string {
+    // 1. AST validation
+    if err := validateCode(code); err != nil {
+        return fmt.Sprintf("SecurityError: %v", err)
+    }
 
-    # 2. Capture stdout/stderr
-    stdout_buf = io.StringIO()
-    stderr_buf = io.StringIO()
-    old_stdout, old_stderr = sys.stdout, sys.stderr
+    // 2. Create isolated runtime
+    runtime := goja.New()
 
-    try:
-        sys.stdout = stdout_buf
-        sys.stderr = stderr_buf
+    // 3. Capture output
+    var outputBuf strings.Builder
+    runtime.Set("console", map[string]any{
+        "log": func(call goja.FunctionCall) goja.Value {
+            for _, arg := range call.Arguments {
+                outputBuf.WriteString(arg.String())
+                outputBuf.WriteString(" ")
+            }
+            outputBuf.WriteString("\n")
+            return goja.Undefined()
+        },
+    })
 
-        # 3. Execute with restricted builtins
-        safe_namespace = {
-            "__builtins__": SAFE_BUILTINS,
-            **namespace
+    // 4. Inject safe namespace
+    for name, value := range namespace {
+        runtime.Set(name, value)
+    }
+
+    // 5. Execute with timeout
+    ctx, cancel := context.WithTimeout(context.Background(), timeout)
+    defer cancel()
+
+    done := make(chan string, 1)
+    go func() {
+        _, err := runtime.RunString(code)
+        if err != nil {
+            done <- fmt.Sprintf("Error: %v", err)
+            return
         }
-        exec(code, safe_namespace, safe_namespace)
+        done <- outputBuf.String()
+    }()
 
-        output = stdout_buf.getvalue()
-        errors = stderr_buf.getvalue()
-
-        # 4. Truncate if too long
-        if len(output) > 10000:
+    select {
+    case output := <-done:
+        // 6. Truncate if too long
+        if len(output) > 10000 {
             output = output[:10000] + "\n... (truncated)"
-
-        return output + errors
-
-    except Exception as e:
-        return f"Error: {type(e).__name__}: {e}"
-
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        }
+        return output
+    case <-ctx.Done():
+        runtime.Interrupt("timeout")
+        return "Error: execution timeout exceeded"
+    }
+}
 ```
 
 ---
@@ -1031,12 +1202,16 @@ def execute_sandboxed(code: str, namespace: dict, timeout: float = 5.0) -> str:
 
 **Solution:**
 
-```python
-# Truncate in execution
-MAX_OUTPUT = 5000
-output = stdout_buf.getvalue()
-if len(output) > MAX_OUTPUT:
-    output = output[:MAX_OUTPUT] + f"\n... (truncated, {len(output)} total chars)"
+```go
+// Truncate in execution
+const maxOutput = 5000
+
+func truncateOutput(output string) string {
+    if len(output) > maxOutput {
+        return fmt.Sprintf("%s\n... (truncated, %d total chars)", output[:maxOutput], len(output))
+    }
+    return output
+}
 ```
 
 Also add guidance in the system prompt:
@@ -1049,7 +1224,7 @@ Also add guidance in the system prompt:
 
 ### 8.2 Infinite Loops
 
-**Problem:** LLM generates `while True:` or similar.
+**Problem:** LLM generates `while(true)` or similar.
 
 **Solution:**
 
@@ -1057,12 +1232,23 @@ Also add guidance in the system prompt:
 - Execution timeout
 - OS-level sandboxing for hard limit
 
-```python
-# AST check for while True
-for node in ast.walk(tree):
-    if isinstance(node, ast.While):
-        if isinstance(node.test, ast.Constant) and node.test.value is True:
-            raise SecurityError("Unbounded while loop detected")
+```go
+// AST check for while(true) - example using goja parser
+func checkForInfiniteLoops(stmt ast.Statement) error {
+    switch s := stmt.(type) {
+    case *ast.WhileStatement:
+        // Check for while(true) pattern
+        if lit, ok := s.Test.(*ast.BooleanLiteral); ok && lit.Value {
+            return fmt.Errorf("unbounded while loop detected")
+        }
+    case *ast.ForStatement:
+        // Check for for(;;) pattern (no test condition)
+        if s.Test == nil {
+            return fmt.Errorf("unbounded for loop detected")
+        }
+    }
+    return nil
+}
 ```
 
 ### 8.3 LLM Doesn't Write Code
@@ -1080,13 +1266,14 @@ for node in ast.walk(tree):
 
 And nudge in the loop:
 
-````python
-if not code_blocks:
-    messages.append({
-        "role": "user",
-        "content": "You must use ```repl``` blocks to explore. Please write code."
+```go
+if len(codeBlocks) == 0 {
+    messages = append(messages, Message{
+        Role:    "user",
+        Content: "You must use ```repl``` blocks to explore. Please write code.",
     })
-````
+}
+```
 
 ### 8.4 Stuck in a Loop
 
@@ -1094,16 +1281,16 @@ if not code_blocks:
 
 **Solution:**
 
-- Hard limit on turns (`max_turns`)
+- Hard limit on turns (`maxTurns`)
 - Force final answer when limit reached:
 
-```python
-if turn == max_turns - 1:
-    messages.append({
-        "role": "user",
-        "content": "IMPORTANT: This is your last turn. "
-                   "Provide your FINAL(...) answer now based on what you've gathered."
+```go
+if turn == maxTurns-1 {
+    messages = append(messages, Message{
+        Role:    "user",
+        Content: "IMPORTANT: This is your last turn. Provide your FINAL(...) answer now based on what you've gathered.",
     })
+}
 ```
 
 ### 8.5 Import Attempts
@@ -1113,28 +1300,62 @@ if turn == max_turns - 1:
 **Solution:**
 
 - AST validation blocks all imports
-- `__import__` set to `None` in builtins
+- Import functions not exposed in namespace
 - Clear system prompt guidance
 
-```python
-if isinstance(node, (ast.Import, ast.ImportFrom)):
-    raise SecurityError(f"Imports blocked: {ast.dump(node)}")
+```go
+// For embedded JS (goja), imports are blocked by not exposing require()
+// For Go interpreters, validate AST for import statements:
+func checkForImports(stmt ast.Statement) error {
+    switch s := stmt.(type) {
+    case *ast.ImportDeclaration:
+        return fmt.Errorf("imports blocked: %s", s.Source.Value)
+    case *ast.CallExpression:
+        if ident, ok := s.Callee.(*ast.Identifier); ok {
+            if ident.Name == "require" || ident.Name == "import" {
+                return fmt.Errorf("dynamic imports blocked: %s", ident.Name)
+            }
+        }
+    }
+    return nil
+}
 ```
 
 ### 8.6 Sandbox Escape Attempts
 
-**Problem:** LLM tries `"".__class__.__bases__[0].__subclasses__()` to access dangerous classes.
+**Problem:** LLM tries `obj.__proto__` or `Object.getPrototypeOf()` to access dangerous internals.
 
 **Solution:**
 
-- Block dunder attribute access in AST
-- Remove `format` from builtins (template injection)
-- Remove `hasattr` from builtins (attribute probing)
+- Block prototype/dunder attribute access in AST
+- Restrict property access in the runtime
+- Use field name mappers to hide internal properties
 
-```python
-if isinstance(node, ast.Attribute):
-    if node.attr.startswith('_'):
-        raise SecurityError(f"Private/dunder access blocked: {node.attr}")
+```go
+// Block private/prototype access in AST validation
+func checkForEscapeAttempts(expr ast.Expression) error {
+    switch e := expr.(type) {
+    case *ast.MemberExpression:
+        if prop, ok := e.Property.(*ast.Identifier); ok {
+            name := prop.Name
+            if strings.HasPrefix(name, "_") || name == "__proto__" || name == "constructor" {
+                return fmt.Errorf("private/prototype access blocked: %s", name)
+            }
+        }
+    case *ast.CallExpression:
+        // Block Object.getPrototypeOf, Object.setPrototypeOf, etc.
+        if member, ok := e.Callee.(*ast.MemberExpression); ok {
+            if obj, ok := member.Object.(*ast.Identifier); ok && obj.Name == "Object" {
+                if prop, ok := member.Property.(*ast.Identifier); ok {
+                    if strings.Contains(prop.Name, "Prototype") {
+                        return fmt.Errorf("prototype manipulation blocked: %s", prop.Name)
+                    }
+                }
+            }
+        }
+    }
+    return nil
+}
 ```
 
 ---
@@ -1194,17 +1415,17 @@ Your task is to answer questions by exploring available tools and data.
 | Function                  | Description                       |
 | ------------------------- | --------------------------------- |
 | `context`                 | The query and any pre-loaded data |
-| `tool_a(param)`           | Description of tool A             |
-| `tool_b(param)`           | Description of tool B             |
-| `llm_query(prompt, data)` | Ask a focused sub-question        |
+| `toolA(param)`            | Description of tool A             |
+| `toolB(param)`            | Description of tool B             |
+| `llmQuery(prompt, data)`  | Ask a focused sub-question        |
 
-Available modules: `json`, `re`, `math`
+Available utilities: `JSON.stringify()`, `JSON.parse()`, math operations
 
 ## Rules
 
 1. **Explore first.** Always write code before answering.
-2. **Use print().** Results must be printed to be visible.
-3. **No imports.** Do not use `import`, `exec`, `eval`, or `open`.
+2. **Use console.log().** Results must be logged to be visible.
+3. **No require/import.** Do not use `require`, `import`, `eval`, or `Function`.
 4. **Be concise.** Keep code blocks short and focused.
 5. **Cite sources.** Reference which tool calls provided your data.
 
@@ -1212,13 +1433,13 @@ Available modules: `json`, `re`, `math`
 
 1. Examine `context` to understand the query.
 2. Call tool functions to gather data.
-3. Use `llm_query()` for detailed sub-analysis if needed.
+3. Use `llmQuery()` for detailed sub-analysis if needed.
 4. When ready, output your answer as:
 
 FINAL({
 "answer": "...",
 "reasoning": ["step 1", "step 2"],
-"sources": ["tool_a()", "tool_b()"]
+"sources": ["toolA()", "toolB()"]
 })
 
 Begin exploring now.
@@ -1228,350 +1449,378 @@ Begin exploring now.
 
 ## Appendix C: Complete Minimal Implementation
 
-A complete, copy-paste ready implementation:
+A complete, copy-paste ready implementation using Go with goja (embedded JavaScript runtime):
 
-````python
-"""
-Minimal RLM Implementation
-Copy this file to start your own RLM project.
-"""
+````go
+// Package rlm provides a minimal RLM (Recursive Language Model) implementation.
+// Copy this file to start your own RLM project.
+package rlm
 
-import ast
-import io
-import json
-import re
-import sys
-import time
-from typing import Any, Callable
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
 
-# =============================================================================
-# SAFE BUILTINS
-# =============================================================================
+	"github.com/dop251/goja"
+)
 
-SAFE_BUILTINS: dict[str, Any] = {
-    # Core types
-    "print": print,
-    "len": len,
-    "str": str,
-    "int": int,
-    "float": float,
-    "bool": bool,
-    "list": list,
-    "dict": dict,
-    "set": set,
-    "tuple": tuple,
-    "type": type,
+// =============================================================================
+// TYPES
+// =============================================================================
 
-    # Iteration
-    "range": range,
-    "enumerate": enumerate,
-    "zip": zip,
-    "map": map,
-    "filter": filter,
-    "iter": iter,
-    "next": next,
-
-    # Sorting/ordering
-    "sorted": sorted,
-    "reversed": reversed,
-    "min": min,
-    "max": max,
-
-    # Math
-    "sum": sum,
-    "abs": abs,
-    "round": round,
-
-    # Logic
-    "any": any,
-    "all": all,
-    "isinstance": isinstance,
-    "callable": callable,
-
-    # String
-    "repr": repr,
-
-    # Exceptions (for error handling in generated code)
-    "Exception": Exception,
-    "ValueError": ValueError,
-    "TypeError": TypeError,
-    "KeyError": KeyError,
-    "IndexError": IndexError,
-
-    # BLOCKED - explicitly set to None
-    "input": None,
-    "eval": None,
-    "exec": None,
-    "compile": None,
-    "open": None,
-    "__import__": None,
-    "globals": None,
-    "locals": None,
-    # NOTE: "format" and "hasattr" intentionally omitted (security risk)
+// Message represents a chat message.
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
+// Result represents the parsed FINAL answer.
+type Result struct {
+	Answer    string   `json:"answer,omitempty"`
+	Reasoning []string `json:"reasoning,omitempty"`
+	Sources   []string `json:"sources,omitempty"`
+	TurnsUsed int      `json:"turns_used,omitempty"`
+	Error     string   `json:"error,omitempty"`
+	Raw       bool     `json:"raw,omitempty"`
+}
 
-# =============================================================================
-# AST VALIDATION
-# =============================================================================
+// ToolFunc is a function that can be called from the sandbox.
+type ToolFunc func(args ...any) (any, error)
 
-class SecurityError(Exception):
-    """Raised when code fails security validation."""
-    pass
+// LLMClient defines the interface for LLM completion.
+type LLMClient interface {
+	Complete(ctx context.Context, messages []Message) (string, error)
+}
 
+// =============================================================================
+// SECURITY VALIDATION
+// =============================================================================
 
-def validate_code(code: str) -> None:
-    """Validate code via AST analysis. Raises SecurityError if unsafe."""
-    try:
-        tree = ast.parse(code)
-    except SyntaxError as e:
-        raise SecurityError(f"Syntax error: {e}")
+// SecurityError indicates code failed security validation.
+type SecurityError struct {
+	Message string
+}
 
-    for node in ast.walk(tree):
-        # Block imports
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            raise SecurityError("Imports are not allowed")
+func (e *SecurityError) Error() string {
+	return fmt.Sprintf("security error: %s", e.Message)
+}
 
-        # Block dunder attribute access
-        if isinstance(node, ast.Attribute):
-            if node.attr.startswith('_'):
-                raise SecurityError(f"Private/dunder access blocked: {node.attr}")
+// blockedPatterns contains patterns that indicate dangerous code.
+var blockedPatterns = []string{
+	"__proto__",
+	"constructor",
+	"prototype",
+	"require(",
+	"import(",
+	"eval(",
+	"Function(",
+}
 
-        # Block dangerous function calls
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name):
-                if node.func.id in ('exec', 'eval', 'compile', 'open', '__import__'):
-                    raise SecurityError(f"Blocked function: {node.func.id}")
+// validateCode checks code for security issues.
+func validateCode(code string) error {
+	for _, pattern := range blockedPatterns {
+		if strings.Contains(code, pattern) {
+			return &SecurityError{Message: fmt.Sprintf("blocked pattern: %s", pattern)}
+		}
+	}
+	return nil
+}
 
+// =============================================================================
+// SANDBOXED EXECUTION
+// =============================================================================
 
-# =============================================================================
-# SANDBOXED EXECUTION
-# =============================================================================
+// SafeREPLEnv provides a sandboxed execution environment.
+type SafeREPLEnv struct {
+	runtime   *goja.Runtime
+	namespace map[string]any
+	outputBuf strings.Builder
+	mu        sync.Mutex
+}
 
-def execute_sandboxed(
-    code: str,
-    namespace: dict[str, Any],
-    max_output: int = 10000,
-    timeout: float = 5.0,
-) -> str:
-    """Execute code in sandbox with output capture."""
+// NewSafeREPLEnv creates a new sandboxed environment.
+func NewSafeREPLEnv(tools map[string]ToolFunc) *SafeREPLEnv {
+	env := &SafeREPLEnv{
+		runtime:   goja.New(),
+		namespace: make(map[string]any),
+	}
 
-    # 1. Validate
-    validate_code(code)
+	// Inject console.log for output capture
+	env.runtime.Set("console", map[string]any{
+		"log": func(call goja.FunctionCall) goja.Value {
+			env.mu.Lock()
+			defer env.mu.Unlock()
+			for i, arg := range call.Arguments {
+				if i > 0 {
+					env.outputBuf.WriteString(" ")
+				}
+				env.outputBuf.WriteString(arg.String())
+			}
+			env.outputBuf.WriteString("\n")
+			return goja.Undefined()
+		},
+	})
 
-    # 2. Setup output capture
-    stdout_buf = io.StringIO()
-    stderr_buf = io.StringIO()
-    old_stdout, old_stderr = sys.stdout, sys.stderr
+	// Inject JSON utilities
+	env.runtime.Set("JSON", map[string]any{
+		"stringify": func(v any) string {
+			b, _ := json.MarshalIndent(v, "", "  ")
+			return string(b)
+		},
+		"parse": func(s string) any {
+			var v any
+			json.Unmarshal([]byte(s), &v)
+			return v
+		},
+	})
 
-    start = time.perf_counter()
+	// Inject tools
+	for name, fn := range tools {
+		env.runtime.Set(name, fn)
+	}
 
-    try:
-        sys.stdout = stdout_buf
-        sys.stderr = stderr_buf
+	return env
+}
 
-        # 3. Execute with safe builtins
-        safe_ns = {"__builtins__": SAFE_BUILTINS, **namespace}
-        exec(code, safe_ns, safe_ns)
+// Set adds a value to the namespace.
+func (e *SafeREPLEnv) Set(name string, value any) {
+	e.namespace[name] = value
+	e.runtime.Set(name, value)
+}
 
-        # 4. Update namespace with new variables
-        for key, value in safe_ns.items():
-            if key not in namespace and not key.startswith('_'):
-                namespace[key] = value
+// ExecuteCode runs code in the sandbox with timeout.
+func (e *SafeREPLEnv) ExecuteCode(code string, timeout time.Duration) string {
+	// 1. Validate
+	if err := validateCode(code); err != nil {
+		return fmt.Sprintf("SecurityError: %v", err)
+	}
 
-        output = stdout_buf.getvalue()
-        errors = stderr_buf.getvalue()
+	// 2. Clear output buffer
+	e.mu.Lock()
+	e.outputBuf.Reset()
+	e.mu.Unlock()
 
-    except Exception as e:
-        output = stdout_buf.getvalue()
-        errors = f"{type(e).__name__}: {e}"
+	// 3. Execute with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+	done := make(chan error, 1)
+	go func() {
+		_, err := e.runtime.RunString(code)
+		done <- err
+	}()
 
-    # 5. Truncate if needed
-    result = output + errors
-    if len(result) > max_output:
-        result = result[:max_output] + f"\n... (truncated, {len(result)} total)"
+	select {
+	case err := <-done:
+		e.mu.Lock()
+		output := e.outputBuf.String()
+		e.mu.Unlock()
 
-    # 6. Timeout warning
-    elapsed = time.perf_counter() - start
-    if elapsed > timeout:
-        result += f"\nTimeoutWarning: took {elapsed:.1f}s"
+		if err != nil {
+			return fmt.Sprintf("%sError: %v", output, err)
+		}
 
-    return result
+		// Truncate if too long
+		const maxOutput = 10000
+		if len(output) > maxOutput {
+			output = output[:maxOutput] + "\n... (truncated)"
+		}
+		return output
 
+	case <-ctx.Done():
+		e.runtime.Interrupt("timeout")
+		return "Error: execution timeout exceeded"
+	}
+}
 
-# =============================================================================
-# RESULT PARSING
-# =============================================================================
+// =============================================================================
+// RESULT PARSING
+// =============================================================================
 
-def parse_final_answer(response: str) -> dict[str, Any]:
-    """Parse FINAL(...) from response with fallbacks."""
+var (
+	finalRe = regexp.MustCompile(`(?s)FINAL\((.*)\)`)
+	jsonRe  = regexp.MustCompile(`(?s)\{.*\}`)
+)
 
-    match = re.search(r"FINAL\((.*)\)", response, re.DOTALL)
-    if not match:
-        return {"answer": response, "raw": True}
+// parseFinalAnswer extracts and parses FINAL(...) from response.
+func parseFinalAnswer(response string) Result {
+	match := finalRe.FindStringSubmatch(response)
+	if match == nil {
+		return Result{Answer: response, Raw: true}
+	}
 
-    content = match.group(1).strip()
+	content := strings.TrimSpace(match[1])
 
-    # Try direct JSON parse
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        pass
+	// Try JSON parse
+	var result Result
+	if err := json.Unmarshal([]byte(content), &result); err == nil {
+		return result
+	}
 
-    # Try extracting JSON object from content
-    json_match = re.search(r"\{.*\}", content, re.DOTALL)
-    if json_match:
-        try:
-            return json.loads(json_match.group())
-        except json.JSONDecodeError:
-            pass
+	// Try extracting JSON object
+	jsonMatch := jsonRe.FindString(content)
+	if jsonMatch != "" {
+		if err := json.Unmarshal([]byte(jsonMatch), &result); err == nil {
+			return result
+		}
+	}
 
-    return {"answer": content, "raw": True}
+	return Result{Answer: content, Raw: true}
+}
 
+// =============================================================================
+// MAIN RLM LOOP
+// =============================================================================
 
-# =============================================================================
-# MAIN RLM LOOP
-# =============================================================================
+var codeBlockRe = regexp.MustCompile("(?s)```repl(.*?)```")
 
-def run_rlm(
-    query: str,
-    tools: dict[str, Callable],
-    llm_complete: Callable[[list[dict]], str],
-    system_prompt: str,
-    max_turns: int = 5,
-) -> dict[str, Any]:
-    """
-    Run the RLM loop.
+// RunRLM executes the RLM loop.
+//
+// Parameters:
+//   - ctx: Context for cancellation
+//   - query: User's question
+//   - tools: Map of tool_name -> callable (read-only functions)
+//   - llmClient: LLM client for completions
+//   - systemPrompt: System prompt teaching the LLM how to use the REPL
+//   - maxTurns: Maximum iterations before forcing final answer
+//
+// Returns the parsed FINAL answer or error result.
+func RunRLM(
+	ctx context.Context,
+	query string,
+	tools map[string]ToolFunc,
+	llmClient LLMClient,
+	systemPrompt string,
+	maxTurns int,
+) Result {
+	// Build environment
+	env := NewSafeREPLEnv(tools)
+	env.Set("context", map[string]any{"query": query})
 
-    Args:
-        query: User's question
-        tools: Dict of tool_name -> callable (read-only functions)
-        llm_complete: Function that takes messages list, returns response string
-        system_prompt: System prompt teaching the LLM how to use the REPL
-        max_turns: Maximum iterations before forcing final answer
+	messages := []Message{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: fmt.Sprintf("Query: %s", query)},
+	}
 
-    Returns:
-        Parsed FINAL answer as dict, or error dict
-    """
+	const execTimeout = 5 * time.Second
 
-    # Build namespace
-    namespace: dict[str, Any] = {
-        "context": {"query": query},
-        "json": json,
-        "re": re,
-        **tools,
-    }
+	for turn := 0; turn < maxTurns; turn++ {
+		// Get LLM response
+		response, err := llmClient.Complete(ctx, messages)
+		if err != nil {
+			return Result{Error: fmt.Sprintf("LLM error: %v", err)}
+		}
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Query: {query}"},
-    ]
+		// Check for final answer
+		if strings.Contains(response, "FINAL(") {
+			result := parseFinalAnswer(response)
+			result.TurnsUsed = turn + 1
+			return result
+		}
 
-    for turn in range(max_turns):
-        # Get LLM response
-        response = llm_complete(messages)
+		// Extract code blocks
+		matches := codeBlockRe.FindAllStringSubmatch(response, -1)
 
-        # Check for final answer
-        if "FINAL(" in response:
-            result = parse_final_answer(response)
-            result["turns_used"] = turn + 1
-            return result
+		messages = append(messages, Message{Role: "assistant", Content: response})
 
-        # Extract code blocks
-        code_blocks = re.findall(r"```repl(.*?)```", response, re.DOTALL)
+		if len(matches) > 0 {
+			for _, match := range matches {
+				code := strings.TrimSpace(match[1])
+				output := env.ExecuteCode(code, execTimeout)
+				messages = append(messages, Message{
+					Role:    "user",
+					Content: fmt.Sprintf("Code executed:\n```javascript\n%s\n```\n\nOutput:\n%s", code, output),
+				})
+			}
+		} else {
+			// Nudge to write code
+			messages = append(messages, Message{
+				Role:    "user",
+				Content: "Use ```repl``` code blocks to explore, or provide FINAL(...)",
+			})
+		}
 
-        messages.append({"role": "assistant", "content": response})
+		// Force final on last turn
+		if turn == maxTurns-1 {
+			messages = append(messages, Message{
+				Role:    "user",
+				Content: "IMPORTANT: This is your last turn. Provide FINAL(...) now.",
+			})
+		}
+	}
 
-        if code_blocks:
-            for code in code_blocks:
-                output = execute_sandboxed(code.strip(), namespace)
-                messages.append({
-                    "role": "user",
-                    "content": f"Code executed:\n```python\n{code.strip()}\n```\n\nOutput:\n{output}"
-                })
-        else:
-            # Nudge to write code
-            messages.append({
-                "role": "user",
-                "content": "Use ```repl``` code blocks to explore, or provide FINAL(...)"
-            })
+	// Exhausted turns - try one more time for final
+	response, err := llmClient.Complete(ctx, messages)
+	if err != nil {
+		return Result{Error: fmt.Sprintf("LLM error: %v", err), TurnsUsed: maxTurns + 1}
+	}
 
-        # Force final on last turn
-        if turn == max_turns - 1:
-            messages.append({
-                "role": "user",
-                "content": "IMPORTANT: This is your last turn. Provide FINAL(...) now."
-            })
+	if strings.Contains(response, "FINAL(") {
+		result := parseFinalAnswer(response)
+		result.TurnsUsed = maxTurns + 1
+		return result
+	}
 
-    # Exhausted turns - try one more time for final
-    response = llm_complete(messages)
-    if "FINAL(" in response:
-        result = parse_final_answer(response)
-        result["turns_used"] = max_turns + 1
-        return result
+	return Result{
+		Error:     "Max turns reached without FINAL answer",
+		TurnsUsed: maxTurns + 1,
+	}
+}
 
-    return {
-        "error": "Max turns reached without FINAL answer",
-        "turns_used": max_turns + 1,
-        "last_response": response,
-    }
+// =============================================================================
+// EXAMPLE USAGE
+// =============================================================================
 
+// Example tools - replace with your actual implementations
+func exampleSearch(args ...any) (any, error) {
+	query, _ := args[0].(string)
+	_ = query // Use query in real implementation
+	return []map[string]any{
+		{"id": "1", "title": "Example", "score": 0.95},
+	}, nil
+}
 
-# =============================================================================
-# EXAMPLE USAGE
-# =============================================================================
+func exampleFetch(args ...any) (any, error) {
+	id, _ := args[0].(string)
+	return map[string]any{
+		"id":       id,
+		"content":  "Example content",
+		"metadata": map[string]any{},
+	}, nil
+}
 
-if __name__ == "__main__":
-    # Example: Define your tools
-    def search(query: str, limit: int = 10) -> list[dict]:
-        """Search your knowledge base."""
-        # Replace with your actual search implementation
-        return [{"id": "1", "title": "Example", "score": 0.95}]
+func exampleStatus(args ...any) (any, error) {
+	return map[string]any{
+		"available": true,
+		"resources": map[string]any{"memory": 1000},
+	}, nil
+}
 
-    def fetch(id: str) -> dict:
-        """Fetch details by ID."""
-        # Replace with your actual fetch implementation
-        return {"id": id, "content": "Example content", "metadata": {}}
-
-    def status() -> dict:
-        """Get current system status."""
-        # Replace with your actual status check
-        return {"available": True, "resources": {"memory": 1000}}
-
-    tools = {
-        "search": search,
-        "fetch": fetch,
-        "status": status,
-    }
-
-    # Example: Define your system prompt
-    SYSTEM_PROMPT = """
+const exampleSystemPrompt = `
 You are an assistant operating inside a REPL environment.
 
 ## Available Functions
 
 | Function | Description |
 |----------|-------------|
-| `search(query, limit=10)` | Search the knowledge base |
-| `fetch(id)` | Get details by ID |
-| `status()` | Check system status |
-
-Available modules: `json`, `re`
+| search(query, limit) | Search the knowledge base |
+| fetch(id) | Get details by ID |
+| status() | Check system status |
 
 ## Rules
 
 1. **Explore first.** Call functions before answering.
-2. **Use print().** Results must be printed to be visible.
-3. **No imports.** Don't use import, exec, eval, open.
+2. **Use console.log().** Results must be printed to be visible.
+3. **No require/import.** Don't use require, import, eval.
 4. **Cite sources.** Reference which function calls provided data.
 
 ## Workflow
 
-1. Examine `context['query']`
+1. Examine context.query
 2. Call tool functions
 3. Output FINAL({...}) when ready
 
@@ -1580,38 +1829,33 @@ FINAL({
     "reasoning": ["step 1", "step 2"],
     "sources": ["search(...)", "fetch(...)"]
 })
-"""
+`
 
-    # Example: Mock LLM for testing
-    def mock_llm_complete(messages: list[dict]) -> str:
-        # Replace with actual LLM API call
-        # e.g., openai.chat.completions.create(...)
-        return """
-I'll search for relevant information.
+// Example demonstrates how to use RunRLM.
+func Example() {
+	tools := map[string]ToolFunc{
+		"search": exampleSearch,
+		"fetch":  exampleFetch,
+		"status": exampleStatus,
+	}
 
-```repl
-results = search(context['query'])
-print(f"Found {len(results)} results")
-for r in results:
-    print(f"- {r['title']} (score: {r['score']})")
+	// Replace with actual LLM client
+	var llmClient LLMClient // = NewOpenAIClient(apiKey)
+
+	result := RunRLM(
+		context.Background(),
+		"What information do you have?",
+		tools,
+		llmClient,
+		exampleSystemPrompt,
+		5, // maxTurns
+	)
+
+	output, _ := json.MarshalIndent(result, "", "  ")
+	fmt.Println(string(output))
+}
 ````
-
-"""
-
-    # Run it
-    result = run_rlm(
-        query="What information do you have?",
-        tools=tools,
-        llm_complete=mock_llm_complete,
-        system_prompt=SYSTEM_PROMPT,
-        max_turns=5,
-    )
-
-    print(json.dumps(result, indent=2))
-
-```
 
 ---
 
 *This guide provides everything needed to implement RLM in any project.*
-```

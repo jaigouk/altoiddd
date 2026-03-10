@@ -1,17 +1,15 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-dist/
-build/
-*.egg
+# Go binaries
+/alty
+/alty-mcp
+*.exe
+*.test
+/dist/
+bin/alty
+bin/alty-mcp
 
-# Virtual environments
-.venv/
-venv/
-env/
+# Go build artifacts
+coverage.out
+vendor/
 
 # IDE
 .idea/
@@ -24,20 +22,6 @@ env/
 .DS_Store
 Thumbs.db
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-
-# mypy
-.mypy_cache/
-
-# ruff
-.ruff_cache/
-
-# uv
-uv.lock
-
 # Notes (private, not tracked)
 .notes/
 
@@ -45,12 +29,8 @@ uv.lock
 .claude/projects/*/memory/
 .claude/agent-memory/
 
-*.jsonl.bak 
-
-# Go binaries
-/alty
-/alty-mcp
-/bin/
+# Backup files
+*.jsonl.bak
 
 # Environment
 .env

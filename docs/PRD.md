@@ -18,7 +18,7 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 
 | Persona | Description | Primary Need |
 |---------|-------------|-------------|
-| Solo Developer | Individual building a Python project with AI assistance | Turn an idea into a well-structured project without manual scaffolding |
+| Solo Developer | Individual building a project with AI assistance | Turn an idea into a well-structured project without manual scaffolding |
 | Team Lead | Person setting up conventions for a small team | Consistent project structure, enforced quality gates, shared agent profiles |
 | AI Tool Switcher | Developer using multiple AI coding tools | Same project structure and conventions regardless of tool |
 | Product Owner | Non-coder who defines what to build but not how | Turn product vision into structured requirements and tickets that developers can execute, without needing to understand DDD or architecture |
@@ -125,8 +125,8 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **Artifact generation** — Generate PRD, DDD.md, ARCHITECTURE.md from guided answers
 - [ ] **Agent personas** — Developer, researcher, tech-lead, PM, QA, security agents with DDD awareness
 - [ ] **Beads integration** — Epic/spike/ticket templates enforcing DDD+TDD+SOLID. Every ticket created — whether manually or via `alty generate tickets` — MUST use the appropriate beads template (ticket template for tasks/features, spike template for research). Generated CLAUDE.md must enforce template compliance as step 1 of the grooming checklist. After-close protocol must require follow-up tickets to include template-formatted descriptions (never empty).
-- [ ] **Quality gates** — ruff + mypy + pytest enforced before ticket closure
-- [ ] **Architecture fitness function generation** — Generate executable architecture tests (import-linter contracts, pytestarch rules) from bounded context map. Enforce layer boundaries, dependency direction, aggregate isolation. Tests run as part of quality gates.
+- [ ] **Quality gates** — go vet + golangci-lint + go test -race enforced before ticket closure
+- [ ] **Architecture fitness function generation** — Generate executable architecture tests (depguard rules, architecture tests) from bounded context map. Enforce layer boundaries, dependency direction, aggregate isolation. Tests run as part of quality gates.
 - [ ] **Domain story to ticket pipeline** — Auto-generate dependency-ordered beads epics from DDD artifacts. Tickets include TDD phases, SOLID mapping, acceptance criteria from domain invariants. Preview before creation (human-in-the-loop). Dependencies MUST be formally set via `bd dep add` (not just described in text) so that `bd blocked`/`bd ready`/ripple review can traverse the graph.
 - [ ] **Complexity budget** — Classify subdomains as Core/Supporting/Generic during DDD discovery. Core gets full DDD treatment, Supporting gets simple services, Generic gets CRUD/library recommendations. Budget enforced in tickets and fitness functions.
 - [ ] **Multi-tool support** — Generate domain-aware configs for Claude Code, Cursor, Roo Code, OpenCode from a single domain model. Configs contain ubiquitous language, bounded context rules, and agent personas tuned to the project.
@@ -264,8 +264,8 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 
 | Constraint | Value | Rationale |
 |-----------|-------|-----------|
-| Language | Python 3.12+ | Target audience and our own stack |
-| Package manager | uv | Speed, reproducibility, modern standard |
+| Language | Go 1.26+ | Target audience and our own stack |
+| Package manager | Go modules | Standard Go dependency management |
 | CLI name | `vs` (alty) | Short, memorable, unix-style |
 | Issue tracking | Beads | Git-native, works offline, no external service |
 | Interfaces | CLI (`vs`) + MCP server | CLI for humans, MCP for AI tools |
@@ -301,8 +301,8 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 
 ## 7. Out of Scope
 
-- Language support beyond Python (future consideration)
-- Package manager support beyond uv (future consideration)
+- Language support beyond Go (future consideration)
+- Package manager support beyond Go modules (future consideration)
 - Automated code generation from DDD artifacts (we generate structure, not business logic)
 - IDE plugin development (we generate config files, not plugins)
 - Hosting or deployment automation
@@ -327,7 +327,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 | DDD questions too abstract for beginners | Medium | High | Provide concrete examples per question |
 | Guided flow feels too rigid | Medium | Medium | Allow skipping with explicit acknowledgment |
 | MCP server adds complexity | Low | Medium | Spike first, implement only if justified |
-| import-linter API too limited for generation | Medium | Medium | Spike k7m.10; fallback to pytestarch .py generation |
+| depguard config too limited for generation | Medium | Medium | Spike k7m.10; fallback to architecture test generation |
 | Kiro (AWS) adds DDD support | Low | High | Ship first, establish community, local-first advantage |
 | Ticket context decay (AI implements stale specs) | High | High | Ripple review flags dependents on close; freshness check before claiming |
 
@@ -338,7 +338,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 - [ ] **Spike: Knowledge base structure** — How to organize `.alty/knowledge/` with RLM addressability and version tracking?
 - [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Roo Code, OpenCode? How similar/different?
 - [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts? Includes complexity budget classification (Core/Supporting/Generic).
-- [ ] **Spike: Fitness function generation** — How to map bounded context map to import-linter TOML / pytestarch tests? (k7m.10)
+- [ ] **Spike: Fitness function generation** — How to map bounded context map to depguard rules / architecture tests? (k7m.10)
 - [ ] **Spike: Ticket pipeline** — How to auto-generate ordered beads tickets from DDD artifacts? (k7m.11)
 
 ## 10. Timeline

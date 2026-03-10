@@ -37,7 +37,7 @@ status: draft
 13. alty CLI generates DDD artifacts (domain stories, bounded contexts, ubiquitous language)
 14. alty CLI classifies subdomains using complexity budget (Core/Supporting/Generic)
 15. alty CLI generates architecture doc informed by DDD and classification
-16. alty CLI generates fitness function tests (import-linter + pytestarch) from bounded context map
+16. alty CLI generates fitness function tests (depguard + archtest) from bounded context map
 17. alty CLI generates dependency-ordered beads tickets from DDD artifacts
 18. alty CLI previews generated tickets for approval
 19. User approves generated tickets
@@ -115,16 +115,16 @@ status: draft
    - Core: layers + forbidden + independence + acyclic_siblings
    - Supporting: layers + basic forbidden
    - Generic: single forbidden (ACL boundary only)
-4. alty CLI generates import-linter TOML contracts in pyproject.toml
-5. alty CLI generates pytestarch test files per bounded context
+4. alty CLI generates depguard rules in .golangci.yml
+5. alty CLI generates architecture test files per bounded context
 6. alty CLI previews generated tests for approval
 7. Developer approves generated tests
-8. Tests run as part of quality gates (ruff + mypy + pytest + fitness functions)
+8. Tests run as part of quality gates (go vet + golangci-lint + go test -race + fitness functions)
 ```
 
 **Key observations:**
 - Classification drives strictness — not all contexts get the same treatment
-- Two complementary tools: import-linter (config-based) + pytestarch (code-based)
+- Two complementary tools: depguard (config-based) + architecture tests (code-based)
 - Preview before creation — consistent with all generation flows
 
 ### Story 5: Domain Story to Ticket Pipeline
@@ -203,7 +203,7 @@ status: draft
 | Supporting Subdomain | A subdomain that is necessary but not differentiating — gets simpler architecture | Classification |
 | Generic Subdomain | A subdomain that is commodity — buy or use existing library | Classification |
 | Fitness Function | An automated architecture test that enforces structural rules (layer boundaries, dependency direction) | Architecture Testing |
-| Contract | An import-linter rule that enforces a specific architectural constraint | Architecture Testing |
+| Contract | A depguard rule that enforces a specific architectural constraint | Architecture Testing |
 | Gap Analysis | A scan of an existing project compared against a fully-seeded project to identify what's missing | Rescue |
 | Rescue Mode | The `alty init --existing` flow that applies structure to an existing project | Rescue |
 | Ripple Review | The event-driven process of flagging dependent tickets when a ticket closes | Ticket Freshness |
@@ -217,7 +217,7 @@ status: draft
 | Knowledge Base | RLM-addressable documentation for DDD patterns, tool conventions, and coding standards | Knowledge |
 | Tool Convention | The configuration format and rules for a specific AI coding tool (Claude Code, Cursor, etc.) | Knowledge |
 | Drift Detection | Detecting when tool conventions change between versions or when docs diverge from actual code | Knowledge |
-| TechStack | A frozen value object recording the user's language and package manager (e.g., Python + uv) | Guided Discovery |
+| TechStack | A frozen value object recording the user's language and package manager (e.g., Go + go modules) | Guided Discovery |
 | StackProfile | A strategy Protocol providing stack-specific behavior (file globs, quality gate commands, source layout) | Domain Model |
 | resolve_profile | A domain service factory that maps a TechStack to the corresponding StackProfile | Domain Model |
 | Implementability Validation | Automated check that a generated ticket contains enough detail to actually write code from — catches "magic happens here" patterns | Ticket Freshness |
@@ -226,7 +226,7 @@ status: draft
 | DesignTraceResult | Structured validation result for one ticket, containing all findings and is_valid/critical_count properties | Ticket Freshness |
 | Unspecified Dependency | A ticket action like "adapter performs web search" that names no concrete port or library — always CRITICAL | Ticket Freshness |
 | ImplementabilityValidator | Stateless domain service that checks tickets for section completeness, unspecified dependencies, empty invariants, and empty AC | Ticket Freshness |
-| CodebasePortScanner | Infrastructure adapter that scans port Protocol files via Python AST to extract method signatures | Ticket Freshness |
+| CodebasePortScanner | Infrastructure adapter that scans port interface files via Go AST to extract method signatures | Ticket Freshness |
 | PortDefinition | Infrastructure VO representing a Protocol class name and its method signatures, produced by CodebasePortScanner | Ticket Freshness |
 
 **Ambiguous terms** (same word, different meaning in different contexts):
@@ -251,7 +251,7 @@ Applied to alty's own subdomains:
 - → **CORE**
 
 **Architecture Testing (Fitness Functions):**
-- Could you buy it? → NO (Python has no DDD-to-fitness-function pipeline; Java has ArchUnit but nothing equivalent)
+- Could you buy it? → NO (Go has no DDD-to-fitness-function pipeline; Java has ArchUnit but nothing equivalent)
 - Complex rules? → YES (classification-driven contract selection, bounded context map → test generation pipeline)
 - If a competitor copied it exactly, would that threaten the business? → YES
 - → **CORE**
@@ -281,25 +281,25 @@ Applied to alty's own subdomains:
 - → **SUPPORTING**
 
 **Rescue Mode (Gap Analysis):**
-- Could you buy it? → NO (no tool scans Python projects for DDD structure gaps)
+- Could you buy it? → NO (no tool scans Go projects for DDD structure gaps)
 - Complex rules? → MODERATE (file scanning, comparison against reference structure, report generation)
 - If a competitor copied it exactly, would that threaten the business? → PARTIALLY
 - → **SUPPORTING** (P1 — deferred to later phase; basic overlay is scaffolding, smart migration is the hard part)
 
 **File Generation & Template Rendering:**
-- Could you buy it? → YES (Jinja2, cookiecutter — commodity)
+- Could you buy it? → YES (text/template — commodity)
 - Complex rules? → NO (copy files, fill placeholders)
 - If a competitor copied it exactly, would that threaten the business? → NO
 - → **GENERIC**
 
 **CLI Framework:**
-- Could you buy it? → YES (click, typer — commodity)
+- Could you buy it? → YES (Cobra — commodity)
 - Complex rules? → NO (argument parsing, subcommands)
 - If a competitor copied it exactly, would that threaten the business? → NO
 - → **GENERIC**
 
 **MCP Server Framework:**
-- Could you buy it? → YES (fastmcp, mcp-python — commodity)
+- Could you buy it? → YES (mcp-go — commodity)
 - Complex rules? → NO (tool registration, request routing)
 - If a competitor copied it exactly, would that threaten the business? → NO
 - → **GENERIC**
@@ -309,15 +309,15 @@ Applied to alty's own subdomains:
 | Subdomain | Type | Rationale | Architecture Approach |
 |-----------|------|-----------|----------------------|
 | Guided Discovery | **Core** | The conversational DDD question framework with dual register + persona detection is the primary differentiator | Hexagonal (Ports & Adapters) |
-| Architecture Testing | **Core** | No Python equivalent exists; DDD-to-fitness-function pipeline is novel | Hexagonal (Ports & Adapters) |
+| Architecture Testing | **Core** | No Go equivalent exists; DDD-to-fitness-function pipeline is novel | Hexagonal (Ports & Adapters) |
 | Ticket Pipeline | **Core** | DDD-informed, dependency-ordered ticket generation with complexity-budget-driven detail is novel | Hexagonal (Ports & Adapters) |
 | Ticket Freshness | **Core** | Event-driven staleness detection is the competitive differentiator no one else has | Hexagonal (Ports & Adapters) |
 | Tool Translation | **Supporting** | Adapter pattern per tool; custom but not the differentiator | Simple layered |
 | Knowledge Base | **Supporting** | RLM-addressable docs with version tracking; custom but curated content | Simple layered |
 | Rescue Mode | **Supporting** | Gap analysis + migration plan; useful but not the core value proposition (P1) | Simple layered |
-| File Generation | **Generic** | Jinja2/cookiecutter — commodity | ACL wrapping external lib |
-| CLI Framework | **Generic** | click/typer — commodity | ACL wrapping external lib |
-| MCP Server Framework | **Generic** | fastmcp — commodity | ACL wrapping external lib |
+| File Generation | **Generic** | text/template — commodity | ACL wrapping stdlib |
+| CLI Framework | **Generic** | Cobra — commodity | ACL wrapping external lib |
+| MCP Server Framework | **Generic** | mcp-go — commodity | ACL wrapping external lib |
 
 ### Complexity Budget (Treatment Levels)
 
@@ -334,7 +334,7 @@ subdomains:
 
   - name: "Architecture Testing"
     classification: core
-    rationale: "No Python DDD-to-fitness-function pipeline exists; novel capability"
+    rationale: "No Go DDD-to-fitness-function pipeline exists; novel capability"
     treatment:
       architecture: hexagonal
       testing: comprehensive
@@ -388,7 +388,7 @@ subdomains:
 
   - name: "File Generation"
     classification: generic
-    rationale: "Jinja2/cookiecutter — commodity template rendering"
+    rationale: "text/template — commodity template rendering"
     treatment:
       architecture: acl_wrapper
       testing: boundary  # >= 60%
@@ -397,7 +397,7 @@ subdomains:
 
   - name: "CLI Framework"
     classification: generic
-    rationale: "click/typer — commodity argument parsing"
+    rationale: "Cobra — commodity argument parsing"
     treatment:
       architecture: acl_wrapper
       testing: boundary
@@ -406,7 +406,7 @@ subdomains:
 
   - name: "MCP Server Framework"
     classification: generic
-    rationale: "fastmcp — commodity tool registration"
+    rationale: "mcp-go — commodity tool registration"
     treatment:
       architecture: acl_wrapper
       testing: boundary
@@ -450,12 +450,12 @@ subdomains:
 
 ### Context: Architecture Testing
 
-**Responsibility:** Owns the generation of executable fitness function tests from the bounded context map and subdomain classification. Maps DDD concepts to import-linter contracts and pytestarch rules.
+**Responsibility:** Owns the generation of executable fitness function tests from the bounded context map and subdomain classification. Maps DDD concepts to depguard rules and architecture test cases.
 
 **Key domain objects:**
 - `FitnessTestSuite` (Aggregate) — the complete set of generated architecture tests for a project
-- `Contract` (Entity) — an import-linter contract (layers, forbidden, independence, acyclic_siblings)
-- `ArchRule` (Entity) — a pytestarch rule (layer purity, dependency direction)
+- `Contract` (Entity) — a depguard rule (layers, forbidden, independence, acyclic_siblings)
+- `ArchRule` (Entity) — an architecture test rule (layer purity, dependency direction)
 - `ContractStrictness` (Value Object) — strict/moderate/minimal based on subdomain classification
 - `FitnessTestsGenerated` (Domain Event) — emitted when tests are ready for preview
 
@@ -637,8 +637,8 @@ subdomains:
 **Aggregate Root:** FitnessTestSuite
 
 **Contains:**
-- `Contract` (Entity) — import-linter contracts
-- `ArchRule` (Entity) — pytestarch rules
+- `Contract` (Entity) — depguard rules
+- `ArchRule` (Entity) — architecture test rules
 - `ContractStrictness` (Value Object) — per bounded context
 
 **Invariants:**
