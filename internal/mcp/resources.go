@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/alty-cli/alty/internal/composition"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 )
 
 // --- URI parsing helpers ---
@@ -321,4 +323,70 @@ func RegisterResources(server *mcp.Server, app *composition.App) {
 		MIMEType:    "text/plain",
 		URITemplate: "alty://personas/{type}",
 	}, personaHandler(app))
+}
+
+// --- Session Status resource handler ---
+
+func sessionStatusHandler(coord *shareddomain.WorkflowCoordinator) mcp.ResourceHandler {
+	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+		// alty://session/{session_id}/status
+		u, err := url.Parse(req.Params.URI)
+		if err != nil {
+			return resourceError(req.Params.URI, err.Error())
+		}
+		path := u.Path
+		if len(path) > 0 && path[0] == '/' {
+			path = path[1:]
+		}
+		// path = "{session_id}/status"
+		sessionID := strings.TrimSuffix(path, "/status")
+		if sessionID == "" || sessionID == path {
+			return resourceError(req.Params.URI, "session_id is required")
+		}
+
+		// Build status response
+		actions := coord.AvailableActions(sessionID)
+		actionNames := make([]string, 0, len(actions))
+		for _, a := range actions {
+			actionNames = append(actionNames, a.Name())
+		}
+
+		// Build steps status map
+		steps := make(map[string]string)
+		for _, step := range shareddomain.AllWorkflowSteps() {
+			status := coord.StepStatus(sessionID, step)
+			steps[step.String()] = status.String()
+		}
+
+		response := struct {
+			SessionID        string            `json:"session_id"`
+			Steps            map[string]string `json:"steps"`
+			AvailableActions []string          `json:"available_actions"`
+		}{
+			SessionID:        sessionID,
+			Steps:            steps,
+			AvailableActions: actionNames,
+		}
+
+		jsonBytes, err := json.MarshalIndent(response, "", "  ")
+		if err != nil {
+			return resourceError(req.Params.URI, fmt.Sprintf("marshal response: %v", err))
+		}
+
+		return resourceText(req.Params.URI, "application/json", string(jsonBytes))
+	}
+}
+
+// RegisterResourcesWithCoordinator registers all MCP resources including session_status.
+func RegisterResourcesWithCoordinator(server *mcp.Server, app *composition.App, coord *shareddomain.WorkflowCoordinator) {
+	// Register all standard resources
+	RegisterResources(server, app)
+
+	// Add session status resource
+	server.AddResourceTemplate(&mcp.ResourceTemplate{
+		Name:        "Session Status",
+		Description: "Workflow session status showing step states and available actions",
+		MIMEType:    "application/json",
+		URITemplate: "alty://session/{session_id}/status",
+	}, sessionStatusHandler(coord))
 }

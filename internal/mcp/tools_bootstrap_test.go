@@ -12,6 +12,7 @@ import (
 	"github.com/alty-cli/alty/internal/composition"
 	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
 	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -396,4 +397,122 @@ func TestRegisterBootstrapTools_RegistersAll12(t *testing.T) {
 	} {
 		assert.True(t, names[expected], "missing tool: %s", expected)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// WorkflowCoordinator Integration Tests (TDD RED phase)
+// ---------------------------------------------------------------------------
+
+// setupBootstrapServerWithCoordinator creates a test server with WorkflowCoordinator.
+func setupBootstrapServerWithCoordinator(t *testing.T, app *composition.App, coord *shareddomain.WorkflowCoordinator) *mcp.ClientSession {
+	t.Helper()
+	ctx := context.Background()
+	server := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "0.0.1"}, nil)
+	RegisterBootstrapToolsWithCoordinator(server, app, coord)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "0.0.1"}, nil)
+	ct, st := mcp.NewInMemoryTransports()
+
+	go func() { _ = server.Run(ctx, st) }()
+
+	session, err := client.Connect(ctx, ct, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = session.Close() })
+
+	return session
+}
+
+func TestGenerateArtifactsTool_FailsWhenDiscoveryNotComplete(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	// Do NOT mark StepArtifactGeneration as ready — precondition not met
+	app := &composition.App{}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	result, err := callBootstrapTool(t, session, "generate_artifacts", map[string]any{
+		"session_id":  "test-session",
+		"project_dir": t.TempDir(),
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "precondition not met")
+}
+
+func TestGenerateArtifactsTool_ReportsLifecycle(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	sessionID := "lifecycle-test"
+
+	// Mark artifact generation as ready
+	coord.MarkReady(sessionID, shareddomain.StepArtifactGeneration)
+
+	// Verify step is ready before call
+	require.True(t, coord.CanExecute(sessionID, shareddomain.StepArtifactGeneration))
+
+	// Create minimal app with stubs that won't fail
+	// (we're testing lifecycle, not the actual generation)
+	app := &composition.App{
+		// Handlers will be nil — tool will error after lifecycle begins
+		// This verifies BeginStep was called
+	}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	_, _ = callBootstrapTool(t, session, "generate_artifacts", map[string]any{
+		"session_id":  sessionID,
+		"project_dir": t.TempDir(),
+	})
+
+	// After BeginStep, the step should be InProgress (if tool errors mid-execution)
+	// or Completed (if tool succeeds). Either way, it should NOT be Ready anymore.
+	status := coord.StepStatus(sessionID, shareddomain.StepArtifactGeneration)
+	assert.NotEqual(t, shareddomain.StepReady, status,
+		"step should have transitioned from Ready after BeginStep")
+}
+
+func TestGenerateFitnessTool_FailsWhenPreconditionNotMet(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	// StepFitness is NOT ready
+	app := &composition.App{}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	result, err := callBootstrapTool(t, session, "generate_fitness", map[string]any{
+		"session_id":  "test-session",
+		"project_dir": t.TempDir(),
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "precondition not met")
+}
+
+func TestGenerateTicketsTool_FailsWhenPreconditionNotMet(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	// StepTickets is NOT ready
+	app := &composition.App{}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	result, err := callBootstrapTool(t, session, "generate_tickets", map[string]any{
+		"session_id": "test-session",
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "precondition not met")
+}
+
+func TestGenerateConfigsTool_FailsWhenPreconditionNotMet(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	// StepConfigs is NOT ready
+	app := &composition.App{}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	result, err := callBootstrapTool(t, session, "generate_configs", map[string]any{
+		"session_id": "test-session",
+		"tools":      []any{"claude-code"},
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "precondition not met")
 }

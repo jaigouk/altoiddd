@@ -16,6 +16,7 @@ import (
 	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
 	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
 	mcptools "github.com/alty-cli/alty/internal/mcp"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
@@ -477,4 +478,50 @@ func TestPersonasResource_CaseInsensitive(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Contains(t, result.Contents[0].Text, "Name: "+personas[0].Name())
+}
+
+// ---------------------------------------------------------------------------
+// Session Status Resource Tests (TDD RED phase)
+// ---------------------------------------------------------------------------
+
+func TestSessionStatusResource_ReturnsAvailableActions(t *testing.T) {
+	t.Parallel()
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	sessionID := "status-test-session"
+
+	// Mark some steps as ready
+	coord.MarkReady(sessionID, shareddomain.StepFitness, shareddomain.StepTickets)
+
+	app := testAppMinimal()
+	session := setupResourceServerWithCoordinator(t, app, coord)
+
+	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
+		URI: fmt.Sprintf("alty://session/%s/status", sessionID),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Contents, 1)
+
+	// Should contain the session_id and available_actions
+	text := result.Contents[0].Text
+	assert.Contains(t, text, sessionID)
+	assert.Contains(t, text, "fitness")
+	assert.Contains(t, text, "tickets")
+}
+
+func setupResourceServerWithCoordinator(t *testing.T, app *composition.App, coord *shareddomain.WorkflowCoordinator) *mcp.ClientSession {
+	t.Helper()
+	ctx := context.Background()
+
+	server := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "0.0.1"}, nil)
+	mcptools.RegisterResourcesWithCoordinator(server, app, coord)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "1.0"}, nil)
+	ct, st := mcp.NewInMemoryTransports()
+	go func() { _ = server.Run(ctx, st) }()
+
+	session, err := client.Connect(ctx, ct, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { session.Close() })
+	return session
 }

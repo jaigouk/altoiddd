@@ -31,8 +31,7 @@ import (
 )
 
 const (
-	version              = "0.1.0"
-	defaultModelStoreTTL = 30 * time.Minute
+	version = "0.1.0"
 )
 
 func main() {
@@ -93,12 +92,11 @@ func newServer(app *composition.App) *mcp.Server {
 	)
 
 	registerTools(server)
-	mcptools.RegisterResources(server, app)
 	mcptools.RegisterDiscoveryTools(server, app)
 
-	// Bootstrap + generation tools with shared model store.
-	modelStore := mcptools.NewModelStore(defaultModelStoreTTL)
-	mcptools.RegisterBootstrapTools(server, app, modelStore)
+	// Bootstrap + generation tools with WorkflowCoordinator for lifecycle tracking.
+	mcptools.RegisterBootstrapToolsWithCoordinator(server, app, app.WorkflowCoordinator)
+	mcptools.RegisterResourcesWithCoordinator(server, app, app.WorkflowCoordinator)
 
 	return server
 }

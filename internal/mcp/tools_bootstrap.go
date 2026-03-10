@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/alty-cli/alty/internal/composition"
+	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -494,6 +495,213 @@ func spikeFollowUpAuditHandler(app *composition.App) func(context.Context, *mcp.
 	}
 }
 
+// --- Coordinator-aware handlers ---
+
+func generateArtifactsHandlerWithCoordinator(app *composition.App, coord *shareddomain.WorkflowCoordinator) func(context.Context, *mcp.CallToolRequest, GenerateArtifactsInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, input GenerateArtifactsInput) (*mcp.CallToolResult, any, error) {
+		if r, m, e := requireSessionID(input.SessionID); r != nil {
+			return r, m, e
+		}
+		projectDir, r, m, e := sanitizeProjectDir(input.ProjectDir)
+		if r != nil {
+			return r, m, e
+		}
+
+		// Check precondition
+		if !coord.CanExecute(input.SessionID, shareddomain.StepArtifactGeneration) {
+			return toolError("precondition not met: discovery must complete first")
+		}
+
+		// Begin step
+		if err := coord.BeginStep(input.SessionID, shareddomain.StepArtifactGeneration); err != nil {
+			return toolError(fmt.Sprintf("begin step: %s", err))
+		}
+
+		if app.DiscoveryHandler == nil || app.ArtifactGenerationHandler == nil {
+			return toolError("discovery or artifact generation handler not available")
+		}
+
+		// Get the completed session's event.
+		session, err := app.DiscoveryHandler.GetSession(input.SessionID)
+		if err != nil {
+			return toolError(fmt.Sprintf("get session: %s", err))
+		}
+
+		events := session.Events()
+		if len(events) == 0 {
+			return toolError("session has no completed events — run guide_complete first")
+		}
+
+		event := events[0]
+		preview, err := app.ArtifactGenerationHandler.BuildPreview(ctx, event)
+		if err != nil {
+			return toolError(fmt.Sprintf("generate artifacts: %s", err))
+		}
+
+		// Write artifacts to project directory.
+		docsDir := filepath.Join(projectDir, "docs")
+		if err := app.ArtifactGenerationHandler.WriteArtifacts(ctx, preview, docsDir); err != nil {
+			return toolError(fmt.Sprintf("write artifacts: %s", err))
+		}
+
+		// Store session context in coordinator
+		profile := detectStackProfile(app, projectDir)
+		sessionCtx := &shareddomain.SessionContext{
+			SessionID:    input.SessionID,
+			DomainModel:  preview.Model,
+			StackProfile: profile,
+			ProjectDir:   projectDir,
+		}
+		if err := coord.SetSessionContext(input.SessionID, sessionCtx); err != nil {
+			return toolError(fmt.Sprintf("set session context: %s", err))
+		}
+
+		// Complete step
+		if err := coord.CompleteStep(input.SessionID, shareddomain.StepArtifactGeneration); err != nil {
+			return toolError(fmt.Sprintf("complete step: %s", err))
+		}
+
+		return textResult(fmt.Sprintf("Artifacts generated.\nsession_id: %s\nproject_dir: %s\n"+
+			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md\n"+
+			"Session context stored for generate_fitness, generate_tickets, generate_configs.",
+			input.SessionID, projectDir))
+	}
+}
+
+func generateFitnessHandlerWithCoordinator(app *composition.App, coord *shareddomain.WorkflowCoordinator) func(context.Context, *mcp.CallToolRequest, GenerateFitnessInput) (*mcp.CallToolResult, any, error) {
+	return func(_ context.Context, _ *mcp.CallToolRequest, input GenerateFitnessInput) (*mcp.CallToolResult, any, error) {
+		if r, m, e := requireSessionID(input.SessionID); r != nil {
+			return r, m, e
+		}
+		projectDir, r, m, e := sanitizeProjectDir(input.ProjectDir)
+		if r != nil {
+			return r, m, e
+		}
+
+		// Check precondition
+		if !coord.CanExecute(input.SessionID, shareddomain.StepFitness) {
+			return toolError("precondition not met: artifact generation must complete first")
+		}
+
+		// Begin step
+		if err := coord.BeginStep(input.SessionID, shareddomain.StepFitness); err != nil {
+			return toolError(fmt.Sprintf("begin step: %s", err))
+		}
+
+		// Get session context
+		sessionCtx, err := coord.SessionContext(input.SessionID)
+		if err != nil {
+			return toolError(fmt.Sprintf("session context: %s", err))
+		}
+
+		if app.FitnessGenerationHandler == nil {
+			return toolError("fitness generation handler not available")
+		}
+
+		projectName := filepath.Base(projectDir)
+		preview, err := app.FitnessGenerationHandler.BuildPreview(sessionCtx.DomainModel, projectName, sessionCtx.StackProfile)
+		if err != nil {
+			return toolError(fmt.Sprintf("generate fitness: %s", err))
+		}
+
+		// Complete step
+		if err := coord.CompleteStep(input.SessionID, shareddomain.StepFitness); err != nil {
+			return toolError(fmt.Sprintf("complete step: %s", err))
+		}
+
+		if preview == nil {
+			return textResult("No fitness tests generated — stack profile does not support fitness tests.")
+		}
+
+		return textResult(fmt.Sprintf("Fitness tests generated.\n%s", preview.Summary))
+	}
+}
+
+func generateTicketsHandlerWithCoordinator(app *composition.App, coord *shareddomain.WorkflowCoordinator) func(context.Context, *mcp.CallToolRequest, GenerateTicketsInput) (*mcp.CallToolResult, any, error) {
+	return func(_ context.Context, _ *mcp.CallToolRequest, input GenerateTicketsInput) (*mcp.CallToolResult, any, error) {
+		if r, m, e := requireSessionID(input.SessionID); r != nil {
+			return r, m, e
+		}
+
+		// Check precondition
+		if !coord.CanExecute(input.SessionID, shareddomain.StepTickets) {
+			return toolError("precondition not met: artifact generation must complete first")
+		}
+
+		// Begin step
+		if err := coord.BeginStep(input.SessionID, shareddomain.StepTickets); err != nil {
+			return toolError(fmt.Sprintf("begin step: %s", err))
+		}
+
+		// Get session context
+		sessionCtx, err := coord.SessionContext(input.SessionID)
+		if err != nil {
+			return toolError(fmt.Sprintf("session context: %s", err))
+		}
+
+		if app.TicketGenerationHandler == nil {
+			return toolError("ticket generation handler not available")
+		}
+
+		preview, err := app.TicketGenerationHandler.BuildPreview(sessionCtx.DomainModel, sessionCtx.StackProfile)
+		if err != nil {
+			return toolError(fmt.Sprintf("generate tickets: %s", err))
+		}
+
+		// Complete step
+		if err := coord.CompleteStep(input.SessionID, shareddomain.StepTickets); err != nil {
+			return toolError(fmt.Sprintf("complete step: %s", err))
+		}
+
+		return textResult(fmt.Sprintf("Tickets generated.\n%s", preview.Summary))
+	}
+}
+
+func generateConfigsHandlerWithCoordinator(app *composition.App, coord *shareddomain.WorkflowCoordinator) func(context.Context, *mcp.CallToolRequest, GenerateConfigsInput) (*mcp.CallToolResult, any, error) {
+	return func(_ context.Context, _ *mcp.CallToolRequest, input GenerateConfigsInput) (*mcp.CallToolResult, any, error) {
+		if r, m, e := requireSessionID(input.SessionID); r != nil {
+			return r, m, e
+		}
+
+		// Check precondition
+		if !coord.CanExecute(input.SessionID, shareddomain.StepConfigs) {
+			return toolError("precondition not met: artifact generation must complete first")
+		}
+
+		// Begin step
+		if err := coord.BeginStep(input.SessionID, shareddomain.StepConfigs); err != nil {
+			return toolError(fmt.Sprintf("begin step: %s", err))
+		}
+
+		// Get session context
+		sessionCtx, err := coord.SessionContext(input.SessionID)
+		if err != nil {
+			return toolError(fmt.Sprintf("session context: %s", err))
+		}
+
+		tools, err := ParseSupportedTools(input.Tools)
+		if err != nil {
+			return toolError(err.Error())
+		}
+
+		if app.ConfigGenerationHandler == nil {
+			return toolError("config generation handler not available")
+		}
+
+		preview, err := app.ConfigGenerationHandler.BuildPreview(sessionCtx.DomainModel, tools, sessionCtx.StackProfile)
+		if err != nil {
+			return toolError(fmt.Sprintf("generate configs: %s", err))
+		}
+
+		// Complete step
+		if err := coord.CompleteStep(input.SessionID, shareddomain.StepConfigs); err != nil {
+			return toolError(fmt.Sprintf("complete step: %s", err))
+		}
+
+		return textResult(fmt.Sprintf("Configs generated.\n%s", preview.Summary))
+	}
+}
+
 // detectStackProfile uses DetectionHandler to determine the project's stack profile.
 func detectStackProfile(app *composition.App, projectDir string) vo.StackProfile {
 	if app.DetectionHandler == nil {
@@ -517,7 +725,73 @@ func detectStackProfile(app *composition.App, projectDir string) vo.StackProfile
 
 // --- Registration ---
 
+// RegisterBootstrapToolsWithCoordinator registers all 12 bootstrap and generation MCP tools
+// using WorkflowCoordinator for precondition checking and lifecycle tracking.
+func RegisterBootstrapToolsWithCoordinator(server *mcp.Server, app *composition.App, coord *shareddomain.WorkflowCoordinator) {
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "init_project",
+		Description: "Bootstrap a new project with DDD structure",
+	}, initProjectHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "rescue_project",
+		Description: "Rescue an existing project — analyse gaps and create migration plan",
+	}, rescueProjectHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "generate_artifacts",
+		Description: "Generate DDD artifacts (PRD, DDD.md, Architecture) from a completed discovery session",
+	}, generateArtifactsHandlerWithCoordinator(app, coord))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "generate_fitness",
+		Description: "Generate architecture fitness tests from domain model (requires generate_artifacts first)",
+	}, generateFitnessHandlerWithCoordinator(app, coord))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "generate_tickets",
+		Description: "Generate implementation tickets from domain model (requires generate_artifacts first)",
+	}, generateTicketsHandlerWithCoordinator(app, coord))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "generate_configs",
+		Description: "Generate tool-native configs for AI coding tools (requires generate_artifacts first)",
+	}, generateConfigsHandlerWithCoordinator(app, coord))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "detect_tools",
+		Description: "Detect AI coding tools installed in a project",
+	}, detectToolsHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "check_quality",
+		Description: "Run quality gates (lint, types, tests, fitness) on a project",
+	}, checkQualityHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "doc_health",
+		Description: "Check documentation health — find stale or missing docs",
+	}, docHealthHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "doc_review",
+		Description: "Mark a document as reviewed with current date",
+	}, docReviewHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "ticket_health",
+		Description: "Show ticket health report — open tickets, freshness, flagged items",
+	}, ticketHealthHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "spike_follow_up_audit",
+		Description: "Audit a spike's follow-up intents — find orphaned research that never became tickets",
+	}, spikeFollowUpAuditHandler(app))
+}
+
 // RegisterBootstrapTools registers all 12 bootstrap and generation MCP tools.
+//
+// Deprecated: Use RegisterBootstrapToolsWithCoordinator for precondition checking.
 func RegisterBootstrapTools(server *mcp.Server, app *composition.App, store *ModelStore) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "init_project",

@@ -163,8 +163,8 @@ func TestListResourceTemplates_InMemory(t *testing.T) {
 
 	result, err := session.ListResourceTemplates(ctx, nil)
 	require.NoError(t, err)
-	// 4 knowledge + 3 project + 1 ticket by ID + 1 persona = 9 templates
-	assert.Len(t, result.ResourceTemplates, 9)
+	// 4 knowledge + 3 project + 1 ticket by ID + 1 persona + 1 session status = 10 templates
+	assert.Len(t, result.ResourceTemplates, 10)
 }
 
 // --- Streamable HTTP Transport Tests ---
