@@ -13,6 +13,7 @@ import (
 	"github.com/alty-cli/alty/internal/shared/domain/events"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
 	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
 )
 
@@ -173,6 +174,34 @@ func wireEventSubscribers(
 		// For now, this is a no-op until we add session context to the event
 		_ = evt
 		return nil
+	}))
+
+	// ===========================================================================
+	// Tier 3 — Autonomous effects (label management)
+	// ===========================================================================
+
+	labelWriter := ticketinfra.NewBeadsLabelWriter()
+
+	// TicketFlagged → add review_needed label
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(ctx context.Context, evt *ticketdomain.TicketFlagged) error {
+		if err := labelWriter.AddLabel(ctx, evt.TicketID(), "review_needed"); err != nil {
+			logger.WarnContext(ctx, "failed to add review_needed label",
+				"ticket_id", evt.TicketID(),
+				"error", err,
+			)
+		}
+		return nil // Always return nil — label failure should not block event processing
+	}))
+
+	// FlagCleared → remove review_needed label
+	errs = append(errs, eventbus.SubscribeTyped(sub, func(ctx context.Context, evt *ticketdomain.FlagCleared) error {
+		if err := labelWriter.RemoveLabel(ctx, evt.TicketID(), "review_needed"); err != nil {
+			logger.WarnContext(ctx, "failed to remove review_needed label",
+				"ticket_id", evt.TicketID(),
+				"error", err,
+			)
+		}
+		return nil // Always return nil — label failure should not block event processing
 	}))
 
 	if err := errors.Join(errs...); err != nil {
