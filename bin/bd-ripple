@@ -185,6 +185,18 @@ done
 
 echo ""
 echo "Done. $FLAGGED ticket(s) flagged for review."
+
+# Run claim verification on flagged tickets (Step 7 of alty-7xe)
+if command -v alty &> /dev/null; then
+    echo ""
+    echo "=== Claim Verification ==="
+    for tid in "${TO_FLAG[@]}"; do
+        echo ""
+        echo "Verifying claims in $tid..."
+        alty ticket-verify "$tid" 2>&1 || true
+    done
+fi
+
 echo ""
 echo "To see all flagged tickets:  bd query label=review_needed"
 echo "To clear after review:       bd update <id> --remove-label review_needed"

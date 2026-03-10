@@ -51,6 +51,25 @@ Verify (can be done from the ticket description alone):
 - [ ] **SOLID mapping** — concrete implementations, not generic placeholders
 - [ ] **AC testability** — every acceptance criterion is testable, not vague
 
+### Phase 3.5 — Claim Verification
+
+Run automated verification of any quantitative claims in the ticket:
+
+```bash
+alty ticket-verify <ticket-id>
+```
+
+This detects claims like "**14 findings**" and verifies them against actual command output.
+
+| Result | Action |
+|--------|--------|
+| All claims verified | Proceed to Phase 4 |
+| Mismatch detected | Update ticket with correct values before proceeding |
+| No claims found | Proceed to Phase 4 (no quantitative claims to verify) |
+| Command not in allowlist | Note as UNVERIFIED in report |
+
+**If any claim has a significant discrepancy (>2x), the ticket NEEDS UPDATE before implementation.**
+
 ### Phase 4 — Implementation Simulation (THE CRITICAL STEP)
 
 **This is not optional. Read actual code. Trace actual chains.**
@@ -126,6 +145,7 @@ FRESHNESS:         [CLEAN | STALE]
 PRD TRACEABILITY:  [COVERED | GAP — <ids>]
 DDD/LANGUAGE:      [PASS | FAIL]
 TDD/SOLID/AC:      [PASS | FAIL]
+CLAIM VERIFICATION: [VERIFIED | MISMATCH | NO CLAIMS | UNVERIFIED]
 
 IMPLEMENTATION SIMULATION:
   Files read:       <N> (list each with path)

@@ -56,6 +56,7 @@ func newRootCmd(app *composition.App) *cobra.Command {
 		commands.NewDocHealthCmd(app),
 		commands.NewDocReviewCmd(app),
 		commands.NewTicketHealthCmd(app),
+		commands.NewTicketVerifyCmd(app),
 		commands.NewGenerateCmd(app),
 		commands.NewPersonaCmd(app),
 	)

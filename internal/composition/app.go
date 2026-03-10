@@ -54,6 +54,7 @@ type App struct {
 	// --- Ticket ---
 	TicketGenerationHandler *ticketapp.TicketGenerationHandler
 	TicketHealthHandler     *ticketapp.TicketHealthHandler
+	TicketVerifyHandler     *ticketapp.TicketVerifyHandler
 
 	// --- ToolTranslation ---
 	ConfigGenerationHandler *ttapp.ConfigGenerationHandler
@@ -115,6 +116,8 @@ func NewApp() (*App, error) {
 
 	// 8. Ticket infrastructure
 	ticketReader := ticketinfra.NewBeadsTicketReader(".beads")
+	ticketContentReader := ticketinfra.NewBeadsTicketContentReader(".beads")
+	commandRunner := ticketinfra.NewShellCommandRunner()
 
 	// 9. Challenge infrastructure
 	challenger := &challengeinfra.RuleBasedChallengerAdapter{}
@@ -157,6 +160,7 @@ func NewApp() (*App, error) {
 	qualityGateHandler := fitnessapp.NewQualityGateHandler(gateRunner)
 	ticketGenerationHandler := ticketapp.NewTicketGenerationHandler(fileWriter, publisher)
 	ticketHealthHandler := ticketapp.NewTicketHealthHandler(&ticketReaderAdapter{reader: ticketReader})
+	ticketVerifyHandler := ticketapp.NewTicketVerifyHandler(ticketContentReader, commandRunner)
 	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter, publisher)
 	personaHandler := ttapp.NewPersonaHandler(fileWriter)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
@@ -175,6 +179,7 @@ func NewApp() (*App, error) {
 		QualityGateHandler:        qualityGateHandler,
 		TicketGenerationHandler:   ticketGenerationHandler,
 		TicketHealthHandler:       ticketHealthHandler,
+		TicketVerifyHandler:       ticketVerifyHandler,
 		ConfigGenerationHandler:   configGenerationHandler,
 		PersonaHandler:            personaHandler,
 		DocHealthHandler:          docHealthHandler,
