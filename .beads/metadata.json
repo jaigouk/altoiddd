@@ -1,6 +1,7 @@
 {
   "database": "dolt",
-  "jsonl_export": "issues.jsonl",
   "backend": "dolt",
-  "dolt_database": "beads_alty"
+  "dolt_mode": "server",
+  "dolt_database": "beads_alty",
+  "project_id": "dae6082a-dcb2-449f-9c6f-bb6ebf7eb7c5"
 }
