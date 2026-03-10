@@ -19,11 +19,11 @@ import (
 
 // wireEventSubscribers creates a Subscriber with handlers for all domain events.
 // Tier 1: Observability logging (structured slog output for each event).
-// Tier 2: Readiness tracking (updates SessionTracker based on workflow events).
+// Tier 2: Readiness tracking (updates WorkflowCoordinator based on workflow events).
 func wireEventSubscribers(
 	bus *eventbus.Bus,
 	logger *slog.Logger,
-	tracker *shareddomain.SessionTracker,
+	tracker *shareddomain.WorkflowCoordinator,
 ) (*eventbus.Subscriber, error) {
 	sub := eventbus.NewSubscriber(bus)
 	var errs []error

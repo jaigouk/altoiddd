@@ -49,13 +49,13 @@ func TestNewApp_EventBusIsWired(t *testing.T) {
 	assert.NotNil(t, app.Subscriber, "Subscriber")
 }
 
-func TestNewApp_SessionTrackerIsWired(t *testing.T) {
+func TestNewApp_WorkflowCoordinatorIsWired(t *testing.T) {
 	t.Parallel()
 	app, err := NewApp()
 	require.NoError(t, err)
 	defer app.Close()
 
-	assert.NotNil(t, app.SessionTracker, "SessionTracker")
+	assert.NotNil(t, app.WorkflowCoordinator, "WorkflowCoordinator")
 }
 
 func TestNewApp_Close_NoError(t *testing.T) {

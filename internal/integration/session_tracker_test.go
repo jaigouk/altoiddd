@@ -45,7 +45,7 @@ func TestIntegration_DiscoveryCompleted_MarksArtifactReady(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify artifact_generation is ready
-	actions := app.SessionTracker.ReadyActions(sessionID)
+	actions := app.WorkflowCoordinator.ReadyActions(sessionID)
 	require.NotEmpty(t, actions, "should have ready actions after DiscoveryCompleted")
 
 	names := extractActionNames(actions)
@@ -73,7 +73,7 @@ func TestIntegration_DomainModelGenerated_MarksFitnessTicketsConfigsReady(t *tes
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify fitness, tickets, configs are ready
-	actions := app.SessionTracker.ReadyActions(modelID)
+	actions := app.WorkflowCoordinator.ReadyActions(modelID)
 	require.NotEmpty(t, actions, "should have ready actions after DomainModelGenerated")
 
 	names := extractActionNames(actions)
@@ -102,7 +102,7 @@ func TestIntegration_TicketPlanApproved_MarksRippleReviewReady(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify ripple_review is ready
-	actions := app.SessionTracker.ReadyActions(planID)
+	actions := app.WorkflowCoordinator.ReadyActions(planID)
 	require.NotEmpty(t, actions, "should have ready actions after TicketPlanApproved")
 
 	names := extractActionNames(actions)
@@ -136,8 +136,8 @@ func TestIntegration_SessionTracker_MultipleSessions_Independent(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify sessions are independent
-	actions1 := app.SessionTracker.ReadyActions("session-1")
-	actions2 := app.SessionTracker.ReadyActions("session-2")
+	actions1 := app.WorkflowCoordinator.ReadyActions("session-1")
+	actions2 := app.WorkflowCoordinator.ReadyActions("session-2")
 
 	names1 := extractActionNames(actions1)
 	names2 := extractActionNames(actions2)

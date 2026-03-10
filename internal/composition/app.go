@@ -77,9 +77,9 @@ type App struct {
 	ChallengeHandler *challengeapp.ChallengeHandler
 
 	// --- Infrastructure ---
-	EventBus       *eventbus.Bus
-	Subscriber     *eventbus.Subscriber
-	SessionTracker *shareddomain.SessionTracker
+	EventBus            *eventbus.Bus
+	Subscriber          *eventbus.Subscriber
+	WorkflowCoordinator *shareddomain.WorkflowCoordinator
 
 	// --- Metadata ---
 	Version string
@@ -128,13 +128,13 @@ func NewApp() (*App, error) {
 	// 11. Research infrastructure
 	spikeFollowUpAdapter := researchinfra.NewSpikeFollowUpAdapter()
 
-	// 12. Session tracking (Tier 2 readiness)
-	sessionTracker := shareddomain.NewSessionTracker()
+	// 12. Workflow coordination (Tier 2 readiness)
+	coordinator := shareddomain.NewWorkflowCoordinator()
 
 	// --- Event publisher + subscriber ---
 	publisher := eventbus.NewPublisher(bus)
 
-	subscriber, err := wireEventSubscribers(bus, slog.Default(), sessionTracker)
+	subscriber, err := wireEventSubscribers(bus, slog.Default(), coordinator)
 	if err != nil {
 		_ = bus.Close()
 		return nil, fmt.Errorf("wiring event subscribers: %w", err)
@@ -190,7 +190,7 @@ func NewApp() (*App, error) {
 		ChallengeHandler:          challengeHandler,
 		EventBus:                  bus,
 		Subscriber:                subscriber,
-		SessionTracker:            sessionTracker,
+		WorkflowCoordinator:       coordinator,
 		Version:                   Version,
 		cancelEvents:              cancelSub,
 	}, nil
