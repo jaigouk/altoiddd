@@ -47,3 +47,12 @@ type TicketContentReader interface {
 	// ReadTicketContent reads the full description/content of a ticket.
 	ReadTicketContent(ctx context.Context, ticketID string) (string, error)
 }
+
+// BeadsLabelWriter manages labels on beads tickets.
+type BeadsLabelWriter interface {
+	// AddLabel adds a label to a ticket.
+	AddLabel(ctx context.Context, ticketID, label string) error
+
+	// RemoveLabel removes a label from a ticket.
+	RemoveLabel(ctx context.Context, ticketID, label string) error
+}
