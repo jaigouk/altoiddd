@@ -62,3 +62,53 @@ func TestTicketPlanApproved_JSONRoundtrip(t *testing.T) {
 	assert.Equal(t, original.ApprovedTicketIDs(), restored.ApprovedTicketIDs())
 	assert.Equal(t, original.DismissedTicketIDs(), restored.DismissedTicketIDs())
 }
+
+// TicketClosed event tests
+
+func TestNewTicketClosed_ValidatesTicketID(t *testing.T) {
+	t.Parallel()
+
+	_, err := domain.NewTicketClosed("", "2026-03-09T10:00:00", "Added fitness tests")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ticket ID")
+}
+
+func TestNewTicketClosed_AllowsEmptyContextDiff(t *testing.T) {
+	t.Parallel()
+
+	event, err := domain.NewTicketClosed("t-123", "2026-03-09T10:00:00", "")
+	require.NoError(t, err)
+	assert.Empty(t, event.ContextDiff())
+}
+
+func TestTicketClosed_Accessors(t *testing.T) {
+	t.Parallel()
+
+	event, err := domain.NewTicketClosed("t-123", "2026-03-09T10:00:00", "Added fitness tests")
+	require.NoError(t, err)
+
+	assert.Equal(t, "t-123", event.TicketID())
+	assert.Equal(t, "2026-03-09T10:00:00", event.ClosedAt())
+	assert.Equal(t, "Added fitness tests", event.ContextDiff())
+}
+
+func TestTicketClosed_JSONRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	original, err := domain.NewTicketClosed("t-rt", "2026-03-09T10:00:00", "Added fitness tests")
+	require.NoError(t, err)
+
+	data, err := json.Marshal(original)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"ticket_id"`)
+	assert.Contains(t, string(data), `"closed_at"`)
+	assert.Contains(t, string(data), `"context_diff"`)
+
+	var restored domain.TicketClosed
+	err = json.Unmarshal(data, &restored)
+	require.NoError(t, err)
+
+	assert.Equal(t, "t-rt", restored.TicketID())
+	assert.Equal(t, "2026-03-09T10:00:00", restored.ClosedAt())
+	assert.Equal(t, "Added fitness tests", restored.ContextDiff())
+}

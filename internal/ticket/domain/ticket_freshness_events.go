@@ -129,3 +129,69 @@ func (e *FlagCleared) UnmarshalJSON(data []byte) error {
 	e.clearedAt = p.ClearedAt
 	return nil
 }
+
+// RippleReviewCreated is emitted when a ripple review completes, signaling ticket flagging is done.
+type RippleReviewCreated struct {
+	reviewID       string
+	closedTicketID string
+	flaggedCount   int
+}
+
+// NewRippleReviewCreated creates a RippleReviewCreated event. Returns error if IDs are empty.
+func NewRippleReviewCreated(reviewID, closedTicketID string, flaggedCount int) (RippleReviewCreated, error) {
+	if reviewID == "" {
+		return RippleReviewCreated{}, fmt.Errorf("review ID cannot be empty")
+	}
+	if closedTicketID == "" {
+		return RippleReviewCreated{}, fmt.Errorf("closed ticket ID cannot be empty")
+	}
+	return RippleReviewCreated{
+		reviewID:       reviewID,
+		closedTicketID: closedTicketID,
+		flaggedCount:   flaggedCount,
+	}, nil
+}
+
+// ReviewID returns the review identifier.
+func (e RippleReviewCreated) ReviewID() string { return e.reviewID }
+
+// ClosedTicketID returns the ID of the ticket whose closure triggered this review.
+func (e RippleReviewCreated) ClosedTicketID() string { return e.closedTicketID }
+
+// FlaggedCount returns the number of tickets flagged in this review.
+func (e RippleReviewCreated) FlaggedCount() int { return e.flaggedCount }
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e RippleReviewCreated) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		ReviewID       string `json:"review_id"`
+		ClosedTicketID string `json:"closed_ticket_id"`
+		FlaggedCount   int    `json:"flagged_count"`
+	}
+	data, err := json.Marshal(proxy{
+		ReviewID:       e.reviewID,
+		ClosedTicketID: e.closedTicketID,
+		FlaggedCount:   e.flaggedCount,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling RippleReviewCreated: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *RippleReviewCreated) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		ReviewID       string `json:"review_id"`
+		ClosedTicketID string `json:"closed_ticket_id"`
+		FlaggedCount   int    `json:"flagged_count"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling RippleReviewCreated: %w", err)
+	}
+	e.reviewID = p.ReviewID
+	e.closedTicketID = p.ClosedTicketID
+	e.flaggedCount = p.FlaggedCount
+	return nil
+}

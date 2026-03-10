@@ -20,6 +20,7 @@ type RippleReview struct {
 	contextDiff      ContextDiff
 	flaggedTicketIDs []string
 	events           []any
+	completed        bool
 }
 
 // NewRippleReview creates a RippleReview aggregate root.
@@ -86,4 +87,20 @@ func (r *RippleReview) ClearFlag(ticketID string, clearedAt string) error {
 	}
 	return fmt.Errorf("ticket '%s' is not flagged and cannot be cleared: %w",
 		ticketID, domainerrors.ErrInvariantViolation)
+}
+
+// Complete finalizes the ripple review and emits RippleReviewCreated event.
+// Can only be called once per review.
+func (r *RippleReview) Complete() error {
+	if r.completed {
+		return fmt.Errorf("review '%s' is already completed: %w",
+			r.reviewID, domainerrors.ErrInvariantViolation)
+	}
+	r.completed = true
+	event, err := NewRippleReviewCreated(r.reviewID, r.closedTicketID, len(r.flaggedTicketIDs))
+	if err != nil {
+		return fmt.Errorf("creating RippleReviewCreated event: %w", err)
+	}
+	r.events = append(r.events, event)
+	return nil
 }

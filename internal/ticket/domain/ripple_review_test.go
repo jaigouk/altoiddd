@@ -111,6 +111,48 @@ func TestRippleReviewEmitsFlagClearedEvent(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestRippleReviewCompleteEmitsRippleReviewCreated(t *testing.T) {
+	t.Parallel()
+	review := domain.NewRippleReview("rr-001", "k7m.19", makeContextDiff())
+	_ = review.FlagTicket("k7m.25", true, "")
+	_ = review.FlagTicket("k7m.20", true, "")
+
+	err := review.Complete()
+	require.NoError(t, err)
+
+	events := review.Events()
+	require.Len(t, events, 3) // 2 TicketFlagged + 1 RippleReviewCreated
+	evt, ok := events[2].(domain.RippleReviewCreated)
+	require.True(t, ok)
+	assert.Equal(t, "rr-001", evt.ReviewID())
+	assert.Equal(t, "k7m.19", evt.ClosedTicketID())
+	assert.Equal(t, 2, evt.FlaggedCount())
+}
+
+func TestRippleReviewCompleteWithZeroFlagged(t *testing.T) {
+	t.Parallel()
+	review := domain.NewRippleReview("rr-001", "k7m.19", makeContextDiff())
+
+	err := review.Complete()
+	require.NoError(t, err)
+
+	events := review.Events()
+	require.Len(t, events, 1)
+	evt, ok := events[0].(domain.RippleReviewCreated)
+	require.True(t, ok)
+	assert.Equal(t, 0, evt.FlaggedCount())
+}
+
+func TestRippleReviewCompleteIsIdempotent(t *testing.T) {
+	t.Parallel()
+	review := domain.NewRippleReview("rr-001", "k7m.19", makeContextDiff())
+	_ = review.FlagTicket("k7m.25", true, "")
+
+	_ = review.Complete()
+	err := review.Complete()
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
 // ---------------------------------------------------------------------------
 // 5. Defensive copies
 // ---------------------------------------------------------------------------

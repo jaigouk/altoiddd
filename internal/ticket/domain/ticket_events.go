@@ -72,3 +72,66 @@ func (e *TicketPlanApproved) UnmarshalJSON(data []byte) error {
 	e.dismissedTicketIDs = p.DismissedTicketIDs
 	return nil
 }
+
+// TicketClosed is emitted when a beads ticket is closed, triggering ripple review.
+type TicketClosed struct {
+	ticketID    string
+	closedAt    string
+	contextDiff string
+}
+
+// NewTicketClosed creates a TicketClosed event. Returns error if ticketID is empty.
+func NewTicketClosed(ticketID, closedAt, contextDiff string) (TicketClosed, error) {
+	if ticketID == "" {
+		return TicketClosed{}, fmt.Errorf("ticket ID cannot be empty")
+	}
+	return TicketClosed{
+		ticketID:    ticketID,
+		closedAt:    closedAt,
+		contextDiff: contextDiff,
+	}, nil
+}
+
+// TicketID returns the closed ticket identifier.
+func (e TicketClosed) TicketID() string { return e.ticketID }
+
+// ClosedAt returns the timestamp when the ticket was closed.
+func (e TicketClosed) ClosedAt() string { return e.closedAt }
+
+// ContextDiff returns the summary of what the ticket produced.
+func (e TicketClosed) ContextDiff() string { return e.contextDiff }
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e TicketClosed) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		TicketID    string `json:"ticket_id"`
+		ClosedAt    string `json:"closed_at"`
+		ContextDiff string `json:"context_diff"`
+	}
+	data, err := json.Marshal(proxy{
+		TicketID:    e.ticketID,
+		ClosedAt:    e.closedAt,
+		ContextDiff: e.contextDiff,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling TicketClosed: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *TicketClosed) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		TicketID    string `json:"ticket_id"`
+		ClosedAt    string `json:"closed_at"`
+		ContextDiff string `json:"context_diff"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling TicketClosed: %w", err)
+	}
+	e.ticketID = p.TicketID
+	e.closedAt = p.ClosedAt
+	e.contextDiff = p.ContextDiff
+	return nil
+}
