@@ -33,3 +33,17 @@ type TicketHealth interface {
 	// Report generates a ticket health report.
 	Report(ctx context.Context, projectDir string) (ticketdomain.TicketHealthReport, error)
 }
+
+// CommandRunner executes verification commands and returns their output.
+// Implementations must enforce security controls (allowlist, timeout, no shell expansion).
+type CommandRunner interface {
+	// Run executes a command and returns its stdout output.
+	// Returns error if command fails, times out, or is not in allowlist.
+	Run(ctx context.Context, command string) (string, error)
+}
+
+// TicketContentReader reads ticket markdown content for claim verification.
+type TicketContentReader interface {
+	// ReadTicketContent reads the full description/content of a ticket.
+	ReadTicketContent(ctx context.Context, ticketID string) (string, error)
+}
