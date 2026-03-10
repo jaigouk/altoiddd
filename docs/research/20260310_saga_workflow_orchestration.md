@@ -314,11 +314,15 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 
 ## 7. Follow-Up Tickets
 
-### Ticket 1: Evolve SessionTracker into WorkflowCoordinator
+**Decision (2026-03-10):** No epic needed. The scope is small (2 tickets for immediate work), this is evolution of existing code (not a new system), and Phase 3 is explicitly deferred until MCP daemon mode becomes a priority. Standalone tickets with proper dependencies are sufficient.
 
+### alty-vf2: Evolve SessionTracker into WorkflowCoordinator
+
+**Ticket ID:** `alty-vf2`
 **Type:** Task
 **Priority:** P2
 **Bounded Context:** shared/domain
+**Status:** Open, Ready
 
 **Description:** Rename and extend `SessionTracker` to `WorkflowCoordinator` with formal step status tracking (Pending/Ready/InProgress/Completed/Skipped), `CanExecute()` guard, `BeginStep()`/`CompleteStep()`/`SkipStep()` lifecycle methods, and `SessionContext` to hold DomainModel + StackProfile + ProjectDir. Pure domain changes, no external deps. Update event subscribers (Tier 2) to use new coordinator. Absorb `ModelStore` into `SessionContext`.
 
@@ -327,16 +331,18 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 - [ ] WorkflowCoordinator with CanExecute, BeginStep, CompleteStep, SkipStep
 - [ ] SessionContext holds DomainModel, StackProfile, ProjectDir
 - [ ] Tier 2 event subscribers updated
-- [ ] ModelStore functionality absorbed
+- [ ] ModelStore functionality absorbed (Put/Get → SetSessionContext/SessionContext)
 - [ ] 90%+ test coverage on state transitions
 - [ ] All quality gates pass
 
-### Ticket 2: Integrate WorkflowCoordinator with MCP Tools
+### alty-6q5: Integrate WorkflowCoordinator with MCP Tools
 
+**Ticket ID:** `alty-6q5`
 **Type:** Task
 **Priority:** P2
 **Bounded Context:** mcp, composition
-**Depends on:** Ticket 1
+**Depends on:** alty-vf2
+**Status:** Open, Blocked by alty-vf2
 
 **Description:** Update MCP tool handlers in `tools_bootstrap.go` to use `WorkflowCoordinator.CanExecute()` before processing and `BeginStep()`/`CompleteStep()` around execution. Add MCP resource `session_status` returning available actions. Remove `ModelStore`. Update tool descriptions with precondition documentation.
 
