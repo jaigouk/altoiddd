@@ -10,7 +10,7 @@ import (
 // Defined where consumed per Go convention.
 type ToolDetector interface {
 	Detect(projectDir string) ([]string, error)
-	ScanConflicts(projectDir string) ([]string, error)
+	ScanConflicts(projectDir string) ([]domain.SettingsConflict, error)
 }
 
 // DetectionHandler orchestrates the detect flow: scan tools, classify conflicts.
@@ -33,9 +33,13 @@ func (h *DetectionHandler) Detect(projectDir string) (domain.DetectionResult, er
 	if err != nil {
 		return domain.DetectionResult{}, fmt.Errorf("detect tools: %w", err)
 	}
-	conflicts, err := h.toolDetection.ScanConflicts(projectDir)
+	settingsConflicts, err := h.toolDetection.ScanConflicts(projectDir)
 	if err != nil {
 		return domain.DetectionResult{}, fmt.Errorf("scan conflicts: %w", err)
 	}
-	return h.scanner.BuildResult(toolNames, conflicts), nil
+	descriptions := make([]string, len(settingsConflicts))
+	for i, sc := range settingsConflicts {
+		descriptions[i] = sc.Description()
+	}
+	return h.scanner.BuildResult(toolNames, descriptions), nil
 }

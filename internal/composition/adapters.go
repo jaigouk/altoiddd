@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
+	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
 	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
@@ -39,18 +40,47 @@ func (a *bootstrapToolDetectorAdapter) Detect(projectDir string) ([]string, erro
 	return tools, nil
 }
 
-// ScanConflicts implements ToolDetector.
+// ScanConflicts implements ToolDetector by converting SettingsConflicts to
+// description strings for the bootstrap bounded context.
 func (a *bootstrapToolDetectorAdapter) ScanConflicts(projectDir string) ([]string, error) {
+	settingsConflicts, err := a.scanner.ScanConflicts(context.Background(), projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("scanning conflicts: %w", err)
+	}
+	descriptions := make([]string, len(settingsConflicts))
+	for i, sc := range settingsConflicts {
+		descriptions[i] = sc.Description()
+	}
+	return descriptions, nil
+}
+
+// ---------------------------------------------------------------------------
+// Discovery ToolDetector adapter
+// ---------------------------------------------------------------------------
+
+// discoveryToolDetectorAdapter bridges FilesystemToolScanner (ctx params) to
+// the discovery ToolDetector interface (no ctx params, returns SettingsConflict).
+type discoveryToolDetectorAdapter struct {
+	scanner *discoveryinfra.FilesystemToolScanner
+}
+
+// Detect implements discovery ToolDetector.
+func (a *discoveryToolDetectorAdapter) Detect(projectDir string) ([]string, error) {
+	tools, err := a.scanner.Detect(context.Background(), projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("detecting tools: %w", err)
+	}
+	return tools, nil
+}
+
+// ScanConflicts implements discovery ToolDetector.
+func (a *discoveryToolDetectorAdapter) ScanConflicts(projectDir string) ([]discoverydomain.SettingsConflict, error) {
 	conflicts, err := a.scanner.ScanConflicts(context.Background(), projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("scanning conflicts: %w", err)
 	}
 	return conflicts, nil
 }
-
-// Note: bootstrapToolDetectorAdapter also satisfies discoveryapp.ToolDetector
-// via Go structural typing (same method set). Used for both bootstrap and
-// discovery DetectionHandler wiring.
 
 // ---------------------------------------------------------------------------
 // DocHealth DocScanner adapter

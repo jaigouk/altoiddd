@@ -658,7 +658,7 @@ func generateTicketsHandlerWithCoordinator(app *composition.App, coord *shareddo
 }
 
 func generateConfigsHandlerWithCoordinator(app *composition.App, coord *shareddomain.WorkflowCoordinator) func(context.Context, *mcp.CallToolRequest, GenerateConfigsInput) (*mcp.CallToolResult, any, error) {
-	return func(_ context.Context, _ *mcp.CallToolRequest, input GenerateConfigsInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, input GenerateConfigsInput) (*mcp.CallToolResult, any, error) {
 		if r, m, e := requireSessionID(input.SessionID); r != nil {
 			return r, m, e
 		}
@@ -693,12 +693,17 @@ func generateConfigsHandlerWithCoordinator(app *composition.App, coord *shareddo
 			return toolError(fmt.Sprintf("generate configs: %s", err))
 		}
 
+		// Write config files to project directory
+		if err := app.ConfigGenerationHandler.ApproveAndWrite(ctx, preview, sessionCtx.ProjectDir); err != nil {
+			return toolError(fmt.Sprintf("write configs: %s", err))
+		}
+
 		// Complete step
 		if err := coord.CompleteStep(input.SessionID, shareddomain.StepConfigs); err != nil {
 			return toolError(fmt.Sprintf("complete step: %s", err))
 		}
 
-		return textResult(fmt.Sprintf("Configs generated.\n%s", preview.Summary))
+		return textResult(fmt.Sprintf("Configs generated and written to %s.\n%s", sessionCtx.ProjectDir, preview.Summary))
 	}
 }
 

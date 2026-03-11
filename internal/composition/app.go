@@ -25,6 +25,7 @@ import (
 	researchapp "github.com/alty-cli/alty/internal/research/application"
 	researchinfra "github.com/alty-cli/alty/internal/research/infrastructure"
 	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
+	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
@@ -95,7 +96,8 @@ func NewApp() (*App, error) {
 	bus := eventbus.NewBus()
 
 	// 2. Shared infrastructure
-	fileWriter := persistence.NewFilesystemFileWriter()
+	innerWriter := persistence.NewFilesystemFileWriter()
+	fileWriter := persistence.NewConflictDetectingFileWriter(innerWriter, valueobjects.ConflictStrategyRename)
 
 	// 3. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
@@ -150,10 +152,11 @@ func NewApp() (*App, error) {
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
+	discoveryDetector := &discoveryToolDetectorAdapter{scanner: toolScanner}
 
 	fileChecker := &bootstrapinfra.OSFileChecker{}
 	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher)
-	detectionHandler := discoveryapp.NewDetectionHandler(toolDetector)
+	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher)
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
 	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter, publisher)

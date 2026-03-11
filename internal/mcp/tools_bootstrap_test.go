@@ -11,9 +11,12 @@ import (
 
 	"github.com/alty-cli/alty/internal/composition"
 	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
+	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
 )
 
 // --- Stub implementations for happy-path tests ---
@@ -21,11 +24,11 @@ import (
 // stubToolDetector implements discoveryapp.ToolDetector.
 type stubToolDetector struct {
 	tools     []string
-	conflicts []string
+	conflicts []discoverydomain.SettingsConflict
 }
 
 func (s *stubToolDetector) Detect(_ string) ([]string, error) { return s.tools, nil }
-func (s *stubToolDetector) ScanConflicts(_ string) ([]string, error) {
+func (s *stubToolDetector) ScanConflicts(_ string) ([]discoverydomain.SettingsConflict, error) {
 	return s.conflicts, nil
 }
 
@@ -515,4 +518,76 @@ func TestGenerateConfigsTool_FailsWhenPreconditionNotMet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assertToolError(t, result, "precondition not met")
+}
+
+// --- stubs for ApproveAndWrite tests ---
+
+// stubFileWriterB records written files for verification.
+type stubFileWriterB struct {
+	written map[string]string
+}
+
+var _ sharedapp.FileWriter = (*stubFileWriterB)(nil)
+
+func newStubFileWriterB() *stubFileWriterB {
+	return &stubFileWriterB{written: make(map[string]string)}
+}
+
+func (s *stubFileWriterB) WriteFile(_ context.Context, path, content string) error {
+	s.written[path] = content
+	return nil
+}
+
+// stubPublisherB implements sharedapp.EventPublisher for testing.
+type stubPublisherB struct{}
+
+var _ sharedapp.EventPublisher = (*stubPublisherB)(nil)
+
+func (s *stubPublisherB) Publish(_ context.Context, _ any) error { return nil }
+
+// --- generate_configs ApproveAndWrite integration ---
+
+func TestGenerateConfigsTool_WritesFilesToProjectDir(t *testing.T) {
+	t.Parallel()
+
+	writer := newStubFileWriterB()
+	publisher := &stubPublisherB{}
+	handler := ttapp.NewConfigGenerationHandler(writer, publisher)
+
+	coord := shareddomain.NewWorkflowCoordinator()
+	sessionID := "configs-write-test"
+
+	// Set up coordinator: mark StepConfigs as ready and provide session context
+	coord.MarkReady(sessionID, shareddomain.StepConfigs)
+
+	model := makeTestModel("config-model")
+	sessionCtx := &shareddomain.SessionContext{
+		SessionID:    sessionID,
+		DomainModel:  model,
+		StackProfile: vo.GenericProfile{},
+		ProjectDir:   t.TempDir(),
+	}
+	err := coord.SetSessionContext(sessionID, sessionCtx)
+	require.NoError(t, err)
+
+	app := &composition.App{
+		ConfigGenerationHandler: handler,
+	}
+	session := setupBootstrapServerWithCoordinator(t, app, coord)
+
+	result, err := callBootstrapTool(t, session, "generate_configs", map[string]any{
+		"session_id": sessionID,
+		"tools":      []any{"claude-code"},
+	})
+	require.NoError(t, err)
+
+	// Verify success (not error)
+	require.NotNil(t, result)
+	require.False(t, result.IsError, "expected success, got tool error")
+
+	// Verify files were written via ApproveAndWrite
+	assert.NotEmpty(t, writer.written, "expected files to be written by ApproveAndWrite")
+
+	// Verify success message includes project directory
+	assertToolText(t, result, sessionCtx.ProjectDir)
 }

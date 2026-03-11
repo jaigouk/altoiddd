@@ -57,6 +57,6 @@ type ToolDetection interface {
 	// Detect detects installed AI coding tools in the project directory.
 	Detect(ctx context.Context, projectDir string) ([]string, error)
 
-	// ScanConflicts scans for configuration conflicts between detected tools.
-	ScanConflicts(ctx context.Context, projectDir string) ([]string, error)
+	// ScanConflicts scans for global settings conflicts between detected tools.
+	ScanConflicts(ctx context.Context, projectDir string) ([]discoverydomain.SettingsConflict, error)
 }

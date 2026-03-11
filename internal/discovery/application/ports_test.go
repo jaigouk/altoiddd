@@ -67,6 +67,6 @@ func (m *mockToolDetection) Detect(_ context.Context, _ string) ([]string, error
 	return nil, nil
 }
 
-func (m *mockToolDetection) ScanConflicts(_ context.Context, _ string) ([]string, error) {
+func (m *mockToolDetection) ScanConflicts(_ context.Context, _ string) ([]discoverydomain.SettingsConflict, error) {
 	return nil, nil
 }

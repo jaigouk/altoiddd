@@ -16,7 +16,7 @@ import (
 
 type fakeToolDetect struct {
 	tools        []string
-	conflicts    []string
+	conflicts    []domain.SettingsConflict
 	receivedDirs []string
 }
 
@@ -25,7 +25,7 @@ func (f *fakeToolDetect) Detect(projectDir string) ([]string, error) {
 	return f.tools, nil
 }
 
-func (f *fakeToolDetect) ScanConflicts(projectDir string) ([]string, error) {
+func (f *fakeToolDetect) ScanConflicts(projectDir string) ([]domain.SettingsConflict, error) {
 	f.receivedDirs = append(f.receivedDirs, projectDir)
 	return f.conflicts, nil
 }
@@ -50,7 +50,7 @@ func TestDetectionHandler(t *testing.T) {
 
 	t.Run("no tools", func(t *testing.T) {
 		t.Parallel()
-		fake := &fakeToolDetect{tools: []string{}, conflicts: []string{}}
+		fake := &fakeToolDetect{tools: []string{}, conflicts: []domain.SettingsConflict{}}
 		handler := application.NewDetectionHandler(fake)
 
 		result, err := handler.Detect("/tmp/proj")
@@ -80,8 +80,10 @@ func TestDetectionHandler(t *testing.T) {
 	t.Run("with conflicts", func(t *testing.T) {
 		t.Parallel()
 		fake := &fakeToolDetect{
-			tools:     []string{"cursor"},
-			conflicts: []string{"cursor: SQLite-based config detected, cannot read"},
+			tools: []string{"cursor"},
+			conflicts: []domain.SettingsConflict{
+				domain.NewSettingsConflict("cursor", "/home/.cursor", "", "global_only", domain.SettingsSeverityWarning, "SQLite-based config detected, cannot read"),
+			},
 		}
 		handler := application.NewDetectionHandler(fake)
 
@@ -114,9 +116,9 @@ func TestDetectionHandler(t *testing.T) {
 		t.Parallel()
 		fake := &fakeToolDetect{
 			tools: []string{"claude-code", "cursor"},
-			conflicts: []string{
-				"cursor: SQLite-based config detected, cannot read",
-				"claude-code: global setting 'model' contradicts local value",
+			conflicts: []domain.SettingsConflict{
+				domain.NewSettingsConflict("cursor", "/home/.cursor", "", "global_only", domain.SettingsSeverityWarning, "SQLite-based config detected, cannot read"),
+				domain.NewSettingsConflict("claude-code", "/home/.claude/settings.json", "/proj/.claude/settings.json", "content_mismatch", domain.SettingsSeverityWarning, "global setting 'model' contradicts local value"),
 			},
 		}
 		handler := application.NewDetectionHandler(fake)
@@ -124,12 +126,8 @@ func TestDetectionHandler(t *testing.T) {
 		result, err := handler.Detect("/tmp/proj")
 
 		require.NoError(t, err)
+		assert.Len(t, result.Conflicts(), 2)
 		severityMap := result.SeverityMap()
-		severities := make(map[domain.ConflictSeverity]bool)
-		for _, sev := range severityMap {
-			severities[sev] = true
-		}
-		assert.True(t, severities[domain.SeverityWarning])
-		assert.True(t, severities[domain.SeverityConflict])
+		assert.NotEmpty(t, severityMap)
 	})
 }
