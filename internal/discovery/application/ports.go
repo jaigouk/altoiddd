@@ -50,6 +50,14 @@ type ArtifactRenderer interface {
 	RenderArchitecture(ctx context.Context, model *ddd.DomainModel) (string, error)
 }
 
+// --- Prompter Port ---
+
+// Prompter handles interactive CLI prompts for discovery flow.
+type Prompter interface {
+	// SelectPersona displays persona choices and returns the selected choice ("1"-"4").
+	SelectPersona(ctx context.Context) (string, error)
+}
+
 // --- Tool Detection Port ---
 
 // ToolDetection detects installed AI coding tools and scans for configuration conflicts.
