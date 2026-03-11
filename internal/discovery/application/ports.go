@@ -56,6 +56,13 @@ type ArtifactRenderer interface {
 type Prompter interface {
 	// SelectPersona displays persona choices and returns the selected choice ("1"-"4").
 	SelectPersona(ctx context.Context) (string, error)
+
+	// AskQuestion displays a question and returns the user's answer.
+	// Returns empty string if the user wants to skip.
+	AskQuestion(ctx context.Context, question string) (string, error)
+
+	// AskSkipReason prompts for a reason when skipping a question.
+	AskSkipReason(ctx context.Context) (string, error)
 }
 
 // --- Tool Detection Port ---

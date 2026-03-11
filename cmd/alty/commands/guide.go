@@ -43,6 +43,6 @@ func runGuide(ctx context.Context, app *composition.App) error {
 		return fmt.Errorf("discovery: %w", err)
 	}
 
-	fmt.Println("Persona detected. Question loop coming in alty-cli-7u7.4.")
+	fmt.Println("Discovery complete. Playback confirmation coming in alty-cli-7u7.5.")
 	return nil
 }
