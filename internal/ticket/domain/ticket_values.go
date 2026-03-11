@@ -43,12 +43,16 @@ func (e GeneratedEpic) BoundedContextName() string { return e.boundedContextName
 // Classification returns the subdomain classification.
 func (e GeneratedEpic) Classification() vo.SubdomainClassification { return e.classification }
 
+// TemplateType returns the beads template type (always TemplateEpic for epics).
+func (e GeneratedEpic) TemplateType() TemplateType { return TemplateEpic }
+
 // GeneratedTicket is a generated beads ticket for an aggregate.
 type GeneratedTicket struct {
 	ticketID           string
 	title              string
 	description        string
 	detailLevel        vo.TicketDetailLevel
+	templateType       TemplateType
 	epicID             string
 	boundedContextName string
 	aggregateName      string
@@ -56,7 +60,7 @@ type GeneratedTicket struct {
 	depth              int
 }
 
-// NewGeneratedTicket creates a GeneratedTicket value object.
+// NewGeneratedTicket creates a GeneratedTicket value object (task type).
 func NewGeneratedTicket(
 	ticketID, title, description string,
 	detailLevel vo.TicketDetailLevel,
@@ -71,11 +75,28 @@ func NewGeneratedTicket(
 		title:              title,
 		description:        description,
 		detailLevel:        detailLevel,
+		templateType:       TemplateTask,
 		epicID:             epicID,
 		boundedContextName: boundedContextName,
 		aggregateName:      aggregateName,
 		dependencies:       deps,
 		depth:              depth,
+	}
+}
+
+// NewGeneratedSpikeTicket creates a spike ticket (for research/investigation).
+func NewGeneratedSpikeTicket(
+	ticketID, title, description string,
+	epicID, boundedContextName string,
+) GeneratedTicket {
+	return GeneratedTicket{
+		ticketID:           ticketID,
+		title:              title,
+		description:        description,
+		detailLevel:        vo.TicketDetailStub, // Spikes are minimal until resolved
+		templateType:       TemplateSpike,
+		epicID:             epicID,
+		boundedContextName: boundedContextName,
 	}
 }
 
@@ -90,6 +111,9 @@ func (t GeneratedTicket) Description() string { return t.description }
 
 // DetailLevel returns the generation depth.
 func (t GeneratedTicket) DetailLevel() vo.TicketDetailLevel { return t.detailLevel }
+
+// TemplateType returns the beads template type (task or spike).
+func (t GeneratedTicket) TemplateType() TemplateType { return t.templateType }
 
 // EpicID returns the parent epic ID.
 func (t GeneratedTicket) EpicID() string { return t.epicID }

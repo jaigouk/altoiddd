@@ -40,6 +40,35 @@ func (f *fakeFileWriterT) WriteFile(_ context.Context, path, content string) err
 	return nil
 }
 
+type fakeBeadsWriterT struct {
+	epics         []ticketdomain.GeneratedEpic
+	tickets       []ticketdomain.GeneratedTicket
+	dependencies  []struct{ from, to string }
+	epicCounter   int
+	ticketCounter int
+}
+
+func newFakeBeadsWriterT() *fakeBeadsWriterT {
+	return &fakeBeadsWriterT{}
+}
+
+func (f *fakeBeadsWriterT) WriteEpic(_ context.Context, epic ticketdomain.GeneratedEpic) (string, error) {
+	f.epics = append(f.epics, epic)
+	f.epicCounter++
+	return "beads-epic-" + epic.EpicID(), nil
+}
+
+func (f *fakeBeadsWriterT) WriteTicket(_ context.Context, ticket ticketdomain.GeneratedTicket) (string, error) {
+	f.tickets = append(f.tickets, ticket)
+	f.ticketCounter++
+	return "beads-ticket-" + ticket.TicketID(), nil
+}
+
+func (f *fakeBeadsWriterT) SetDependency(_ context.Context, ticketID, dependsOnID string) error {
+	f.dependencies = append(f.dependencies, struct{ from, to string }{ticketID, dependsOnID})
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -296,4 +325,73 @@ func TestTicketGenerationHandler_ApproveAndWrite_PublishesEvent(t *testing.T) {
 	require.Len(t, pub.published, 1)
 	_, ok := pub.published[0].(ticketdomain.TicketPlanApproved)
 	assert.True(t, ok, "expected TicketPlanApproved, got %T", pub.published[0])
+}
+
+// ---------------------------------------------------------------------------
+// Tests — Beads Integration (pv2.3)
+// ---------------------------------------------------------------------------
+
+func TestTicketGenerationHandler_WriteToBeads(t *testing.T) {
+	t.Parallel()
+
+	t.Run("creates epics and tickets in beads", func(t *testing.T) {
+		t.Parallel()
+		fileWriter := newFakeFileWriterT()
+		beadsWriter := newFakeBeadsWriterT()
+		handler := application.NewTicketGenerationHandler(fileWriter, &fakePublisherT{})
+		handler.SetBeadsWriter(beadsWriter)
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+		preview, _ := handler.BuildPreview(model, nil)
+
+		err := handler.ApproveAndWriteToBeads(context.Background(), preview, nil)
+
+		require.NoError(t, err)
+		assert.Len(t, beadsWriter.epics, 1)
+		assert.GreaterOrEqual(t, len(beadsWriter.tickets), 1)
+	})
+
+	t.Run("sets dependencies between tickets", func(t *testing.T) {
+		t.Parallel()
+		fileWriter := newFakeFileWriterT()
+		beadsWriter := newFakeBeadsWriterT()
+		handler := application.NewTicketGenerationHandler(fileWriter, &fakePublisherT{})
+		handler.SetBeadsWriter(beadsWriter)
+
+		// Create a model with upstream/downstream relationship
+		model := ddd.NewDomainModel("dep-test")
+		story := vo.NewDomainStory("Flow", []string{"User"}, "Start",
+			[]string{"User orders", "User pays"}, nil)
+		model.AddDomainStory(story)
+
+		model.AddTerm("Order", "Order entity", "Order", nil)
+		model.AddTerm("Payment", "Payment entity", "Payment", nil)
+
+		orderBC := vo.NewDomainBoundedContext("Order", "Manages orders", nil, nil, "")
+		paymentBC := vo.NewDomainBoundedContext("Payment", "Manages payments", nil, nil, "")
+		model.AddBoundedContext(orderBC)
+		model.AddBoundedContext(paymentBC)
+		model.ClassifySubdomain("Order", vo.SubdomainCore, "test")
+		model.ClassifySubdomain("Payment", vo.SubdomainCore, "test")
+
+		// Payment depends on Order (downstream)
+		rel := vo.NewContextRelationship("Order", "Payment", "customer-supplier")
+		model.AddContextRelationship(rel)
+
+		orderAgg := vo.NewAggregateDesign("OrderRoot", "Order", "OrderRoot", nil, nil, nil, nil)
+		paymentAgg := vo.NewAggregateDesign("PaymentRoot", "Payment", "PaymentRoot", nil, nil, nil, nil)
+		model.DesignAggregate(orderAgg)
+		model.DesignAggregate(paymentAgg)
+		model.Finalize()
+
+		preview, _ := handler.BuildPreview(model, nil)
+		err := handler.ApproveAndWriteToBeads(context.Background(), preview, nil)
+
+		require.NoError(t, err)
+		// Should have dependencies set (Payment tickets depend on Order tickets)
+		assert.NotEmpty(t, beadsWriter.dependencies)
+	})
 }
