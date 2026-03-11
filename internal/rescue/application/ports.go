@@ -8,6 +8,13 @@ import (
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
+// Test framework constants.
+const (
+	TestFrameworkGo     = "go"
+	TestFrameworkNPM    = "npm"
+	TestFrameworkPytest = "pytest"
+)
+
 // ProjectScan scans an existing project's structure to report what
 // documentation, configs, and structure already exist.
 type ProjectScan interface {
@@ -28,6 +35,12 @@ type GitOps interface {
 
 	// CreateBranch creates and checks out a new git branch.
 	CreateBranch(ctx context.Context, projectDir string, branchName string) error
+
+	// CheckoutPrevious checks out the previous branch (git checkout -).
+	CheckoutPrevious(ctx context.Context, projectDir string) error
+
+	// DeleteBranch deletes a local branch (git branch -D).
+	DeleteBranch(ctx context.Context, projectDir string, branchName string) error
 }
 
 // Rescue handles analyzing an existing project, planning migration steps,
@@ -41,4 +54,15 @@ type Rescue interface {
 
 	// Execute executes the migration plan.
 	Execute(ctx context.Context, plan rescuedomain.MigrationPlan) error
+}
+
+// TestRunner detects and runs project tests for migration validation.
+type TestRunner interface {
+	// Detect identifies the test framework used in a project directory.
+	// Returns one of TestFramework* constants, or empty string if none detected.
+	Detect(ctx context.Context, projectDir string) (string, error)
+
+	// Run executes tests using the specified framework.
+	// The framework parameter should be one of TestFramework* constants.
+	Run(ctx context.Context, projectDir string, framework string) error
 }

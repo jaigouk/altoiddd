@@ -43,6 +43,14 @@ func (m *mockGitOps) CreateBranch(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
+func (m *mockGitOps) CheckoutPrevious(_ context.Context, _ string) error {
+	return nil
+}
+
+func (m *mockGitOps) DeleteBranch(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 // --- mockRescue ---
 
 type mockRescue struct{}

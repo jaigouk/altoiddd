@@ -63,6 +63,14 @@ func (f *fakeGitOps) CreateBranch(_ context.Context, _ string, branchName string
 	return nil
 }
 
+func (f *fakeGitOps) CheckoutPrevious(_ context.Context, _ string) error {
+	return nil
+}
+
+func (f *fakeGitOps) DeleteBranch(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 type fakePublisherR struct {
 	published []any
 }

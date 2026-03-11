@@ -11,7 +11,7 @@ import (
 	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
 )
 
-var branchNamePattern = regexp.MustCompile(`^[a-zA-Z0-9/_-]+$`)
+var branchNamePattern = regexp.MustCompile(`^[a-zA-Z0-9/_.\-]+$`)
 
 // GitOpsAdapter implements GitOps using the git command-line tool via subprocess.
 type GitOpsAdapter struct{}
@@ -62,10 +62,33 @@ func (g *GitOpsAdapter) CreateBranch(ctx context.Context, projectDir, branchName
 	return nil
 }
 
+// CheckoutPrevious checks out the previous branch (git checkout -).
+func (g *GitOpsAdapter) CheckoutPrevious(ctx context.Context, projectDir string) error {
+	cmd := exec.CommandContext(ctx, "git", "checkout", "-")
+	cmd.Dir = projectDir
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("checkout previous: %w", err)
+	}
+	return nil
+}
+
+// DeleteBranch deletes a local branch (git branch -D).
+func (g *GitOpsAdapter) DeleteBranch(ctx context.Context, projectDir, branchName string) error {
+	if err := validateBranchName(branchName); err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, "git", "branch", "-D", branchName)
+	cmd.Dir = projectDir
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("deleting branch %s: %w", branchName, err)
+	}
+	return nil
+}
+
 func validateBranchName(branchName string) error {
 	if !branchNamePattern.MatchString(branchName) {
 		return fmt.Errorf(
-			"invalid branch name: %q. Only alphanumeric characters, '/', '-', and '_' are allowed",
+			"invalid branch name: %q. Only alphanumeric characters, '/', '-', '_', and '.' are allowed",
 			branchName)
 	}
 	return nil

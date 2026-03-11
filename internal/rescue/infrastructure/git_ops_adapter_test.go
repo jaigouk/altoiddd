@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -150,7 +151,14 @@ func TestValidBranchNamePasses(t *testing.T) {
 	dir := initGitRepo(t)
 	adapter := &infrastructure.GitOpsAdapter{}
 
-	validNames := []string{"alty/init", "feature/my-branch", "fix_123"}
+	validNames := []string{
+		"alty/init",
+		"feature/my-branch",
+		"fix_123",
+		"release/1.0",   // dots allowed
+		"hotfix/v2.3.1", // multiple dots
+		"feature/JIRA-123.fix",
+	}
 	for _, name := range validNames {
 		_, err := adapter.BranchExists(context.Background(), dir, name)
 		assert.NoError(t, err, "branch name %q should be valid", name)
@@ -178,4 +186,87 @@ func TestCreateBranchValidatesName(t *testing.T) {
 	err := adapter.CreateBranch(context.Background(), dir, "bad;name")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid branch name")
+}
+
+// ---------------------------------------------------------------------------
+// CheckoutPrevious
+// ---------------------------------------------------------------------------
+
+func TestCheckoutPreviousReturnsToPreviousBranch(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	adapter := &infrastructure.GitOpsAdapter{}
+
+	// Create and checkout a new branch
+	require.NoError(t, adapter.CreateBranch(context.Background(), dir, "feature/test"))
+
+	// Now checkout previous (should go back to main/master)
+	err := adapter.CheckoutPrevious(context.Background(), dir)
+	require.NoError(t, err)
+
+	// Verify we're back on the original branch (not feature/test)
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "branch", "--show-current")
+	output, err := cmd.Output()
+	require.NoError(t, err)
+	currentBranch := strings.TrimSpace(string(output))
+	assert.NotEqual(t, "feature/test", currentBranch)
+}
+
+func TestCheckoutPreviousReturnsErrorWhenNoPrevious(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	adapter := &infrastructure.GitOpsAdapter{}
+
+	// First checkout in a fresh repo - no previous branch
+	err := adapter.CheckoutPrevious(context.Background(), dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "checkout previous")
+}
+
+// ---------------------------------------------------------------------------
+// DeleteBranch
+// ---------------------------------------------------------------------------
+
+func TestDeleteBranchRemovesBranch(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	adapter := &infrastructure.GitOpsAdapter{}
+
+	// Create a branch
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "branch", "to-delete")
+	require.NoError(t, cmd.Run())
+
+	// Verify it exists
+	exists, err := adapter.BranchExists(context.Background(), dir, "to-delete")
+	require.NoError(t, err)
+	require.True(t, exists)
+
+	// Delete it
+	err = adapter.DeleteBranch(context.Background(), dir, "to-delete")
+	require.NoError(t, err)
+
+	// Verify it's gone
+	exists, err = adapter.BranchExists(context.Background(), dir, "to-delete")
+	require.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestDeleteBranchValidatesName(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	adapter := &infrastructure.GitOpsAdapter{}
+
+	err := adapter.DeleteBranch(context.Background(), dir, "bad;name")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid branch name")
+}
+
+func TestDeleteBranchReturnsErrorForNonExistent(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	adapter := &infrastructure.GitOpsAdapter{}
+
+	err := adapter.DeleteBranch(context.Background(), dir, "nonexistent")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "deleting branch")
 }
