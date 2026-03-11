@@ -63,6 +63,10 @@ type Prompter interface {
 
 	// AskSkipReason prompts for a reason when skipping a question.
 	AskSkipReason(ctx context.Context) (string, error)
+
+	// ConfirmPlayback displays a summary and asks for confirmation.
+	// Returns true if confirmed, false if user wants to review/edit.
+	ConfirmPlayback(ctx context.Context, summary string) (bool, error)
 }
 
 // --- Tool Detection Port ---

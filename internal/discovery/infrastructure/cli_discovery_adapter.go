@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/alty-cli/alty/internal/discovery/application"
 	"github.com/alty-cli/alty/internal/discovery/domain"
@@ -112,8 +113,15 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 
 		// Check for playback pending (triggered every 3 questions)
 		if session.Status() == domain.StatusPlaybackPending {
-			// Auto-confirm playback for now (full playback handling in 7u7.5)
-			_, err = a.handler.ConfirmPlayback(sessionID, true)
+			summary := a.buildPlaybackSummary(session, register)
+			confirmed, playbackErr := a.prompter.ConfirmPlayback(ctx, summary)
+			if playbackErr != nil {
+				if errors.Is(playbackErr, context.Canceled) {
+					return context.Canceled
+				}
+				return fmt.Errorf("playback confirmation: %w", playbackErr)
+			}
+			_, err = a.handler.ConfirmPlayback(sessionID, confirmed)
 			if err != nil {
 				return fmt.Errorf("confirming playback: %w", err)
 			}
@@ -121,4 +129,31 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// buildPlaybackSummary builds a text summary of answers for playback confirmation.
+func (a *CLIDiscoveryAdapter) buildPlaybackSummary(session *domain.DiscoverySession, register domain.DiscoveryRegister) string {
+	answers := session.Answers()
+	if len(answers) == 0 {
+		return "No answers recorded yet."
+	}
+
+	qByID := domain.QuestionByID()
+	var sb strings.Builder
+
+	for _, ans := range answers {
+		q, ok := qByID[ans.QuestionID()]
+		if !ok {
+			continue
+		}
+		var qText string
+		if register == domain.RegisterTechnical {
+			qText = q.TechnicalText()
+		} else {
+			qText = q.NonTechnicalText()
+		}
+		fmt.Fprintf(&sb, "Q: %s\nA: %s\n\n", qText, ans.ResponseText())
+	}
+
+	return strings.TrimSpace(sb.String())
 }

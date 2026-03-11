@@ -17,15 +17,18 @@ import (
 // --- Fake Prompter for Testing ---
 
 type fakePrompter struct {
-	personaChoice  string
-	personaErr     error
-	answers        []string // Answers for each question (empty = skip)
-	skipReasons    []string // Reasons for skipped questions
-	answerIdx      int      // Current answer index
-	skipIdx        int      // Current skip reason index
-	questionErr    error    // Error to return from AskQuestion
-	skipReasonErr  error    // Error to return from AskSkipReason
-	questionsAsked []string // Records questions asked (for verification)
+	personaChoice     string
+	personaErr        error
+	answers           []string // Answers for each question (empty = skip)
+	skipReasons       []string // Reasons for skipped questions
+	answerIdx         int      // Current answer index
+	skipIdx           int      // Current skip reason index
+	questionErr       error    // Error to return from AskQuestion
+	skipReasonErr     error    // Error to return from AskSkipReason
+	questionsAsked    []string // Records questions asked (for verification)
+	playbackConfirmed bool     // What to return from ConfirmPlayback
+	playbackErr       error    // Error to return from ConfirmPlayback
+	playbackSummaries []string // Records summaries shown (for verification)
 }
 
 func (f *fakePrompter) SelectPersona(_ context.Context) (string, error) {
@@ -55,6 +58,14 @@ func (f *fakePrompter) AskSkipReason(_ context.Context) (string, error) {
 	reason := f.skipReasons[f.skipIdx]
 	f.skipIdx++
 	return reason, nil
+}
+
+func (f *fakePrompter) ConfirmPlayback(_ context.Context, summary string) (bool, error) {
+	f.playbackSummaries = append(f.playbackSummaries, summary)
+	if f.playbackErr != nil {
+		return false, f.playbackErr
+	}
+	return f.playbackConfirmed, nil
 }
 
 // Compile-time check.
@@ -263,8 +274,9 @@ func TestCLIDiscoveryAdapter_Run_NonTechnicalRegisterUsed(t *testing.T) {
 		answers[i] = "Answer"
 	}
 	prompter := &fakePrompter{
-		personaChoice: "2", // Product Owner = Non-technical register
-		answers:       answers,
+		personaChoice:     "2", // Product Owner = Non-technical register
+		answers:           answers,
+		playbackConfirmed: true,
 	}
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
 
@@ -274,4 +286,86 @@ func TestCLIDiscoveryAdapter_Run_NonTechnicalRegisterUsed(t *testing.T) {
 	// Verify questions were asked with non-technical text
 	require.NotEmpty(t, prompter.questionsAsked)
 	assert.NotEmpty(t, prompter.questionsAsked[0])
+}
+
+// --- Playback Confirmation Tests ---
+
+func TestCLIDiscoveryAdapter_Run_PlaybackConfirmed(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	readmePath := filepath.Join(tmpDir, "README.md")
+	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	answers := make([]string, 10)
+	for i := range answers {
+		answers[i] = "Answer " + string(rune('A'+i))
+	}
+	prompter := &fakePrompter{
+		personaChoice:     "1",
+		answers:           answers,
+		playbackConfirmed: true, // Always confirm
+	}
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	require.NoError(t, err)
+
+	// Playback is triggered after Q3, Q6, Q9 = 3 times
+	assert.Len(t, prompter.playbackSummaries, 3)
+	// Each summary should contain answers
+	for _, summary := range prompter.playbackSummaries {
+		assert.NotEmpty(t, summary)
+	}
+}
+
+func TestCLIDiscoveryAdapter_Run_PlaybackSummaryContainsAnswers(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	readmePath := filepath.Join(tmpDir, "README.md")
+	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	answers := []string{"Users and admins", "Create orders", "Order placed event", "A4", "A5", "A6", "A7", "A8", "A9", "A10"}
+	prompter := &fakePrompter{
+		personaChoice:     "1",
+		answers:           answers,
+		playbackConfirmed: true,
+	}
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	require.NoError(t, err)
+
+	// First playback (after Q3) should contain first 3 answers
+	require.NotEmpty(t, prompter.playbackSummaries)
+	firstSummary := prompter.playbackSummaries[0]
+	assert.Contains(t, firstSummary, "Users and admins")
+	assert.Contains(t, firstSummary, "Create orders")
+	assert.Contains(t, firstSummary, "Order placed event")
+}
+
+func TestCLIDiscoveryAdapter_Run_PlaybackCanceled(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	readmePath := filepath.Join(tmpDir, "README.md")
+	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	answers := make([]string, 10)
+	for i := range answers {
+		answers[i] = "Answer"
+	}
+	prompter := &fakePrompter{
+		personaChoice: "1",
+		answers:       answers,
+		playbackErr:   context.Canceled, // Cancel during playback
+	}
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	assert.ErrorIs(t, err, context.Canceled)
 }

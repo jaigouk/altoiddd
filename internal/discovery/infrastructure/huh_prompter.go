@@ -97,3 +97,28 @@ func (p *HuhPrompter) AskSkipReason(ctx context.Context) (string, error) {
 
 	return reason, nil
 }
+
+// ConfirmPlayback displays a summary and asks for confirmation.
+// Returns true if confirmed, false if user wants to review/edit.
+func (p *HuhPrompter) ConfirmPlayback(ctx context.Context, summary string) (bool, error) {
+	var confirmed bool
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Review your answers").
+				Description(summary).
+				Affirmative("Yes, continue").
+				Negative("No, let me review").
+				Value(&confirmed),
+		),
+	)
+
+	if err := form.RunWithContext(ctx); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return false, context.Canceled
+		}
+		return false, fmt.Errorf("running playback form: %w", err)
+	}
+
+	return confirmed, nil
+}
