@@ -58,7 +58,7 @@ func TestClaudeCodeAdapter(t *testing.T) {
 		m := makeModel(t)
 		adapter := domain.NewClaudeCodeAdapter()
 		sections := adapter.Translate(m, profile)
-		assert.Len(t, sections, 2)
+		assert.GreaterOrEqual(t, len(sections), 6)
 		assert.Equal(t, ".claude/CLAUDE.md", sections[0].FilePath())
 		assert.Equal(t, ".claude/memory/MEMORY.md", sections[1].FilePath())
 	})
@@ -108,6 +108,78 @@ func TestClaudeCodeAdapter(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// ClaudeCodeAdapter — Agent Personas
+// ---------------------------------------------------------------------------
+
+func TestClaudeCodeAdapter_AgentPersonas(t *testing.T) {
+	t.Parallel()
+	profile := vo.PythonUvProfile{}
+
+	t.Run("produces agent persona files", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, profile)
+
+		// Base 2 + 4 personas = 6 total
+		assert.GreaterOrEqual(t, len(sections), 6)
+
+		// Check developer persona exists
+		dev := sectionByPath(sections, ".claude/agents/developer.md")
+		require.NotNil(t, dev, "missing developer.md")
+		assert.Contains(t, dev.Content(), "name: developer")
+	})
+
+	t.Run("developer persona has bounded contexts", func(t *testing.T) {
+		t.Parallel()
+		m := makeMultiContextModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, profile)
+		dev := sectionByPath(sections, ".claude/agents/developer.md")
+		require.NotNil(t, dev)
+		assert.Contains(t, dev.Content(), "Orders")
+		assert.Contains(t, dev.Content(), "Notifications")
+	})
+
+	t.Run("personas contain ubiquitous language", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, profile)
+		dev := sectionByPath(sections, ".claude/agents/developer.md")
+		require.NotNil(t, dev)
+		assert.Contains(t, dev.Content(), "Ubiquitous Language")
+	})
+
+	t.Run("personas have yaml frontmatter", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, profile)
+		for _, persona := range []string{"developer", "tech-lead", "qa-engineer", "researcher"} {
+			path := ".claude/agents/" + persona + ".md"
+			sec := sectionByPath(sections, path)
+			require.NotNil(t, sec, "missing %s", path)
+			assert.True(t, strings.HasPrefix(sec.Content(), "---"), "%s missing YAML frontmatter", persona)
+		}
+	})
+
+	t.Run("personas include quality gates when profile has them", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, vo.PythonUvProfile{})
+		dev := sectionByPath(sections, ".claude/agents/developer.md")
+		require.NotNil(t, dev)
+		assert.Contains(t, dev.Content(), "Quality Gates")
+	})
+
+	t.Run("personas omit quality gates for generic profile", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewClaudeCodeAdapter().Translate(m, vo.GenericProfile{})
+		dev := sectionByPath(sections, ".claude/agents/developer.md")
+		require.NotNil(t, dev)
+		assert.NotContains(t, dev.Content(), "Quality Gates")
+	})
+}
+
+// ---------------------------------------------------------------------------
 // CursorAdapter
 // ---------------------------------------------------------------------------
 
@@ -115,12 +187,15 @@ func TestCursorAdapter(t *testing.T) {
 	t.Parallel()
 	profile := vo.PythonUvProfile{}
 
-	t.Run("produces two sections", func(t *testing.T) {
+	t.Run("produces at least two sections", func(t *testing.T) {
 		t.Parallel()
 		m := makeModel(t)
 		sections := domain.NewCursorAdapter().Translate(m, profile)
-		assert.Len(t, sections, 2)
-		paths := []string{sections[0].FilePath(), sections[1].FilePath()}
+		assert.GreaterOrEqual(t, len(sections), 2)
+		paths := make([]string, len(sections))
+		for i, s := range sections {
+			paths[i] = s.FilePath()
+		}
 		assert.Contains(t, paths, "AGENTS.md")
 		assert.Contains(t, paths, ".cursor/rules/project-conventions.mdc")
 	})
@@ -132,6 +207,44 @@ func TestCursorAdapter(t *testing.T) {
 		mdc := sectionByPath(sections, ".cursor/rules/project-conventions.mdc")
 		require.NotNil(t, mdc)
 		assert.True(t, strings.HasPrefix(mdc.Content(), "---"))
+	})
+}
+
+// ---------------------------------------------------------------------------
+// CursorAdapter — Domain Expert Rule
+// ---------------------------------------------------------------------------
+
+func TestCursorAdapter_DomainExpertRule(t *testing.T) {
+	t.Parallel()
+	profile := vo.PythonUvProfile{}
+
+	t.Run("produces domain-expert.mdc with terms", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewCursorAdapter().Translate(m, profile)
+
+		expert := sectionByPath(sections, ".cursor/rules/domain-expert.mdc")
+		require.NotNil(t, expert, "missing domain-expert.mdc")
+		assert.Contains(t, expert.Content(), "Domain Expert Reference")
+		assert.Contains(t, expert.Content(), "Orders")
+	})
+
+	t.Run("domain-expert has mdc frontmatter", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewCursorAdapter().Translate(m, profile)
+		expert := sectionByPath(sections, ".cursor/rules/domain-expert.mdc")
+		require.NotNil(t, expert)
+		assert.True(t, strings.HasPrefix(expert.Content(), "---"))
+		assert.Contains(t, expert.Content(), "alwaysApply: true")
+	})
+
+	t.Run("skips domain-expert when no terms", func(t *testing.T) {
+		t.Parallel()
+		m := ddd.NewDomainModel("empty")
+		sections := domain.NewCursorAdapter().Translate(m, profile)
+		expert := sectionByPath(sections, ".cursor/rules/domain-expert.mdc")
+		assert.Nil(t, expert, "should not produce domain-expert.mdc for empty model")
 	})
 }
 
@@ -167,6 +280,58 @@ func TestRooCodeAdapter(t *testing.T) {
 		err := json.Unmarshal([]byte(roomodes.Content()), &parsed)
 		require.NoError(t, err)
 		assert.Contains(t, parsed, "customModes")
+	})
+}
+
+// ---------------------------------------------------------------------------
+// RooCodeAdapter — Enhanced Roomodes
+// ---------------------------------------------------------------------------
+
+func TestRooCodeAdapter_EnhancedRoomodes(t *testing.T) {
+	t.Parallel()
+	profile := vo.PythonUvProfile{}
+
+	t.Run("roomodes has roleDefinition", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewRooCodeAdapter().Translate(m, profile)
+		roomodes := sectionByPath(sections, ".roomodes")
+		require.NotNil(t, roomodes)
+		assert.Contains(t, roomodes.Content(), "roleDefinition")
+	})
+
+	t.Run("roleDefinition contains bounded contexts", func(t *testing.T) {
+		t.Parallel()
+		m := makeMultiContextModel(t)
+		sections := domain.NewRooCodeAdapter().Translate(m, profile)
+		roomodes := sectionByPath(sections, ".roomodes")
+		require.NotNil(t, roomodes)
+		assert.Contains(t, roomodes.Content(), "Orders")
+		assert.Contains(t, roomodes.Content(), "Notifications")
+	})
+
+	t.Run("generates context-specific modes", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewRooCodeAdapter().Translate(m, profile)
+		roomodes := sectionByPath(sections, ".roomodes")
+		require.NotNil(t, roomodes)
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(roomodes.Content()), &parsed)
+		require.NoError(t, err)
+
+		modes := parsed["customModes"].([]interface{})
+		assert.GreaterOrEqual(t, len(modes), 2)
+	})
+
+	t.Run("context mode has classification", func(t *testing.T) {
+		t.Parallel()
+		m := makeModel(t)
+		sections := domain.NewRooCodeAdapter().Translate(m, profile)
+		roomodes := sectionByPath(sections, ".roomodes")
+		require.NotNil(t, roomodes)
+		assert.Contains(t, roomodes.Content(), "core")
 	})
 }
 
