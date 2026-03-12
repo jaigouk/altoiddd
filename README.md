@@ -43,7 +43,7 @@ Then you hand it to Cursor, Claude Code, or any AI tool — and it builds **with
 | Finish one task, others go stale    | Completing work auto-flags what needs review          |
 | Works with one AI tool              | Works with Cursor, Claude Code, Roo Code, OpenCode |
 
-## Three Commands. That's It.
+## Four Commands. That's It.
 
 ```bash
 # Starting a new project
@@ -54,9 +54,26 @@ alty init --existing
 
 # Check if your documentation is still accurate
 alty doc-health
+
+# Check if knowledge about AI tools is still fresh
+alty kb drift
 ```
 
 **`alty init` guides you through everything.** It shows you what it will do, asks you to confirm, and never touches files without your permission.
+
+### Knowledge Base Drift Detection
+
+alty maintains knowledge about AI tool conventions (Claude Code, Cursor, Roo Code, OpenCode). This knowledge needs to stay fresh because these tools update frequently.
+
+```bash
+# Check all tools for stale knowledge
+alty kb drift
+
+# Check a specific tool
+alty kb drift claude-code
+```
+
+By default, knowledge entries are considered stale after **14 days** (2 weeks). This aggressive threshold exists because AI tools like Claude Code and Cursor typically release updates weekly, and convention changes can break your configurations.
 
 ## Installation
 

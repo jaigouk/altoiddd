@@ -35,6 +35,7 @@ func TestNewApp_AllHandlersAreWired(t *testing.T) {
 	assert.NotNil(t, app.PersonaHandler, "PersonaHandler")
 	assert.NotNil(t, app.DocHealthHandler, "DocHealthHandler")
 	assert.NotNil(t, app.KnowledgeLookupHandler, "KnowledgeLookupHandler")
+	assert.NotNil(t, app.DriftDetectionHandler, "DriftDetectionHandler")
 	assert.NotNil(t, app.RescueHandler, "RescueHandler")
 	assert.NotNil(t, app.ChallengeHandler, "ChallengeHandler")
 }

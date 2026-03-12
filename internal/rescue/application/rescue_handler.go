@@ -31,6 +31,7 @@ type RescueHandler struct {
 	gitOps      GitOps
 	fileWriter  sharedapp.FileWriter
 	publisher   sharedapp.EventPublisher
+	testRunner  TestRunner
 }
 
 // NewRescueHandler creates a new RescueHandler with injected dependencies.
@@ -39,12 +40,14 @@ func NewRescueHandler(
 	gitOps GitOps,
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
+	testRunner TestRunner,
 ) *RescueHandler {
 	return &RescueHandler{
 		projectScan: projectScan,
 		gitOps:      gitOps,
 		fileWriter:  fileWriter,
 		publisher:   publisher,
+		testRunner:  testRunner,
 	}
 }
 
@@ -169,6 +172,30 @@ func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.
 		}
 	}
 
+	// Run tests if test runner is configured
+	if h.testRunner != nil {
+		framework, err := h.testRunner.Detect(ctx, analysis.ProjectDir())
+		if err != nil {
+			_ = analysis.Fail("test detection failed")
+			rollbackErr := h.rollback(ctx, analysis.ProjectDir(), plan.BranchName())
+			if rollbackErr != nil {
+				return fmt.Errorf("test detection failed, rollback also failed: %w", err)
+			}
+			return fmt.Errorf("test detection failed, rollback completed: %w", err)
+		}
+
+		if framework != "" {
+			if err := h.testRunner.Run(ctx, analysis.ProjectDir(), framework); err != nil {
+				_ = analysis.Fail("tests failed")
+				rollbackErr := h.rollback(ctx, analysis.ProjectDir(), plan.BranchName())
+				if rollbackErr != nil {
+					return fmt.Errorf("tests failed, rollback also failed: %w", err)
+				}
+				return fmt.Errorf("tests failed, rollback completed: %w", err)
+			}
+		}
+	}
+
 	if err := analysis.Complete(); err != nil {
 		return fmt.Errorf("complete analysis: %w", err)
 	}
@@ -176,6 +203,21 @@ func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.
 		_ = h.publisher.Publish(ctx, event)
 	}
 	return nil
+}
+
+// rollback undoes the migration by switching to the previous branch and deleting the migration branch.
+// It attempts both operations even if one fails, returning the first error encountered.
+func (h *RescueHandler) rollback(ctx context.Context, projectDir, branchName string) error {
+	var firstErr error
+	if err := h.gitOps.CheckoutPrevious(ctx, projectDir); err != nil {
+		firstErr = fmt.Errorf("checkout previous: %w", err)
+	}
+	if err := h.gitOps.DeleteBranch(ctx, projectDir, branchName); err != nil {
+		if firstErr == nil {
+			firstErr = fmt.Errorf("delete branch: %w", err)
+		}
+	}
+	return firstErr
 }
 
 func (h *RescueHandler) identifyGaps(

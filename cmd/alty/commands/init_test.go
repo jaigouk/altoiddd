@@ -99,7 +99,7 @@ func newTestRescueHandler(
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
 ) *rescueapp.RescueHandler {
-	return rescueapp.NewRescueHandler(projectScan, gitOps, fileWriter, publisher)
+	return rescueapp.NewRescueHandler(projectScan, gitOps, fileWriter, publisher, nil)
 }
 
 // --- Tests ---

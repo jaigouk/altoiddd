@@ -70,6 +70,7 @@ type App struct {
 
 	// --- Knowledge ---
 	KnowledgeLookupHandler *knowledgeapp.KnowledgeLookupHandler
+	DriftDetectionHandler  *knowledgeapp.DriftDetectionHandler
 
 	// --- Rescue ---
 	RescueHandler *rescueapp.RescueHandler
@@ -113,10 +114,12 @@ func NewApp() (*App, error) {
 
 	// 6. Knowledge infrastructure
 	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader(".alty/knowledge")
+	driftDetector := knowledgeinfra.NewDriftDetectionAdapter(".")
 
 	// 7. Rescue infrastructure
 	projectScanner := &rescueinfra.ProjectScanner{}
 	gitOps := &rescueinfra.GitOpsAdapter{}
+	testRunner := &rescueinfra.TestRunnerAdapter{}
 
 	// 8. Ticket infrastructure
 	ticketReader := ticketinfra.NewBeadsTicketReader(".beads")
@@ -171,8 +174,9 @@ func NewApp() (*App, error) {
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
 	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
+	driftDetectionHandler := knowledgeapp.NewDriftDetectionHandler(driftDetector)
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
-	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher)
+	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher, testRunner)
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
 	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter)
 
@@ -192,6 +196,7 @@ func NewApp() (*App, error) {
 		DocReviewHandler:          docReviewHandler,
 		SpikeFollowUpHandler:      spikeFollowUpHandler,
 		KnowledgeLookupHandler:    knowledgeLookupHandler,
+		DriftDetectionHandler:     driftDetectionHandler,
 		RescueHandler:             rescueHandler,
 		ChallengeHandler:          challengeHandler,
 		VersionHandler:            versionHandler,
