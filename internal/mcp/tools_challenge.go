@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -35,7 +36,8 @@ type ChallengeStatusInput struct {
 
 // ChallengeCompleteInput is the typed input for challenge_complete.
 type ChallengeCompleteInput struct {
-	SessionID string `json:"session_id" jsonschema:"the challenge session ID"`
+	SessionID string  `json:"session_id" jsonschema:"the challenge session ID"`
+	DDDPath   *string `json:"ddd_path,omitempty" jsonschema:"path to DDD.md to version (optional)"`
 }
 
 // --- Tool handlers ---
@@ -172,7 +174,7 @@ func challengeStatusHandler(app *composition.App) func(context.Context, *mcp.Cal
 }
 
 func challengeCompleteHandler(app *composition.App) func(context.Context, *mcp.CallToolRequest, ChallengeCompleteInput) (*mcp.CallToolResult, any, error) {
-	return func(_ context.Context, _ *mcp.CallToolRequest, input ChallengeCompleteInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, input ChallengeCompleteInput) (*mcp.CallToolResult, any, error) {
 		if r, m, e := requireSessionID(input.SessionID); r != nil {
 			return r, m, e
 		}
@@ -200,7 +202,20 @@ func challengeCompleteHandler(app *composition.App) func(context.Context, *mcp.C
 		fmt.Fprintf(&sb, "responses: %d (accepted: %d, rejected: %d)\n", len(responses), accepted, rejected)
 		fmt.Fprintf(&sb, "convergence_delta: %d\n", iteration.ConvergenceDelta())
 
-		if iteration.ConvergenceDelta() > 0 {
+		// Version DDD.md if path provided
+		if input.DDDPath != nil && *input.DDDPath != "" {
+			if err := app.VersionHandler.VersionDDDDocument(
+				ctx,
+				*input.DDDPath,
+				"challenge",
+				iteration.ConvergenceDelta(),
+				time.Now(),
+			); err != nil {
+				fmt.Fprintf(&sb, "\nWarning: failed to version DDD.md: %v", err)
+			} else {
+				fmt.Fprintf(&sb, "\nDDD.md versioned successfully at %s", *input.DDDPath)
+			}
+		} else if iteration.ConvergenceDelta() > 0 {
 			fmt.Fprintln(&sb, "\nDDD model improvements suggested. Consider updating DDD.md.")
 		}
 

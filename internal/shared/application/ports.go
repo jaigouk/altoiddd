@@ -16,6 +16,13 @@ type EventSubscriber interface {
 	Subscribe(eventType string, handler EventHandler) error
 }
 
+// FileReader reads files from the filesystem. Shared kernel port used by
+// multiple bounded contexts for reading existing artifacts.
+type FileReader interface {
+	// ReadFile reads content from a file at the given path.
+	ReadFile(ctx context.Context, path string) (string, error)
+}
+
 // FileWriter writes files to the filesystem. Shared kernel port used by
 // multiple bounded contexts for writing generated artifacts to disk.
 type FileWriter interface {

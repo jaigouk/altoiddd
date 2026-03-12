@@ -39,16 +39,56 @@ func (m *mockChallenger) GenerateChallenges(_ context.Context, _ *ddd.DomainMode
 	return []challengedomain.Challenge{c1, c2}, nil
 }
 
+// mockFileReader for testing versioning.
+type mockFileReader struct {
+	content map[string]string
+}
+
+func (m *mockFileReader) ReadFile(_ context.Context, path string) (string, error) {
+	if content, ok := m.content[path]; ok {
+		return content, nil
+	}
+	return "", nil
+}
+
+// mockFileWriter for testing versioning.
+type mockFileWriter struct {
+	written map[string]string
+}
+
+func (m *mockFileWriter) WriteFile(_ context.Context, path, content string) error {
+	if m.written == nil {
+		m.written = make(map[string]string)
+	}
+	m.written[path] = content
+	return nil
+}
+
 // --- Test helpers ---
 
 // setupChallengeServer creates a test MCP server with challenge tools registered.
 func setupChallengeServer(t *testing.T) *mcp.ClientSession {
 	t.Helper()
+	return setupChallengeServerWithMocks(t, nil, nil)
+}
+
+// setupChallengeServerWithMocks creates a test MCP server with optional mock file IO.
+func setupChallengeServerWithMocks(t *testing.T, reader *mockFileReader, writer *mockFileWriter) *mcp.ClientSession {
+	t.Helper()
 	ctx := context.Background()
 
 	challenger := &mockChallenger{}
-	handler := challengeapp.NewChallengeHandler(challenger)
-	app := &composition.App{ChallengeHandler: handler}
+	challengeHandler := challengeapp.NewChallengeHandler(challenger)
+
+	var versionHandler *challengeapp.VersionHandler
+	if reader != nil && writer != nil {
+		versionHandler = challengeapp.NewVersionHandler(reader, writer)
+	}
+
+	app := &composition.App{
+		ChallengeHandler: challengeHandler,
+		VersionHandler:   versionHandler,
+	}
 
 	server := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "0.0.1"}, nil)
 	mcptools.RegisterChallengeTools(server, app)
@@ -487,4 +527,101 @@ func TestChallenge_MultipleSessions(t *testing.T) {
 	})
 	require.False(t, isErr)
 	assert.Contains(t, status2, "Responses: 0")
+}
+
+// --- DDD.md versioning tests ---
+
+func TestChallengeComplete_WithVersioning(t *testing.T) {
+	t.Parallel()
+
+	reader := &mockFileReader{
+		content: map[string]string{
+			"docs/DDD.md": `---
+version: 1
+round: express
+updated: "2026-03-01"
+convergence_delta: 0
+---
+
+# Domain Model
+
+Content here.
+`,
+		},
+	}
+	writer := &mockFileWriter{}
+
+	session := setupChallengeServerWithMocks(t, reader, writer)
+	sid := startChallengeSession(t, session)
+
+	// Respond with artifact updates to create convergence delta
+	_, isErr := callChallengeTool(t, session, "challenge_respond", map[string]any{
+		"session_id":       sid,
+		"challenge_id":     "c0",
+		"accepted":         true,
+		"user_response":    "Adding invariant",
+		"artifact_updates": []string{"Add invariant: OrderTotal > 0"},
+	})
+	require.False(t, isErr)
+
+	// Complete with ddd_path to trigger versioning
+	text, isErr := callChallengeTool(t, session, "challenge_complete", map[string]any{
+		"session_id": sid,
+		"ddd_path":   "docs/DDD.md",
+	})
+	require.False(t, isErr)
+	assert.Contains(t, text, "DDD.md versioned successfully")
+
+	// Verify the file was written with updated version
+	require.Contains(t, writer.written, "docs/DDD.md")
+	written := writer.written["docs/DDD.md"]
+	assert.Contains(t, written, "version: 2")
+	assert.Contains(t, written, "round: challenge")
+	assert.Contains(t, written, "convergence_delta: 1")
+}
+
+func TestChallengeComplete_WithoutVersioning(t *testing.T) {
+	t.Parallel()
+
+	// No reader/writer means no VersionHandler
+	session := setupChallengeServer(t)
+	sid := startChallengeSession(t, session)
+
+	// Respond to a challenge
+	_, isErr := callChallengeTool(t, session, "challenge_respond", map[string]any{
+		"session_id":       sid,
+		"challenge_id":     "c0",
+		"accepted":         true,
+		"user_response":    "Adding invariant",
+		"artifact_updates": []string{"Add invariant"},
+	})
+	require.False(t, isErr)
+
+	// Complete without ddd_path
+	text, isErr := callChallengeTool(t, session, "challenge_complete", map[string]any{
+		"session_id": sid,
+	})
+	require.False(t, isErr)
+	assert.Contains(t, text, "Challenge session completed")
+	assert.Contains(t, text, "DDD model improvements suggested")
+	assert.NotContains(t, text, "versioned successfully")
+}
+
+func TestChallengeComplete_VersioningWithEmptyPath(t *testing.T) {
+	t.Parallel()
+
+	reader := &mockFileReader{content: map[string]string{}}
+	writer := &mockFileWriter{}
+
+	session := setupChallengeServerWithMocks(t, reader, writer)
+	sid := startChallengeSession(t, session)
+
+	// Complete with empty ddd_path (should not attempt versioning)
+	text, isErr := callChallengeTool(t, session, "challenge_complete", map[string]any{
+		"session_id": sid,
+		"ddd_path":   "",
+	})
+	require.False(t, isErr)
+	assert.NotContains(t, text, "versioned")
+	assert.Empty(t, writer.written)
 }

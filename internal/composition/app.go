@@ -76,6 +76,7 @@ type App struct {
 
 	// --- Challenge ---
 	ChallengeHandler *challengeapp.ChallengeHandler
+	VersionHandler   *challengeapp.VersionHandler
 
 	// --- Infrastructure ---
 	EventBus            *eventbus.Bus
@@ -96,6 +97,7 @@ func NewApp() (*App, error) {
 	bus := eventbus.NewBus()
 
 	// 2. Shared infrastructure
+	fileReader := persistence.NewFilesystemFileReader()
 	innerWriter := persistence.NewFilesystemFileWriter()
 	fileWriter := persistence.NewConflictDetectingFileWriter(innerWriter, valueobjects.ConflictStrategyRename)
 
@@ -172,6 +174,7 @@ func NewApp() (*App, error) {
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
 	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher)
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
+	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter)
 
 	return &App{
 		BootstrapHandler:          bootstrapHandler,
@@ -191,6 +194,7 @@ func NewApp() (*App, error) {
 		KnowledgeLookupHandler:    knowledgeLookupHandler,
 		RescueHandler:             rescueHandler,
 		ChallengeHandler:          challengeHandler,
+		VersionHandler:            versionHandler,
 		EventBus:                  bus,
 		Subscriber:                subscriber,
 		WorkflowCoordinator:       coordinator,
