@@ -61,9 +61,9 @@ func TestRegisterValues(t *testing.T) {
 
 // -- QuestionPhase enum tests --
 
-func TestQuestionPhaseHasFivePhases(t *testing.T) {
+func TestQuestionPhaseHasSixPhases(t *testing.T) {
 	t.Parallel()
-	assert.Len(t, AllQuestionPhases(), 5)
+	assert.Len(t, AllQuestionPhases(), 6)
 }
 
 func TestQuestionPhaseValues(t *testing.T) {
@@ -78,6 +78,7 @@ func TestQuestionPhaseValues(t *testing.T) {
 		{"story", PhaseStory, "story"},
 		{"events", PhaseEvents, "events"},
 		{"boundaries", PhaseBoundaries, "boundaries"},
+		{"classification", PhaseClassification, "classification"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -90,7 +91,7 @@ func TestQuestionPhaseValues(t *testing.T) {
 func TestQuestionPhaseOrdering(t *testing.T) {
 	t.Parallel()
 	phases := AllQuestionPhases()
-	expected := []QuestionPhase{PhaseSeed, PhaseActors, PhaseStory, PhaseEvents, PhaseBoundaries}
+	expected := []QuestionPhase{PhaseSeed, PhaseActors, PhaseStory, PhaseEvents, PhaseBoundaries, PhaseClassification}
 	assert.Equal(t, expected, phases)
 }
 

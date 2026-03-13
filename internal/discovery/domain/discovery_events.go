@@ -147,3 +147,87 @@ func (e *DiscoveryCompletedEvent) UnmarshalJSON(data []byte) error {
 	e.playbackConfirmations = p.PlaybackConfirmations
 	return nil
 }
+
+// BoundedContextClassifiedEvent is emitted when a bounded context is classified.
+type BoundedContextClassifiedEvent struct {
+	sessionID      string
+	contextName    string
+	classification vo.SubdomainClassification
+	rationale      string
+}
+
+// NewBoundedContextClassifiedEvent creates a BoundedContextClassifiedEvent.
+func NewBoundedContextClassifiedEvent(
+	sessionID string,
+	contextName string,
+	classification vo.SubdomainClassification,
+	rationale string,
+) BoundedContextClassifiedEvent {
+	return BoundedContextClassifiedEvent{
+		sessionID:      sessionID,
+		contextName:    contextName,
+		classification: classification,
+		rationale:      rationale,
+	}
+}
+
+// SessionID returns the session identifier.
+func (e BoundedContextClassifiedEvent) SessionID() string { return e.sessionID }
+
+// ContextName returns the bounded context name.
+func (e BoundedContextClassifiedEvent) ContextName() string { return e.contextName }
+
+// Classification returns the subdomain classification.
+func (e BoundedContextClassifiedEvent) Classification() vo.SubdomainClassification {
+	return e.classification
+}
+
+// Rationale returns the classification rationale.
+func (e BoundedContextClassifiedEvent) Rationale() string { return e.rationale }
+
+// Equal returns true if two events have the same values.
+func (e BoundedContextClassifiedEvent) Equal(other BoundedContextClassifiedEvent) bool {
+	return e.sessionID == other.sessionID &&
+		e.contextName == other.contextName &&
+		e.classification == other.classification &&
+		e.rationale == other.rationale
+}
+
+// MarshalJSON implements json.Marshaler for event bus serialization.
+func (e BoundedContextClassifiedEvent) MarshalJSON() ([]byte, error) {
+	type proxy struct {
+		SessionID      string                     `json:"session_id"`
+		ContextName    string                     `json:"context_name"`
+		Classification vo.SubdomainClassification `json:"classification"`
+		Rationale      string                     `json:"rationale"`
+	}
+	data, err := json.Marshal(proxy{
+		SessionID:      e.sessionID,
+		ContextName:    e.contextName,
+		Classification: e.classification,
+		Rationale:      e.rationale,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling BoundedContextClassifiedEvent: %w", err)
+	}
+	return data, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler for event bus deserialization.
+func (e *BoundedContextClassifiedEvent) UnmarshalJSON(data []byte) error {
+	type proxy struct {
+		SessionID      string                     `json:"session_id"`
+		ContextName    string                     `json:"context_name"`
+		Classification vo.SubdomainClassification `json:"classification"`
+		Rationale      string                     `json:"rationale"`
+	}
+	var p proxy
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("unmarshaling BoundedContextClassifiedEvent: %w", err)
+	}
+	e.sessionID = p.SessionID
+	e.contextName = p.ContextName
+	e.classification = p.Classification
+	e.rationale = p.Rationale
+	return nil
+}

@@ -46,6 +46,7 @@ const playbackInterval = 3
 type DiscoverySession struct {
 	register                 *DiscoveryRegister
 	skipped                  map[string]bool
+	contextClassifications   map[string]ClassificationResult
 	round                    *DiscoveryRound
 	mode                     *DiscoveryMode
 	techStack                *vo.TechStack
@@ -54,6 +55,7 @@ type DiscoverySession struct {
 	readmeContent            string
 	status                   DiscoveryStatus
 	events                   []DiscoveryCompletedEvent
+	classificationEvents     []BoundedContextClassifiedEvent
 	playbackConfirmations    []Playback
 	answers                  []Answer
 	answersSinceLastPlayback int
@@ -62,10 +64,11 @@ type DiscoverySession struct {
 // NewDiscoverySession creates a new session in CREATED state.
 func NewDiscoverySession(readmeContent string) *DiscoverySession {
 	return &DiscoverySession{
-		sessionID:     identity.NewID(),
-		readmeContent: readmeContent,
-		status:        StatusCreated,
-		skipped:       make(map[string]bool),
+		sessionID:              identity.NewID(),
+		readmeContent:          readmeContent,
+		status:                 StatusCreated,
+		skipped:                make(map[string]bool),
+		contextClassifications: make(map[string]ClassificationResult),
 	}
 }
 
@@ -125,6 +128,22 @@ func (s *DiscoverySession) Mode() DiscoveryMode {
 func (s *DiscoverySession) Events() []DiscoveryCompletedEvent {
 	out := make([]DiscoveryCompletedEvent, len(s.events))
 	copy(out, s.events)
+	return out
+}
+
+// ContextClassifications returns a defensive copy of bounded context classifications.
+func (s *DiscoverySession) ContextClassifications() map[string]ClassificationResult {
+	out := make(map[string]ClassificationResult, len(s.contextClassifications))
+	for k, v := range s.contextClassifications {
+		out[k] = v
+	}
+	return out
+}
+
+// ClassificationEvents returns a defensive copy of bounded context classified events.
+func (s *DiscoverySession) ClassificationEvents() []BoundedContextClassifiedEvent {
+	out := make([]BoundedContextClassifiedEvent, len(s.classificationEvents))
+	copy(out, s.classificationEvents)
 	return out
 }
 
@@ -380,6 +399,33 @@ func (s *DiscoverySession) CompleteSimulation() error {
 	return nil
 }
 
+// ClassifyBoundedContext classifies a bounded context with the Khononov decision tree result.
+// Allowed in COMPLETED state (EXPRESS mode after Complete(), DEEP mode after CompleteSimulation())
+// or ROUND_1_COMPLETE state (DEEP mode after Complete() but before challenge round).
+// Emits BoundedContextClassifiedEvent.
+func (s *DiscoverySession) ClassifyBoundedContext(contextName string, result ClassificationResult) error {
+	// Classification is allowed in COMPLETED or ROUND_1_COMPLETE states
+	if s.status != StatusCompleted && s.status != StatusRound1Complete {
+		return fmt.Errorf("cannot classify bounded context in %s state: must complete discovery first: %w",
+			s.status, domainerrors.ErrInvariantViolation)
+	}
+	if strings.TrimSpace(contextName) == "" {
+		return fmt.Errorf("context name cannot be empty")
+	}
+	if _, exists := s.contextClassifications[contextName]; exists {
+		return fmt.Errorf("bounded context '%s' already classified: %w",
+			contextName, domainerrors.ErrInvariantViolation)
+	}
+	s.contextClassifications[contextName] = result
+	s.classificationEvents = append(s.classificationEvents, NewBoundedContextClassifiedEvent(
+		s.sessionID,
+		contextName,
+		result.Classification(),
+		result.Rationale(),
+	))
+	return nil
+}
+
 func (s *DiscoverySession) emitCompletedEvent() {
 	s.events = append(s.events, NewDiscoveryCompletedEvent(
 		s.sessionID,
@@ -474,6 +520,15 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		}
 	}
 
+	// Serialize context classifications
+	classifications := make(map[string]map[string]string, len(s.contextClassifications))
+	for name, result := range s.contextClassifications {
+		classifications[name] = map[string]string{
+			"classification": string(result.Classification()),
+			"rationale":      result.Rationale(),
+		}
+	}
+
 	return map[string]interface{}{
 		"session_id":                  s.sessionID,
 		"readme_content":              s.readmeContent,
@@ -487,6 +542,7 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		"mode":                        modeVal,
 		"round":                       roundVal,
 		"tech_stack":                  techStackVal,
+		"context_classifications":     classifications,
 	}
 }
 
@@ -687,6 +743,30 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		}
 	}
 
+	// Parse context classifications
+	contextClassifications := make(map[string]ClassificationResult)
+	if ccVal, exists := data["context_classifications"]; exists && ccVal != nil {
+		switch ccMap := ccVal.(type) {
+		case map[string]interface{}:
+			for name, val := range ccMap {
+				switch m := val.(type) {
+				case map[string]interface{}:
+					cls := vo.SubdomainClassification(toString(m["classification"]))
+					rationale, _ := m["rationale"].(string)
+					contextClassifications[name] = NewClassificationResult(cls, rationale)
+				case map[string]string:
+					cls := vo.SubdomainClassification(m["classification"])
+					contextClassifications[name] = NewClassificationResult(cls, m["rationale"])
+				}
+			}
+		case map[string]map[string]string:
+			for name, m := range ccMap {
+				cls := vo.SubdomainClassification(m["classification"])
+				contextClassifications[name] = NewClassificationResult(cls, m["rationale"])
+			}
+		}
+	}
+
 	return &DiscoverySession{
 		sessionID:                toString(data["session_id"]),
 		readmeContent:            toString(data["readme_content"]),
@@ -700,6 +780,7 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		techStack:                techStack,
 		mode:                     mode,
 		round:                    round,
+		contextClassifications:   contextClassifications,
 	}, nil
 }
 

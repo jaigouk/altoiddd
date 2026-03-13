@@ -62,16 +62,17 @@ type QuestionPhase string
 
 // QuestionPhase constants.
 const (
-	PhaseSeed       QuestionPhase = "seed"
-	PhaseActors     QuestionPhase = "actors"
-	PhaseStory      QuestionPhase = "story"
-	PhaseEvents     QuestionPhase = "events"
-	PhaseBoundaries QuestionPhase = "boundaries"
+	PhaseSeed           QuestionPhase = "seed"
+	PhaseActors         QuestionPhase = "actors"
+	PhaseStory          QuestionPhase = "story"
+	PhaseEvents         QuestionPhase = "events"
+	PhaseBoundaries     QuestionPhase = "boundaries"
+	PhaseClassification QuestionPhase = "classification"
 )
 
 // AllQuestionPhases returns all question phases in order.
 func AllQuestionPhases() []QuestionPhase {
-	return []QuestionPhase{PhaseSeed, PhaseActors, PhaseStory, PhaseEvents, PhaseBoundaries}
+	return []QuestionPhase{PhaseSeed, PhaseActors, PhaseStory, PhaseEvents, PhaseBoundaries, PhaseClassification}
 }
 
 // DiscoveryMode represents the discovery thoroughness level.
