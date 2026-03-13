@@ -13,9 +13,12 @@ import (
 	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
+	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
+	domain "github.com/alty-cli/alty/internal/knowledge/domain"
 	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
 )
 
@@ -308,6 +311,143 @@ func TestDocHealthTool_EmptyProjectDir(t *testing.T) {
 	assertToolError(t, result, "project_dir is required")
 }
 
+// --- ticket_verify tests ---
+
+// stubTicketContentReader implements ticketapp.TicketContentReader for testing.
+type stubTicketContentReader struct {
+	content map[string]string
+}
+
+func (s *stubTicketContentReader) ReadTicketContent(_ context.Context, ticketID string) (string, error) {
+	if c, ok := s.content[ticketID]; ok {
+		return c, nil
+	}
+	return "", nil
+}
+
+// stubMCPCommandRunner implements ticketapp.CommandRunner for testing.
+type stubMCPCommandRunner struct {
+	outputs map[string]string
+}
+
+func (s *stubMCPCommandRunner) Run(_ context.Context, command string) (string, error) {
+	if o, ok := s.outputs[command]; ok {
+		return o, nil
+	}
+	return "", nil
+}
+
+func TestTicketVerifyTool_EmptyTicketID(t *testing.T) {
+	t.Parallel()
+	app := &composition.App{}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "",
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "ticket_id is required")
+}
+
+func TestTicketVerifyTool_NoHandler(t *testing.T) {
+	t.Parallel()
+	app := &composition.App{} // nil TicketVerifyHandler
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "t-123",
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "ticket verify handler not available")
+}
+
+func TestTicketVerifyTool_HappyPath(t *testing.T) {
+	t.Parallel()
+
+	reader := &stubTicketContentReader{
+		content: map[string]string{
+			"t-123": "## Analysis\n\n```bash\ndeadcode ./...\n```\n\nFound **14 issues** to fix.\n",
+		},
+	}
+	runner := &stubMCPCommandRunner{
+		outputs: map[string]string{
+			"deadcode ./...": "14\n",
+		},
+	}
+
+	handler := ticketapp.NewTicketVerifyHandler(reader, runner)
+	app := &composition.App{
+		TicketVerifyHandler: handler,
+	}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "t-123",
+	})
+	require.NoError(t, err)
+	assertToolText(t, result, "Ticket verification: t-123")
+	assertToolText(t, result, "Claims found: 1")
+	assertToolText(t, result, "Verified: 1")
+	assertToolText(t, result, "Mismatches: 0")
+}
+
+func TestTicketVerifyTool_DetectsMismatch(t *testing.T) {
+	t.Parallel()
+
+	reader := &stubTicketContentReader{
+		content: map[string]string{
+			"t-123": "## Analysis\n\n```bash\ndeadcode ./...\n```\n\nFound **14 issues** to fix.\n",
+		},
+	}
+	runner := &stubMCPCommandRunner{
+		outputs: map[string]string{
+			"deadcode ./...": "288\n",
+		},
+	}
+
+	handler := ticketapp.NewTicketVerifyHandler(reader, runner)
+	app := &composition.App{
+		TicketVerifyHandler: handler,
+	}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "t-123",
+	})
+	require.NoError(t, err)
+	assertToolText(t, result, "Claims found: 1")
+	assertToolText(t, result, "Mismatches: 1")
+	assertToolText(t, result, "claimed 14")
+}
+
+func TestTicketVerifyTool_NoClaims(t *testing.T) {
+	t.Parallel()
+
+	reader := &stubTicketContentReader{
+		content: map[string]string{
+			"t-123": "## Design\n\nNo quantitative claims here.\n",
+		},
+	}
+	runner := &stubMCPCommandRunner{}
+
+	handler := ticketapp.NewTicketVerifyHandler(reader, runner)
+	app := &composition.App{
+		TicketVerifyHandler: handler,
+	}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "t-123",
+	})
+	require.NoError(t, err)
+	assertToolText(t, result, "Claims found: 0")
+}
+
 // --- spike_follow_up_audit tests ---
 
 func TestSpikeFollowUpAuditTool_EmptySpikeID(t *testing.T) {
@@ -381,10 +521,10 @@ func TestRegisterBootstrapTools_RegistersAll12(t *testing.T) {
 
 	result, err := session.ListTools(context.Background(), nil)
 	require.NoError(t, err)
-	require.Len(t, result.Tools, 12,
-		"expected 12 bootstrap tools: init_project, rescue_project, generate_artifacts, "+
+	require.Len(t, result.Tools, 14,
+		"expected 14 bootstrap tools: init_project, rescue_project, generate_artifacts, "+
 			"generate_fitness, generate_tickets, generate_configs, detect_tools, check_quality, "+
-			"doc_health, doc_review, ticket_health, spike_follow_up_audit")
+			"doc_health, doc_review, ticket_health, ticket_verify, spike_follow_up_audit, kb_lookup")
 
 	// Verify tool names.
 	names := make(map[string]bool)
@@ -396,7 +536,8 @@ func TestRegisterBootstrapTools_RegistersAll12(t *testing.T) {
 		"generate_artifacts", "generate_fitness", "generate_tickets", "generate_configs",
 		"detect_tools", "check_quality",
 		"doc_health", "doc_review",
-		"ticket_health", "spike_follow_up_audit",
+		"ticket_health", "ticket_verify", "spike_follow_up_audit",
+		"kb_lookup",
 	} {
 		assert.True(t, names[expected], "missing tool: %s", expected)
 	}
@@ -544,6 +685,93 @@ type stubPublisherB struct{}
 var _ sharedapp.EventPublisher = (*stubPublisherB)(nil)
 
 func (s *stubPublisherB) Publish(_ context.Context, _ any) error { return nil }
+
+// --- kb_lookup tests ---
+
+// stubKnowledgeReader implements knowledgeapp.KnowledgeReader for testing.
+type stubKnowledgeReader struct {
+	entry domain.KnowledgeEntry
+	err   error
+}
+
+func (s *stubKnowledgeReader) ReadEntry(_ context.Context, _ domain.KnowledgePath, _ string) (domain.KnowledgeEntry, error) {
+	return s.entry, s.err
+}
+
+func (s *stubKnowledgeReader) ListTopics(_ context.Context, _ domain.KnowledgeCategory, _ *string) ([]string, error) {
+	return nil, nil
+}
+
+func TestKBLookupTool_HappyPath(t *testing.T) {
+	t.Parallel()
+
+	path, err := domain.NewKnowledgePath("ddd/aggregate")
+	require.NoError(t, err)
+	entry := domain.NewKnowledgeEntry(path, "Aggregate", "An aggregate is a cluster of domain objects.", nil, "markdown")
+
+	reader := &stubKnowledgeReader{entry: entry}
+	handler := knowledgeapp.NewKnowledgeLookupHandler(reader)
+	app := &composition.App{
+		KnowledgeLookupHandler: handler,
+	}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "kb_lookup", map[string]any{
+		"topic": "ddd/aggregate",
+	})
+	require.NoError(t, err)
+	assertToolText(t, result, "An aggregate is a cluster of domain objects.")
+}
+
+func TestKBLookupTool_EmptyTopic(t *testing.T) {
+	t.Parallel()
+	app := &composition.App{}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "kb_lookup", map[string]any{
+		"topic": "",
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "topic is required")
+}
+
+func TestKBLookupTool_NoHandler(t *testing.T) {
+	t.Parallel()
+	app := &composition.App{} // nil KnowledgeLookupHandler
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "kb_lookup", map[string]any{
+		"topic": "ddd/aggregate",
+	})
+	require.NoError(t, err)
+	assertToolError(t, result, "knowledge lookup handler not available")
+}
+
+func TestKBLookupTool_WithVersion(t *testing.T) {
+	t.Parallel()
+
+	path, err := domain.NewKnowledgePath("ddd/aggregate")
+	require.NoError(t, err)
+	entry := domain.NewKnowledgeEntry(path, "Aggregate v2", "Updated aggregate content.", nil, "markdown")
+
+	reader := &stubKnowledgeReader{entry: entry}
+	handler := knowledgeapp.NewKnowledgeLookupHandler(reader)
+	app := &composition.App{
+		KnowledgeLookupHandler: handler,
+	}
+	store := NewModelStore(30 * time.Minute)
+	session := setupBootstrapServer(t, app, store)
+
+	result, err := callBootstrapTool(t, session, "kb_lookup", map[string]any{
+		"topic":   "ddd/aggregate",
+		"version": "v2",
+	})
+	require.NoError(t, err)
+	assertToolText(t, result, "Updated aggregate content.")
+}
 
 // --- generate_configs ApproveAndWrite integration ---
 

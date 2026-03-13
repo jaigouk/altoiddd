@@ -92,7 +92,10 @@ func newServer(app *composition.App) *mcp.Server {
 	)
 
 	registerTools(server)
+
+	// Discovery + challenge tools (guided DDD workflow).
 	mcptools.RegisterDiscoveryTools(server, app)
+	mcptools.RegisterChallengeTools(server, app)
 
 	// Bootstrap + generation tools with WorkflowCoordinator for lifecycle tracking.
 	mcptools.RegisterBootstrapToolsWithCoordinator(server, app, app.WorkflowCoordinator)

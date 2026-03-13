@@ -73,10 +73,21 @@ type DocReviewInput struct {
 // TicketHealthInput is the typed input for ticket_health.
 type TicketHealthInput struct{}
 
+// TicketVerifyInput is the typed input for ticket_verify.
+type TicketVerifyInput struct {
+	TicketID string `json:"ticket_id" jsonschema:"the ticket ID to verify claims for"`
+}
+
 // SpikeFollowUpAuditInput is the typed input for spike_follow_up_audit.
 type SpikeFollowUpAuditInput struct {
 	SpikeID    string `json:"spike_id" jsonschema:"the spike ticket ID to audit"`
 	ProjectDir string `json:"project_dir" jsonschema:"the project directory"`
+}
+
+// KBLookupInput is the typed input for kb_lookup.
+type KBLookupInput struct {
+	Topic   string `json:"topic" jsonschema:"knowledge topic path (e.g. ddd/aggregate, tools/claude-code/agents)"`
+	Version string `json:"version,omitempty" jsonschema:"optional version (defaults to latest)"`
 }
 
 // --- Validation helpers ---
@@ -461,6 +472,51 @@ func ticketHealthHandler(app *composition.App) func(context.Context, *mcp.CallTo
 	}
 }
 
+func ticketVerifyHandler(app *composition.App) func(context.Context, *mcp.CallToolRequest, TicketVerifyInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, input TicketVerifyInput) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(input.TicketID) == "" {
+			return toolError("ticket_id is required")
+		}
+
+		if app.TicketVerifyHandler == nil {
+			return toolError("ticket verify handler not available")
+		}
+
+		results, err := app.TicketVerifyHandler.Verify(ctx, input.TicketID)
+		if err != nil {
+			return toolError(fmt.Sprintf("verify ticket: %s", err))
+		}
+
+		// Tally results
+		claimCount := len(results)
+		verified := 0
+		mismatches := 0
+		for _, r := range results {
+			if r.Match() {
+				verified++
+			} else {
+				mismatches++
+			}
+		}
+
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "Ticket verification: %s\n", input.TicketID)
+		fmt.Fprintf(&sb, "Claims found: %d\n", claimCount)
+		fmt.Fprintf(&sb, "Verified: %d\n", verified)
+		fmt.Fprintf(&sb, "Mismatches: %d\n", mismatches)
+
+		for _, r := range results {
+			if r.Match() {
+				fmt.Fprintf(&sb, "\n  [PASS] %s = %s", r.Claim().ClaimText(), r.ActualValue())
+			} else {
+				fmt.Fprintf(&sb, "\n  [FAIL] %s — %s", r.Claim().ClaimText(), r.Discrepancy())
+			}
+		}
+
+		return textResult(sb.String())
+	}
+}
+
 func spikeFollowUpAuditHandler(app *composition.App) func(context.Context, *mcp.CallToolRequest, SpikeFollowUpAuditInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, input SpikeFollowUpAuditInput) (*mcp.CallToolResult, any, error) {
 		if strings.TrimSpace(input.SpikeID) == "" {
@@ -492,6 +548,25 @@ func spikeFollowUpAuditHandler(app *composition.App) func(context.Context, *mcp.
 		}
 
 		return textResult(sb.String())
+	}
+}
+
+func kbLookupHandler(app *composition.App) func(context.Context, *mcp.CallToolRequest, KBLookupInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, input KBLookupInput) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(input.Topic) == "" {
+			return toolError("topic is required")
+		}
+
+		if app.KnowledgeLookupHandler == nil {
+			return toolError("knowledge lookup handler not available")
+		}
+
+		entry, err := app.KnowledgeLookupHandler.Lookup(ctx, input.Topic, input.Version)
+		if err != nil {
+			return toolError(fmt.Sprintf("lookup: %s", err))
+		}
+
+		return textResult(entry.Content())
 	}
 }
 
@@ -730,7 +805,7 @@ func detectStackProfile(app *composition.App, projectDir string) vo.StackProfile
 
 // --- Registration ---
 
-// RegisterBootstrapToolsWithCoordinator registers all 12 bootstrap and generation MCP tools
+// RegisterBootstrapToolsWithCoordinator registers all 14 bootstrap and generation MCP tools
 // using WorkflowCoordinator for precondition checking and lifecycle tracking.
 func RegisterBootstrapToolsWithCoordinator(server *mcp.Server, app *composition.App, coord *shareddomain.WorkflowCoordinator) {
 	mcp.AddTool(server, &mcp.Tool{
@@ -789,12 +864,22 @@ func RegisterBootstrapToolsWithCoordinator(server *mcp.Server, app *composition.
 	}, ticketHealthHandler(app))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "ticket_verify",
+		Description: "Verify quantitative claims in a ticket against actual command output",
+	}, ticketVerifyHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "spike_follow_up_audit",
 		Description: "Audit a spike's follow-up intents — find orphaned research that never became tickets",
 	}, spikeFollowUpAuditHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kb_lookup",
+		Description: "Look up a knowledge base entry by topic",
+	}, kbLookupHandler(app))
 }
 
-// RegisterBootstrapTools registers all 12 bootstrap and generation MCP tools.
+// RegisterBootstrapTools registers all 14 bootstrap and generation MCP tools.
 //
 // Deprecated: Use RegisterBootstrapToolsWithCoordinator for precondition checking.
 func RegisterBootstrapTools(server *mcp.Server, app *composition.App, store *ModelStore) {
@@ -854,7 +939,17 @@ func RegisterBootstrapTools(server *mcp.Server, app *composition.App, store *Mod
 	}, ticketHealthHandler(app))
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "ticket_verify",
+		Description: "Verify quantitative claims in a ticket against actual command output",
+	}, ticketVerifyHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "spike_follow_up_audit",
 		Description: "Audit a spike's follow-up intents — find orphaned research that never became tickets",
 	}, spikeFollowUpAuditHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kb_lookup",
+		Description: "Look up a knowledge base entry by topic",
+	}, kbLookupHandler(app))
 }

@@ -293,8 +293,8 @@ func TestIntegration_ToolsDiscoverable(t *testing.T) {
 	result, err := session.ListTools(context.Background(), nil)
 	require.NoError(t, err)
 
-	// 1 echo + 7 discovery + 12 bootstrap = 20 tools.
-	require.Len(t, result.Tools, 20, "expected 20 tools registered")
+	// 1 echo + 7 discovery + 14 bootstrap = 22 tools.
+	require.Len(t, result.Tools, 22, "expected 22 tools registered")
 
 	// Verify all expected tool names are present.
 	names := make(map[string]bool)
@@ -308,11 +308,12 @@ func TestIntegration_ToolsDiscoverable(t *testing.T) {
 		// Discovery (7)
 		"guide_start", "guide_detect_persona", "guide_answer",
 		"guide_skip_question", "guide_confirm_playback", "guide_complete", "guide_status",
-		// Bootstrap (12)
+		// Bootstrap (14)
 		"init_project", "rescue_project", "generate_artifacts",
 		"generate_fitness", "generate_tickets", "generate_configs",
 		"detect_tools", "check_quality", "doc_health", "doc_review",
-		"ticket_health", "spike_follow_up_audit",
+		"ticket_health", "ticket_verify", "spike_follow_up_audit",
+		"kb_lookup",
 	}
 	for _, name := range expectedTools {
 		assert.True(t, names[name], "missing tool: %s", name)
