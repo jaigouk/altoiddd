@@ -357,6 +357,7 @@ type boundedContextYAML struct {
 	Name           string   `yaml:"name"`
 	ModulePath     string   `yaml:"module_path"`
 	Classification string   `yaml:"classification"`
+	Rationale      string   `yaml:"rationale,omitempty"`
 	Layers         []string `yaml:"layers"`
 }
 
@@ -382,6 +383,7 @@ func renderBoundedContextMapYAML(model *ddd.DomainModel) (string, error) {
 			Name:           bc.Name(),
 			ModulePath:     stringutil.ToSnakeCase(bc.Name()),
 			Classification: classification,
+			Rationale:      bc.ClassificationRationale(),
 			Layers:         []string{"domain", "application", "infrastructure"},
 		})
 	}
