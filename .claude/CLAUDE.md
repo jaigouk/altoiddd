@@ -97,7 +97,7 @@ All enforced by `.golangci.yml` v2 config:
 | Context propagation | `noctx`, `contextcheck` | Context passed through all layers |
 | Code quality | `revive`, `gocritic`, `exhaustive`, `staticcheck` | Idiomatic Go |
 | Testing | `testifylint` | Idiomatic testify assertions |
-| DDD boundaries | `depguard` | Domain cannot import application/infrastructure |
+| DDD boundaries | `arch-go` (separate tool) | Domain cannot import application/infrastructure |
 | Formatting | `gci`, `gofumpt` | Consistent import ordering and formatting |
 
 **Rule: `golangci-lint run ./...` must report 0 issues before any task is complete.**
@@ -151,7 +151,7 @@ alty/
 - `internal/{context}/infrastructure/` implements ports, external deps allowed
 - `internal/shared/` is the shared kernel (errors, VOs, events, DDD types)
 - Dependencies flow inward: infrastructure -> application -> domain
-- **Enforced by `depguard` in `.golangci.yml`**
+- **Enforced by `arch-go` (MIT) — see `arch-go.yml`**
 
 ### Key Documents
 

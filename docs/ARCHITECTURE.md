@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-02-23
+last_reviewed: 2026-03-13
 owner: architecture
 status: draft
 ---
@@ -7,7 +7,7 @@ status: draft
 # Architecture: alty
 
 > **Prerequisites:** This document was written AFTER `docs/PRD.md` (approved 2026-02-22)
-> and `docs/DDD.md` (9 bounded contexts, 5 aggregates, 10 subdomains). Architecture
+> and `docs/DDD.md` (10 bounded contexts, 5 aggregates, 10 subdomains). Architecture
 > decisions are informed by domain knowledge, not the other way around.
 >
 > **Spike inputs:** This document consolidates findings from 7 completed spikes:
@@ -105,13 +105,14 @@ Domain Layer  Infrastructure   .alty/
 | 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
 | DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
 | DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
-| FitnessTestSuite      | Generate depguard + arch tests from context map         | Architecture Testing | Core           |
+| FitnessTestSuite      | Generate arch-go rules from bounded context map         | Architecture Testing | Core           |
 | TicketPlan            | Dependency-ordered ticket generation with 3-tier detail | Ticket Pipeline      | Core           |
 | RippleReview          | Event-driven freshness flagging on ticket close         | Ticket Freshness     | Core           |
 | ToolConfig            | Domain model to tool-native config translation          | Tool Translation     | Supporting     |
 | KnowledgeEntry        | RLM-addressable docs, TOML-based tool conventions       | Knowledge Base       | Supporting     |
 | BootstrapSession      | Orchestrate `alty init` flow                            | Bootstrap            | Supporting     |
 | GapAnalysis           | Scan existing projects, generate migration plans        | Rescue               | Supporting     |
+| ResearchSpike         | Guided research, library evaluation, ADR generation     | Research             | Supporting     |
 | FileScaffoldService   | Render templates, write files with safety rules         | File Generation      | Generic        |
 | Composition Root      | Wire ports to implementations at startup                | (infrastructure)     | --             |
 
@@ -147,8 +148,8 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 
 | Layer          | Can Depend On                     | Cannot Depend On                           | Enforced By                                   |
 | -------------- | --------------------------------- | ------------------------------------------ | --------------------------------------------- |
-| Domain         | Nothing (pure Go stdlib only)     | Application, Infrastructure, any framework | depguard `forbidden` + arch test `Rule`       |
-| Application    | Domain, Ports (interfaces only)   | Infrastructure, frameworks                 | depguard `layers` contract                    |
+| Domain         | Nothing (pure Go stdlib only)     | Application, Infrastructure, any framework | arch-go `shouldOnlyDependsOn` + `shouldNotDependsOn` |
+| Application    | Domain, Ports (interfaces only)   | Infrastructure, frameworks                 | arch-go `shouldNotDependsOn` rule                    |
 | Infrastructure | Application, Domain               | -- (outermost layer)                       | --                                            |
 
 ### Source Layout
@@ -221,6 +222,10 @@ internal/
 |   +-- infrastructure/
 |       +-- file_knowledge_reader.go
 +-- rescue/                         # Rescue Mode bounded context
+|   +-- domain/
+|   +-- application/
+|   +-- infrastructure/
++-- research/                       # Research bounded context
 |   +-- domain/
 |   +-- application/
 |   +-- infrastructure/
@@ -307,7 +312,7 @@ The complete `alty init` flow crosses all bounded contexts in this order:
    writes: docs/DDD.md + .alty/domain-model.yaml
    emits: DomainModelGenerated
 5. Architecture Testing -> generate fitness functions (FitnessGenerationPort)
-   writes: .golangci.yml [depguard] + internal/**/architecture_test.go
+   writes: arch-go.yml (dependency rules)
    emits: FitnessTestsGenerated
 6. Ticket Pipeline -> generate tickets (TicketGenerationPort)
    writes: beads epics + tasks via bd create + bd dep add
@@ -329,7 +334,7 @@ Each step shows a preview and waits for user approval before proceeding.
 | ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
 | DiscoverySession | In-memory (session duration)              | Stateful conversation; persisted only when complete         |
 | DomainModel      | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
-| FitnessTestSuite | In-memory during generation               | Output written to `.golangci.yml` + `*_test.go` files       |
+| FitnessTestSuite | In-memory during generation               | Output written to `arch-go.yml` (107 dependency rules)      |
 | TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
 | RippleReview     | Beads labels + comments                   | Uses existing beads features; no custom storage needed      |
 | ToolConfig       | In-memory during generation               | Output written to `.claude/`, `.cursor/`, etc.              |
@@ -344,7 +349,7 @@ downstream generators. It is produced by `alty generate artifacts` (Domain Model
 and consumed by:
 
 - **Architecture Testing** -- reads `bounded_contexts` and `subdomains` to generate
-  depguard rules and architecture tests
+  arch-go dependency rules
 - **Ticket Pipeline** -- reads the full model to generate dependency-ordered tickets
   with classification-driven detail levels
 - **Tool Translation** -- reads `terms`, `bounded_contexts`, and `subdomains` to
@@ -469,7 +474,7 @@ alty
 |   +-- --persona <type>          # Force persona (developer|po|expert)
 +-- generate                      # Group: generation commands
 |   +-- artifacts                 # Domain Model -> PRD, DDD.md, ARCHITECTURE.md
-|   +-- fitness                   # Architecture Testing -> depguard + arch tests
+|   +-- fitness                   # Architecture Testing -> arch-go.yml
 |   +-- tickets                   # Ticket Pipeline -> beads epics + tasks
 |   +-- configs                   # Tool Translation -> .claude/, .cursor/, etc.
 +-- detect                        # Bootstrap -> global settings detection
@@ -477,7 +482,7 @@ alty
 |   +-- --lint                    # golangci-lint run
 |   +-- --vet                     # go vet
 |   +-- --tests                   # go test -race
-|   +-- --fitness                 # depguard + arch tests
+|   +-- --fitness                 # arch-go validation
 +-- kb                            # Knowledge Base -> RLM lookup
 |   +-- <topic>                   # e.g., alty kb ddd/aggregate
 +-- doc-health                    # Knowledge Base -> freshness report
@@ -626,7 +631,7 @@ _(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)_
 
 **PRD reference:** Section 5 P0 "Architecture fitness function generation"
 **Spike source:** `docs/research/20260223_fitness_function_design.md`
-**ADR:** Hybrid approach accepted -- generate both depguard config and architecture tests
+**ADR:** arch-go (MIT-licensed) accepted -- single tool for dependency rules with config-based approach
 
 #### Pipeline
 
@@ -642,23 +647,20 @@ FitnessTestSuite Aggregate (Domain: pure business logic)
   Validates 5 invariants (from DDD.md section 5)
   Emits Contract + ArchRule entities
         |
-   +----+-----+
-   |           |
-   v           v
-Depguard        Architecture
-Config          Test
-Renderer        Renderer
-(YAML ->        (Go ->
-.golangci.yml)  *_architecture_test.go)
+        v
+   arch-go.yml
+   Renderer
+   (YAML config with
+   dependenciesRules)
 ```
 
 #### Contract Generation by Classification
 
-| Classification | depguard Rules                                                                                                | Architecture Tests                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Core**       | layers + forbidden (cross-context) + forbidden (domain purity) + independence (aggregates) + acyclic_siblings | LayeredArchitecture + cross-context boundary + domain purity + per-aggregate isolation |
-| **Supporting** | layers + forbidden (cross-context)                                                                            | LayeredArchitecture + cross-context boundary                                           |
-| **Generic**    | forbidden (ACL boundary from all domain layers)                                                               | Single Rule: domain cannot import generic directly                                     |
+| Classification | arch-go Rules                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| **Core**       | `shouldOnlyDependsOn` (domain purity) + `shouldNotDependsOn` (layer + cross-context isolation)    |
+| **Supporting** | `shouldOnlyDependsOn` (domain purity) + `shouldNotDependsOn` (layer isolation)                    |
+| **Generic**    | `shouldNotDependsOn` (ACL boundary — domain cannot import generic directly)                       |
 
 #### Invariant Enforcement (at generation time, not runtime)
 
@@ -673,11 +675,13 @@ file is written (fail-fast design).
 
 #### Output
 
-- ~28 depguard rules in `.golangci.yml` under `linters-settings.depguard`
-- ~35 architecture tests across `internal/**/architecture_test.go` files
-- Shared test helpers in `internal/shared/testing/` for architecture validation
+- 107 dependency rules in `arch-go.yml`:
+  - 20 layer rules (domain/application isolation per bounded context)
+  - 87 cross-context isolation rules (no cross-BC dependencies)
+- Compliance threshold: 100% (all rules must pass)
+- Coverage threshold: 60% (only bounded contexts have rules; shared/composition exempt)
 
-_(Source: fitness function spike sections 3, 4, 6, 7)_
+_(Source: fitness function spike sections 3, 4, 6, 7; epic alty-cli-awl implementation)_
 
 ### 7.2 Domain Story to Ticket Pipeline
 
@@ -1228,8 +1232,7 @@ _(Source: PRD section 5.1; knowledge base spike section 4)_
 | golangci-lint    | Go linting quality gate                                          | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
 | go vet           | Static analysis quality gate                                     | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
 | go test          | Test execution quality gate                                      | subprocess                  | None (local) | Architecture Testing (QualityGatePort) |
-| depguard         | Architecture fitness function execution (via golangci-lint)      | subprocess                  | None (local) | Architecture Testing                   |
-| arch tests       | Architecture fitness function execution                          | go test (in-process)        | None (local) | Architecture Testing                   |
+| arch-go          | Architecture fitness function validation (dependency rules)      | subprocess (`arch-go`)      | None (local) | Architecture Testing                   |
 | Anthropic API    | LLM for Deep mode (Challenger, Simulator, Research)              | `anthropic` SDK (HTTPS)     | API key (env) | Guided Discovery (Deep mode only)     |
 | Ollama (future)  | Local LLM alternative for Deep mode                             | HTTP REST API               | None (local) | Guided Discovery (Deep mode only)      |
 | Web search       | Domain research via RLM adapter                                  | HTTPS                       | None          | Guided Discovery (Deep mode only)      |
@@ -1274,7 +1277,7 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | Package manager      | Go modules                                                 | Standard Go dependency management                                                                   |
 | CLI framework        | Cobra                                                      | Industry standard; subcommands; integrated help _(CLI framework spike ADR)_                        |
 | MCP framework        | mcp-go                                                     | Go MCP SDK; stdio transport _(MCP SDK spike ADR)_                                                  |
-| Architecture testing | depguard + architecture tests                              | Complementary coverage: lint config + Go tests _(fitness function spike ADR)_                      |
+| Architecture testing | arch-go                                                    | MIT-licensed, config-based dependency rules _(fitness function spike ADR; epic alty-cli-awl)_      |
 | YAML editing         | gopkg.in/yaml.v3                                           | Round-trip preservation of formatting                                                              |
 | Issue tracking       | Beads v0.55.4+                                             | Git-native, works offline, embedded Dolt backend                                                   |
 | Distribution         | Go binary                                                  | `go install github.com/alty-cli/alty@latest`                                                       |
@@ -1302,10 +1305,10 @@ require (
 # See .golangci.yml for full configuration
 linters:
   enable:
-    - depguard    # Architecture fitness functions
     - errcheck    # Error handling
     - govet       # Static analysis
     - staticcheck # Additional checks
+    # Architecture fitness via arch-go (separate tool, not golangci-lint plugin)
 ```
 
 ## 12. Constraints and Budgets
@@ -1329,7 +1332,7 @@ From `docs/PRD.md` section 6:
 | ------- | ---------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------- |
 | ADR-001 | CLI framework: Cobra (MIT)                                                                     | Accepted | `docs/research/20260222_cli_framework_comparison.md`            |
 | ADR-002 | MCP framework: mcp-go SDK                                                                      | Accepted | `docs/research/20260308_go_mcp_sdk_spike.md`                    |
-| ADR-003 | Architecture testing: hybrid depguard config + Go architecture tests                           | Accepted | `docs/research/20260223_fitness_function_design.md` section 5   |
+| ADR-003 | Architecture testing: arch-go (MIT-licensed) with config-based dependency rules                | Accepted | `docs/research/20260223_fitness_function_design.md` section 5; updated by epic alty-cli-awl (depguard GPL → arch-go MIT migration) |
 | ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human)      | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
 | ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation)              | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4    |
 | ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes)          | Accepted | `docs/research/20260223_ripple_review_design.md` section 1      |
@@ -1349,9 +1352,8 @@ Decisions resolved by spikes but requiring validation during implementation:
       to the module path. Verify correct path convention during implementation.
       _(fitness function spike section 9)_
 
-- [ ] **Depguard external package rules** -- Should domain purity rules
-      catch all external imports? Likely yes, but needs implementation validation.
-      _(fitness function spike section 9)_
+- [x] **Domain purity rules** -- arch-go `shouldOnlyDependsOn` with `external: ["$gostd"]`
+      ensures domain layers only import Go stdlib. Validated in epic alty-cli-awl.
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
       tests. Regeneration should preserve user-added items. Design a `# alty:generated`
