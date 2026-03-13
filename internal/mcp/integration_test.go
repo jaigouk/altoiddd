@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
+	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
 	"github.com/alty-cli/alty/internal/composition"
 	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
@@ -22,6 +24,7 @@ import (
 	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
 	researchapp "github.com/alty-cli/alty/internal/research/application"
 	researchdomain "github.com/alty-cli/alty/internal/research/domain"
+	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
@@ -124,6 +127,27 @@ func (s *integrationSpikeFollowUp) Audit(_ context.Context, spikeID, _ string) (
 	), nil
 }
 
+// integrationChallenger implements challengeapp.Challenger for testing.
+type integrationChallenger struct{}
+
+func (s *integrationChallenger) GenerateChallenges(_ context.Context, _ *ddd.DomainModel, _ int) ([]challengedomain.Challenge, error) {
+	c1, _ := challengedomain.NewChallenge(
+		challengedomain.ChallengeLanguage,
+		"What does 'Order' mean in different contexts?",
+		"Sales",
+		"UL glossary: Order",
+		"",
+	)
+	c2, _ := challengedomain.NewChallenge(
+		challengedomain.ChallengeInvariant,
+		"What invariants protect the Order aggregate?",
+		"Sales",
+		"Aggregate design: Order",
+		"",
+	)
+	return []challengedomain.Challenge{c1, c2}, nil
+}
+
 // =============================================================================
 // Setup Helpers
 // =============================================================================
@@ -171,6 +195,7 @@ func setupIntegrationServer(t *testing.T, app *composition.App) *gomcp.ClientSes
 	// Register all tools and resources.
 	RegisterResources(server, app)
 	RegisterDiscoveryTools(server, app)
+	RegisterChallengeTools(server, app)
 	store := NewModelStore(30 * time.Minute)
 	RegisterBootstrapTools(server, app, store)
 
@@ -221,10 +246,11 @@ func testIntegrationApp() *composition.App {
 		}),
 		TicketHealthHandler: ticketapp.NewTicketHealthHandler(&integrationTicketReader{}),
 		PersonaHandler:      ttapp.NewPersonaHandler(&integrationFileWriter{}),
+		ChallengeHandler:    challengeapp.NewChallengeHandler(&integrationChallenger{}),
 		// Nil handlers — tests verify error path:
 		// BootstrapHandler, RescueHandler, ArtifactGenerationHandler,
 		// FitnessGenerationHandler, TicketGenerationHandler, ConfigGenerationHandler,
-		// DocHealthHandler, DocReviewHandler, SpikeFollowUpHandler, ChallengeHandler
+		// DocHealthHandler, DocReviewHandler, SpikeFollowUpHandler
 	}
 }
 
@@ -293,8 +319,8 @@ func TestIntegration_ToolsDiscoverable(t *testing.T) {
 	result, err := session.ListTools(context.Background(), nil)
 	require.NoError(t, err)
 
-	// 1 echo + 8 discovery + 14 bootstrap = 23 tools.
-	require.Len(t, result.Tools, 23, "expected 23 tools registered")
+	// 1 echo + 8 discovery + 4 challenge + 14 bootstrap = 27 tools.
+	require.Len(t, result.Tools, 27, "expected 27 tools registered")
 
 	// Verify all expected tool names are present.
 	names := make(map[string]bool)
@@ -309,6 +335,8 @@ func TestIntegration_ToolsDiscoverable(t *testing.T) {
 		"guide_start", "guide_detect_persona", "guide_answer",
 		"guide_skip_question", "guide_confirm_playback", "guide_complete", "guide_status",
 		"guide_classify_subdomain",
+		// Challenge (4)
+		"challenge_start", "challenge_respond", "challenge_status", "challenge_complete",
 		// Bootstrap (14)
 		"init_project", "rescue_project", "generate_artifacts",
 		"generate_fitness", "generate_tickets", "generate_configs",
@@ -1033,4 +1061,214 @@ func TestIntegration_ModelStoreTTLExpiry(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assertIntegrationToolError(t, result, "expired")
+}
+
+// =============================================================================
+// Challenge Tool Integration Tests
+// =============================================================================
+
+func TestIntegration_ChallengeWorkflow(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	// Step 1: Start challenge session.
+	result, err := callIntegrationTool(t, session, "challenge_start", map[string]any{
+		"max_per_type": 2,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.False(t, result.IsError, "challenge_start should succeed")
+
+	// Extract session ID.
+	tc := result.Content[0].(*gomcp.TextContent)
+	sessionID := extractSessionID(tc.Text)
+	require.NotEmpty(t, sessionID, "should have session_id")
+
+	// Step 2: Check status.
+	result, err = callIntegrationTool(t, session, "challenge_status", map[string]any{
+		"session_id": sessionID,
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	assertIntegrationToolText(t, result, "pending")
+
+	// Step 3: Respond to a challenge (use c0 as the first challenge ID).
+	result, err = callIntegrationTool(t, session, "challenge_respond", map[string]any{
+		"session_id":    sessionID,
+		"challenge_id":  "c0",
+		"user_response": "Order means a customer purchase request",
+		"accepted":      true,
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	// Step 4: Complete the session.
+	result, err = callIntegrationTool(t, session, "challenge_complete", map[string]any{
+		"session_id": sessionID,
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	assertIntegrationToolText(t, result, "Challenge session complete")
+}
+
+func TestIntegration_ChallengeStart_DefaultMaxPerType(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	// Start without max_per_type - should use default of 2.
+	result, err := callIntegrationTool(t, session, "challenge_start", map[string]any{})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	assertIntegrationToolText(t, result, "session_id")
+}
+
+func TestIntegration_ChallengeRespond_UnknownSession(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "challenge_respond", map[string]any{
+		"session_id":    "nonexistent-session",
+		"challenge_id":  "c0",
+		"user_response": "test",
+		"accepted":      true,
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "session not found")
+}
+
+// =============================================================================
+// Classification Tool Integration Test
+// =============================================================================
+
+func TestIntegration_ClassifySubdomain_RequiresCompletedSession(t *testing.T) {
+	// Classification requires a completed discovery session.
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	// Start a discovery session (not completed).
+	result, err := callIntegrationTool(t, session, "guide_start", map[string]any{
+		"readme_content": "E-commerce platform",
+	})
+	require.NoError(t, err)
+	tc := result.Content[0].(*gomcp.TextContent)
+	sessionID := extractSessionID(tc.Text)
+	require.NotEmpty(t, sessionID)
+
+	// Try to classify without completing discovery - should error.
+	result, err = callIntegrationTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        sessionID,
+		"context_name":      "OrderProcessing",
+		"buy_yes":           false,
+		"complex_rules":     true,
+		"competitor_threat": true,
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "cannot classify")
+}
+
+func TestIntegration_ClassifySubdomain_EmptyContextName(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        "some-session",
+		"context_name":      "",
+		"buy_yes":           false,
+		"complex_rules":     true,
+		"competitor_threat": true,
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "context_name is required")
+}
+
+func TestIntegration_ClassifySubdomain_EmptySessionID(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        "",
+		"context_name":      "Orders",
+		"buy_yes":           false,
+		"complex_rules":     true,
+		"competitor_threat": true,
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "session_id is required")
+}
+
+// =============================================================================
+// Ticket Verify Integration Test
+// =============================================================================
+
+func TestIntegration_TicketVerify_NilHandler(t *testing.T) {
+	// nil TicketVerifyHandler → tool error.
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "test-ticket-1",
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "ticket verify handler not available")
+}
+
+func TestIntegration_TicketVerify_EmptyTicketID(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "ticket_verify", map[string]any{
+		"ticket_id": "",
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "ticket_id is required")
+}
+
+// =============================================================================
+// KB Lookup Integration Test
+// =============================================================================
+
+func TestIntegration_KBLookup(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "kb_lookup", map[string]any{
+		"topic": "ddd/bounded-contexts",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	assertIntegrationToolText(t, result, "bounded context")
+}
+
+func TestIntegration_KBLookup_NotFound(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	// Use a valid category but nonexistent topic.
+	result, err := callIntegrationTool(t, session, "kb_lookup", map[string]any{
+		"topic": "ddd/nonexistent-topic",
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "not found")
+}
+
+func TestIntegration_KBLookup_EmptyTopic(t *testing.T) {
+	t.Parallel()
+	app := testIntegrationApp()
+	session := setupIntegrationServer(t, app)
+
+	result, err := callIntegrationTool(t, session, "kb_lookup", map[string]any{
+		"topic": "",
+	})
+	require.NoError(t, err)
+	assertIntegrationToolError(t, result, "topic is required")
 }
