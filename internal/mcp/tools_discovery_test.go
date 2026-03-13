@@ -652,7 +652,7 @@ func TestFullDiscoveryFlow_EndToEnd(t *testing.T) {
 			guideTools++
 		}
 	}
-	assert.Equal(t, 7, guideTools)
+	assert.Equal(t, 8, guideTools)
 
 	// 2. Start session
 	sid := startSession(t, session)
@@ -726,4 +726,165 @@ func TestFullDiscoveryFlow_EndToEnd(t *testing.T) {
 	require.False(t, isErr)
 	assert.Contains(t, text, "COMPLETED")
 	assert.Contains(t, text, "Answered: 7")
+}
+
+// --- guide_classify_subdomain tests ---
+
+func TestGuideClassifySubdomain_Core(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+	sid := completeSession(t, session)
+
+	// Core: buy=no, complex=yes, competitor=yes
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        sid,
+		"context_name":      "Billing",
+		"buy_yes":           false,
+		"complex_rules":     true,
+		"competitor_threat": true,
+	})
+	require.False(t, isErr, "should not error: %s", text)
+	assert.Contains(t, text, "Classified 'Billing' as core")
+	assert.Contains(t, text, "Rationale:")
+}
+
+func TestGuideClassifySubdomain_Supporting(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+	sid := completeSession(t, session)
+
+	// Supporting: buy=no, complex=yes, competitor=no
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        sid,
+		"context_name":      "Reporting",
+		"buy_yes":           false,
+		"complex_rules":     true,
+		"competitor_threat": false,
+	})
+	require.False(t, isErr, "should not error: %s", text)
+	assert.Contains(t, text, "Classified 'Reporting' as supporting")
+}
+
+func TestGuideClassifySubdomain_Generic(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+	sid := completeSession(t, session)
+
+	// Generic: buy=yes
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        sid,
+		"context_name":      "Notifications",
+		"buy_yes":           true,
+		"complex_rules":     false,
+		"competitor_threat": false,
+	})
+	require.False(t, isErr, "should not error: %s", text)
+	assert.Contains(t, text, "Classified 'Notifications' as generic")
+}
+
+func TestGuideClassifySubdomain_EmptySessionID(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        "",
+		"context_name":      "Test",
+		"buy_yes":           false,
+		"complex_rules":     false,
+		"competitor_threat": false,
+	})
+	require.True(t, isErr)
+	assert.Contains(t, text, "session_id is required")
+}
+
+func TestGuideClassifySubdomain_EmptyContextName(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+	sid := completeSession(t, session)
+
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        sid,
+		"context_name":      "",
+		"buy_yes":           false,
+		"complex_rules":     false,
+		"competitor_threat": false,
+	})
+	require.True(t, isErr)
+	assert.Contains(t, text, "context_name is required")
+}
+
+func TestGuideClassifySubdomain_InvalidSession(t *testing.T) {
+	t.Parallel()
+	session := setupDiscoveryServer(t)
+
+	text, isErr := callTool(t, session, "guide_classify_subdomain", map[string]any{
+		"session_id":        "nonexistent-session-id",
+		"context_name":      "Test",
+		"buy_yes":           false,
+		"complex_rules":     false,
+		"competitor_threat": false,
+	})
+	require.True(t, isErr)
+	assert.Contains(t, text, "no active discovery session")
+}
+
+// completeSession is a helper that runs through a full discovery session and returns session_id.
+func completeSession(t *testing.T, session *mcp.ClientSession) string {
+	t.Helper()
+	sid := startWithPersona(t, session, "2") // product owner
+
+	// Answer round 1 questions (core phase)
+	for _, q := range []struct{ id, answer string }{
+		{"Q1", "End users and admin team"},
+		{"Q2", "Invoices and customers"},
+		{"Q3", "Customer submits invoice"},
+		{"Q4", "Payment processing failure"},
+		{"Q5", "Customer views invoice history"},
+	} {
+		_, ansErr := callTool(t, session, "guide_answer", map[string]any{
+			"session_id": sid, "question_id": q.id, "answer": q.answer,
+		})
+		require.False(t, ansErr)
+
+		statusText, _ := callTool(t, session, "guide_status", map[string]any{"session_id": sid})
+		if strings.Contains(statusText, "playback_pending") {
+			_, pbErr := callTool(t, session, "guide_confirm_playback", map[string]any{
+				"session_id": sid, "confirmed": true,
+			})
+			require.False(t, pbErr)
+		}
+	}
+
+	// Skip events phase questions (Q6-Q8)
+	for _, qid := range []string{"Q6", "Q7", "Q8"} {
+		_, skipErr := callTool(t, session, "guide_skip_question", map[string]any{
+			"session_id": sid, "question_id": qid, "reason": "Deferring to implementation",
+		})
+		require.False(t, skipErr)
+	}
+
+	// Answer boundaries phase (Q9-Q10)
+	for _, q := range []struct{ id, answer string }{
+		{"Q9", "Billing and Customer Management"},
+		{"Q10", "Billing=core, Customer=supporting"},
+	} {
+		_, ansErr := callTool(t, session, "guide_answer", map[string]any{
+			"session_id": sid, "question_id": q.id, "answer": q.answer,
+		})
+		require.False(t, ansErr)
+
+		statusText, _ := callTool(t, session, "guide_status", map[string]any{"session_id": sid})
+		if strings.Contains(statusText, "playback_pending") {
+			_, pbErr := callTool(t, session, "guide_confirm_playback", map[string]any{
+				"session_id": sid, "confirmed": true,
+			})
+			require.False(t, pbErr)
+		}
+	}
+
+	// Complete the session
+	_, completeErr := callTool(t, session, "guide_complete", map[string]any{"session_id": sid})
+	require.False(t, completeErr)
+
+	return sid
 }

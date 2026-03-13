@@ -116,7 +116,7 @@ func TestListTools_InMemory(t *testing.T) {
 
 	result, err := session.ListTools(ctx, nil)
 	require.NoError(t, err)
-	require.Len(t, result.Tools, 26) // echo + 7 guide_* + 4 challenge_* + 14 bootstrap tools
+	require.Len(t, result.Tools, 27) // echo + 8 guide_* + 4 challenge_* + 14 bootstrap tools
 	// Find echo tool in the list
 	var foundEcho bool
 	for _, tool := range result.Tools {

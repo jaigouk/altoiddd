@@ -54,6 +54,15 @@ type GuideStatusInput struct {
 	SessionID string `json:"session_id" jsonschema:"the discovery session ID"`
 }
 
+// GuideClassifySubdomainInput is the typed input for guide_classify_subdomain.
+type GuideClassifySubdomainInput struct {
+	SessionID        string `json:"session_id" jsonschema:"the discovery session ID"`
+	ContextName      string `json:"context_name" jsonschema:"the bounded context name to classify"`
+	BuyYes           bool   `json:"buy_yes" jsonschema:"true if off-the-shelf solution could work"`
+	ComplexRules     bool   `json:"complex_rules" jsonschema:"true if domain has complex business rules (not simple CRUD)"`
+	CompetitorThreat bool   `json:"competitor_threat" jsonschema:"true if competitor copying this would threaten business"`
+}
+
 // --- Response helpers ---
 
 func textResult(text string) (*mcp.CallToolResult, any, error) {
@@ -274,9 +283,31 @@ func guideStatusHandler(app *composition.App) func(context.Context, *mcp.CallToo
 	}
 }
 
+func guideClassifySubdomainHandler(app *composition.App) func(context.Context, *mcp.CallToolRequest, GuideClassifySubdomainInput) (*mcp.CallToolResult, any, error) {
+	return func(_ context.Context, _ *mcp.CallToolRequest, input GuideClassifySubdomainInput) (*mcp.CallToolResult, any, error) {
+		if r, m, e := requireSessionID(input.SessionID); r != nil {
+			return r, m, e
+		}
+		if strings.TrimSpace(input.ContextName) == "" {
+			return toolError("context_name is required")
+		}
+
+		result, err := app.DiscoveryHandler.ClassifySubdomain(
+			input.SessionID, input.ContextName,
+			input.BuyYes, input.ComplexRules, input.CompetitorThreat,
+		)
+		if err != nil {
+			return toolError(err.Error())
+		}
+
+		return textResult(fmt.Sprintf("Classified '%s' as %s.\nRationale: %s",
+			input.ContextName, result.Classification(), result.Rationale()))
+	}
+}
+
 // --- Registration ---
 
-// RegisterDiscoveryTools registers all 7 guided discovery MCP tools.
+// RegisterDiscoveryTools registers all 8 guided discovery MCP tools.
 func RegisterDiscoveryTools(server *mcp.Server, app *composition.App) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "guide_start",
@@ -312,4 +343,9 @@ func RegisterDiscoveryTools(server *mcp.Server, app *composition.App) {
 		Name:        "guide_status",
 		Description: "Get current status of a discovery session",
 	}, guideStatusHandler(app))
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "guide_classify_subdomain",
+		Description: "Classify a bounded context using Khononov decision tree (core/supporting/generic)",
+	}, guideClassifySubdomainHandler(app))
 }

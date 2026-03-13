@@ -106,3 +106,17 @@ func (h *DiscoveryHandler) GetSession(sessionID string) (*domain.DiscoverySessio
 	}
 	return session, nil
 }
+
+// ClassifySubdomain classifies a bounded context using the Khononov decision tree.
+func (h *DiscoveryHandler) ClassifySubdomain(sessionID, contextName string, buyYes, complexRules, competitorThreat bool) (*domain.ClassificationResult, error) {
+	session, err := h.GetSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	tree := domain.NewClassificationDecisionTree()
+	result := tree.Classify(buyYes, complexRules, competitorThreat)
+	if err := session.ClassifyBoundedContext(contextName, result); err != nil {
+		return nil, fmt.Errorf("classify bounded context %s: %w", contextName, err)
+	}
+	return &result, nil
+}
