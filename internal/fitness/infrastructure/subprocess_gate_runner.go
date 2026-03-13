@@ -20,6 +20,7 @@ const defaultTimeoutSeconds = 300
 // Commands are read from a StackProfile so the runner works for any supported stack.
 type SubprocessGateRunner struct {
 	projectDir string
+	stackID    string
 	commands   map[vo.QualityGate][]string
 }
 
@@ -41,6 +42,7 @@ func NewSubprocessGateRunner(projectDir string, profile vo.StackProfile) *Subpro
 	}
 	return &SubprocessGateRunner{
 		projectDir: projectDir,
+		stackID:    profile.StackID(),
 		commands:   profile.QualityGateCommands(),
 	}
 }
@@ -57,12 +59,10 @@ func (r *SubprocessGateRunner) Run(
 			fmt.Sprintf("Skipped: no %s command for this stack", string(gate)), 0), nil
 	}
 
-	// FITNESS gate: skip gracefully if tests/architecture/ does not exist
+	// FITNESS gate: skip gracefully if fitness config not found
 	if gate == vo.QualityGateFitness {
-		archDir := filepath.Join(r.projectDir, "tests", "architecture")
-		if _, err := os.Stat(archDir); os.IsNotExist(err) {
-			return vo.NewGateResult(gate, true,
-				"Skipped: tests/architecture/ directory not found", 0), nil
+		if skipResult := r.checkFitnessSkip(gate); skipResult != nil {
+			return *skipResult, nil
 		}
 	}
 
@@ -95,4 +95,26 @@ func (r *SubprocessGateRunner) Run(
 	}
 
 	return vo.NewGateResult(gate, true, string(output), durationMS), nil
+}
+
+// checkFitnessSkip returns a skip result if fitness tests should be skipped.
+// For Go projects: skip if arch-go.yml is missing.
+// For Python projects: skip if tests/architecture/ is missing.
+func (r *SubprocessGateRunner) checkFitnessSkip(gate vo.QualityGate) *vo.GateResult {
+	switch r.stackID {
+	case "go-mod":
+		archGoYAML := filepath.Join(r.projectDir, "arch-go.yml")
+		if _, err := os.Stat(archGoYAML); os.IsNotExist(err) {
+			result := vo.NewGateResult(gate, true, "Skipped: arch-go.yml not found", 0)
+			return &result
+		}
+	default:
+		// Python and other stacks use tests/architecture/
+		archDir := filepath.Join(r.projectDir, "tests", "architecture")
+		if _, err := os.Stat(archDir); os.IsNotExist(err) {
+			result := vo.NewGateResult(gate, true, "Skipped: tests/architecture/ directory not found", 0)
+			return &result
+		}
+	}
+	return nil
 }

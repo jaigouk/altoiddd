@@ -9,17 +9,32 @@ import (
 	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 )
 
+// DDDVersionParser parses and applies version metadata to DDD.md content.
+// This is a port interface for infrastructure adapters that handle YAML parsing.
+type DDDVersionParser interface {
+	// ParseVersion extracts version metadata from DDD.md content.
+	ParseVersion(content string) (challengedomain.DDDVersion, error)
+	// ApplyVersion updates or adds version frontmatter to DDD.md content.
+	ApplyVersion(content string, version challengedomain.DDDVersion) string
+}
+
 // VersionHandler handles versioning of DDD.md documents.
 type VersionHandler struct {
 	reader sharedapp.FileReader
 	writer sharedapp.FileWriter
+	parser DDDVersionParser
 }
 
 // NewVersionHandler creates a new VersionHandler with the given dependencies.
-func NewVersionHandler(reader sharedapp.FileReader, writer sharedapp.FileWriter) *VersionHandler {
+func NewVersionHandler(
+	reader sharedapp.FileReader,
+	writer sharedapp.FileWriter,
+	parser DDDVersionParser,
+) *VersionHandler {
 	return &VersionHandler{
 		reader: reader,
 		writer: writer,
+		parser: parser,
 	}
 }
 
@@ -39,7 +54,7 @@ func (h *VersionHandler) VersionDDDDocument(
 	}
 
 	// Parse current version
-	currentVersion, err := challengedomain.ParseDDDVersion(content)
+	currentVersion, err := h.parser.ParseVersion(content)
 	if err != nil {
 		return fmt.Errorf("parsing version: %w", err)
 	}
@@ -48,7 +63,7 @@ func (h *VersionHandler) VersionDDDDocument(
 	newVersion := currentVersion.Increment(round, convergenceDelta, updatedAt)
 
 	// Apply new version to content
-	updatedContent := challengedomain.ApplyVersion(content, newVersion)
+	updatedContent := h.parser.ApplyVersion(content, newVersion)
 
 	// Write back
 	if err := h.writer.WriteFile(ctx, path, updatedContent); err != nil {

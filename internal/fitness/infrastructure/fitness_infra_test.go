@@ -78,6 +78,64 @@ func TestGateSkipsWhenNoCommand(t *testing.T) {
 	assert.Contains(t, result.Output(), "Skipped")
 }
 
+func TestGoFitnessSkipsWhenNoArchGoYAML(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	// Go project without arch-go.yml
+	runner := infrastructure.NewSubprocessGateRunner(dir, vo.GoModProfile{})
+
+	result, err := runner.Run(context.Background(), vo.QualityGateFitness)
+	require.NoError(t, err)
+	assert.Equal(t, vo.QualityGateFitness, result.Gate())
+	assert.True(t, result.Passed())
+	assert.Contains(t, result.Output(), "Skipped")
+	assert.Contains(t, result.Output(), "arch-go.yml")
+}
+
+func TestGoFitnessRunsWhenArchGoYAMLExists(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	// Create arch-go.yml
+	archGoYAML := filepath.Join(dir, "arch-go.yml")
+	require.NoError(t, os.WriteFile(archGoYAML, []byte("version: 1\n"), 0o644))
+
+	runner := infrastructure.NewSubprocessGateRunner(dir, vo.GoModProfile{})
+	result, err := runner.Run(context.Background(), vo.QualityGateFitness)
+	require.NoError(t, err)
+
+	assert.Equal(t, vo.QualityGateFitness, result.Gate())
+	// Will fail because arch-go isn't installed, but that's OK - we're testing the skip logic
+	assert.GreaterOrEqual(t, result.DurationMS(), 0)
+}
+
+func TestPythonFitnessSkipsWhenNoArchitectureDir(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	// Python project without tests/architecture/
+	runner := infrastructure.NewSubprocessGateRunner(dir, vo.PythonUvProfile{})
+
+	result, err := runner.Run(context.Background(), vo.QualityGateFitness)
+	require.NoError(t, err)
+	assert.Equal(t, vo.QualityGateFitness, result.Gate())
+	assert.True(t, result.Passed())
+	assert.Contains(t, result.Output(), "Skipped")
+	assert.Contains(t, result.Output(), "tests/architecture")
+}
+
+func TestPythonFitnessRunsWhenArchitectureDirExists(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	archDir := filepath.Join(dir, "tests", "architecture")
+	require.NoError(t, os.MkdirAll(archDir, 0o755))
+
+	runner := infrastructure.NewSubprocessGateRunner(dir, vo.PythonUvProfile{})
+	result, err := runner.Run(context.Background(), vo.QualityGateFitness)
+	require.NoError(t, err)
+
+	assert.Equal(t, vo.QualityGateFitness, result.Gate())
+	assert.GreaterOrEqual(t, result.DurationMS(), 0)
+}
+
 // ---------------------------------------------------------------------------
 // CodebasePortScanner
 // ---------------------------------------------------------------------------

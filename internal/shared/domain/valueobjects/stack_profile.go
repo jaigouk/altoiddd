@@ -87,8 +87,54 @@ func (g GenericProfile) FitnessAvailable() bool { return false }
 // ToRootPackage converts a project name to a root package name.
 func (g GenericProfile) ToRootPackage(projectName string) string { return projectName }
 
+// GoModProfile provides full Go modules pipeline values.
+type GoModProfile struct{}
+
+// StackID returns the stack identifier.
+func (g GoModProfile) StackID() string { return "go-mod" }
+
+// FileGlob returns the file glob pattern.
+func (g GoModProfile) FileGlob() string { return "**/*.go" }
+
+// ProjectManifest returns the project manifest filename.
+func (g GoModProfile) ProjectManifest() string { return "go.mod" }
+
+// SourceLayout returns the DDD source layout directories.
+func (g GoModProfile) SourceLayout() []string {
+	return []string{"internal/*/domain/", "internal/*/application/", "internal/*/infrastructure/"}
+}
+
+// QualityGateCommands returns commands for each quality gate.
+func (g GoModProfile) QualityGateCommands() map[QualityGate][]string {
+	return map[QualityGate][]string{
+		QualityGateLint:    {"golangci-lint", "run", "./..."},
+		QualityGateTypes:   {"go", "vet", "./..."},
+		QualityGateTests:   {"go", "test", "-race", "./..."},
+		QualityGateFitness: {"arch-go"}, // MIT-licensed architecture testing tool
+	}
+}
+
+// QualityGateDisplay returns the markdown display for quality gates.
+func (g GoModProfile) QualityGateDisplay() string {
+	return "## Quality Gates\n" +
+		"\n" +
+		"```bash\n" +
+		"golangci-lint run ./...          # Lint\n" +
+		"go vet ./...                     # Type check\n" +
+		"go test -race ./...              # Tests\n" +
+		"arch-go                          # Architecture fitness\n" +
+		"```\n"
+}
+
+// FitnessAvailable returns whether fitness tests are available.
+func (g GoModProfile) FitnessAvailable() bool { return true }
+
+// ToRootPackage converts a project name to a root package name.
+func (g GoModProfile) ToRootPackage(projectName string) string { return projectName }
+
 // Compile-time interface checks.
 var (
 	_ StackProfile = PythonUvProfile{}
 	_ StackProfile = GenericProfile{}
+	_ StackProfile = GoModProfile{}
 )

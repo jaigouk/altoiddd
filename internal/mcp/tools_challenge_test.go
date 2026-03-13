@@ -11,6 +11,7 @@ import (
 
 	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
 	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
+	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
 	"github.com/alty-cli/alty/internal/composition"
 	mcptools "github.com/alty-cli/alty/internal/mcp"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
@@ -82,7 +83,8 @@ func setupChallengeServerWithMocks(t *testing.T, reader *mockFileReader, writer 
 
 	var versionHandler *challengeapp.VersionHandler
 	if reader != nil && writer != nil {
-		versionHandler = challengeapp.NewVersionHandler(reader, writer)
+		parser := challengeinfra.NewYAMLFrontmatterParser()
+		versionHandler = challengeapp.NewVersionHandler(reader, writer, parser)
 	}
 
 	app := &composition.App{

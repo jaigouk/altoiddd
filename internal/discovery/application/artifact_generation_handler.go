@@ -6,10 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alty-cli/alty/internal/shared/domain/stringutil"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
@@ -29,10 +32,11 @@ var classificationKeywords = map[string]vo.SubdomainClassification{
 
 // ArtifactPreview holds rendered artifact content ready for user review.
 type ArtifactPreview struct {
-	Model               *ddd.DomainModel
-	PRDContent          string
-	DDDContent          string
-	ArchitectureContent string
+	Model                 *ddd.DomainModel
+	PRDContent            string
+	DDDContent            string
+	ArchitectureContent   string
+	BoundedContextMapYAML string
 }
 
 // ArtifactGenerationHandler transforms DiscoveryCompleted into DDD artifacts.
@@ -88,43 +92,59 @@ func (h *ArtifactGenerationHandler) BuildPreview(
 		_ = h.publisher.Publish(ctx, event)
 	}
 
+	bcMapYAML, err := renderBoundedContextMapYAML(model)
+	if err != nil {
+		return nil, fmt.Errorf("render bounded context map: %w", err)
+	}
+
 	return &ArtifactPreview{
-		Model:               model,
-		PRDContent:          prd,
-		DDDContent:          dddContent,
-		ArchitectureContent: arch,
+		Model:                 model,
+		PRDContent:            prd,
+		DDDContent:            dddContent,
+		ArchitectureContent:   arch,
+		BoundedContextMapYAML: bcMapYAML,
 	}, nil
 }
 
 // WriteArtifacts writes previously previewed artifacts to disk.
+// docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go (typically docs/).
+// projectDir is the project root where .alty/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) WriteArtifacts(
 	ctx context.Context,
 	preview *ArtifactPreview,
-	outputDir string,
+	docsDir string,
+	projectDir string,
 ) error {
-	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "PRD.md"), preview.PRDContent); err != nil {
+	if err := h.writer.WriteFile(ctx, filepath.Join(docsDir, "PRD.md"), preview.PRDContent); err != nil {
 		return fmt.Errorf("write PRD: %w", err)
 	}
-	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "DDD.md"), preview.DDDContent); err != nil {
+	if err := h.writer.WriteFile(ctx, filepath.Join(docsDir, "DDD.md"), preview.DDDContent); err != nil {
 		return fmt.Errorf("write DDD: %w", err)
 	}
-	if err := h.writer.WriteFile(ctx, filepath.Join(outputDir, "ARCHITECTURE.md"), preview.ArchitectureContent); err != nil {
+	if err := h.writer.WriteFile(ctx, filepath.Join(docsDir, "ARCHITECTURE.md"), preview.ArchitectureContent); err != nil {
 		return fmt.Errorf("write architecture: %w", err)
+	}
+	bcMapPath := filepath.Join(projectDir, ".alty", "bounded_context_map.yaml")
+	if err := h.writer.WriteFile(ctx, bcMapPath, preview.BoundedContextMapYAML); err != nil {
+		return fmt.Errorf("write bounded context map: %w", err)
 	}
 	return nil
 }
 
 // Generate is a convenience method that builds preview and writes in one step.
+// docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go.
+// projectDir is the project root where .alty/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) Generate(
 	ctx context.Context,
 	event discoverydomain.DiscoveryCompletedEvent,
-	outputDir string,
+	docsDir string,
+	projectDir string,
 ) (*ddd.DomainModel, error) {
 	preview, err := h.BuildPreview(ctx, event)
 	if err != nil {
 		return nil, err
 	}
-	if err := h.WriteArtifacts(ctx, preview, outputDir); err != nil {
+	if err := h.WriteArtifacts(ctx, preview, docsDir, projectDir); err != nil {
 		return nil, err
 	}
 	return preview.Model, nil
@@ -318,4 +338,58 @@ func extractAggregates(model *ddd.DomainModel, answers map[string]string) error 
 		}
 	}
 	return nil
+}
+
+// -- Bounded Context Map YAML Generation --------------------------------------
+
+// boundedContextMapYAML is the YAML structure for bounded_context_map.yaml.
+type boundedContextMapYAML struct {
+	Project         projectYAML          `yaml:"project"`
+	BoundedContexts []boundedContextYAML `yaml:"bounded_contexts"`
+}
+
+type projectYAML struct {
+	Name        string `yaml:"name"`
+	RootPackage string `yaml:"root_package"`
+}
+
+type boundedContextYAML struct {
+	Name           string   `yaml:"name"`
+	ModulePath     string   `yaml:"module_path"`
+	Classification string   `yaml:"classification"`
+	Layers         []string `yaml:"layers"`
+}
+
+// renderBoundedContextMapYAML generates YAML from a DomainModel.
+// Note: The generated project.root_package is a placeholder that should be updated
+// by the CLI based on actual go.mod detection when available.
+func renderBoundedContextMapYAML(model *ddd.DomainModel) (string, error) {
+	bcMap := boundedContextMapYAML{
+		Project: projectYAML{
+			Name:        model.ModelID(),
+			RootPackage: "github.com/project/" + stringutil.ToSnakeCase(model.ModelID()),
+		},
+		BoundedContexts: make([]boundedContextYAML, 0, len(model.BoundedContexts())),
+	}
+
+	for _, bc := range model.BoundedContexts() {
+		classification := ""
+		if bc.Classification() != nil {
+			classification = string(*bc.Classification())
+		}
+
+		bcMap.BoundedContexts = append(bcMap.BoundedContexts, boundedContextYAML{
+			Name:           bc.Name(),
+			ModulePath:     stringutil.ToSnakeCase(bc.Name()),
+			Classification: classification,
+			Layers:         []string{"domain", "application", "infrastructure"},
+		})
+	}
+
+	out, err := yaml.Marshal(&bcMap)
+	if err != nil {
+		return "", fmt.Errorf("marshal bounded context map: %w", err)
+	}
+
+	return string(out), nil
 }

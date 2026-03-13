@@ -231,6 +231,102 @@ func (s *FitnessTestSuite) RenderImportLinterTOML() (string, error) {
 	return b.String(), nil
 }
 
+// RenderArchGoYAML renders arch-go.yml configuration from a BoundedContextMap.
+// threshold specifies the compliance percentage (100 for greenfield, 80 for brownfield).
+func (s *FitnessTestSuite) RenderArchGoYAML(bcMap *BoundedContextMap, threshold int) (string, error) {
+	if bcMap == nil || len(bcMap.Contexts()) == 0 {
+		return "", fmt.Errorf("bounded context map is empty: %w", domainerrors.ErrInvariantViolation)
+	}
+
+	rootPkg := bcMap.RootPackage()
+	var b strings.Builder
+
+	// Header
+	b.WriteString("version: 1\n\n")
+	b.WriteString("threshold:\n")
+	fmt.Fprintf(&b, "  compliance: %d\n", threshold)
+	fmt.Fprintf(&b, "  coverage: %d\n\n", threshold)
+
+	b.WriteString("dependenciesRules:\n")
+
+	// Build context name set for cross-context isolation
+	contextModules := make(map[string]string) // name -> modulePath
+	for _, ctx := range bcMap.Contexts() {
+		contextModules[ctx.Name()] = ctx.ModulePath()
+	}
+
+	// Build allowed dependencies from relationships
+	allowedDeps := make(map[string]map[string]bool) // source -> set of allowed targets
+	for _, ctx := range bcMap.Contexts() {
+		allowedDeps[ctx.Name()] = make(map[string]bool)
+		for _, rel := range ctx.Relationships() {
+			if rel.Direction() == RelationshipUpstream {
+				// Upstream means this context depends on target
+				allowedDeps[ctx.Name()][rel.Target()] = true
+			}
+		}
+	}
+
+	// Helper to build full package path
+	fullPkg := func(modulePath, layer string) string {
+		if layer == "" {
+			return fmt.Sprintf("%s/internal/%s", rootPkg, modulePath)
+		}
+		return fmt.Sprintf("%s/internal/%s/%s", rootPkg, modulePath, layer)
+	}
+
+	// Generate layer rules for each context
+	for _, ctx := range bcMap.Contexts() {
+		modulePath := ctx.ModulePath()
+
+		// Domain layer: shouldOnlyDependsOn + shouldNotDependsOn
+		b.WriteString("  # " + ctx.Name() + " domain layer isolation\n")
+		fmt.Fprintf(&b, "  - package: %q\n", fullPkg(modulePath, "domain"))
+		b.WriteString("    shouldOnlyDependsOn:\n")
+		b.WriteString("      internal:\n")
+		fmt.Fprintf(&b, "        - %q\n", fullPkg(modulePath, "domain"))
+		fmt.Fprintf(&b, "        - %q\n", fullPkg("shared/domain", ""))
+		b.WriteString("      external:\n")
+		b.WriteString("        - \"$gostd\"\n")
+		b.WriteString("    shouldNotDependsOn:\n")
+		b.WriteString("      internal:\n")
+		fmt.Fprintf(&b, "        - %q\n", fullPkg(modulePath, "application"))
+		fmt.Fprintf(&b, "        - %q\n", fullPkg(modulePath, "infrastructure"))
+		b.WriteString("\n")
+
+		// Application layer: shouldNotDependsOn infrastructure
+		b.WriteString("  # " + ctx.Name() + " application layer\n")
+		fmt.Fprintf(&b, "  - package: %q\n", fullPkg(modulePath, "application"))
+		b.WriteString("    shouldNotDependsOn:\n")
+		b.WriteString("      internal:\n")
+		fmt.Fprintf(&b, "        - %q\n", fullPkg(modulePath, "infrastructure"))
+		b.WriteString("\n")
+	}
+
+	// Generate cross-context isolation rules
+	contexts := bcMap.Contexts()
+	for i, srcCtx := range contexts {
+		for j, tgtCtx := range contexts {
+			if i == j {
+				continue
+			}
+			// Check if srcCtx is allowed to depend on tgtCtx
+			if allowedDeps[srcCtx.Name()][tgtCtx.Name()] {
+				continue // Relationship allows this dependency
+			}
+			// Generate isolation rule
+			b.WriteString("  # " + srcCtx.Name() + " must not depend on " + tgtCtx.Name() + "\n")
+			fmt.Fprintf(&b, "  - package: %q\n", fullPkg(srcCtx.ModulePath(), ""))
+			b.WriteString("    shouldNotDependsOn:\n")
+			b.WriteString("      internal:\n")
+			fmt.Fprintf(&b, "        - %q\n", fullPkg(tgtCtx.ModulePath(), ""))
+			b.WriteString("\n")
+		}
+	}
+
+	return b.String(), nil
+}
+
 // RenderPytestarchTests renders pytestarch test file content.
 func (s *FitnessTestSuite) RenderPytestarchTests() (string, error) {
 	if len(s.contracts) == 0 {

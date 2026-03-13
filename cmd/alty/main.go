@@ -52,6 +52,7 @@ func newRootCmd(app *composition.App) *cobra.Command {
 		commands.NewGuideCmd(app),
 		commands.NewDetectCmd(app),
 		commands.NewCheckCmd(app),
+		commands.NewFitnessCmd(app),
 		commands.NewKBCmd(app),
 		commands.NewDocHealthCmd(app),
 		commands.NewDocReviewCmd(app),

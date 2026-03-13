@@ -1,0 +1,719 @@
+version: 1
+
+threshold:
+  compliance: 100
+  coverage: 60  # Only bounded contexts have rules; shared/composition/mcp are not BCs
+
+dependenciesRules:
+  # Bootstrap domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/bootstrap/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap/application"
+        - "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
+
+  # Bootstrap application layer
+  - package: "github.com/alty-cli/alty/internal/bootstrap/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
+
+  # Challenge domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/challenge/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge/application"
+        - "github.com/alty-cli/alty/internal/challenge/infrastructure"
+
+  # Challenge application layer
+  - package: "github.com/alty-cli/alty/internal/challenge/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge/infrastructure"
+
+  # Discovery domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/discovery/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery/application"
+        - "github.com/alty-cli/alty/internal/discovery/infrastructure"
+
+  # Discovery application layer
+  - package: "github.com/alty-cli/alty/internal/discovery/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery/infrastructure"
+
+  # Fitness domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/fitness/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness/application"
+        - "github.com/alty-cli/alty/internal/fitness/infrastructure"
+
+  # Fitness application layer
+  - package: "github.com/alty-cli/alty/internal/fitness/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness/infrastructure"
+
+  # Ticket domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/ticket/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket/application"
+        - "github.com/alty-cli/alty/internal/ticket/infrastructure"
+
+  # Ticket application layer
+  - package: "github.com/alty-cli/alty/internal/ticket/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket/infrastructure"
+
+  # DocHealth domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/dochealth/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth/application"
+        - "github.com/alty-cli/alty/internal/dochealth/infrastructure"
+
+  # DocHealth application layer
+  - package: "github.com/alty-cli/alty/internal/dochealth/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth/infrastructure"
+
+  # Knowledge domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/knowledge/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge/application"
+        - "github.com/alty-cli/alty/internal/knowledge/infrastructure"
+
+  # Knowledge application layer
+  - package: "github.com/alty-cli/alty/internal/knowledge/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge/infrastructure"
+
+  # Rescue domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/rescue/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue/application"
+        - "github.com/alty-cli/alty/internal/rescue/infrastructure"
+
+  # Rescue application layer
+  - package: "github.com/alty-cli/alty/internal/rescue/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue/infrastructure"
+
+  # Research domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/research/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research/application"
+        - "github.com/alty-cli/alty/internal/research/infrastructure"
+
+  # Research application layer
+  - package: "github.com/alty-cli/alty/internal/research/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research/infrastructure"
+
+  # ToolTranslation domain layer isolation
+  - package: "github.com/alty-cli/alty/internal/tooltranslation/domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation/domain"
+        - "github.com/alty-cli/alty/internal/shared/domain"
+      external:
+        - "$gostd"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation/application"
+        - "github.com/alty-cli/alty/internal/tooltranslation/infrastructure"
+
+  # ToolTranslation application layer
+  - package: "github.com/alty-cli/alty/internal/tooltranslation/application"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation/infrastructure"
+
+  # Bootstrap must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Bootstrap must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Bootstrap must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Bootstrap must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Bootstrap must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Bootstrap must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Bootstrap must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Bootstrap must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Bootstrap must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/bootstrap"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Challenge must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Challenge must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Challenge must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Challenge must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Challenge must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Challenge must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Challenge must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Challenge must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/challenge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Discovery must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Discovery must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Discovery must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Discovery must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Discovery must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Discovery must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Discovery must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Discovery must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Discovery must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/discovery"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Fitness must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Fitness must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Fitness must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Fitness must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Fitness must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Fitness must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Fitness must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Fitness must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Fitness must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/fitness"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Ticket must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Ticket must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Ticket must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Ticket must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Ticket must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Ticket must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Ticket must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Ticket must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Ticket must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/ticket"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # DocHealth must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # DocHealth must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # DocHealth must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # DocHealth must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # DocHealth must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # DocHealth must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # DocHealth must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # DocHealth must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # DocHealth must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/dochealth"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Knowledge must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Knowledge must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Knowledge must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Knowledge must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Knowledge must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Knowledge must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Knowledge must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Knowledge must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Knowledge must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/knowledge"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Rescue must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Rescue must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Rescue must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Rescue must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Rescue must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Rescue must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Rescue must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+
+  # Rescue must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/rescue"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # Research must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # Research must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # Research must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # Research must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # Research must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # Research must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # Research must not depend on Knowledge
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/knowledge"
+
+  # Research must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # Research must not depend on ToolTranslation
+  - package: "github.com/alty-cli/alty/internal/research"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/tooltranslation"
+
+  # ToolTranslation must not depend on Bootstrap
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/bootstrap"
+
+  # ToolTranslation must not depend on Challenge
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/challenge"
+
+  # ToolTranslation must not depend on Discovery
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/discovery"
+
+  # ToolTranslation must not depend on Fitness
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/fitness"
+
+  # ToolTranslation must not depend on Ticket
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/ticket"
+
+  # ToolTranslation must not depend on DocHealth
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/dochealth"
+
+  # ToolTranslation must not depend on Rescue
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/rescue"
+
+  # ToolTranslation must not depend on Research
+  - package: "github.com/alty-cli/alty/internal/tooltranslation"
+    shouldNotDependsOn:
+      internal:
+        - "github.com/alty-cli/alty/internal/research"
+

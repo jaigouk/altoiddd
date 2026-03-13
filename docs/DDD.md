@@ -37,7 +37,7 @@ status: draft
 13. alty CLI generates DDD artifacts (domain stories, bounded contexts, ubiquitous language)
 14. alty CLI classifies subdomains using complexity budget (Core/Supporting/Generic)
 15. alty CLI generates architecture doc informed by DDD and classification
-16. alty CLI generates fitness function tests (depguard + archtest) from bounded context map
+16. alty CLI generates fitness function tests (arch-go) from bounded context map
 17. alty CLI generates dependency-ordered beads tickets from DDD artifacts
 18. alty CLI previews generated tickets for approval
 19. User approves generated tickets
@@ -115,16 +115,15 @@ status: draft
    - Core: layers + forbidden + independence + acyclic_siblings
    - Supporting: layers + basic forbidden
    - Generic: single forbidden (ACL boundary only)
-4. alty CLI generates depguard rules in .golangci.yml
-5. alty CLI generates architecture test files per bounded context
-6. alty CLI previews generated tests for approval
-7. Developer approves generated tests
-8. Tests run as part of quality gates (go vet + golangci-lint + go test -race + fitness functions)
+4. alty CLI generates arch-go.yml configuration
+5. alty CLI previews generated config for approval
+6. Developer approves generated config
+7. Tests run as part of quality gates (go vet + golangci-lint + go test -race + arch-go)
 ```
 
 **Key observations:**
 - Classification drives strictness — not all contexts get the same treatment
-- Two complementary tools: depguard (config-based) + architecture tests (code-based)
+- Single MIT-licensed tool: arch-go (config-based with compliance thresholds)
 - Preview before creation — consistent with all generation flows
 
 ### Story 5: Domain Story to Ticket Pipeline
@@ -203,7 +202,7 @@ status: draft
 | Supporting Subdomain | A subdomain that is necessary but not differentiating — gets simpler architecture | Classification |
 | Generic Subdomain | A subdomain that is commodity — buy or use existing library | Classification |
 | Fitness Function | An automated architecture test that enforces structural rules (layer boundaries, dependency direction) | Architecture Testing |
-| Contract | A depguard rule that enforces a specific architectural constraint | Architecture Testing |
+| Contract | An arch-go rule that enforces a specific architectural constraint | Architecture Testing |
 | Gap Analysis | A scan of an existing project compared against a fully-seeded project to identify what's missing | Rescue |
 | Rescue Mode | The `alty init --existing` flow that applies structure to an existing project | Rescue |
 | Ripple Review | The event-driven process of flagging dependent tickets when a ticket closes | Ticket Freshness |
@@ -450,11 +449,11 @@ subdomains:
 
 ### Context: Architecture Testing
 
-**Responsibility:** Owns the generation of executable fitness function tests from the bounded context map and subdomain classification. Maps DDD concepts to depguard rules and architecture test cases.
+**Responsibility:** Owns the generation of executable fitness function tests from the bounded context map and subdomain classification. Maps DDD concepts to arch-go rules.
 
 **Key domain objects:**
 - `FitnessTestSuite` (Aggregate) — the complete set of generated architecture tests for a project
-- `Contract` (Entity) — a depguard rule (layers, forbidden, independence, acyclic_siblings)
+- `Contract` (Entity) — an arch-go rule (shouldOnlyDependsOn, shouldNotDependsOn)
 - `ArchRule` (Entity) — an architecture test rule (layer purity, dependency direction)
 - `ContractStrictness` (Value Object) — strict/moderate/minimal based on subdomain classification
 - `FitnessTestsGenerated` (Domain Event) — emitted when tests are ready for preview
@@ -537,6 +536,20 @@ subdomains:
 - `GapAnalysisCompleted` (Domain Event) — emitted when scan and report are ready
 
 **External dependencies:** Reads existing project filesystem. Uses Bootstrap context for scaffolding.
+
+### Context: Research
+
+**Responsibility:** Owns spike workflow — guided research, library evaluation, and ADR generation. Produces structured research reports that inform architectural decisions.
+
+**Key domain objects:**
+- `ResearchSpike` (Aggregate) — tracks a research investigation with criteria and findings
+- `EvaluationCriteria` (Value Object) — the dimensions for comparing options
+- `Finding` (Entity) — a single research finding with evidence
+- `ADR` (Value Object) — an Architecture Decision Record output
+- `SpikeFollowUp` (Value Object) — recommended next steps from research
+- `ResearchCompleted` (Domain Event) — emitted when spike produces findings
+
+**External dependencies:** May query external sources (docs, APIs). Outputs to Ticket Pipeline (follow-up tickets).
 
 ### Context Map (Relationships)
 
@@ -637,7 +650,7 @@ subdomains:
 **Aggregate Root:** FitnessTestSuite
 
 **Contains:**
-- `Contract` (Entity) — depguard rules
+- `Contract` (Entity) — arch-go rules
 - `ArchRule` (Entity) — architecture test rules
 - `ContractStrictness` (Value Object) — per bounded context
 

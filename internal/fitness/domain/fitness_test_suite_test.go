@@ -528,3 +528,198 @@ func TestAdditionalEdgeCases(t *testing.T) {
 		require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
 	})
 }
+
+// ---------------------------------------------------------------------------
+// RenderArchGoYAML
+// ---------------------------------------------------------------------------
+
+// Helper to create a BoundedContextMap for testing
+func testBoundedContextMap(contexts ...domain.BoundedContextEntry) *domain.BoundedContextMap {
+	bcMap := domain.NewBoundedContextMap("testproject", "github.com/org/testproject", contexts)
+	return &bcMap
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_ValidOutput(t *testing.T) {
+	t.Parallel()
+
+	entry1 := domain.NewBoundedContextEntry(
+		"Bootstrap",
+		"bootstrap",
+		vo.SubdomainSupporting,
+		[]string{"domain", "application", "infrastructure"},
+		nil,
+	)
+	entry2 := domain.NewBoundedContextEntry(
+		"Discovery",
+		"discovery",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry1, entry2)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	assert.Contains(t, yaml, "version: 1")
+	assert.Contains(t, yaml, "dependenciesRules:")
+	assert.Contains(t, yaml, "threshold:")
+	assert.Contains(t, yaml, "compliance: 100")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_DomainLayerRules(t *testing.T) {
+	t.Parallel()
+
+	entry := domain.NewBoundedContextEntry(
+		"Orders",
+		"orders",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	// Domain layer should have shouldOnlyDependsOn for positive model
+	assert.Contains(t, yaml, "shouldOnlyDependsOn:")
+	assert.Contains(t, yaml, "github.com/org/testproject/internal/orders/domain")
+	assert.Contains(t, yaml, "github.com/org/testproject/internal/shared/domain")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_ApplicationLayerRules(t *testing.T) {
+	t.Parallel()
+
+	entry := domain.NewBoundedContextEntry(
+		"Orders",
+		"orders",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	// Application layer should not depend on infrastructure
+	assert.Contains(t, yaml, "shouldNotDependsOn:")
+	assert.Contains(t, yaml, "github.com/org/testproject/internal/orders/application")
+	assert.Contains(t, yaml, "github.com/org/testproject/internal/orders/infrastructure")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_CrossContextIsolation(t *testing.T) {
+	t.Parallel()
+
+	// Two contexts with NO relationship — should generate isolation rule
+	entry1 := domain.NewBoundedContextEntry(
+		"Orders",
+		"orders",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil, // No relationships
+	)
+	entry2 := domain.NewBoundedContextEntry(
+		"Shipping",
+		"shipping",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil, // No relationships
+	)
+	bcMap := testBoundedContextMap(entry1, entry2)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	// Should have cross-context isolation rules
+	assert.Contains(t, yaml, "orders")
+	assert.Contains(t, yaml, "shipping")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_AllowedRelationship(t *testing.T) {
+	t.Parallel()
+
+	// Bootstrap has upstream relationship to Discovery — Bootstrap may depend on Discovery
+	rel := domain.NewContextRelationship("Discovery", domain.RelationshipUpstream, domain.PatternDomainEvent)
+	entry1 := domain.NewBoundedContextEntry(
+		"Bootstrap",
+		"bootstrap",
+		vo.SubdomainSupporting,
+		[]string{"domain", "application", "infrastructure"},
+		[]domain.ContextRelationship{rel},
+	)
+	entry2 := domain.NewBoundedContextEntry(
+		"Discovery",
+		"discovery",
+		vo.SubdomainCore,
+		[]string{"domain", "application", "infrastructure"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry1, entry2)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	// When Bootstrap is upstream to Discovery, Bootstrap can depend on Discovery
+	// So there should NOT be a rule blocking bootstrap → discovery
+	assert.Contains(t, yaml, "bootstrap")
+	assert.Contains(t, yaml, "discovery")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_ThresholdGreenfield(t *testing.T) {
+	t.Parallel()
+
+	entry := domain.NewBoundedContextEntry(
+		"Orders",
+		"orders",
+		vo.SubdomainCore,
+		[]string{"domain"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.NoError(t, err)
+	assert.Contains(t, yaml, "compliance: 100")
+	assert.Contains(t, yaml, "coverage: 100")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_ThresholdBrownfield(t *testing.T) {
+	t.Parallel()
+
+	entry := domain.NewBoundedContextEntry(
+		"Orders",
+		"orders",
+		vo.SubdomainCore,
+		[]string{"domain"},
+		nil,
+	)
+	bcMap := testBoundedContextMap(entry)
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	yaml, err := suite.RenderArchGoYAML(bcMap, 80)
+
+	require.NoError(t, err)
+	assert.Contains(t, yaml, "compliance: 80")
+	assert.Contains(t, yaml, "coverage: 80")
+}
+
+func TestFitnessTestSuite_RenderArchGoYAML_EmptyMap(t *testing.T) {
+	t.Parallel()
+
+	bcMap := testBoundedContextMap() // Empty
+
+	suite := domain.NewFitnessTestSuite("github.com/org/testproject")
+	_, err := suite.RenderArchGoYAML(bcMap, 100)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}

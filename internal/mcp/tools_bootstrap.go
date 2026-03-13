@@ -204,7 +204,7 @@ func generateArtifactsHandler(app *composition.App, store *ModelStore) func(cont
 
 		// Write artifacts to project directory.
 		docsDir := filepath.Join(projectDir, "docs")
-		if err := app.ArtifactGenerationHandler.WriteArtifacts(ctx, preview, docsDir); err != nil {
+		if err := app.ArtifactGenerationHandler.WriteArtifacts(ctx, preview, docsDir, projectDir); err != nil {
 			return toolError(fmt.Sprintf("write artifacts: %s", err))
 		}
 
@@ -213,7 +213,7 @@ func generateArtifactsHandler(app *composition.App, store *ModelStore) func(cont
 		store.Put(input.SessionID, preview.Model, profile)
 
 		return textResult(fmt.Sprintf("Artifacts generated.\nsession_id: %s\nproject_dir: %s\n"+
-			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md\n"+
+			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alty/bounded_context_map.yaml\n"+
 			"Domain model cached for generate_fitness, generate_tickets, generate_configs.",
 			input.SessionID, projectDir))
 	}
@@ -239,7 +239,7 @@ func generateFitnessHandler(app *composition.App, store *ModelStore) func(contex
 		}
 
 		projectName := filepath.Base(projectDir)
-		preview, err := app.FitnessGenerationHandler.BuildPreview(model, projectName, profile)
+		preview, err := app.FitnessGenerationHandler.BuildPreview(model, projectName, profile, nil)
 		if err != nil {
 			return toolError(fmt.Sprintf("generate fitness: %s", err))
 		}
@@ -540,7 +540,7 @@ func generateArtifactsHandlerWithCoordinator(app *composition.App, coord *shared
 
 		// Write artifacts to project directory.
 		docsDir := filepath.Join(projectDir, "docs")
-		if err := app.ArtifactGenerationHandler.WriteArtifacts(ctx, preview, docsDir); err != nil {
+		if err := app.ArtifactGenerationHandler.WriteArtifacts(ctx, preview, docsDir, projectDir); err != nil {
 			return toolError(fmt.Sprintf("write artifacts: %s", err))
 		}
 
@@ -562,7 +562,7 @@ func generateArtifactsHandlerWithCoordinator(app *composition.App, coord *shared
 		}
 
 		return textResult(fmt.Sprintf("Artifacts generated.\nsession_id: %s\nproject_dir: %s\n"+
-			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md\n"+
+			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alty/bounded_context_map.yaml\n"+
 			"Session context stored for generate_fitness, generate_tickets, generate_configs.",
 			input.SessionID, projectDir))
 	}
@@ -599,7 +599,7 @@ func generateFitnessHandlerWithCoordinator(app *composition.App, coord *shareddo
 		}
 
 		projectName := filepath.Base(projectDir)
-		preview, err := app.FitnessGenerationHandler.BuildPreview(sessionCtx.DomainModel, projectName, sessionCtx.StackProfile)
+		preview, err := app.FitnessGenerationHandler.BuildPreview(sessionCtx.DomainModel, projectName, sessionCtx.StackProfile, nil)
 		if err != nil {
 			return toolError(fmt.Sprintf("generate fitness: %s", err))
 		}

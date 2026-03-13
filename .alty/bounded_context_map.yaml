@@ -1,0 +1,121 @@
+# Bounded Context Map for alty
+# Generated from docs/DDD.md Section 4
+# Used by: alty fitness generate
+
+project:
+  name: alty
+  root_package: github.com/alty-cli/alty
+
+bounded_contexts:
+  # Core contexts - competitive differentiators
+  - name: Bootstrap
+    module_path: bootstrap
+    classification: core
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships:
+      - target: Discovery
+        direction: downstream
+        pattern: domain_event
+      - target: Fitness
+        direction: downstream
+        pattern: domain_event
+      - target: Ticket
+        direction: downstream
+        pattern: domain_event
+      - target: ToolTranslation
+        direction: downstream
+        pattern: domain_event
+
+  - name: Challenge
+    module_path: challenge
+    classification: core
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships:
+      - target: Discovery
+        direction: upstream
+        pattern: domain_event
+
+  - name: Discovery
+    module_path: discovery
+    classification: core
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  - name: Fitness
+    module_path: fitness
+    classification: core
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  - name: Ticket
+    module_path: ticket
+    classification: core
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  # Supporting contexts - necessary but not differentiating
+  - name: DocHealth
+    module_path: dochealth
+    classification: supporting
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  - name: Knowledge
+    module_path: knowledge
+    classification: supporting
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  - name: Rescue
+    module_path: rescue
+    classification: supporting
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships:
+      - target: Bootstrap
+        direction: upstream
+        pattern: shared_kernel
+
+  - name: Research
+    module_path: research
+    classification: supporting
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships: []
+
+  - name: ToolTranslation
+    module_path: tooltranslation
+    classification: supporting
+    layers:
+      - domain
+      - application
+      - infrastructure
+    relationships:
+      - target: Knowledge
+        direction: upstream
+        pattern: open_host

@@ -28,6 +28,7 @@ import (
 	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/stack"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
 	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
@@ -110,7 +111,8 @@ func NewApp() (*App, error) {
 	docScanner := dochealthinfra.NewFilesystemDocScanner()
 
 	// 5. Fitness infrastructure
-	gateRunner := fitnessinfra.NewSubprocessGateRunner("", nil)
+	stackProfile := stack.DetectProfile("")
+	gateRunner := fitnessinfra.NewSubprocessGateRunner("", stackProfile)
 
 	// 6. Knowledge infrastructure
 	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader(".alty/knowledge")
@@ -178,7 +180,8 @@ func NewApp() (*App, error) {
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
 	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher, testRunner)
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
-	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter)
+	versionParser := challengeinfra.NewYAMLFrontmatterParser()
+	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter, versionParser)
 
 	return &App{
 		BootstrapHandler:          bootstrapHandler,

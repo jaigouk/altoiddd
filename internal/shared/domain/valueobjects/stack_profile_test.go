@@ -181,3 +181,107 @@ func TestGenericProfileToRootPackage(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// GoModProfile (Go modules stack)
+// ---------------------------------------------------------------------------
+
+func TestGoModProfileSatisfiesInterface(t *testing.T) {
+	t.Parallel()
+	var _ vo.StackProfile = vo.GoModProfile{}
+}
+
+func TestGoModProfileStackID(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "go-mod", vo.GoModProfile{}.StackID())
+}
+
+func TestGoModProfileFileGlob(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "**/*.go", vo.GoModProfile{}.FileGlob())
+}
+
+func TestGoModProfileProjectManifest(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "go.mod", vo.GoModProfile{}.ProjectManifest())
+}
+
+func TestGoModProfileSourceLayout(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, []string{
+		"internal/*/domain/",
+		"internal/*/application/",
+		"internal/*/infrastructure/",
+	}, vo.GoModProfile{}.SourceLayout())
+}
+
+func TestGoModProfileQualityGateCommandsLint(t *testing.T) {
+	t.Parallel()
+	cmds := vo.GoModProfile{}.QualityGateCommands()
+	assert.Equal(t, []string{"golangci-lint", "run", "./..."}, cmds[vo.QualityGateLint])
+}
+
+func TestGoModProfileQualityGateCommandsTypes(t *testing.T) {
+	t.Parallel()
+	cmds := vo.GoModProfile{}.QualityGateCommands()
+	assert.Equal(t, []string{"go", "vet", "./..."}, cmds[vo.QualityGateTypes])
+}
+
+func TestGoModProfileQualityGateCommandsTests(t *testing.T) {
+	t.Parallel()
+	cmds := vo.GoModProfile{}.QualityGateCommands()
+	assert.Equal(t, []string{"go", "test", "-race", "./..."}, cmds[vo.QualityGateTests])
+}
+
+func TestGoModProfileQualityGateCommandsFitness(t *testing.T) {
+	t.Parallel()
+	cmds := vo.GoModProfile{}.QualityGateCommands()
+	// arch-go is the MIT-licensed architecture testing tool
+	assert.Equal(t, []string{"arch-go"}, cmds[vo.QualityGateFitness])
+}
+
+func TestGoModProfileQualityGateCommandsCoversAllGates(t *testing.T) {
+	t.Parallel()
+	cmds := vo.GoModProfile{}.QualityGateCommands()
+	allGates := vo.AllQualityGates()
+	for _, gate := range allGates {
+		_, ok := cmds[gate]
+		require.True(t, ok, "missing command for gate %s", gate)
+	}
+}
+
+func TestGoModProfileQualityGateDisplay(t *testing.T) {
+	t.Parallel()
+	display := vo.GoModProfile{}.QualityGateDisplay()
+	assert.Contains(t, display, "golangci-lint run ./...")
+	assert.Contains(t, display, "go vet ./...")
+	assert.Contains(t, display, "go test -race ./...")
+	assert.Contains(t, display, "arch-go")
+	assert.True(t, len(display) > 0 && display[:len("## Quality Gates")] == "## Quality Gates")
+}
+
+func TestGoModProfileFitnessAvailable(t *testing.T) {
+	t.Parallel()
+	assert.True(t, vo.GoModProfile{}.FitnessAvailable())
+}
+
+func TestGoModProfileToRootPackage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"passthrough hyphenated", "my-app", "my-app"},
+		{"passthrough module path", "github.com/org/repo", "github.com/org/repo"},
+		{"passthrough empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, vo.GoModProfile{}.ToRootPackage(tt.input))
+		})
+	}
+}

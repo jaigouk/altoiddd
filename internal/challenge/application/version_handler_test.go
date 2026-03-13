@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
+	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
+	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
 )
 
 // --- Mocks ---
@@ -46,6 +48,30 @@ func (m *mockFileWriter) WriteFile(_ context.Context, path, content string) erro
 	return nil
 }
 
+// mockDDDVersionParser wraps the real parser for testing.
+// Most tests need real YAML parsing behavior.
+type mockDDDVersionParser struct {
+	real     *challengeinfra.YAMLFrontmatterParser
+	parseErr error
+}
+
+func newMockParser() *mockDDDVersionParser {
+	return &mockDDDVersionParser{
+		real: challengeinfra.NewYAMLFrontmatterParser(),
+	}
+}
+
+func (m *mockDDDVersionParser) ParseVersion(content string) (challengedomain.DDDVersion, error) {
+	if m.parseErr != nil {
+		return challengedomain.DDDVersion{}, m.parseErr
+	}
+	return m.real.ParseVersion(content)
+}
+
+func (m *mockDDDVersionParser) ApplyVersion(content string, version challengedomain.DDDVersion) string {
+	return m.real.ApplyVersion(content, version)
+}
+
 // --- VersionDDDDocument tests ---
 
 func TestVersionDDDDocument_HappyPath(t *testing.T) {
@@ -68,7 +94,7 @@ Content here.
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -103,7 +129,7 @@ No version yet.
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -128,7 +154,7 @@ func TestVersionDDDDocument_FileNotFound(t *testing.T) {
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -149,7 +175,7 @@ func TestVersionDDDDocument_ReadError(t *testing.T) {
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -174,7 +200,7 @@ func TestVersionDDDDocument_WriteError(t *testing.T) {
 		err: errors.New("disk full"),
 	}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -201,7 +227,7 @@ version: not_a_number
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -233,7 +259,7 @@ convergence_delta: 5
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -289,7 +315,7 @@ round: express
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
@@ -322,7 +348,7 @@ func TestVersionDDDDocument_EmptyDocument(t *testing.T) {
 	}
 	writer := &mockFileWriter{}
 
-	handler := challengeapp.NewVersionHandler(reader, writer)
+	handler := challengeapp.NewVersionHandler(reader, writer, newMockParser())
 	err := handler.VersionDDDDocument(
 		context.Background(),
 		"docs/DDD.md",
