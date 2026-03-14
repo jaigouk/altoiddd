@@ -1,0 +1,89 @@
+---
+/**
+ * ThemeSelect override — syncs Starlight's theme toggle with daisyUI data-theme.
+ */
+---
+
+<starlight-theme-select>
+  <label class="sr-only" for="theme-select">Select theme</label>
+  <select id="theme-select" aria-label="Select theme">
+    <option value="auto">Auto</option>
+    <option value="dark">Dark</option>
+    <option value="light">Light</option>
+  </select>
+</starlight-theme-select>
+
+<script>
+  class StarlightThemeSelect extends HTMLElement {
+    private static STORAGE_KEY = 'starlight-theme';
+
+    constructor() {
+      super();
+      const select = this.querySelector('select');
+      if (!select) return;
+
+      // Set initial value
+      const stored = localStorage.getItem(StarlightThemeSelect.STORAGE_KEY);
+      if (stored) {
+        select.value = stored;
+      } else {
+        select.value = 'auto';
+      }
+
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.applyTheme(target.value);
+      });
+    }
+
+    private applyTheme(value: string) {
+      let theme: string;
+      if (value === 'auto') {
+        localStorage.removeItem(StarlightThemeSelect.STORAGE_KEY);
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      } else {
+        localStorage.setItem(StarlightThemeSelect.STORAGE_KEY, value);
+        theme = value;
+      }
+
+      const daisyTheme = theme === 'dark' ? 'alty-dark' : 'alty-light';
+      document.documentElement.setAttribute('data-theme', daisyTheme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
+  }
+
+  customElements.define('starlight-theme-select', StarlightThemeSelect);
+</script>
+
+<style>
+  starlight-theme-select {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  select {
+    background: transparent;
+    color: var(--color-base-content);
+    border: 1px solid var(--color-neutral);
+    border-radius: var(--radius-field);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  select:hover {
+    border-color: var(--color-primary);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>

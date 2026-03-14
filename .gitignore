@@ -39,3 +39,32 @@ Thumbs.db
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Impeccable design skills (local tool, not part of alty-cli)
+# Flat structure required — Claude Code only discovers .claude/skills/*/SKILL.md
+.claude/skills/adapt/
+.claude/skills/animate/
+.claude/skills/audit/
+.claude/skills/bolder/
+.claude/skills/clarify/
+.claude/skills/colorize/
+.claude/skills/critique/
+.claude/skills/delight/
+.claude/skills/distill/
+.claude/skills/extract/
+.claude/skills/frontend-design/
+.claude/skills/harden/
+.claude/skills/normalize/
+.claude/skills/onboard/
+.claude/skills/optimize/
+.claude/skills/polish/
+.claude/skills/quieter/
+.claude/skills/teach-impeccable/
+
+# Website (Astro)
+website/node_modules/
+website/dist/
+website/.astro/
+website/design/
+website/.vercel/
+website/.netlify/

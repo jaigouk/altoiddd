@@ -1,0 +1,101 @@
+---
+/**
+ * CTA — final call to action before footer.
+ * Direct headline, single button, install command.
+ */
+---
+
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title">
+      Stop letting AI tools guess<br class="hide-mobile" /> your architecture
+    </h2>
+    <p class="cta-sub">
+      Give them a blueprint. Ship with confidence.
+    </p>
+    <a href="/guides/quickstart/" class="cta-btn">
+      Get Started with alty
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <p class="cta-install">
+      <code>go install github.com/alty-cli/alty/cmd/alty@latest</code>
+    </p>
+  </div>
+</section>
+
+<style>
+  .cta-section {
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+    border-top: 1px solid var(--landing-border);
+  }
+
+  .cta-inner {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    color: var(--landing-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .hide-mobile {
+      display: inline;
+    }
+  }
+
+  .cta-sub {
+    font-size: 1rem;
+    color: var(--landing-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--landing-primary);
+    color: var(--color-on-primary);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 0.375rem;
+    box-shadow: var(--glow-primary);
+    transition: box-shadow 0.2s ease, opacity 0.15s ease;
+  }
+
+  .cta-btn:hover {
+    opacity: 0.92;
+    box-shadow: var(--glow-primary-hover);
+  }
+
+  .cta-install {
+    margin-top: 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--landing-text-muted);
+  }
+
+  .cta-install code {
+    font-family: var(--font-mono);
+    padding: 0.25rem 0.625rem;
+    background: var(--landing-surface);
+    border: 1px solid var(--landing-border);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--landing-text);
+  }
+</style>

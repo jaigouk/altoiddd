@@ -1,0 +1,83 @@
+---
+import NavHeader from '../components/NavHeader.astro';
+import Hero from '../components/Hero.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import Features from '../components/Features.astro';
+import CTA from '../components/CTA.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<html lang="en" data-theme="alty-dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="alty turns 4-5 sentences into a production-ready project scaffold. Domain models, architecture docs, and structured tickets — before any AI coding tool writes a single line." />
+  <title>alty — Ship with structure, not chaos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --landing-bg: var(--color-base-100);
+      --landing-surface: var(--color-base-200);
+      --landing-border: var(--color-neutral);
+      --landing-text: var(--color-base-content);
+      --landing-text-muted: var(--color-neutral-content);
+      --landing-primary: var(--color-primary);
+      --landing-primary-dim: color-mix(in oklch, var(--color-primary) 12%, transparent);
+      --landing-gold: var(--color-accent);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      font-family: var(--font-sans);
+      background: var(--landing-bg);
+      color: var(--landing-text);
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Staggered entry animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .delay-1 { animation-delay: 0.08s; }
+    .delay-2 { animation-delay: 0.16s; }
+    .delay-3 { animation-delay: 0.24s; }
+    .delay-4 { animation-delay: 0.32s; }
+    .delay-5 { animation-delay: 0.40s; }
+  </style>
+</head>
+<body>
+  <NavHeader />
+  <main>
+    <Hero />
+    <HowItWorks />
+    <Features />
+    <CTA />
+  </main>
+  <Footer />
+
+  <!-- Theme initialization for landing page -->
+  <script is:inline>
+    (function() {
+      const stored = localStorage.getItem('starlight-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'alty-dark' : 'alty-light');
+    })();
+  </script>
+</body>
+</html>

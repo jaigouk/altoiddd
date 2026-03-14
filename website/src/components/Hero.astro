@@ -1,0 +1,308 @@
+---
+/**
+ * Hero — text-first hero with terminal demo showing alty init output.
+ * Centered headline, subtext, two CTAs, then a terminal window.
+ */
+---
+
+<section class="hero">
+  <div class="hero-inner">
+    <!-- Badge -->
+    <div class="hero-badge animate-in">
+      <span class="hero-badge-dot"></span>
+      DDD + TDD before AI writes code
+    </div>
+
+    <!-- Headline -->
+    <h1 class="hero-title animate-in delay-1">
+      Ship with structure,<br />not chaos
+    </h1>
+
+    <!-- Subtext -->
+    <p class="hero-sub animate-in delay-2">
+      alty turns 4–5 sentences into a production-ready project scaffold.<br class="hide-mobile" />
+      Domain models, architecture docs, and structured tickets —<br class="hide-mobile" />
+      before any AI coding tool writes a single line.
+    </p>
+
+    <!-- CTAs -->
+    <div class="hero-actions animate-in delay-3">
+      <a href="/guides/quickstart/" class="btn-primary">
+        Get Started
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a href="/guides/concepts/" class="btn-ghost">
+        Read the Docs
+      </a>
+    </div>
+
+    <!-- Terminal demo -->
+    <div class="terminal animate-in delay-4">
+      <div class="terminal-bar">
+        <span class="terminal-dot" style="background: oklch(60% 0.18 25)"></span>
+        <span class="terminal-dot" style="background: oklch(75% 0.12 80)"></span>
+        <span class="terminal-dot" style="background: oklch(70% 0.15 155)"></span>
+      </div>
+      <div class="terminal-body">
+        <code class="terminal-line">
+          <span class="t-prompt">$</span> <span class="t-cmd">alty init</span>
+        </code>
+        <code class="terminal-line t-dim">
+          Describe your project in 4-5 sentences...
+        </code>
+        <code class="terminal-line"><br /></code>
+        <code class="terminal-line">
+          <span class="t-check-green">&#10003;</span> <span class="t-label">PRD generated</span>
+        </code>
+        <code class="terminal-line">
+          <span class="t-check-green">&#10003;</span> <span class="t-label">DDD model extracted</span>
+        </code>
+        <code class="terminal-line">
+          <span class="t-check-green">&#10003;</span> <span class="t-label">Architecture scaffolded</span>
+        </code>
+        <code class="terminal-line">
+          <span class="t-check-green">&#10003;</span> <span class="t-label">Structured tickets created</span>
+        </code>
+        <code class="terminal-line"><br /></code>
+        <code class="terminal-line">
+          <span class="t-ready">Ready.</span> <span class="t-dim">Your AI tools can now build with guardrails.</span>
+        </code>
+      </div>
+    </div>
+
+    <!-- Tool logos -->
+    <div class="hero-tools animate-in delay-5">
+      <span class="hero-tools-label">Works with</span>
+      <div class="hero-tools-list">
+        <span>Claude Code</span>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <span>Cursor</span>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <span>Roo Code</span>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <span>OpenCode</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+  }
+
+  .hero-inner {
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  /* Badge */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.875rem;
+    margin-bottom: 1.5rem;
+    background: var(--landing-primary-dim);
+    border: 1px solid var(--landing-primary-dim);
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--landing-primary);
+  }
+
+  .hero-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--landing-primary);
+  }
+
+  /* Headline */
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+    color: var(--landing-text);
+  }
+
+  /* Subtext */
+  .hero-sub {
+    font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
+    line-height: 1.6;
+    color: var(--landing-text-muted);
+    margin-bottom: 2rem;
+    max-width: 36rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .hide-mobile {
+      display: inline;
+    }
+  }
+
+  /* CTAs */
+  .hero-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.25rem;
+    background: var(--landing-primary);
+    color: var(--color-on-primary);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 0.375rem;
+    box-shadow: var(--glow-primary);
+    transition: box-shadow 0.2s ease, opacity 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.92;
+    box-shadow: var(--glow-primary-hover);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    background: transparent;
+    color: var(--landing-text);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--landing-border);
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--landing-text-muted);
+  }
+
+  /* Terminal */
+  .terminal {
+    max-width: 32rem;
+    margin: 0 auto 2.5rem;
+    background: var(--landing-surface);
+    border: 1px solid var(--landing-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .terminal-bar {
+    display: flex;
+    gap: 6px;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--landing-border);
+  }
+
+  .terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    opacity: 0.8;
+  }
+
+  .terminal-body {
+    padding: 1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+  }
+
+  .terminal-line {
+    display: block;
+    white-space: pre;
+  }
+
+  .t-prompt {
+    color: var(--landing-text-muted);
+  }
+
+  .t-cmd {
+    color: var(--landing-primary);
+    font-weight: 500;
+  }
+
+  .t-dim {
+    color: var(--landing-text-muted);
+  }
+
+  .t-check-green {
+    color: var(--color-success-green);
+  }
+
+  .t-label {
+    color: var(--landing-text);
+  }
+
+  .t-ready {
+    color: var(--landing-gold);
+    font-weight: 500;
+  }
+
+  /* Tool logos */
+  .hero-tools {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hero-tools-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--ls-label);
+    color: var(--landing-text-muted);
+  }
+
+  .hero-tools-list {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--landing-text-muted);
+  }
+
+  .tool-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--landing-border);
+  }
+
+  @media (max-width: 480px) {
+    .hero-tools-list {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem 1rem;
+    }
+
+    .tool-sep {
+      display: none;
+    }
+  }
+</style>

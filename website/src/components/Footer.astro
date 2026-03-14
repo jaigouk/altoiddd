@@ -1,0 +1,130 @@
+---
+/**
+ * Footer — minimal footer with logo, nav columns, copyright.
+ */
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="footer-logo" aria-label="alty home">
+        <span class="footer-logo-prompt">&gt;_</span>
+        <span class="footer-logo-text">alty</span>
+      </a>
+      <p class="footer-tagline">The architect that runs before builders.</p>
+    </div>
+
+    <div class="footer-nav">
+      <div class="footer-col">
+        <p class="footer-col-title">Getting Started</p>
+        <a href="/guides/quickstart/">Quick Start</a>
+        <a href="/guides/installation/">Installation</a>
+        <a href="/guides/new-project/">New Project</a>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title">Documentation</p>
+        <a href="/guides/concepts/">Concepts</a>
+        <a href="/guides/cli-reference/">CLI Reference</a>
+        <a href="/guides/ai-tool-integration/">AI Tools</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 alty. Apache-2.0 License.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--landing-border);
+    padding: 3rem 1.5rem 0;
+    background: var(--landing-surface);
+  }
+
+  .footer-inner {
+    max-width: 64rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .footer-inner {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+
+  .footer-brand {
+    max-width: 16rem;
+  }
+
+  .footer-logo {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--landing-text);
+    margin-bottom: 0.375rem;
+  }
+
+  .footer-logo-prompt {
+    color: var(--landing-primary);
+    font-size: 0.8125rem;
+  }
+
+  .footer-tagline {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--landing-text-muted);
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 3rem;
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .footer-col-title {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--ls-label);
+    color: var(--landing-text);
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-col a {
+    text-decoration: none;
+    font-size: 0.8125rem;
+    color: var(--landing-text-muted);
+    transition: color 0.15s ease;
+  }
+
+  .footer-col a:hover {
+    color: var(--landing-primary);
+  }
+
+  .footer-bottom {
+    max-width: 64rem;
+    margin: 0 auto;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--landing-border);
+  }
+
+  .footer-bottom p {
+    font-size: 0.75rem;
+    color: var(--landing-text-muted);
+  }
+</style>
