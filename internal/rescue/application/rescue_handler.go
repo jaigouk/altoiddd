@@ -106,7 +106,7 @@ func (h *RescueHandler) Rescue(
 	}
 
 	// Analyze gaps
-	gaps := h.identifyGaps(scan, profile)
+	gaps := IdentifyGaps(scan, profile)
 
 	// Build aggregate
 	analysis := rescuedomain.NewGapAnalysis(projectDir)
@@ -220,7 +220,10 @@ func (h *RescueHandler) rollback(ctx context.Context, projectDir, branchName str
 	return firstErr
 }
 
-func (h *RescueHandler) identifyGaps(
+// IdentifyGaps compares a project scan against required structure and returns gaps.
+// It is a pure function with no handler dependencies, usable by both RescueHandler
+// and GapQueryHandler.
+func IdentifyGaps(
 	scan rescuedomain.ProjectScan,
 	profile vo.StackProfile,
 ) []rescuedomain.Gap {

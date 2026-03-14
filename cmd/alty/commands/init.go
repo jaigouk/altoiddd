@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -14,6 +17,7 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 	var (
 		existing bool
 		dryRun   bool
+		yes      bool
 	)
 
 	cmd := &cobra.Command{
@@ -26,25 +30,71 @@ Use --existing to rescue an existing project (alty init --existing).`,
 			if existing {
 				return runRescue(cmd, app, dryRun)
 			}
-			return runInit(app)
+			return runInit(cmd, app, dryRun, yes)
 		},
 	}
 
 	cmd.Flags().BoolVar(&existing, "existing", false, "Rescue an existing project")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show rescue plan without executing")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show plan without executing")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
 
 	return cmd
 }
 
-func runInit(app *composition.App) error {
-	// Preview bootstrap actions
+func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool) error {
+	// 1. Preview bootstrap actions.
 	session, err := app.BootstrapHandler.Preview(".")
 	if err != nil {
 		return fmt.Errorf("bootstrap preview: %w", err)
 	}
-	fmt.Printf("Bootstrap session created: %s\n", session.SessionID())
-	fmt.Println("Run 'alty guide' to start the discovery flow.")
-	return nil
+
+	// 2. Display plan.
+	preview := session.Preview()
+	if preview != nil {
+		for _, action := range preview.FileActions() {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s", action.ActionType(), action.Path())
+			if action.Reason() != "" {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), " (%s)", action.Reason())
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		}
+	}
+
+	// 3. Dry-run: show preview and exit.
+	if dryRun {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Dry run: no files written.")
+		return nil
+	}
+
+	// 4. Confirm — require explicit user approval before writing files.
+	if !yes {
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), "\nProceed? [y/N] ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if !scanner.Scan() {
+			return fmt.Errorf("bootstrap cancelled")
+		}
+		answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
+		if answer != "y" && answer != "yes" {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Cancelled.")
+			return nil
+		}
+	}
+
+	_, err = app.BootstrapHandler.Confirm(session.SessionID())
+	if err != nil {
+		return fmt.Errorf("bootstrap confirm: %w", err)
+	}
+
+	// 5. Execute (writes files).
+	_, err = app.BootstrapHandler.Execute(session.SessionID())
+	if err != nil {
+		return fmt.Errorf("bootstrap execute: %w", err)
+	}
+
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Bootstrap complete. Starting guided discovery...")
+
+	// 6. Launch guide flow.
+	return runGuide(cmd.Context(), app, false)
 }
 
 func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool) error {

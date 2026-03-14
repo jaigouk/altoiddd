@@ -25,6 +25,11 @@ type FileChecker interface {
 	Exists(path string) bool
 }
 
+// ContentProvider returns generated content for a planned file path.
+type ContentProvider interface {
+	ContentFor(path string, projectName string) string
+}
+
 // plannedFiles lists files alty plans to create in a new project.
 var plannedFiles = []string{
 	"docs/PRD.md",
@@ -38,20 +43,24 @@ var plannedFiles = []string{
 
 // BootstrapHandler orchestrates the preview -> confirm -> execute bootstrap flow.
 type BootstrapHandler struct {
-	toolDetection ToolDetector
-	fileChecker   FileChecker
-	publisher     sharedapp.EventPublisher
-	mu            sync.Mutex
-	sessions      map[string]*domain.BootstrapSession
+	toolDetection   ToolDetector
+	fileChecker     FileChecker
+	publisher       sharedapp.EventPublisher
+	fileWriter      sharedapp.FileWriter
+	contentProvider ContentProvider
+	mu              sync.Mutex
+	sessions        map[string]*domain.BootstrapSession
 }
 
 // NewBootstrapHandler creates a new BootstrapHandler with injected dependencies.
-func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, publisher sharedapp.EventPublisher) *BootstrapHandler {
+func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, publisher sharedapp.EventPublisher, fileWriter sharedapp.FileWriter, contentProvider ContentProvider) *BootstrapHandler {
 	return &BootstrapHandler{
-		toolDetection: toolDetection,
-		fileChecker:   fileChecker,
-		publisher:     publisher,
-		sessions:      make(map[string]*domain.BootstrapSession),
+		toolDetection:   toolDetection,
+		fileChecker:     fileChecker,
+		publisher:       publisher,
+		fileWriter:      fileWriter,
+		contentProvider: contentProvider,
+		sessions:        make(map[string]*domain.BootstrapSession),
 	}
 }
 
@@ -130,6 +139,21 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 	if err := session.BeginExecution(); err != nil {
 		return nil, fmt.Errorf("begin execution: %w", err)
 	}
+
+	preview := session.Preview()
+	if preview != nil {
+		for _, action := range preview.FileActions() {
+			if action.ActionType() != vo.FileActionCreate {
+				continue
+			}
+			content := h.contentProvider.ContentFor(action.Path(), filepath.Base(session.ProjectDir()))
+			target := filepath.Join(session.ProjectDir(), action.Path())
+			if err := h.fileWriter.WriteFile(context.Background(), target, content); err != nil {
+				return nil, fmt.Errorf("writing %s: %w", action.Path(), err)
+			}
+		}
+	}
+
 	if err := session.Complete(); err != nil {
 		return nil, fmt.Errorf("complete session: %w", err)
 	}

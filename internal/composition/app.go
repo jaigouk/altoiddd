@@ -74,7 +74,8 @@ type App struct {
 	DriftDetectionHandler  *knowledgeapp.DriftDetectionHandler
 
 	// --- Rescue ---
-	RescueHandler *rescueapp.RescueHandler
+	RescueHandler   *rescueapp.RescueHandler
+	GapQueryHandler *rescueapp.GapQueryHandler
 
 	// --- Challenge ---
 	ChallengeHandler *challengeapp.ChallengeHandler
@@ -162,7 +163,8 @@ func NewApp() (*App, error) {
 	discoveryDetector := &discoveryToolDetectorAdapter{scanner: toolScanner}
 
 	fileChecker := &bootstrapinfra.OSFileChecker{}
-	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher)
+	contentProvider := &bootstrapinfra.ContentProviderAdapter{}
+	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider)
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher)
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
@@ -179,6 +181,7 @@ func NewApp() (*App, error) {
 	driftDetectionHandler := knowledgeapp.NewDriftDetectionHandler(driftDetector)
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
 	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher, testRunner)
+	gapQueryHandler := rescueapp.NewGapQueryHandler(projectScanner, &stackProfileDetectorAdapter{})
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
 	versionParser := challengeinfra.NewYAMLFrontmatterParser()
 	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter, versionParser)
@@ -201,6 +204,7 @@ func NewApp() (*App, error) {
 		KnowledgeLookupHandler:    knowledgeLookupHandler,
 		DriftDetectionHandler:     driftDetectionHandler,
 		RescueHandler:             rescueHandler,
+		GapQueryHandler:           gapQueryHandler,
 		ChallengeHandler:          challengeHandler,
 		VersionHandler:            versionHandler,
 		EventBus:                  bus,

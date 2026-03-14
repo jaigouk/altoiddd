@@ -13,6 +13,9 @@ import (
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
 	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
 	dochealthinfra "github.com/alty-cli/alty/internal/dochealth/infrastructure"
+	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/stack"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
@@ -165,4 +168,20 @@ func (a *ticketReaderAdapter) ReadFlags(
 	ticketID string,
 ) ([]ticketdomain.FreshnessFlag, error) {
 	return a.reader.ReadFlags(ctx, ticketID), nil
+}
+
+// ---------------------------------------------------------------------------
+// StackProfileDetector adapter
+// ---------------------------------------------------------------------------
+
+// Compile-time interface check.
+var _ rescueapp.StackProfileDetector = (*stackProfileDetectorAdapter)(nil)
+
+// stackProfileDetectorAdapter bridges the stack.DetectProfile function to the
+// rescue application's StackProfileDetector interface.
+type stackProfileDetectorAdapter struct{}
+
+// DetectProfile implements StackProfileDetector.
+func (a *stackProfileDetectorAdapter) DetectProfile(projectDir string) vo.StackProfile {
+	return stack.DetectProfile(projectDir)
 }
