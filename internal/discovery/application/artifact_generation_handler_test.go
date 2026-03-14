@@ -427,6 +427,65 @@ func TestArtifactGenerationHandler_NoSilentSupportingDefault(t *testing.T) {
 		require.Len(t, bcs, 1)
 		assert.NotNil(t, bcs[0].Classification())
 	})
+
+	t.Run("multi-context Q10 classifies each context correctly", func(t *testing.T) {
+		t.Parallel()
+		renderer := newFakeRenderer("", "", "")
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+		answers := []discoverydomain.Answer{
+			discoverydomain.NewAnswer("Q1", "Customer"),
+			discoverydomain.NewAnswer("Q3", "Customer places order"),
+			discoverydomain.NewAnswer("Q4", "Order must have at least one item"),
+			discoverydomain.NewAnswer("Q9", "Sales, Inventory"),
+			discoverydomain.NewAnswer("Q10", "Sales is core competitive advantage, Inventory is supporting necessary"),
+		}
+		event := makeEventWithAnswers(answers)
+
+		preview, err := handler.BuildPreview(context.Background(), event)
+
+		require.NoError(t, err)
+		bcs := preview.Model.BoundedContexts()
+		require.Len(t, bcs, 2)
+
+		classMap := map[string]vo.SubdomainClassification{}
+		for _, bc := range bcs {
+			require.NotNil(t, bc.Classification(), "context %s should be classified", bc.Name())
+			classMap[bc.Name()] = *bc.Classification()
+		}
+		assert.Equal(t, vo.SubdomainCore, classMap["Sales"], "Sales should be core")
+		assert.Equal(t, vo.SubdomainSupporting, classMap["Inventory"], "Inventory should be supporting")
+	})
+
+	t.Run("multi-context Q10 with three contexts and mixed delimiters", func(t *testing.T) {
+		t.Parallel()
+		renderer := newFakeRenderer("", "", "")
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+		answers := []discoverydomain.Answer{
+			discoverydomain.NewAnswer("Q1", "User"),
+			discoverydomain.NewAnswer("Q3", "User does things"),
+			discoverydomain.NewAnswer("Q4", "Must be valid"),
+			discoverydomain.NewAnswer("Q9", "Sales, Inventory, Notifications"),
+			discoverydomain.NewAnswer("Q10", "Sales is core. Inventory is supporting. Notifications is generic off-the-shelf"),
+		}
+		event := makeEventWithAnswers(answers)
+
+		preview, err := handler.BuildPreview(context.Background(), event)
+
+		require.NoError(t, err)
+		bcs := preview.Model.BoundedContexts()
+		require.Len(t, bcs, 3)
+
+		classMap := map[string]vo.SubdomainClassification{}
+		for _, bc := range bcs {
+			require.NotNil(t, bc.Classification(), "context %s should be classified", bc.Name())
+			classMap[bc.Name()] = *bc.Classification()
+		}
+		assert.Equal(t, vo.SubdomainCore, classMap["Sales"])
+		assert.Equal(t, vo.SubdomainSupporting, classMap["Inventory"])
+		assert.Equal(t, vo.SubdomainGeneric, classMap["Notifications"])
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -602,8 +661,7 @@ func TestArtifactGenerationHandler_BCMapContent_MatchesYAMLStructure(t *testing.
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
 		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
-		// Use single-context events to avoid Q10 keyword matching ambiguity
-		// (see extractClassifications bug where multi-context Q10 can misclassify)
+		// Single-context event for focused testing
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "User"),
 			discoverydomain.NewAnswer("Q3", "User places order"),
@@ -866,7 +924,7 @@ func TestArtifactGenerationHandler_BCMapContent_RoundTripsWithParser(t *testing.
 		renderer := newFakeRenderer("", "", "")
 		writer := newFakeFileWriterA()
 		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
-		// Use single-context event to avoid ambiguity in Q10 keyword matching
+		// Single-context event for focused testing
 		answers := []discoverydomain.Answer{
 			discoverydomain.NewAnswer("Q1", "User"),
 			discoverydomain.NewAnswer("Q3", "User places order"),

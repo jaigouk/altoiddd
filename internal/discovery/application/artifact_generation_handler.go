@@ -299,21 +299,45 @@ func extractClassifications(model *ddd.DomainModel, answers map[string]string) e
 		return nil
 	}
 
+	segments := splitIntoSegments(q10)
+
 	for _, ctx := range model.BoundedContexts() {
 		if ctx.Classification() != nil {
 			continue
 		}
 		ctxLower := strings.ToLower(ctx.Name())
-		for keyword, cls := range classificationKeywords {
-			if strings.Contains(q10, keyword) && strings.Contains(q10, ctxLower) {
-				if err := model.ClassifySubdomain(ctx.Name(), cls, fmt.Sprintf("Classified as %s based on Q10 answer", cls)); err != nil {
-					return fmt.Errorf("classify subdomain %q: %w", ctx.Name(), err)
-				}
-				break
+		for _, seg := range segments {
+			if !strings.Contains(seg, ctxLower) {
+				continue
 			}
+			for keyword, cls := range classificationKeywords {
+				if strings.Contains(seg, keyword) {
+					if err := model.ClassifySubdomain(ctx.Name(), cls, fmt.Sprintf("Classified as %s based on Q10 answer", cls)); err != nil {
+						return fmt.Errorf("classify subdomain %q: %w", ctx.Name(), err)
+					}
+					break
+				}
+			}
+			break
 		}
 	}
 	return nil
+}
+
+// splitIntoSegments splits a Q10 answer into segments by comma, period, or semicolon.
+func splitIntoSegments(s string) []string {
+	// Replace periods and semicolons with commas for uniform splitting.
+	s = strings.ReplaceAll(s, ".", ",")
+	s = strings.ReplaceAll(s, ";", ",")
+	parts := strings.Split(s, ",")
+	var result []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
 }
 
 func extractAggregates(model *ddd.DomainModel, answers map[string]string) error {
