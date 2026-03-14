@@ -16,13 +16,13 @@
 
     <div class="footer-nav">
       <div class="footer-col">
-        <p class="footer-col-title">Getting Started</p>
+        <p class="footer-col-title">Setup</p>
         <a href="/guides/quickstart/">Quick Start</a>
         <a href="/guides/installation/">Installation</a>
         <a href="/guides/new-project/">New Project</a>
       </div>
       <div class="footer-col">
-        <p class="footer-col-title">Documentation</p>
+        <p class="footer-col-title">Reference</p>
         <a href="/guides/concepts/">Concepts</a>
         <a href="/guides/cli-reference/">CLI Reference</a>
         <a href="/guides/ai-tool-integration/">AI Tools</a>
@@ -88,6 +88,13 @@
   .footer-nav {
     display: flex;
     gap: 3rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 360px) {
+    .footer-nav {
+      gap: 2rem;
+    }
   }
 
   .footer-col {

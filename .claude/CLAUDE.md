@@ -345,3 +345,28 @@ assert.InDelta(t, 42.0, val, 0)  // not assert.Equal(t, 42.0, val)
 - **golangci-lint v2** -- Strict lint config in `.golangci.yml`
 - **Watermill** -- Event bus (GoChannel for local, NATS for distributed)
 - **Cobra** -- CLI framework
+
+## Design Context
+
+### Users
+Developers, team leads, and product owners who use AI coding tools (Claude Code, Cursor, Roo Code, OpenCode) to build software. They arrive at alty's website looking for a tool that prevents their AI-generated code from becoming unmaintainable. They value structure, reliability, and professionalism. They are skeptical of "AI hype" aesthetics and respond to tools that look like they were built by engineers, not marketers.
+
+### Brand Personality
+**Structured. Confident. Developer-native.**
+
+alty is the senior architect in the room — not flashy, not loud, but undeniably competent. The interface should evoke the feeling of opening a well-maintained CLI tool: clean, purposeful, no wasted space. Confidence without arrogance.
+
+### Aesthetic Direction
+- **Visual tone:** Restrained, dark-first, information-dense. Inspired by Linear's precision, Warp's charcoal depth, and Supabase's developer-native feel.
+- **Color palette:** "Midnight Teal" — deep blue-gray backgrounds, teal primary accent (oklch(72% 0.12 190)), muted violet secondary, warm gold tertiary. All values in oklch for perceptual uniformity.
+- **Typography:** Inter Variable (body), JetBrains Mono (code), Inter Tight (headlines). 2-3 fonts max, all variable/open-source.
+- **Motion:** Purposeful only. One animated element per viewport max. CSS-first (no JS animation libraries). GPU-friendly transforms/opacity.
+- **Theme:** Dark mode is primary. Light mode exists and is polished, not an afterthought.
+- **Anti-references:** Purple/cyan neon gradients, glowing orbs, glass-morphism everywhere, "AI brain" illustrations, multiple neon accents, pure black (#000) or pure white (#fff), dark purple backgrounds (#2D1B69). If a senior developer would think "an AI generated this," simplify.
+
+### Design Principles
+1. **Show the tool, not the hype** — Real terminal output, actual CLI commands, architecture diagrams. No decorative code or stock imagery.
+2. **One accent, used sparingly** — Teal is the single accent color. Every other color serves a semantic purpose (success, warning, error). No color for decoration.
+3. **Information density over decoration** — Developers scan, they don't browse. Prioritize scannable content, clear hierarchy, and fast load times (< 1s LCP).
+4. **Restraint is the design** — Fewer effects, fewer gradients, fewer rounded corners. The absence of visual noise IS the aesthetic. One glow max per viewport.
+5. **Dark-first, not dark-only** — Design for dark mode first, then adapt for light. Both must feel intentional and complete.

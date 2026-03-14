@@ -34,39 +34,39 @@
         </svg>
       </a>
       <a href="/guides/concepts/" class="btn-ghost">
-        Read the Docs
+        How It Works
       </a>
     </div>
 
     <!-- Terminal demo -->
-    <div class="terminal animate-in delay-4">
-      <div class="terminal-bar">
-        <span class="terminal-dot" style="background: oklch(60% 0.18 25)"></span>
-        <span class="terminal-dot" style="background: oklch(75% 0.12 80)"></span>
-        <span class="terminal-dot" style="background: oklch(70% 0.15 155)"></span>
+    <div class="terminal animate-in delay-4" role="img" aria-label="Terminal showing alty init command generating PRD, DDD model, architecture scaffold, and structured tickets">
+      <div class="terminal-bar" aria-hidden="true">
+        <span class="terminal-dot dot-red"></span>
+        <span class="terminal-dot dot-yellow"></span>
+        <span class="terminal-dot dot-green"></span>
       </div>
-      <div class="terminal-body">
-        <code class="terminal-line">
+      <div class="terminal-body" aria-hidden="true">
+        <code class="terminal-line term-line-1">
           <span class="t-prompt">$</span> <span class="t-cmd">alty init</span>
         </code>
-        <code class="terminal-line t-dim">
+        <code class="terminal-line term-line-2 t-dim">
           Describe your project in 4-5 sentences...
         </code>
         <code class="terminal-line"><br /></code>
-        <code class="terminal-line">
+        <code class="terminal-line term-line-3">
           <span class="t-check-green">&#10003;</span> <span class="t-label">PRD generated</span>
         </code>
-        <code class="terminal-line">
+        <code class="terminal-line term-line-4">
           <span class="t-check-green">&#10003;</span> <span class="t-label">DDD model extracted</span>
         </code>
-        <code class="terminal-line">
+        <code class="terminal-line term-line-5">
           <span class="t-check-green">&#10003;</span> <span class="t-label">Architecture scaffolded</span>
         </code>
-        <code class="terminal-line">
+        <code class="terminal-line term-line-6">
           <span class="t-check-green">&#10003;</span> <span class="t-label">Structured tickets created</span>
         </code>
         <code class="terminal-line"><br /></code>
-        <code class="terminal-line">
+        <code class="terminal-line term-line-7">
           <span class="t-ready">Ready.</span> <span class="t-dim">Your AI tools can now build with guardrails.</span>
         </code>
       </div>
@@ -119,6 +119,18 @@
     height: 6px;
     border-radius: 50%;
     background: var(--landing-primary);
+    animation: dotPulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-badge-dot {
+      animation: none;
+    }
   }
 
   /* Headline */
@@ -158,6 +170,7 @@
     display: flex;
     gap: 0.75rem;
     justify-content: center;
+    flex-wrap: wrap;
     margin-bottom: 3rem;
   }
 
@@ -173,12 +186,18 @@
     text-decoration: none;
     border-radius: 0.375rem;
     box-shadow: var(--glow-primary);
-    transition: box-shadow 0.2s ease, opacity 0.15s ease;
+    transition: box-shadow 0.2s ease, opacity 0.15s ease, transform 0.15s ease;
   }
 
   .btn-primary:hover {
     opacity: 0.92;
     box-shadow: var(--glow-primary-hover);
+  }
+
+  .btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: none;
+    transition-duration: 0.05s;
   }
 
   .btn-ghost {
@@ -192,11 +211,16 @@
     text-decoration: none;
     border: 1px solid var(--landing-border);
     border-radius: 0.375rem;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease;
   }
 
   .btn-ghost:hover {
     border-color: var(--landing-text-muted);
+  }
+
+  .btn-ghost:active {
+    transform: translateY(1px);
+    transition-duration: 0.05s;
   }
 
   /* Terminal */
@@ -224,16 +248,65 @@
     opacity: 0.8;
   }
 
+  .dot-red { background: var(--color-error); }
+  .dot-yellow { background: var(--color-warning); }
+  .dot-green { background: var(--color-success); }
+
   .terminal-body {
     padding: 1rem 1.25rem;
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     line-height: 1.7;
+    overflow-x: auto;
   }
 
   .terminal-line {
     display: block;
     white-space: pre;
+  }
+
+  @media (max-width: 360px) {
+    .terminal-body {
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Terminal line stagger — simulates output appearing */
+  @keyframes termReveal {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .term-line-1,
+  .term-line-2,
+  .term-line-3,
+  .term-line-4,
+  .term-line-5,
+  .term-line-6,
+  .term-line-7 {
+    animation: termReveal 0.3s ease-out both;
+  }
+
+  .term-line-1 { animation-delay: 0.6s; }
+  .term-line-2 { animation-delay: 0.9s; }
+  .term-line-3 { animation-delay: 1.4s; }
+  .term-line-4 { animation-delay: 1.7s; }
+  .term-line-5 { animation-delay: 2.0s; }
+  .term-line-6 { animation-delay: 2.3s; }
+  .term-line-7 { animation-delay: 2.8s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .term-line-1,
+    .term-line-2,
+    .term-line-3,
+    .term-line-4,
+    .term-line-5,
+    .term-line-6,
+    .term-line-7 {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   .t-prompt {

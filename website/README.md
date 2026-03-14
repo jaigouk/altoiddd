@@ -27,3 +27,22 @@ Guide content lives in `../docs/guides/*.md` and is loaded via Astro's `glob()` 
 - **Fonts:** Inter Variable, JetBrains Mono, Inter Tight
 - **Components:** `src/components/` (Hero, Features, CTA, HowItWorks, NavHeader, Footer)
 - **Theme bridge:** ThemeProvider + ThemeSelect override Starlight's theme system for daisyUI compatibility
+
+## Deployment
+
+### Cloudflare Pages (recommended)
+
+1. Connect your git repository to Cloudflare Pages
+2. Set build configuration:
+   - Build command: `cd website && npm run build`
+   - Build output directory: `website/dist`
+   - Root directory: `/`
+3. Deploy triggers on push to main
+
+### Manual deployment
+
+```bash
+cd website
+npm run build
+# Upload dist/ to any static hosting
+```

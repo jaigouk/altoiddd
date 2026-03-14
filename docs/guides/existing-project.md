@@ -55,7 +55,7 @@ alty init --existing
 
 alty performs these steps in order:
 
-1. **Branch creation** — creates an `alty/init` branch. If the branch already exists, alty aborts (use `--force-branch` to override).
+1. **Branch creation** — creates an `alty/init` branch. If the branch already exists, alty aborts. Delete the existing branch first or use a clean repository.
 2. **Project scan** — analyzes your code, docs, configs, and folder structure.
 3. **Gap analysis** — compares against a fully seeded project.
 4. **Gap report** — shows what's missing, what conflicts, and what alty proposes to add.

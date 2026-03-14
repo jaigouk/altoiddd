@@ -102,6 +102,18 @@ const features = [
     border: 1px solid var(--landing-border);
     border-left: 2px solid var(--landing-primary);
     border-radius: 0.5rem;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .feature-card:hover {
+    border-color: var(--landing-primary);
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feature-card:hover {
+      transform: none;
+    }
   }
 
   .feature-title {

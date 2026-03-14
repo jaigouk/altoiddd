@@ -110,17 +110,16 @@
     --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
     --font-display: "Inter Tight", "Inter Variable", system-ui, sans-serif;
 
-    /* Semantic color tokens for landing page */
-    --color-success-green: oklch(70% 0.15 155);
-    --color-gold: oklch(80% 0.06 80);
+    /* Semantic color tokens — use theme-aware daisyUI tokens */
+    --color-success-green: var(--color-success);
 
-    /* Glow tokens */
-    --glow-primary: 0 0 20px oklch(72% 0.12 190 / 0.15);
-    --glow-primary-hover: 0 0 28px oklch(72% 0.12 190 / 0.25);
-    --glow-primary-sm: 0 0 12px oklch(72% 0.12 190 / 0.2);
+    /* Glow tokens — derived from theme-aware primary */
+    --glow-primary: 0 0 20px color-mix(in oklch, var(--color-primary) 15%, transparent);
+    --glow-primary-hover: 0 0 28px color-mix(in oklch, var(--color-primary) 25%, transparent);
+    --glow-primary-sm: 0 0 12px color-mix(in oklch, var(--color-primary) 20%, transparent);
 
-    /* Button text on primary bg */
-    --color-on-primary: oklch(15% 0.03 190);
+    /* Button text on primary bg — use theme-aware token */
+    --color-on-primary: var(--color-primary-content);
 
     /* Spacing: uppercase label letter-spacing */
     --ls-label: 0.1em;

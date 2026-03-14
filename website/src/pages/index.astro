@@ -5,17 +5,34 @@ import HowItWorks from '../components/HowItWorks.astro';
 import Features from '../components/Features.astro';
 import CTA from '../components/CTA.astro';
 import Footer from '../components/Footer.astro';
+import '../styles/global.css';
 ---
 
-<html lang="en" data-theme="alty-dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="alty turns 4-5 sentences into a production-ready project scaffold. Domain models, architecture docs, and structured tickets — before any AI coding tool writes a single line." />
+  <meta property="og:title" content="alty — Ship with structure, not chaos" />
+  <meta property="og:description" content="alty turns 4-5 sentences into a production-ready project scaffold. Domain models, architecture docs, and structured tickets — before any AI coding tool writes a single line." />
+  <meta property="og:url" content="https://alty.ai/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="alty" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://alty.ai/" />
   <title>alty — Ship with structure, not chaos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Theme initialization — must run before first paint to prevent flash -->
+  <script is:inline>
+    (function() {
+      var stored = localStorage.getItem('starlight-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'alty-dark' : 'alty-light');
+    })();
+  </script>
   <style>
     :root {
       --landing-bg: var(--color-base-100);
@@ -58,11 +75,42 @@ import Footer from '../components/Footer.astro';
     .delay-3 { animation-delay: 0.24s; }
     .delay-4 { animation-delay: 0.32s; }
     .delay-5 { animation-delay: 0.40s; }
+
+    /* Skip link — visible only on focus */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      z-index: 100;
+      padding: 0.5rem 1rem;
+      background: var(--landing-primary);
+      color: var(--color-on-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 0.375rem;
+    }
+
+    .skip-link:focus {
+      top: 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate-in {
+        animation: none;
+        opacity: 1;
+      }
+
+      html {
+        scroll-behavior: auto;
+      }
+    }
   </style>
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to main content</a>
   <NavHeader />
-  <main>
+  <main id="main">
     <Hero />
     <HowItWorks />
     <Features />
@@ -70,14 +118,5 @@ import Footer from '../components/Footer.astro';
   </main>
   <Footer />
 
-  <!-- Theme initialization for landing page -->
-  <script is:inline>
-    (function() {
-      const stored = localStorage.getItem('starlight-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = stored || (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'alty-dark' : 'alty-light');
-    })();
-  </script>
 </body>
 </html>

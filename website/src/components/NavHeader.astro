@@ -13,8 +13,8 @@
     </a>
 
     <nav class="nav-links" aria-label="Main navigation">
-      <a href="/guides/quickstart/">Docs</a>
-      <a href="/guides/concepts/">Guides</a>
+      <a href="/guides/quickstart/">Quick Start</a>
+      <a href="/guides/concepts/">Concepts</a>
     </nav>
 
     <a href="/guides/quickstart/" class="nav-cta">
@@ -70,6 +70,10 @@
     color: var(--landing-text-muted);
     font-size: 0.875rem;
     font-weight: 500;
+    padding: 0.5rem 0;
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
     transition: color 0.15s ease;
   }
 
@@ -81,13 +85,15 @@
     display: inline-flex;
     align-items: center;
     padding: 0.375rem 1rem;
+    min-height: 2.75rem;
     background: var(--landing-primary);
     color: var(--color-on-primary);
     font-size: 0.8125rem;
     font-weight: 600;
     text-decoration: none;
     border-radius: 0.375rem;
-    transition: box-shadow 0.2s ease, opacity 0.15s ease;
+    white-space: nowrap;
+    transition: box-shadow 0.2s ease, opacity 0.15s ease, transform 0.15s ease;
   }
 
   .nav-cta:hover {
@@ -95,9 +101,35 @@
     box-shadow: var(--glow-primary-sm);
   }
 
+  .nav-cta:active {
+    transform: translateY(1px);
+    box-shadow: none;
+    transition-duration: 0.05s;
+  }
+
   @media (max-width: 640px) {
     .nav-links {
       gap: 1rem;
+    }
+
+    .nav-cta {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .nav-inner {
+      gap: 1rem;
+      padding: 0 1rem;
+    }
+
+    .nav-links {
+      gap: 0.75rem;
+    }
+
+    .nav-links a {
+      font-size: 0.8125rem;
     }
   }
 </style>

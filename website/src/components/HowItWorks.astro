@@ -13,7 +13,7 @@ const steps = [
   {
     num: '02',
     title: 'Discover',
-    body: 'alty guides you through DDD discovery — bounded contexts, aggregates, value objects, and domain events emerge from your description.',
+    body: 'alty asks targeted questions to map your project\'s boundaries, data structures, and key events — producing a proper domain model automatically.',
   },
   {
     num: '03',
@@ -101,6 +101,18 @@ const steps = [
     background: var(--landing-surface);
     border: 1px solid var(--landing-border);
     border-radius: 0.5rem;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .step-card:hover {
+    border-color: var(--landing-primary);
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-card:hover {
+      transform: none;
+    }
   }
 
   .step-num {

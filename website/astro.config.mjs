@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  site: 'https://alty.ai',
   integrations: [
     starlight({
       title: 'alty',
@@ -14,7 +15,15 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Guides',
-          autogenerate: { directory: 'guides' },
+          items: [
+            { label: 'Quickstart', slug: 'guides/quickstart' },
+            { label: 'Installation', slug: 'guides/installation' },
+            { label: 'New Project', slug: 'guides/new-project' },
+            { label: 'Existing Project', slug: 'guides/existing-project' },
+            { label: 'CLI Reference', slug: 'guides/cli-reference' },
+            { label: 'AI Tool Integration', slug: 'guides/ai-tool-integration' },
+            { label: 'Concepts', slug: 'guides/concepts' },
+          ],
         },
       ],
     }),

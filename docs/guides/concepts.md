@@ -26,7 +26,7 @@ DDD is a methodology for building software that matches the business domain. alt
 
 The most important DDD concept. A shared vocabulary where business terms are used identically in conversations, documentation, and code.
 
-If the business says "approve invoice", the code says `approveInvoice()` — not `updateStatus()` or `setApproved()`.
+If the business says "approve invoice", the code says `ApproveInvoice()` — not `UpdateStatus()` or `SetApproved()`.
 
 alty builds the ubiquitous language glossary during guided discovery (see `docs/DDD.md` in your generated project). Every term in the glossary must appear in your code exactly as defined.
 
