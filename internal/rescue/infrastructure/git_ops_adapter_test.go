@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
 	"github.com/alty-cli/alty/internal/rescue/infrastructure"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 )
 
 func TestGitOpsAdapterImplementsPort(t *testing.T) {
 	t.Parallel()
-	var _ rescueapp.GitOps = (*infrastructure.GitOpsAdapter)(nil)
+	var _ sharedapp.GitOps = (*infrastructure.GitOpsAdapter)(nil)
 }
 
 // ---------------------------------------------------------------------------

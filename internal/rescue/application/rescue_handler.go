@@ -28,7 +28,7 @@ const branchName = "alty/init"
 // RescueHandler orchestrates the rescue flow: scan -> validate -> analyze -> plan.
 type RescueHandler struct {
 	projectScan ProjectScan
-	gitOps      GitOps
+	gitOps      sharedapp.GitOps
 	fileWriter  sharedapp.FileWriter
 	publisher   sharedapp.EventPublisher
 	testRunner  TestRunner
@@ -37,7 +37,7 @@ type RescueHandler struct {
 // NewRescueHandler creates a new RescueHandler with injected dependencies.
 func NewRescueHandler(
 	projectScan ProjectScan,
-	gitOps GitOps,
+	gitOps sharedapp.GitOps,
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
 	testRunner TestRunner,

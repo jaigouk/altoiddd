@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 )
 
 var branchNamePattern = regexp.MustCompile(`^[a-zA-Z0-9/_.\-]+$`)
@@ -17,7 +17,7 @@ var branchNamePattern = regexp.MustCompile(`^[a-zA-Z0-9/_.\-]+$`)
 type GitOpsAdapter struct{}
 
 // Compile-time interface check.
-var _ rescueapp.GitOps = (*GitOpsAdapter)(nil)
+var _ sharedapp.GitOps = (*GitOpsAdapter)(nil)
 
 // HasGit checks whether the directory is inside a git repository.
 func (g *GitOpsAdapter) HasGit(ctx context.Context, projectDir string) (bool, error) {

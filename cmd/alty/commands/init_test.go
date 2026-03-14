@@ -31,7 +31,7 @@ func (m *mockProjectScan) Scan(_ context.Context, _ string, _ vo.StackProfile) (
 	return m.scanResult, m.scanErr
 }
 
-// mockGitOps implements rescueapp.GitOps for testing.
+// mockGitOps implements sharedapp.GitOps for testing.
 type mockGitOps struct {
 	hasGit       bool
 	hasGitErr    error
@@ -95,7 +95,7 @@ func (m *mockEventPublisher) Publish(_ context.Context, _ any) error {
 
 func newTestRescueHandler(
 	projectScan rescueapp.ProjectScan,
-	gitOps rescueapp.GitOps,
+	gitOps sharedapp.GitOps,
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
 ) *rescueapp.RescueHandler {
@@ -337,7 +337,7 @@ func TestRunRescue_ExecutesPlan_WritesFiles(t *testing.T) {
 // Compile-time interface checks.
 var (
 	_ rescueapp.ProjectScan    = (*mockProjectScan)(nil)
-	_ rescueapp.GitOps         = (*mockGitOps)(nil)
+	_ sharedapp.GitOps         = (*mockGitOps)(nil)
 	_ sharedapp.FileWriter     = (*mockFileWriter)(nil)
 	_ sharedapp.EventPublisher = (*mockEventPublisher)(nil)
 )

@@ -203,7 +203,7 @@ status: draft
 | Generic Subdomain | A subdomain that is commodity — buy or use existing library | Classification |
 | Fitness Function | An automated architecture test that enforces structural rules (layer boundaries, dependency direction) | Architecture Testing |
 | Contract | An arch-go rule that enforces a specific architectural constraint | Architecture Testing |
-| Gap Analysis | A scan of an existing project compared against a fully-seeded project to identify what's missing | Rescue |
+| Gap Analysis | A scan of an existing project compared against a fully-seeded project to identify what's missing. Rescue context only — Discovery uses `ModelGap` for missing model elements | Rescue |
 | Rescue Mode | The `alty init --existing` flow that applies structure to an existing project | Rescue |
 | Ripple Review | The event-driven process of flagging dependent tickets when a ticket closes | Ticket Freshness |
 | Context Diff | The summary of what a closed ticket produced, attached to flagged tickets so reviewers know what changed | Ticket Freshness |
@@ -227,6 +227,18 @@ status: draft
 | ImplementabilityValidator | Stateless domain service that checks tickets for section completeness, unspecified dependencies, empty invariants, and empty AC | Ticket Freshness |
 | CodebasePortScanner | Infrastructure adapter that scans port interface files via Go AST to extract method signatures | Ticket Freshness |
 | PortDefinition | Infrastructure VO representing a Protocol class name and its method signatures, produced by CodebasePortScanner | Ticket Freshness |
+| AgentMode | Infrastructure mode where the guide emits JSON instead of interactive prompts, enabling non-interactive AI tool operation | Guided Discovery |
+| CredentialDetector | Port for discovering available LLM credentials across known provider locations. **BC TBD — verify during f0g epic** | Shared |
+| DocImport | Process of constructing a DomainModel from existing docs without guided discovery. **TBD (pending spike alty-cli-2pg)** | TBD |
+| DocInference | LLM's interpretation of domain model elements from existing documentation | Guided Discovery |
+| DocParser | Port for extracting domain model elements from markdown documentation. **TBD (pending spike alty-cli-2pg)** | TBD |
+| InferenceConfirmation | User's acceptance or correction of an LLM inference | Guided Discovery |
+| LLMCredential | Detected LLM provider credential (API key + source location). **BC TBD — verify during f0g epic** | Shared |
+| ProjectAssessment | Result of auto-detecting project state (language, existing docs, AI tool configs) | Bootstrap |
+| ProjectConfig | Generated configuration reflecting detected project settings | Bootstrap |
+| SessionCheckpoint | Persisted state of a partial discovery session, enabling resume across process invocations | Guided Discovery |
+| SessionRepository | Port (application layer) for persisting and loading DiscoverySession across process invocations | Guided Discovery |
+| SkipReason | Explanation for why a discovery question was skipped | Guided Discovery |
 
 **Ambiguous terms** (same word, different meaning in different contexts):
 
@@ -235,7 +247,7 @@ status: draft
 | Template | A file template copied during `alty init` (Bootstrap context) | A beads ticket template with DDD fields (Ticket Pipeline context) |
 | Config | A alty configuration in `.alty/config.toml` (Bootstrap context) | A tool-native configuration like `.claude/CLAUDE.md` (Tool Translation context) |
 | Story | A domain story (DDD narrative of business process) (Domain Model context) | A user scenario from the PRD (Product context — not used in code) |
-| Agent | An AI coding tool agent persona (Tool Translation context) | A DDD actor in a domain story (Domain Model context — use "Actor" to disambiguate) |
+| Agent | (1) An AI coding tool agent persona (Tool Translation context) | (2) A DDD actor in a domain story (Domain Model context — use "Actor" to disambiguate). (3) An AI coding tool operating in non-interactive mode (AgentMode — Guided Discovery context) |
 
 ## 3. Subdomain Classification
 

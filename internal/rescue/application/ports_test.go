@@ -5,13 +5,14 @@ import (
 
 	"github.com/alty-cli/alty/internal/rescue/application"
 	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
+	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
 // Compile-time interface satisfaction checks.
 var (
 	_ application.ProjectScan = (*mockProjectScan)(nil)
-	_ application.GitOps      = (*mockGitOps)(nil)
+	_ sharedapp.GitOps        = (*mockGitOps)(nil)
 	_ application.Rescue      = (*mockRescue)(nil)
 )
 

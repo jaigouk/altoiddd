@@ -30,6 +30,27 @@ type FileWriter interface {
 	WriteFile(ctx context.Context, path string, content string) error
 }
 
+// GitOps provides git operations needed by multiple bounded contexts.
+type GitOps interface {
+	// HasGit checks whether the directory is inside a git repository.
+	HasGit(ctx context.Context, projectDir string) (bool, error)
+
+	// IsClean checks whether the git working tree is clean.
+	IsClean(ctx context.Context, projectDir string) (bool, error)
+
+	// BranchExists checks whether a git branch already exists.
+	BranchExists(ctx context.Context, projectDir string, branchName string) (bool, error)
+
+	// CreateBranch creates and checks out a new git branch.
+	CreateBranch(ctx context.Context, projectDir string, branchName string) error
+
+	// CheckoutPrevious checks out the previous branch (git checkout -).
+	CheckoutPrevious(ctx context.Context, projectDir string) error
+
+	// DeleteBranch deletes a local branch (git branch -D).
+	DeleteBranch(ctx context.Context, projectDir string, branchName string) error
+}
+
 // ReadinessQuerier queries workflow readiness state for a session.
 // Used by MCP/CLI to determine what actions are available next.
 type ReadinessQuerier interface {

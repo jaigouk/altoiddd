@@ -45,7 +45,7 @@ const playbackInterval = 3
 // DiscoverySession is the aggregate root for the 10-question DDD discovery flow.
 type DiscoverySession struct {
 	register                 *DiscoveryRegister
-	skipped                  map[string]bool
+	skipped                  map[string]string
 	contextClassifications   map[string]ClassificationResult
 	round                    *DiscoveryRound
 	mode                     *DiscoveryMode
@@ -67,7 +67,7 @@ func NewDiscoverySession(readmeContent string) *DiscoverySession {
 		sessionID:              identity.NewID(),
 		readmeContent:          readmeContent,
 		status:                 StatusCreated,
-		skipped:                make(map[string]bool),
+		skipped:                make(map[string]string),
 		contextClassifications: make(map[string]ClassificationResult),
 	}
 }
@@ -293,7 +293,21 @@ func (s *DiscoverySession) SkipQuestion(questionID, reason string) error {
 	if strings.TrimSpace(reason) == "" {
 		return fmt.Errorf("skip reason cannot be empty")
 	}
-	s.skipped[questionID] = true
+	s.skipped[questionID] = reason
+	return nil
+}
+
+// SkipReason returns the skip reason for a question, or empty string if not skipped.
+func (s *DiscoverySession) SkipReason(questionID string) string {
+	return s.skipped[questionID]
+}
+
+// UnskipQuestion removes a question from the skipped set.
+func (s *DiscoverySession) UnskipQuestion(questionID string) error {
+	if _, ok := s.skipped[questionID]; !ok {
+		return fmt.Errorf("question '%s' is not skipped", questionID)
+	}
+	delete(s.skipped, questionID)
 	return nil
 }
 
@@ -482,9 +496,12 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		}
 	}
 
-	skipped := make([]string, 0, len(s.skipped))
-	for id := range s.skipped {
-		skipped = append(skipped, id)
+	skipped := make([]map[string]string, 0, len(s.skipped))
+	for id, reason := range s.skipped {
+		skipped = append(skipped, map[string]string{
+			"question_id": id,
+			"reason":      reason,
+		})
 	}
 
 	playbacks := make([]map[string]interface{}, len(s.playbackConfirmations))
@@ -630,17 +647,33 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		return nil, fmt.Errorf("answers must be a list")
 	}
 
-	// Parse skipped
-	skipped := make(map[string]bool)
+	// Parse skipped — supports new format ([]map with question_id+reason) and legacy ([]string)
+	skipped := make(map[string]string)
 	switch raw := data["skipped"].(type) {
 	case []interface{}:
 		for _, item := range raw {
-			s, _ := item.(string)
-			skipped[s] = true
+			switch entry := item.(type) {
+			case string:
+				// Legacy format: plain question ID string, empty reason
+				skipped[entry] = ""
+			case map[string]interface{}:
+				// New format after JSON round-trip
+				qid, _ := entry["question_id"].(string)
+				reason, _ := entry["reason"].(string)
+				skipped[qid] = reason
+			default:
+				return nil, fmt.Errorf("invalid skipped entry format")
+			}
 		}
 	case []string:
+		// Legacy format: list of question IDs
 		for _, s := range raw {
-			skipped[s] = true
+			skipped[s] = ""
+		}
+	case []map[string]string:
+		// New format: direct Go type (non-JSON path)
+		for _, entry := range raw {
+			skipped[entry["question_id"]] = entry["reason"]
 		}
 	default:
 		return nil, fmt.Errorf("skipped must be a list")

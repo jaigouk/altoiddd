@@ -343,6 +343,108 @@ func TestSkipUnknownQuestionReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown question")
 }
 
+func TestDiscoverySession_WhenQuestionSkipped_StoresReason(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.NoError(t, session.SkipQuestion("Q1", "Not relevant to this project"))
+	reason := session.SkipReason("Q1")
+	assert.Equal(t, "Not relevant to this project", reason)
+}
+
+func TestDiscoverySession_WhenQuestionSkipped_ReasonRetrievable(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		questionID string
+		reason     string
+	}{
+		{"short reason", "Q1", "Not relevant"},
+		{"detailed reason", "Q1", "This question does not apply because we have no external actors"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			session := sessionWithPersona("1")
+			require.NoError(t, session.SkipQuestion(tt.questionID, tt.reason))
+			assert.Equal(t, tt.reason, session.SkipReason(tt.questionID))
+		})
+	}
+	// Unskipped question returns empty reason
+	t.Run("unskipped question returns empty", func(t *testing.T) {
+		t.Parallel()
+		session := sessionWithPersona("1")
+		assert.Empty(t, session.SkipReason("Q1"))
+	})
+}
+
+func TestDiscoverySession_WhenQuestionUnskipped_CanBeAnswered(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.NoError(t, session.SkipQuestion("Q1", "Skipping for now"))
+	require.NoError(t, session.UnskipQuestion("Q1"))
+	// After unskipping, the question can be answered
+	require.NoError(t, session.AnswerQuestion("Q1", "Users and admins"))
+	assert.Len(t, session.Answers(), 1)
+	assert.Equal(t, "Q1", session.Answers()[0].QuestionID())
+	// Reason should be gone
+	assert.Empty(t, session.SkipReason("Q1"))
+}
+
+func TestDiscoverySession_WhenUnskippingUnskippedQuestion_ReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	err := session.UnskipQuestion("Q1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not skipped")
+}
+
+func TestDiscoverySession_ToSnapshot_IncludesSkipReasons(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.NoError(t, session.SkipQuestion("Q1", "Not relevant"))
+	require.NoError(t, session.SkipQuestion("Q2", "Will revisit later"))
+	snapshot := session.ToSnapshot()
+	skipped, ok := snapshot["skipped"].([]map[string]string)
+	require.True(t, ok, "skipped should be []map[string]string, got %T", snapshot["skipped"])
+	assert.Len(t, skipped, 2)
+	// Build a map for order-independent checking
+	reasons := make(map[string]string)
+	for _, entry := range skipped {
+		reasons[entry["question_id"]] = entry["reason"]
+	}
+	assert.Equal(t, "Not relevant", reasons["Q1"])
+	assert.Equal(t, "Will revisit later", reasons["Q2"])
+}
+
+func TestDiscoverySession_FromSnapshot_ParsesSkipReasons(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.NoError(t, session.SkipQuestion("Q1", "Not relevant"))
+	require.NoError(t, session.SkipQuestion("Q2", "Will revisit later"))
+	snapshot := session.ToSnapshot()
+	restored, err := FromSnapshot(snapshot)
+	require.NoError(t, err)
+	assert.Equal(t, "Not relevant", restored.SkipReason("Q1"))
+	assert.Equal(t, "Will revisit later", restored.SkipReason("Q2"))
+}
+
+func TestDiscoverySession_FromSnapshot_HandlesLegacyBoolFormat(t *testing.T) {
+	t.Parallel()
+	// Simulate the old format: skipped was []string of question IDs
+	session := sessionWithPersona("1")
+	snapshot := session.ToSnapshot()
+	// Overwrite skipped with legacy format
+	snapshot["skipped"] = []string{"Q1", "Q2"}
+	restored, err := FromSnapshot(snapshot)
+	require.NoError(t, err)
+	// Legacy format should parse with empty reason strings
+	assert.Empty(t, restored.SkipReason("Q1"))
+	assert.Empty(t, restored.SkipReason("Q2"))
+	// But the questions should still be considered skipped (phase advancement works)
+	// Verify by checking that answering Q3 works (Q1, Q2 are handled)
+	require.NoError(t, restored.AnswerQuestion("Q3", "Use cases"))
+}
+
 // -- Unknown question ID --
 
 func TestAnswerUnknownQuestionReturnsError(t *testing.T) {
