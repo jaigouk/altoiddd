@@ -40,8 +40,6 @@ var personaChoices = map[string]struct {
 	"4": {PersonaMixed, RegisterNonTechnical},
 }
 
-const playbackInterval = 3
-
 // DiscoverySession is the aggregate root for the 10-question DDD discovery flow.
 type DiscoverySession struct {
 	register                 *DiscoveryRegister
@@ -51,6 +49,7 @@ type DiscoverySession struct {
 	mode                     *DiscoveryMode
 	techStack                *vo.TechStack
 	persona                  *DiscoveryPersona
+	flow                     DiscoveryFlow
 	sessionID                string
 	readmeContent            string
 	status                   DiscoveryStatus
@@ -59,6 +58,14 @@ type DiscoverySession struct {
 	playbackConfirmations    []Playback
 	answers                  []Answer
 	answersSinceLastPlayback int
+}
+
+// activeFlow returns the session's flow strategy, defaulting to FixedQuestionFlow.
+func (s *DiscoverySession) activeFlow() DiscoveryFlow {
+	if s.flow == nil {
+		return &FixedQuestionFlow{}
+	}
+	return s.flow
 }
 
 // NewDiscoverySession creates a new session in CREATED state.
@@ -215,6 +222,7 @@ func (s *DiscoverySession) SetMode(mode DiscoveryMode) error {
 		return fmt.Errorf("discovery mode has already been set: %w", domainerrors.ErrInvariantViolation)
 	}
 	s.mode = &mode
+	s.flow = flowFromMode(&mode)
 	return nil
 }
 
@@ -263,16 +271,21 @@ func (s *DiscoverySession) AnswerQuestion(questionID, response string) error {
 		return fmt.Errorf("unknown question '%s'", questionID)
 	}
 
-	// Enforce phase order
-	if err := s.enforcePhaseOrder(question); err != nil {
-		return err
+	// Delegate phase order validation to flow strategy
+	ref := NewQuestionRef(question.ID(), question.Phase())
+	skippedBool := make(map[string]bool, len(s.skipped))
+	for id := range s.skipped {
+		skippedBool[id] = true
+	}
+	if err := s.activeFlow().ValidateQuestionOrder(ref, s.answers, skippedBool); err != nil {
+		return fmt.Errorf("validating question order: %w", err)
 	}
 
 	s.answers = append(s.answers, NewAnswer(questionID, response))
 	s.answersSinceLastPlayback++
 	s.status = StatusAnswering
 
-	if s.answersSinceLastPlayback >= playbackInterval {
+	if s.activeFlow().IsPlaybackDue(s.answersSinceLastPlayback) {
 		s.status = StatusPlaybackPending
 	}
 	return nil
@@ -331,21 +344,13 @@ func (s *DiscoverySession) Complete() error {
 			s.status, domainerrors.ErrInvariantViolation)
 	}
 
-	// Check MVP questions
-	answeredIDs := make(map[string]bool)
-	for _, a := range s.answers {
-		answeredIDs[a.QuestionID()] = true
+	// Delegate completeness check to flow strategy
+	skippedBool := make(map[string]bool, len(s.skipped))
+	for id := range s.skipped {
+		skippedBool[id] = true
 	}
-	mvpIDs := MVPQuestionIDs()
-	var missing []string
-	for id := range mvpIDs {
-		if !answeredIDs[id] {
-			missing = append(missing, id)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("cannot complete: MVP questions not answered: %v: %w",
-			missing, domainerrors.ErrInvariantViolation)
+	if err := s.activeFlow().CheckCompleteness(s.answers, skippedBool); err != nil {
+		return fmt.Errorf("checking completeness: %w", err)
 	}
 
 	if s.Mode() == ModeDeep {
@@ -449,39 +454,6 @@ func (s *DiscoverySession) emitCompletedEvent() {
 		s.playbackConfirmations,
 		s.techStack,
 	))
-}
-
-func (s *DiscoverySession) enforcePhaseOrder(question Question) error {
-	targetIdx := -1
-	for i, p := range questionPhases {
-		if p == question.Phase() {
-			targetIdx = i
-			break
-		}
-	}
-	if targetIdx < 0 {
-		return nil // SEED phase always allowed
-	}
-
-	allHandled := make(map[string]bool)
-	for _, a := range s.answers {
-		allHandled[a.QuestionID()] = true
-	}
-	for id := range s.skipped {
-		allHandled[id] = true
-	}
-
-	catalog := QuestionCatalog()
-	for i := 0; i < targetIdx; i++ {
-		earlierPhase := questionPhases[i]
-		for _, q := range catalog {
-			if q.Phase() == earlierPhase && !allHandled[q.ID()] {
-				return fmt.Errorf("cannot answer %s (%s phase) before completing %s phase (question %s not answered or skipped): %w",
-					question.ID(), question.Phase(), earlierPhase, q.ID(), domainerrors.ErrInvariantViolation)
-			}
-		}
-	}
-	return nil
 }
 
 // -- Serialization --
@@ -719,19 +691,8 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 	if counter < 0 {
 		return nil, fmt.Errorf("answers_since_last_playback must be a non-negative integer")
 	}
-	if counter > playbackInterval {
-		return nil, fmt.Errorf("answers_since_last_playback (%d) exceeds playback interval (%d)", counter, playbackInterval)
-	}
 
-	// Cross-validate counter
-	if status == StatusPlaybackPending && counter != playbackInterval {
-		return nil, fmt.Errorf("PLAYBACK_PENDING state requires counter=%d, got %d", playbackInterval, counter)
-	}
-	if status == StatusAnswering && counter >= playbackInterval {
-		return nil, fmt.Errorf("ANSWERING state requires counter < %d, got %d", playbackInterval, counter)
-	}
-
-	// Parse mode
+	// Parse mode (needed to determine flow for counter validation)
 	var mode *DiscoveryMode
 	if mVal, exists := data["mode"]; exists && mVal != nil {
 		mStr, ok := mVal.(string)
@@ -743,6 +704,19 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 			return nil, err
 		}
 		mode = &m
+	}
+
+	// Determine flow strategy from mode for counter validation
+	flow := flowFromMode(mode)
+	pbInterval := flow.PlaybackInterval()
+	if counter > pbInterval {
+		return nil, fmt.Errorf("answers_since_last_playback (%d) exceeds playback interval (%d)", counter, pbInterval)
+	}
+	if status == StatusPlaybackPending && counter != pbInterval {
+		return nil, fmt.Errorf("PLAYBACK_PENDING state requires counter=%d, got %d", pbInterval, counter)
+	}
+	if status == StatusAnswering && counter >= pbInterval {
+		return nil, fmt.Errorf("ANSWERING state requires counter < %d, got %d", pbInterval, counter)
 	}
 
 	// Parse round
@@ -813,8 +787,18 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		techStack:                techStack,
 		mode:                     mode,
 		round:                    round,
+		flow:                     flow,
 		contextClassifications:   contextClassifications,
 	}, nil
+}
+
+// flowFromMode returns the appropriate DiscoveryFlow for a given mode.
+// Returns FixedQuestionFlow for express/deep/nil, ConversationalFlow for conversational.
+func flowFromMode(mode *DiscoveryMode) DiscoveryFlow {
+	if mode != nil && *mode == ModeConversational {
+		return NewConversationalFlow(defaultConversationalPlaybackInterval)
+	}
+	return NewFixedQuestionFlow()
 }
 
 func toString(v interface{}) string {

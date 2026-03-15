@@ -57,6 +57,7 @@ type App struct {
 	DetectionHandler          *discoveryapp.DetectionHandler
 	DiscoveryHandler          *discoveryapp.DiscoveryHandler
 	ArtifactGenerationHandler *discoveryapp.ArtifactGenerationHandler
+	DocInferenceHandler       *discoveryapp.DocInferenceHandler
 
 	// --- Fitness ---
 	FitnessGenerationHandler *fitnessapp.FitnessGenerationHandler
@@ -199,6 +200,12 @@ func NewApp() (*App, error) {
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
+
+	// DocInference: doc reader + LLM reader + regex fallback
+	fsDocReader := discoveryinfra.NewFilesystemDocReader()
+	llmDocReader := discoveryinfra.NewLLMDocReaderAdapter(llmClient)
+	regexFallback := &regexImporterAdapter{handler: docImportHandler}
+	docInferenceHandler := discoveryapp.NewDocInferenceHandler(fsDocReader, llmDocReader, regexFallback)
 	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter, publisher)
 	qualityGateHandler := fitnessapp.NewQualityGateHandler(gateRunner)
 	ticketGenerationHandler := ticketapp.NewTicketGenerationHandler(fileWriter, publisher)
@@ -227,6 +234,7 @@ func NewApp() (*App, error) {
 		DetectionHandler:          detectionHandler,
 		DiscoveryHandler:          discoveryHandler,
 		ArtifactGenerationHandler: artifactGenerationHandler,
+		DocInferenceHandler:       docInferenceHandler,
 		FitnessGenerationHandler:  fitnessGenerationHandler,
 		QualityGateHandler:        qualityGateHandler,
 		TicketGenerationHandler:   ticketGenerationHandler,

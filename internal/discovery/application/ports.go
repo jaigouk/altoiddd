@@ -83,6 +83,30 @@ type Prompter interface {
 	ConfirmPlayback(ctx context.Context, summary string) (bool, error)
 }
 
+// --- Doc Reader Port ---
+
+// DocReader reads documentation files from a directory.
+type DocReader interface {
+	ReadDocs(ctx context.Context, docsDir string) (map[string]string, error)
+}
+
+// --- LLM Doc Reader Port ---
+
+// LLMDocReader infers a domain model from document contents using an LLM.
+type LLMDocReader interface {
+	// InferModel takes document contents (filename->content map) and returns
+	// an InferenceResult with a structured DomainModel.
+	InferModel(ctx context.Context, docs map[string]string) (*discoverydomain.InferenceResult, error)
+}
+
+// --- Regex Importer Port ---
+
+// RegexImporter imports a domain model from a docs directory using regex parsing.
+// Used as fallback when LLM is unavailable.
+type RegexImporter interface {
+	Import(ctx context.Context, docDir string) (*ddd.DomainModel, error)
+}
+
 // --- Tool Detection Port ---
 
 // ToolDetection detects installed AI coding tools and scans for configuration conflicts.

@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -28,17 +31,32 @@ This multi-step command orchestrates:
 
 Use --no-tui for accessibility (screen readers) or CI/scripted input.
 Use --continue to resume a previously interrupted session.
-Use --agent to output the discovery session as JSONL for AI agent consumption.`,
+Use --agent to output the discovery session as JSONL for AI agent consumption.
+Use --agent --ingest <file> to ingest answers from a JSONL file (or "-" for stdin).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			noTUI, _ := cmd.Flags().GetBool("no-tui")
 			continueSession, _ := cmd.Flags().GetBool("continue")
 			agentMode, _ := cmd.Flags().GetBool("agent")
+			ingestPath, _ := cmd.Flags().GetString("ingest")
+
+			if ingestPath != "" && !agentMode {
+				return fmt.Errorf("--ingest requires --agent")
+			}
+
+			if agentMode && ingestPath != "" {
+				if ingestPath == "-" {
+					return runGuideAgentIngestFromReader(cmd.Context(), app, os.Stdin, ".alty", cmd.OutOrStdout())
+				}
+				return runGuideAgentIngest(cmd.Context(), app, ingestPath, ".alty", cmd.OutOrStdout())
+			}
+
 			return runGuide(cmd.Context(), app, noTUI, continueSession, agentMode)
 		},
 	}
 	cmd.Flags().Bool("no-tui", false, "Disable TUI prompts, use plain stdin/stdout (accessibility, CI)")
 	cmd.Flags().Bool("continue", false, "Resume a previously interrupted discovery session")
 	cmd.Flags().Bool("agent", false, "Output discovery session as JSONL for AI agent consumption")
+	cmd.Flags().String("ingest", "", "Ingest answers from JSONL file (or \"-\" for stdin); requires --agent")
 	return cmd
 }
 
@@ -237,6 +255,159 @@ func displaySessionSummary(session *domain.DiscoverySession) {
 	}
 
 	fmt.Println()
+}
+
+// responseEnvelope is the JSONL wrapper for ingest lines.
+// Duplicated from agent_discovery_adapter.go because the original is unexported.
+type responseEnvelope struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
+func runGuideAgentIngest(ctx context.Context, app *composition.App, ingestPath, altyDir string, w io.Writer) error {
+	f, err := os.Open(ingestPath)
+	if err != nil {
+		return fmt.Errorf("opening ingest file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	return runGuideAgentIngestFromReader(ctx, app, f, altyDir, w)
+}
+
+func runGuideAgentIngestFromReader(ctx context.Context, app *composition.App, r io.Reader, altyDir string, w io.Writer) error {
+	renderer := infrastructure.NewJSONSessionRenderer()
+	sessionRepo := infrastructure.NewFileSystemSessionRepository(altyDir)
+
+	// Load persisted session
+	exists, err := sessionRepo.Exists(ctx, "")
+	if err != nil {
+		return fmt.Errorf("checking session: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("no session found. Run `alty guide --agent` first")
+	}
+
+	session, err := sessionRepo.Load(ctx, "")
+	if err != nil {
+		return fmt.Errorf("loading session: %w", err)
+	}
+
+	// Register in handler's in-memory map
+	sessionID := session.SessionID()
+	session, err = app.DiscoveryHandler.LoadOrGetSession(sessionID) //nolint:contextcheck // Discovery interface deliberately omits context
+	if err != nil {
+		return fmt.Errorf("loading session into handler: %w", err)
+	}
+
+	// Process JSONL lines
+	scanner := bufio.NewScanner(r)
+	lineNum := 0
+	for scanner.Scan() {
+		lineNum++
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+
+		var env responseEnvelope
+		if unmarshalErr := json.Unmarshal(line, &env); unmarshalErr != nil {
+			return fmt.Errorf("line %d: invalid JSON: %w", lineNum, unmarshalErr)
+		}
+
+		switch env.Type {
+		case "persona_response":
+			pr, parseErr := renderer.ParsePersonaResponse(env.Data)
+			if parseErr != nil {
+				return fmt.Errorf("line %d: %w", lineNum, parseErr)
+			}
+			if pr.SessionID != sessionID {
+				return fmt.Errorf("line %d: session ID mismatch: expected %s, got %s", lineNum, sessionID, pr.SessionID)
+			}
+			session, err = app.DiscoveryHandler.DetectPersona(sessionID, pr.Choice) //nolint:contextcheck // Discovery interface deliberately omits context
+			if err != nil {
+				return fmt.Errorf("line %d: detecting persona: %w", lineNum, err)
+			}
+
+		case "answer":
+			ai, parseErr := renderer.ParseAnswerInput(env.Data)
+			if parseErr != nil {
+				return fmt.Errorf("line %d: %w", lineNum, parseErr)
+			}
+			if ai.SessionID != sessionID {
+				return fmt.Errorf("line %d: session ID mismatch: expected %s, got %s", lineNum, sessionID, ai.SessionID)
+			}
+
+			if ai.Skipped {
+				reason := ai.SkipReason
+				if reason == "" {
+					reason = "skipped by agent"
+				}
+				session, err = app.DiscoveryHandler.SkipQuestion(sessionID, ai.QuestionID, reason) //nolint:contextcheck // Discovery interface deliberately omits context
+				if err != nil {
+					return fmt.Errorf("line %d: skipping question %s: %w", lineNum, ai.QuestionID, err)
+				}
+			} else {
+				session, err = app.DiscoveryHandler.AnswerQuestion(sessionID, ai.QuestionID, ai.Answer) //nolint:contextcheck // Discovery interface deliberately omits context
+				if err != nil {
+					return fmt.Errorf("line %d: answering question %s: %w", lineNum, ai.QuestionID, err)
+				}
+				// Auto-confirm playback if triggered
+				if session.Status() == domain.StatusPlaybackPending {
+					session, err = app.DiscoveryHandler.ConfirmPlayback(sessionID, true) //nolint:contextcheck // Discovery interface deliberately omits context
+					if err != nil {
+						return fmt.Errorf("line %d: auto-confirming playback: %w", lineNum, err)
+					}
+				}
+			}
+
+		case "playback_response":
+			pr, parseErr := renderer.ParsePlaybackResponse(env.Data)
+			if parseErr != nil {
+				return fmt.Errorf("line %d: %w", lineNum, parseErr)
+			}
+			if pr.SessionID != sessionID {
+				return fmt.Errorf("line %d: session ID mismatch: expected %s, got %s", lineNum, sessionID, pr.SessionID)
+			}
+			session, err = app.DiscoveryHandler.ConfirmPlayback(sessionID, pr.Confirmed) //nolint:contextcheck // Discovery interface deliberately omits context
+			if err != nil {
+				return fmt.Errorf("line %d: confirming playback: %w", lineNum, err)
+			}
+
+		default:
+			return fmt.Errorf("line %d: unknown response type %q", lineNum, env.Type)
+		}
+	}
+
+	if scanErr := scanner.Err(); scanErr != nil {
+		return fmt.Errorf("reading ingest input: %w", scanErr)
+	}
+
+	// Attempt completion if session is in answering state
+	if session.Status() == domain.StatusAnswering {
+		completed, completeErr := app.DiscoveryHandler.Complete(sessionID) //nolint:contextcheck // Discovery interface deliberately omits context
+		if completeErr == nil {
+			session = completed
+		}
+		// If Complete fails (e.g., MVP questions not all answered), that's fine — partial state
+	}
+
+	// Emit final session status
+	statusData, err := renderer.RenderSessionStatus(session)
+	if err != nil {
+		return fmt.Errorf("rendering final status: %w", err)
+	}
+	finalEnv := responseEnvelope{
+		Type: "session_status",
+		Data: json.RawMessage(statusData),
+	}
+	finalLine, err := json.Marshal(finalEnv)
+	if err != nil {
+		return fmt.Errorf("marshaling final status: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "%s\n", finalLine); err != nil {
+		return fmt.Errorf("writing final status: %w", err)
+	}
+
+	return nil
 }
 
 func buildContinuePlaybackSummary(session *domain.DiscoverySession, register domain.DiscoveryRegister) string {

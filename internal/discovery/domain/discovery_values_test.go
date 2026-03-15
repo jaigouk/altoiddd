@@ -101,11 +101,12 @@ func TestDiscoveryModeValues(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "express", string(ModeExpress))
 	assert.Equal(t, "deep", string(ModeDeep))
+	assert.Equal(t, "conversational", string(ModeConversational))
 }
 
-func TestDiscoveryModeHasTwoMembers(t *testing.T) {
+func TestDiscoveryModeHasThreeMembers(t *testing.T) {
 	t.Parallel()
-	assert.Len(t, AllDiscoveryModes(), 2)
+	assert.Len(t, AllDiscoveryModes(), 3)
 }
 
 // -- DiscoveryRound enum tests --

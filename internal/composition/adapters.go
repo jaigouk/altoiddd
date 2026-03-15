@@ -8,12 +8,15 @@ import (
 	"fmt"
 
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
+	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
 	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
 	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
 	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
 	dochealthinfra "github.com/alty-cli/alty/internal/dochealth/infrastructure"
+	docimportapp "github.com/alty-cli/alty/internal/docimport/application"
 	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	"github.com/alty-cli/alty/internal/shared/domain/ddd"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/stack"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
@@ -184,4 +187,26 @@ type stackProfileDetectorAdapter struct{}
 // DetectProfile implements StackProfileDetector.
 func (a *stackProfileDetectorAdapter) DetectProfile(projectDir string) vo.StackProfile {
 	return stack.DetectProfile(projectDir)
+}
+
+// ---------------------------------------------------------------------------
+// RegexImporter adapter (bridges DocImportHandler to Discovery's RegexImporter)
+// ---------------------------------------------------------------------------
+
+// Compile-time interface check.
+var _ discoveryapp.RegexImporter = (*regexImporterAdapter)(nil)
+
+// regexImporterAdapter bridges DocImportHandler (returns ImportResult) to
+// the discovery RegexImporter interface (returns *ddd.DomainModel).
+type regexImporterAdapter struct {
+	handler *docimportapp.DocImportHandler
+}
+
+// Import implements RegexImporter by delegating to DocImportHandler and extracting the model.
+func (a *regexImporterAdapter) Import(ctx context.Context, docDir string) (*ddd.DomainModel, error) {
+	result, err := a.handler.Import(ctx, docDir)
+	if err != nil {
+		return nil, fmt.Errorf("regex import: %w", err)
+	}
+	return result.Model(), nil
 }

@@ -80,19 +80,20 @@ type DiscoveryMode string
 
 // DiscoveryMode constants.
 const (
-	ModeExpress DiscoveryMode = "express"
-	ModeDeep    DiscoveryMode = "deep"
+	ModeExpress        DiscoveryMode = "express"
+	ModeDeep           DiscoveryMode = "deep"
+	ModeConversational DiscoveryMode = "conversational"
 )
 
 // AllDiscoveryModes returns all valid discovery modes.
 func AllDiscoveryModes() []DiscoveryMode {
-	return []DiscoveryMode{ModeExpress, ModeDeep}
+	return []DiscoveryMode{ModeExpress, ModeDeep, ModeConversational}
 }
 
 // ParseDiscoveryMode parses a string into a DiscoveryMode.
 func ParseDiscoveryMode(s string) (DiscoveryMode, error) {
 	switch DiscoveryMode(s) {
-	case ModeExpress, ModeDeep:
+	case ModeExpress, ModeDeep, ModeConversational:
 		return DiscoveryMode(s), nil
 	default:
 		return "", fmt.Errorf("invalid discovery mode: %q", s)
