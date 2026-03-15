@@ -27,19 +27,29 @@ This multi-step command orchestrates:
   3. Artifact generation from discovery answers
 
 Use --no-tui for accessibility (screen readers) or CI/scripted input.
-Use --continue to resume a previously interrupted session.`,
+Use --continue to resume a previously interrupted session.
+Use --agent to output the discovery session as JSONL for AI agent consumption.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			noTUI, _ := cmd.Flags().GetBool("no-tui")
 			continueSession, _ := cmd.Flags().GetBool("continue")
-			return runGuide(cmd.Context(), app, noTUI, continueSession)
+			agentMode, _ := cmd.Flags().GetBool("agent")
+			return runGuide(cmd.Context(), app, noTUI, continueSession, agentMode)
 		},
 	}
 	cmd.Flags().Bool("no-tui", false, "Disable TUI prompts, use plain stdin/stdout (accessibility, CI)")
 	cmd.Flags().Bool("continue", false, "Resume a previously interrupted discovery session")
+	cmd.Flags().Bool("agent", false, "Output discovery session as JSONL for AI agent consumption")
 	return cmd
 }
 
-func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSession bool) error {
+func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSession bool, agentMode bool) error {
+	if agentMode && continueSession {
+		return fmt.Errorf("--agent and --continue are mutually exclusive")
+	}
+	if agentMode {
+		return runGuideAgent(ctx, app)
+	}
+
 	if continueSession {
 		return runGuideContinue(ctx, app, noTUI)
 	}
@@ -67,6 +77,15 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	}
 
 	fmt.Println("Discovery complete.")
+	return nil
+}
+
+func runGuideAgent(ctx context.Context, app *composition.App) error {
+	renderer := infrastructure.NewJSONSessionRenderer()
+	adapter := infrastructure.NewAgentDiscoveryAdapter(app.DiscoveryHandler, renderer, os.Stdout, ".")
+	if err := adapter.Run(ctx); err != nil {
+		return fmt.Errorf("agent discovery: %w", err)
+	}
 	return nil
 }
 
