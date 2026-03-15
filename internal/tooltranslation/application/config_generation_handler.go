@@ -23,8 +23,16 @@ var adapterRegistry = map[ttdomain.SupportedTool]func() ttdomain.ToolAdapter{
 
 // ConfigPreview holds rendered tool configurations ready for user review.
 type ConfigPreview struct {
-	Configs []*ttdomain.ToolConfig
-	Summary string
+	Configs  []*ttdomain.ToolConfig
+	Summary  string
+	warnings []string
+}
+
+// Warnings returns a defensive copy of generation warnings.
+func (p *ConfigPreview) Warnings() []string {
+	out := make([]string, len(p.warnings))
+	copy(out, p.warnings)
+	return out
 }
 
 // ConfigGenerationHandler orchestrates tool config generation from a DomainModel.
@@ -39,6 +47,8 @@ func NewConfigGenerationHandler(fileWriter sharedapp.FileWriter, publisher share
 }
 
 // BuildPreview generates tool configs for preview without writing files.
+// Returns a partial preview with warnings when the model is incomplete.
+// Returns an error only when the model is truly empty or no tools are specified.
 func (h *ConfigGenerationHandler) BuildPreview(
 	model *ddd.DomainModel,
 	tools []ttdomain.SupportedTool,
@@ -49,8 +59,18 @@ func (h *ConfigGenerationHandler) BuildPreview(
 			domainerrors.ErrInvariantViolation)
 	}
 
+	if model.IsEmpty() {
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+			domainerrors.ErrInvariantViolation)
+	}
+
 	if profile == nil {
 		profile = vo.PythonUvProfile{}
+	}
+
+	var warnings []string
+	if len(model.BoundedContexts()) == 0 {
+		warnings = append(warnings, "no bounded contexts found in model, config generation may be incomplete")
 	}
 
 	var configs []*ttdomain.ToolConfig
@@ -76,8 +96,9 @@ func (h *ConfigGenerationHandler) BuildPreview(
 	}
 
 	return &ConfigPreview{
-		Configs: configs,
-		Summary: strings.Join(summaryLines, "\n"),
+		Configs:  configs,
+		Summary:  strings.Join(summaryLines, "\n"),
+		warnings: warnings,
 	}, nil
 }
 

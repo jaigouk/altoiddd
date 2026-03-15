@@ -7,6 +7,7 @@ import (
 
 	sharedapp "github.com/alty-cli/alty/internal/shared/application"
 	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
 )
@@ -16,6 +17,14 @@ type TicketPreview struct {
 	Plan       *ticketdomain.TicketPlan
 	Summary    string
 	Validation []ticketdomain.DesignTraceResult
+	warnings   []string
+}
+
+// Warnings returns a defensive copy of generation warnings.
+func (p *TicketPreview) Warnings() []string {
+	out := make([]string, len(p.warnings))
+	copy(out, p.warnings)
+	return out
 }
 
 // TicketGenerationHandler orchestrates ticket pipeline generation from a DomainModel.
@@ -36,13 +45,25 @@ func (h *TicketGenerationHandler) SetBeadsWriter(writer BeadsWriter) {
 }
 
 // BuildPreview generates a ticket plan for preview without writing files.
+// Returns a partial preview with warnings when the model is incomplete.
+// Returns an error only when the model is truly empty (zero contexts, aggregates, and stories).
 func (h *TicketGenerationHandler) BuildPreview(
 	model *ddd.DomainModel,
 	profile vo.StackProfile,
 ) (*TicketPreview, error) {
+	if model.IsEmpty() {
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+			domainerrors.ErrInvariantViolation)
+	}
+
 	plan := ticketdomain.NewTicketPlan()
 	if err := plan.GeneratePlan(model, profile); err != nil {
-		return nil, fmt.Errorf("generating ticket plan: %w", err)
+		// Partial model — convert generation error to warning
+		return &TicketPreview{
+			Plan:     plan,
+			Summary:  "Partial generation — see warnings",
+			warnings: []string{fmt.Sprintf("ticket generation limited: %s", err.Error())},
+		}, nil
 	}
 
 	summary, err := plan.Preview()

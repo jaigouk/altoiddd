@@ -124,6 +124,35 @@ func TestConfigGenerationHandler_BuildPreview(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no tools")
 	})
+
+	t.Run("truly empty model raises", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterC()
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
+		model := ddd.NewDomainModel("empty")
+
+		_, err := handler.BuildPreview(model, []ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "model is empty")
+	})
+
+	t.Run("no contexts returns preview with warnings", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterC()
+		handler := application.NewConfigGenerationHandler(writer, &fakePublisherC{})
+		// Model with a story but no contexts — not truly empty
+		model := ddd.NewDomainModel("partial")
+		story := vo.NewDomainStory("Partial flow", []string{"User"}, "User starts", []string{"User acts"}, nil)
+		model.AddDomainStory(story)
+
+		preview, err := handler.BuildPreview(model, []ttdomain.SupportedTool{ttdomain.ToolClaudeCode}, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.NotEmpty(t, preview.Warnings())
+		assert.Contains(t, preview.Warnings()[0], "no bounded contexts")
+	})
 }
 
 // ---------------------------------------------------------------------------

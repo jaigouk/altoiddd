@@ -48,6 +48,7 @@ type App struct {
 	// --- Bootstrap ---
 	BootstrapHandler *bootstrapapp.BootstrapHandler
 	ProjectDetector  bootstrapapp.ProjectDetector
+	GitCommitter     bootstrapapp.GitCommitter
 
 	// --- DocImport ---
 	DocImportHandler *docimportapp.DocImportHandler
@@ -193,7 +194,8 @@ func NewApp() (*App, error) {
 	docParser := docimportinfra.NewMarkdownDocParser()
 	docImportHandler := docimportapp.NewDocImportHandler(docParser)
 
-	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider)
+	gitCommitter := &bootstrapinfra.GitCommitterAdapter{}
+	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider, bootstrapapp.WithGitCommitter(gitCommitter))
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
@@ -220,6 +222,7 @@ func NewApp() (*App, error) {
 	return &App{
 		BootstrapHandler:          bootstrapHandler,
 		ProjectDetector:           projectDetector,
+		GitCommitter:              gitCommitter,
 		DocImportHandler:          docImportHandler,
 		DetectionHandler:          detectionHandler,
 		DiscoveryHandler:          discoveryHandler,

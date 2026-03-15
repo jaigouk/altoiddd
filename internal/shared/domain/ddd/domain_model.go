@@ -81,6 +81,12 @@ func (dm *DomainModel) Events() []events.DomainModelGenerated {
 	return out
 }
 
+// IsEmpty returns true when the model has no meaningful content —
+// zero bounded contexts, zero aggregates, and zero domain stories.
+func (dm *DomainModel) IsEmpty() bool {
+	return len(dm.contexts) == 0 && len(dm.aggregates) == 0 && len(dm.stories) == 0
+}
+
 // Warnings returns a defensive copy of warnings produced during Finalize.
 func (dm *DomainModel) Warnings() []string {
 	out := make([]string, len(dm.warnings))

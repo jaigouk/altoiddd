@@ -26,3 +26,14 @@ type Bootstrap interface {
 type ProjectDetector interface {
 	Detect(projectDir string) (domain.ProjectDetectionResult, error)
 }
+
+// GitCommitter stages and commits generated files after bootstrap execution.
+// Defined as a narrow ISP interface — only the methods bootstrap needs.
+type GitCommitter interface {
+	// HasGit checks whether the directory is inside a git repository.
+	HasGit(ctx context.Context, projectDir string) (bool, error)
+	// StageFiles stages specific file paths for commit.
+	StageFiles(ctx context.Context, projectDir string, paths []string) error
+	// Commit creates a commit with the given message.
+	Commit(ctx context.Context, projectDir string, message string) error
+}

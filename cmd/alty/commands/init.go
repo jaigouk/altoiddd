@@ -21,6 +21,7 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 		dryRun      bool
 		yes         bool
 		forceBranch bool
+		noCommit    bool
 	)
 
 	cmd := &cobra.Command{
@@ -60,7 +61,7 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 				}
 			}
 
-			return runInit(cmd, app, dryRun, yes, result)
+			return runInit(cmd, app, dryRun, yes, noCommit, result)
 		},
 	}
 
@@ -68,12 +69,18 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show plan without executing")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&forceBranch, "force-branch", false, "Delete existing alty/init branch before creating a new one")
+	cmd.Flags().BoolVar(&noCommit, "no-commit", false, "Skip auto-commit of generated files")
 
 	return cmd
 }
 
-func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, detection domain.ProjectDetectionResult) error {
+func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, noCommit bool, detection domain.ProjectDetectionResult) error {
 	projectDir := "."
+
+	// Clear GitCommitter when --no-commit is set.
+	if noCommit {
+		app.BootstrapHandler.SetGitCommitter(nil)
+	}
 
 	// 1. Preview bootstrap actions.
 	session, err := app.BootstrapHandler.Preview(projectDir)

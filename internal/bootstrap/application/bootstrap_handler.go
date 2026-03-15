@@ -41,6 +41,9 @@ var plannedFiles = []string{
 	".alty/maintenance/doc-registry.toml",
 }
 
+// ScaffoldCommitMessage is the commit message used when auto-committing scaffold files.
+const ScaffoldCommitMessage = "chore: initialize alty project structure"
+
 // BootstrapHandler orchestrates the preview -> confirm -> execute bootstrap flow.
 type BootstrapHandler struct {
 	toolDetection   ToolDetector
@@ -48,14 +51,25 @@ type BootstrapHandler struct {
 	publisher       sharedapp.EventPublisher
 	fileWriter      sharedapp.FileWriter
 	contentProvider ContentProvider
+	gitCommitter    GitCommitter
 	mu              sync.Mutex
 	sessions        map[string]*domain.BootstrapSession
 	configs         map[string]domain.ProjectConfig
 }
 
+// BootstrapOption configures optional dependencies for BootstrapHandler.
+type BootstrapOption func(*BootstrapHandler)
+
+// WithGitCommitter injects an optional GitCommitter for auto-committing scaffold files.
+func WithGitCommitter(gc GitCommitter) BootstrapOption {
+	return func(h *BootstrapHandler) {
+		h.gitCommitter = gc
+	}
+}
+
 // NewBootstrapHandler creates a new BootstrapHandler with injected dependencies.
-func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, publisher sharedapp.EventPublisher, fileWriter sharedapp.FileWriter, contentProvider ContentProvider) *BootstrapHandler {
-	return &BootstrapHandler{
+func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, publisher sharedapp.EventPublisher, fileWriter sharedapp.FileWriter, contentProvider ContentProvider, opts ...BootstrapOption) *BootstrapHandler {
+	h := &BootstrapHandler{
 		toolDetection:   toolDetection,
 		fileChecker:     fileChecker,
 		publisher:       publisher,
@@ -64,6 +78,10 @@ func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, pu
 		sessions:        make(map[string]*domain.BootstrapSession),
 		configs:         make(map[string]domain.ProjectConfig),
 	}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
 }
 
 // Preview creates a new session and generates a preview of planned actions.
@@ -106,6 +124,12 @@ func (h *BootstrapHandler) Preview(projectDir string) (*domain.BootstrapSession,
 	h.sessions[session.SessionID()] = session
 	h.mu.Unlock()
 	return session, nil
+}
+
+// SetGitCommitter sets or clears the GitCommitter at runtime.
+// Used by the CLI to honor the --no-commit flag.
+func (h *BootstrapHandler) SetGitCommitter(gc GitCommitter) {
+	h.gitCommitter = gc
 }
 
 // WithProjectConfig associates a ProjectConfig with a session. Must be called
@@ -162,6 +186,7 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 		)
 	}
 
+	var writtenPaths []string
 	preview := session.Preview()
 	if preview != nil {
 		for _, action := range preview.FileActions() {
@@ -173,7 +198,12 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 			if err := h.fileWriter.WriteFile(context.Background(), target, content); err != nil {
 				return nil, fmt.Errorf("writing %s: %w", action.Path(), err)
 			}
+			writtenPaths = append(writtenPaths, action.Path())
 		}
+	}
+
+	if err := h.commitScaffold(context.Background(), session.ProjectDir(), writtenPaths); err != nil {
+		return nil, fmt.Errorf("committing scaffold: %w", err)
 	}
 
 	if err := session.Complete(); err != nil {
@@ -193,4 +223,30 @@ func (h *BootstrapHandler) getSession(sessionID string) (*domain.BootstrapSessio
 		return nil, fmt.Errorf("no active session with id '%s'", sessionID)
 	}
 	return session, nil
+}
+
+// commitScaffold stages and commits written files if a GitCommitter is configured.
+// Skips gracefully when: no GitCommitter, not a git repo, or no files to commit.
+func (h *BootstrapHandler) commitScaffold(ctx context.Context, projectDir string, paths []string) error {
+	if h.gitCommitter == nil || len(paths) == 0 {
+		return nil
+	}
+
+	hasGit, err := h.gitCommitter.HasGit(ctx, projectDir)
+	if err != nil {
+		return fmt.Errorf("checking git repo: %w", err)
+	}
+	if !hasGit {
+		return nil
+	}
+
+	if err := h.gitCommitter.StageFiles(ctx, projectDir, paths); err != nil {
+		return fmt.Errorf("staging files: %w", err)
+	}
+
+	if err := h.gitCommitter.Commit(ctx, projectDir, ScaffoldCommitMessage); err != nil {
+		return fmt.Errorf("creating commit: %w", err)
+	}
+
+	return nil
 }

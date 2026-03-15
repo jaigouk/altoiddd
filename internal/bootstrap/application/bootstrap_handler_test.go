@@ -15,6 +15,39 @@ import (
 	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 )
 
+// ---------------------------------------------------------------------------
+// Mock GitCommitter
+// ---------------------------------------------------------------------------
+
+type fakeGitCommitter struct {
+	hasGit      bool
+	hasGitErr   error
+	stagedPaths []string
+	stageErr    error
+	commitMsg   string
+	commitErr   error
+}
+
+func (f *fakeGitCommitter) HasGit(_ context.Context, _ string) (bool, error) {
+	return f.hasGit, f.hasGitErr
+}
+
+func (f *fakeGitCommitter) StageFiles(_ context.Context, _ string, paths []string) error {
+	if f.stageErr != nil {
+		return f.stageErr
+	}
+	f.stagedPaths = append(f.stagedPaths, paths...)
+	return nil
+}
+
+func (f *fakeGitCommitter) Commit(_ context.Context, _ string, message string) error {
+	if f.commitErr != nil {
+		return f.commitErr
+	}
+	f.commitMsg = message
+	return nil
+}
+
 // fakePublisher is a spy that records published events.
 type fakePublisher struct {
 	published []any
@@ -439,4 +472,134 @@ func TestBootstrapHandler_Execute_WriteFailureReturnsError(t *testing.T) {
 	_, err = handler.Execute(session.SessionID())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "disk full")
+}
+
+// ---------------------------------------------------------------------------
+// GitCommitter integration tests
+// ---------------------------------------------------------------------------
+
+func TestBootstrapHandler_Execute_WhenGitCommitter_ExpectFilesCommitted(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	gc := &fakeGitCommitter{hasGit: true}
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+		application.WithGitCommitter(gc),
+	)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, gc.stagedPaths, "expected files to be staged")
+	assert.Equal(t, application.ScaffoldCommitMessage, gc.commitMsg)
+}
+
+func TestBootstrapHandler_Execute_WhenNoGitCommitter_ExpectSkipped(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	// No WithGitCommitter option — gitCommitter is nil.
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+	)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+	// No panic, no error — gracefully skipped.
+}
+
+func TestBootstrapHandler_Execute_WhenNotGitRepo_ExpectSkipped(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	gc := &fakeGitCommitter{hasGit: false}
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+		application.WithGitCommitter(gc),
+	)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+
+	assert.Empty(t, gc.stagedPaths, "should not stage when not a git repo")
+	assert.Empty(t, gc.commitMsg, "should not commit when not a git repo")
+}
+
+func TestBootstrapHandler_Execute_WhenAllFilesSkipped_ExpectNoCommit(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	// Pre-create ALL planned files so every action is SKIP.
+	for _, planned := range []string{
+		"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md",
+		"AGENTS.md", ".alty/config.toml", ".alty/knowledge/_index.toml",
+		".alty/maintenance/doc-registry.toml",
+	} {
+		full := filepath.Join(dir, planned)
+		require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))
+		require.NoError(t, os.WriteFile(full, []byte("existing"), 0o644))
+	}
+
+	gc := &fakeGitCommitter{hasGit: true}
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+		application.WithGitCommitter(gc),
+	)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+
+	assert.Empty(t, gc.stagedPaths, "should not stage when no files created")
+	assert.Empty(t, gc.commitMsg, "should not commit when no files created")
+}
+
+func TestBootstrapHandler_Execute_WhenStageError_ExpectError(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	gc := &fakeGitCommitter{hasGit: true, stageErr: fmt.Errorf("git add failed")}
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+		application.WithGitCommitter(gc),
+	)
+
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "staging files")
 }

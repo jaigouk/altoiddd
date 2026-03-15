@@ -164,7 +164,7 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 		assert.Contains(t, preview.Summary, "Logging")
 	})
 
-	t.Run("empty model raises", func(t *testing.T) {
+	t.Run("truly empty model raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterT()
 		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
@@ -173,7 +173,24 @@ func TestTicketGenerationHandler_BuildPreview(t *testing.T) {
 		_, err := handler.BuildPreview(model, nil)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "no bounded contexts")
+		assert.Contains(t, err.Error(), "model is empty")
+	})
+
+	t.Run("no contexts returns preview with warnings", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+		// Model with a story but no contexts — not truly empty
+		model := ddd.NewDomainModel("partial")
+		story := vo.NewDomainStory("Partial flow", []string{"User"}, "User starts", []string{"User acts"}, nil)
+		model.AddDomainStory(story)
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.NotEmpty(t, preview.Warnings())
+		assert.Contains(t, preview.Warnings()[0], "ticket generation limited")
 	})
 
 	t.Run("includes validation", func(t *testing.T) {

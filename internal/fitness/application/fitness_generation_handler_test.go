@@ -116,7 +116,7 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 		assert.Contains(t, preview.Summary, "Notifications")
 	})
 
-	t.Run("no contexts raises", func(t *testing.T) {
+	t.Run("truly empty model raises", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriterF()
 		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
@@ -125,7 +125,24 @@ func TestFitnessGenerationHandler_BuildPreview(t *testing.T) {
 		_, err := handler.BuildPreview(model, "myapp", nil, nil)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "no bounded contexts")
+		assert.Contains(t, err.Error(), "model is empty")
+	})
+
+	t.Run("no contexts returns preview with warnings", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterF()
+		handler := application.NewFitnessGenerationHandler(writer, &fakePublisherF{})
+		// Model with a story but no contexts — not truly empty
+		model := ddd.NewDomainModel("partial")
+		story := vo.NewDomainStory("Partial flow", []string{"User"}, "User starts", []string{"User acts"}, nil)
+		model.AddDomainStory(story)
+
+		preview, err := handler.BuildPreview(model, "myapp", nil, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.NotEmpty(t, preview.Warnings())
+		assert.Contains(t, preview.Warnings()[0], "no bounded contexts")
 	})
 
 	t.Run("returns nil when fitness not available", func(t *testing.T) {

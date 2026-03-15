@@ -22,6 +22,14 @@ type FitnessPreview struct {
 	YAMLContent string // Go: arch-go.yml config
 	StackID     string // Stack identifier (e.g., "go-mod", "python-uv")
 	Summary     string
+	warnings    []string
+}
+
+// Warnings returns a defensive copy of generation warnings.
+func (p *FitnessPreview) Warnings() []string {
+	out := make([]string, len(p.warnings))
+	copy(out, p.warnings)
+	return out
 }
 
 // BuildPreviewOptions configures BuildPreview behavior.
@@ -73,10 +81,17 @@ func (h *FitnessGenerationHandler) BuildPreviewWithBCMap(
 		return nil, nil
 	}
 
+	if model.IsEmpty() {
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+			domainerrors.ErrInvariantViolation)
+	}
+
 	bcs := model.BoundedContexts()
 	if len(bcs) == 0 {
-		return nil, fmt.Errorf("no bounded contexts found in model: %w",
-			domainerrors.ErrInvariantViolation)
+		return &FitnessPreview{
+			Summary:  "Partial generation — see warnings",
+			warnings: []string{"no bounded contexts found in model, skipping fitness test generation"},
+		}, nil
 	}
 
 	// Apply defaults
