@@ -26,11 +26,38 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 		Short: "Bootstrap a new project from a README idea",
 		Long: `Bootstrap a new project from a README idea.
 
-Use --existing to rescue an existing project (alty init --existing).`,
+Auto-detects whether the current directory contains an existing project
+and chooses the appropriate path. Use --existing to force rescue mode.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --existing flag overrides auto-detection.
 			if existing {
 				return runRescue(cmd, app, dryRun, forceBranch)
 			}
+
+			// Auto-detect project state.
+			result, err := app.ProjectDetector.Detect(".")
+			if err != nil {
+				return fmt.Errorf("detecting project state: %w", err)
+			}
+
+			if result.IsExistingProject() && !result.IsAmbiguous() {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Detected existing %s project (%s). Running rescue mode.\n",
+					result.Language(), result.ManifestPath())
+				return runRescue(cmd, app, dryRun, forceBranch)
+			}
+
+			if result.IsAmbiguous() {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Found docs/ folder but no source code.")
+				_, _ = fmt.Fprint(cmd.OutOrStdout(), "Treat as existing project? [y/N] ")
+				scanner := bufio.NewScanner(os.Stdin)
+				if scanner.Scan() {
+					answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
+					if answer == "y" || answer == "yes" {
+						return runRescue(cmd, app, dryRun, forceBranch)
+					}
+				}
+			}
+
 			return runInit(cmd, app, dryRun, yes)
 		},
 	}
@@ -96,7 +123,7 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool) er
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Bootstrap complete. Starting guided discovery...")
 
 	// 6. Launch guide flow.
-	return runGuide(cmd.Context(), app, false)
+	return runGuide(cmd.Context(), app, false, false)
 }
 
 func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool, forceBranch bool) error {

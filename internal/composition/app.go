@@ -16,6 +16,8 @@ import (
 	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
 	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
 	dochealthinfra "github.com/alty-cli/alty/internal/dochealth/infrastructure"
+	docimportapp "github.com/alty-cli/alty/internal/docimport/application"
+	docimportinfra "github.com/alty-cli/alty/internal/docimport/infrastructure"
 	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
 	fitnessinfra "github.com/alty-cli/alty/internal/fitness/infrastructure"
 	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
@@ -43,6 +45,10 @@ var Version = "dev"
 type App struct {
 	// --- Bootstrap ---
 	BootstrapHandler *bootstrapapp.BootstrapHandler
+	ProjectDetector  bootstrapapp.ProjectDetector
+
+	// --- DocImport ---
+	DocImportHandler *docimportapp.DocImportHandler
 
 	// --- Discovery ---
 	DetectionHandler          *discoveryapp.DetectionHandler
@@ -165,6 +171,11 @@ func NewApp() (*App, error) {
 
 	fileChecker := &bootstrapinfra.OSFileChecker{}
 	contentProvider := &bootstrapinfra.ContentProviderAdapter{}
+	projectDetector := &bootstrapinfra.FileSystemProjectDetector{}
+	// DocImport infrastructure
+	docParser := docimportinfra.NewMarkdownDocParser()
+	docImportHandler := docimportapp.NewDocImportHandler(docParser)
+
 	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider)
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
@@ -191,6 +202,8 @@ func NewApp() (*App, error) {
 
 	return &App{
 		BootstrapHandler:          bootstrapHandler,
+		ProjectDetector:           projectDetector,
+		DocImportHandler:          docImportHandler,
 		DetectionHandler:          detectionHandler,
 		DiscoveryHandler:          discoveryHandler,
 		ArtifactGenerationHandler: artifactGenerationHandler,

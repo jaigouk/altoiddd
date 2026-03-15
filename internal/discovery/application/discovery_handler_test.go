@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,10 +22,14 @@ func (f *fakePublisher) Publish(_ context.Context, event any) error {
 	return nil
 }
 
-// fakeSessionRepo is a spy that records Save calls.
+// fakeSessionRepo is a spy that records Save calls and supports Load/Exists.
 type fakeSessionRepo struct {
-	saved   []*domain.DiscoverySession
-	saveErr error
+	saved      []*domain.DiscoverySession
+	saveErr    error
+	loadResult *domain.DiscoverySession
+	loadErr    error
+	existsVal  bool
+	existsErr  error
 }
 
 func (f *fakeSessionRepo) Save(_ context.Context, session *domain.DiscoverySession) error {
@@ -36,11 +41,14 @@ func (f *fakeSessionRepo) Save(_ context.Context, session *domain.DiscoverySessi
 }
 
 func (f *fakeSessionRepo) Load(_ context.Context, _ string) (*domain.DiscoverySession, error) {
-	return nil, nil
+	if f.loadErr != nil {
+		return nil, f.loadErr
+	}
+	return f.loadResult, nil
 }
 
 func (f *fakeSessionRepo) Exists(_ context.Context, _ string) (bool, error) {
-	return false, nil
+	return f.existsVal, f.existsErr
 }
 
 // ---------------------------------------------------------------------------
@@ -354,4 +362,95 @@ func TestDiscoveryHandler_WhenSessionRepoNil_ExpectNoSaveAttempt(t *testing.T) {
 
 	_, err = handler.SkipQuestion(session.SessionID(), "Q2", "Not relevant")
 	require.NoError(t, err)
+}
+
+// ---------------------------------------------------------------------------
+// Tests — LoadOrGetSession
+// ---------------------------------------------------------------------------
+
+func TestDiscoveryHandler_LoadOrGetSession_WhenInMemory_ExpectReturned(t *testing.T) {
+	t.Parallel()
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	session, err := handler.StartSession("Idea")
+	require.NoError(t, err)
+
+	found, err := handler.LoadOrGetSession(session.SessionID())
+	require.NoError(t, err)
+	assert.Equal(t, session.SessionID(), found.SessionID())
+}
+
+func TestDiscoveryHandler_LoadOrGetSession_WhenNotInMemory_ExpectLoadedFromRepo(t *testing.T) {
+	t.Parallel()
+
+	// Create a session via snapshot to simulate a persisted session
+	snapshot := map[string]interface{}{
+		"session_id":                  "persisted-session-123",
+		"readme_content":              "Persisted idea",
+		"status":                      "persona_detected",
+		"persona":                     "developer",
+		"register":                    "technical",
+		"answers":                     []interface{}{},
+		"skipped":                     []interface{}{},
+		"playback_confirmations":      []interface{}{},
+		"answers_since_last_playback": float64(0),
+	}
+	persistedSession, err := domain.FromSnapshot(snapshot)
+	require.NoError(t, err)
+
+	repo := &fakeSessionRepo{loadResult: persistedSession}
+	handler := application.NewDiscoveryHandler(&fakePublisher{}, application.WithSessionRepository(repo))
+
+	found, err := handler.LoadOrGetSession("persisted-session-123")
+	require.NoError(t, err)
+	assert.Equal(t, "persisted-session-123", found.SessionID())
+	assert.Equal(t, "Persisted idea", found.ReadmeContent())
+}
+
+func TestDiscoveryHandler_LoadOrGetSession_WhenLoadedFromRepo_ExpectCachedInMemory(t *testing.T) {
+	t.Parallel()
+
+	snapshot := map[string]interface{}{
+		"session_id":                  "cached-session-456",
+		"readme_content":              "Cached idea",
+		"status":                      "persona_detected",
+		"persona":                     "developer",
+		"register":                    "technical",
+		"answers":                     []interface{}{},
+		"skipped":                     []interface{}{},
+		"playback_confirmations":      []interface{}{},
+		"answers_since_last_playback": float64(0),
+	}
+	persistedSession, err := domain.FromSnapshot(snapshot)
+	require.NoError(t, err)
+
+	repo := &fakeSessionRepo{loadResult: persistedSession}
+	handler := application.NewDiscoveryHandler(&fakePublisher{}, application.WithSessionRepository(repo))
+
+	// First call loads from repo
+	_, err = handler.LoadOrGetSession("cached-session-456")
+	require.NoError(t, err)
+
+	// Second call should find it in-memory via GetSession
+	found, err := handler.GetSession("cached-session-456")
+	require.NoError(t, err)
+	assert.Equal(t, "cached-session-456", found.SessionID())
+}
+
+func TestDiscoveryHandler_LoadOrGetSession_WhenNoRepoAndNotInMemory_ExpectError(t *testing.T) {
+	t.Parallel()
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+
+	_, err := handler.LoadOrGetSession("nonexistent-id")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active discovery session")
+}
+
+func TestDiscoveryHandler_LoadOrGetSession_WhenRepoLoadFails_ExpectError(t *testing.T) {
+	t.Parallel()
+	repo := &fakeSessionRepo{loadErr: fmt.Errorf("disk read error")}
+	handler := application.NewDiscoveryHandler(&fakePublisher{}, application.WithSessionRepository(repo))
+
+	_, err := handler.LoadOrGetSession("some-id")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "loading session")
 }

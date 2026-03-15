@@ -117,6 +117,36 @@ func (h *DiscoveryHandler) Complete(sessionID string) (*domain.DiscoverySession,
 	return session, nil
 }
 
+// LoadOrGetSession retrieves a session from memory first, then falls back to the
+// SessionRepository if configured. Loaded sessions are cached in memory for
+// subsequent calls.
+func (h *DiscoveryHandler) LoadOrGetSession(sessionID string) (*domain.DiscoverySession, error) {
+	// 1. Try in-memory first
+	h.mu.Lock()
+	session, ok := h.sessions[sessionID]
+	h.mu.Unlock()
+	if ok {
+		return session, nil
+	}
+
+	// 2. Try repository if available
+	if h.sessionRepo == nil {
+		return nil, fmt.Errorf("no active discovery session with id '%s'", sessionID)
+	}
+
+	session, err := h.sessionRepo.Load(context.TODO(), sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("loading session '%s': %w", sessionID, err)
+	}
+
+	// 3. Cache in memory for subsequent calls
+	h.mu.Lock()
+	h.sessions[session.SessionID()] = session
+	h.mu.Unlock()
+
+	return session, nil
+}
+
 // GetSession retrieves an active discovery session by ID.
 func (h *DiscoveryHandler) GetSession(sessionID string) (*domain.DiscoverySession, error) {
 	h.mu.Lock()
