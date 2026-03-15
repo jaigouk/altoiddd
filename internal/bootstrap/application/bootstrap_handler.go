@@ -27,7 +27,7 @@ type FileChecker interface {
 
 // ContentProvider returns generated content for a planned file path.
 type ContentProvider interface {
-	ContentFor(path string, projectName string) string
+	ContentFor(path string, config domain.ProjectConfig) string
 }
 
 // plannedFiles lists files alty plans to create in a new project.
@@ -50,6 +50,7 @@ type BootstrapHandler struct {
 	contentProvider ContentProvider
 	mu              sync.Mutex
 	sessions        map[string]*domain.BootstrapSession
+	configs         map[string]domain.ProjectConfig
 }
 
 // NewBootstrapHandler creates a new BootstrapHandler with injected dependencies.
@@ -61,6 +62,7 @@ func NewBootstrapHandler(toolDetection ToolDetector, fileChecker FileChecker, pu
 		fileWriter:      fileWriter,
 		contentProvider: contentProvider,
 		sessions:        make(map[string]*domain.BootstrapSession),
+		configs:         make(map[string]domain.ProjectConfig),
 	}
 }
 
@@ -106,6 +108,14 @@ func (h *BootstrapHandler) Preview(projectDir string) (*domain.BootstrapSession,
 	return session, nil
 }
 
+// WithProjectConfig associates a ProjectConfig with a session. Must be called
+// before Execute so that content generation receives detected project settings.
+func (h *BootstrapHandler) WithProjectConfig(sessionID string, config domain.ProjectConfig) {
+	h.mu.Lock()
+	h.configs[sessionID] = config
+	h.mu.Unlock()
+}
+
 // Confirm confirms a previewed session, enabling execution.
 func (h *BootstrapHandler) Confirm(sessionID string) (*domain.BootstrapSession, error) {
 	session, err := h.getSession(sessionID)
@@ -140,13 +150,25 @@ func (h *BootstrapHandler) Execute(sessionID string) (*domain.BootstrapSession, 
 		return nil, fmt.Errorf("begin execution: %w", err)
 	}
 
+	h.mu.Lock()
+	config, hasConfig := h.configs[sessionID]
+	h.mu.Unlock()
+
+	if !hasConfig {
+		// Fallback: build minimal config from session data.
+		config = domain.NewProjectConfig(
+			filepath.Base(session.ProjectDir()),
+			"", "", session.DetectedTools(),
+		)
+	}
+
 	preview := session.Preview()
 	if preview != nil {
 		for _, action := range preview.FileActions() {
 			if action.ActionType() != vo.FileActionCreate {
 				continue
 			}
-			content := h.contentProvider.ContentFor(action.Path(), filepath.Base(session.ProjectDir()))
+			content := h.contentProvider.ContentFor(action.Path(), config)
 			target := filepath.Join(session.ProjectDir(), action.Path())
 			if err := h.fileWriter.WriteFile(context.Background(), target, content); err != nil {
 				return nil, fmt.Errorf("writing %s: %w", action.Path(), err)

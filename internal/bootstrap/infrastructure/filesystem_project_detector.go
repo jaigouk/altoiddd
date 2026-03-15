@@ -1,8 +1,11 @@
 package infrastructure
 
 import (
+	"bufio"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/alty-cli/alty/internal/bootstrap/domain"
 )
@@ -74,6 +77,9 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		}
 	}
 
+	// Extract module path from manifest if found.
+	modulePath := extractModulePath(projectDir, manifestPath)
+
 	return domain.NewProjectDetectionResult(
 		hasSourceCode,
 		language,
@@ -81,6 +87,7 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		hasAltyConfig,
 		hasAIToolConfig,
 		manifestPath,
+		modulePath,
 	), nil
 }
 
@@ -106,4 +113,93 @@ func dirExists(path string) bool {
 func pathExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// extractModulePath reads the manifest file and extracts the module/package path.
+// Supports go.mod, pyproject.toml, and package.json. Returns empty string on
+// failure or for unsupported manifest types.
+func extractModulePath(projectDir, manifestPath string) string {
+	if manifestPath == "" {
+		return ""
+	}
+
+	fullPath := filepath.Join(projectDir, manifestPath)
+
+	switch manifestPath {
+	case "go.mod":
+		return extractGoModModule(fullPath)
+	case "pyproject.toml":
+		return extractPyprojectName(fullPath)
+	case "package.json":
+		return extractPackageJSONName(fullPath)
+	default:
+		return ""
+	}
+}
+
+// extractGoModModule scans go.mod for the module directive and extracts the module path.
+func extractGoModModule(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = f.Close() }()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module "))
+		}
+	}
+
+	return ""
+}
+
+// extractPyprojectName reads pyproject.toml and finds name under [project].
+func extractPyprojectName(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	inProject := false
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[project]" {
+			inProject = true
+			continue
+		}
+		if strings.HasPrefix(trimmed, "[") && trimmed != "[project]" {
+			inProject = false
+			continue
+		}
+		if inProject && strings.HasPrefix(trimmed, "name") {
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				val := strings.TrimSpace(parts[1])
+				val = strings.Trim(val, "\"'")
+				return val
+			}
+		}
+	}
+
+	return ""
+}
+
+// extractPackageJSONName reads package.json and extracts the "name" field.
+func extractPackageJSONName(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	var pkg struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return ""
+	}
+
+	return pkg.Name
 }

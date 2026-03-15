@@ -9,7 +9,7 @@ import (
 func TestNewProjectDetectionResult_WhenAllFieldsProvided_ReturnsCorrectValues(t *testing.T) {
 	t.Parallel()
 
-	result := NewProjectDetectionResult(true, "go", true, true, true, "go.mod")
+	result := NewProjectDetectionResult(true, "go", true, true, true, "go.mod", "github.com/user/project")
 
 	assert.True(t, result.HasSourceCode())
 	assert.Equal(t, "go", result.Language())
@@ -17,12 +17,13 @@ func TestNewProjectDetectionResult_WhenAllFieldsProvided_ReturnsCorrectValues(t 
 	assert.True(t, result.HasAltyConfig())
 	assert.True(t, result.HasAIToolConfig())
 	assert.Equal(t, "go.mod", result.ManifestPath())
+	assert.Equal(t, "github.com/user/project", result.ModulePath())
 }
 
 func TestNewProjectDetectionResult_WhenEmpty_ReturnsZeroValues(t *testing.T) {
 	t.Parallel()
 
-	result := NewProjectDetectionResult(false, "", false, false, false, "")
+	result := NewProjectDetectionResult(false, "", false, false, false, "", "")
 
 	assert.False(t, result.HasSourceCode())
 	assert.Empty(t, result.Language())
@@ -30,6 +31,7 @@ func TestNewProjectDetectionResult_WhenEmpty_ReturnsZeroValues(t *testing.T) {
 	assert.False(t, result.HasAltyConfig())
 	assert.False(t, result.HasAIToolConfig())
 	assert.Empty(t, result.ManifestPath())
+	assert.Empty(t, result.ModulePath())
 }
 
 func TestProjectDetectionResult_IsExistingProject(t *testing.T) {
@@ -49,7 +51,7 @@ func TestProjectDetectionResult_IsExistingProject(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := NewProjectDetectionResult(tt.hasSourceCode, "", tt.hasDocsFolder, false, false, "")
+			result := NewProjectDetectionResult(tt.hasSourceCode, "", tt.hasDocsFolder, false, false, "", "")
 			assert.Equal(t, tt.want, result.IsExistingProject())
 		})
 	}
@@ -72,7 +74,7 @@ func TestProjectDetectionResult_IsAmbiguous(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := NewProjectDetectionResult(tt.hasSourceCode, "", tt.hasDocsFolder, false, false, "")
+			result := NewProjectDetectionResult(tt.hasSourceCode, "", tt.hasDocsFolder, false, false, "", "")
 			assert.Equal(t, tt.want, result.IsAmbiguous())
 		})
 	}

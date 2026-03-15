@@ -10,6 +10,7 @@ type ProjectDetectionResult struct {
 	hasAltyConfig   bool
 	hasAIToolConfig bool
 	manifestPath    string // "go.mod", "pyproject.toml", etc.
+	modulePath      string // extracted from manifest (e.g. "github.com/user/project")
 }
 
 // NewProjectDetectionResult creates a ProjectDetectionResult with all fields.
@@ -20,6 +21,7 @@ func NewProjectDetectionResult(
 	hasAltyConfig bool,
 	hasAIToolConfig bool,
 	manifestPath string,
+	modulePath string,
 ) ProjectDetectionResult {
 	return ProjectDetectionResult{
 		hasSourceCode:   hasSourceCode,
@@ -28,6 +30,7 @@ func NewProjectDetectionResult(
 		hasAltyConfig:   hasAltyConfig,
 		hasAIToolConfig: hasAIToolConfig,
 		manifestPath:    manifestPath,
+		modulePath:      modulePath,
 	}
 }
 
@@ -48,6 +51,9 @@ func (r ProjectDetectionResult) HasAIToolConfig() bool { return r.hasAIToolConfi
 
 // ManifestPath returns the path to the detected manifest file (e.g. "go.mod").
 func (r ProjectDetectionResult) ManifestPath() string { return r.manifestPath }
+
+// ModulePath returns the module/package path extracted from the manifest.
+func (r ProjectDetectionResult) ModulePath() string { return r.modulePath }
 
 // IsExistingProject returns true if the directory appears to contain an existing project.
 func (r ProjectDetectionResult) IsExistingProject() bool {

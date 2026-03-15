@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/alty-cli/alty/internal/bootstrap/domain"
 	"github.com/alty-cli/alty/internal/composition"
 )
 
@@ -58,7 +60,7 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 				}
 			}
 
-			return runInit(cmd, app, dryRun, yes)
+			return runInit(cmd, app, dryRun, yes, result)
 		},
 	}
 
@@ -70,12 +72,24 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 	return cmd
 }
 
-func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool) error {
+func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, detection domain.ProjectDetectionResult) error {
+	projectDir := "."
+
 	// 1. Preview bootstrap actions.
-	session, err := app.BootstrapHandler.Preview(".")
+	session, err := app.BootstrapHandler.Preview(projectDir)
 	if err != nil {
 		return fmt.Errorf("bootstrap preview: %w", err)
 	}
+
+	// Build ProjectConfig from detection result and detected tools.
+	projectName := filepath.Base(mustAbs(projectDir))
+	config := domain.NewProjectConfig(
+		projectName,
+		detection.Language(),
+		detection.ModulePath(),
+		session.DetectedTools(),
+	)
+	app.BootstrapHandler.WithProjectConfig(session.SessionID(), config)
 
 	// 2. Display plan.
 	preview := session.Preview()
@@ -184,4 +198,13 @@ func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool, forceBranc
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files created: %d\n", len(plan.Gaps()))
 
 	return nil
+}
+
+// mustAbs returns the absolute path of dir, falling back to dir itself on error.
+func mustAbs(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	return abs
 }

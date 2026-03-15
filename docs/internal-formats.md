@@ -32,23 +32,44 @@ Source: `internal/discovery/application/artifact_generation_handler.go:127`
 
 ## 1. `.alty/config.toml`
 
-**Purpose:** Project-level alty configuration. Created during `alty init`.
+**Purpose:** Project-level alty configuration. Created during `alty init` with detected project settings.
 
-**Generator:** `internal/bootstrap/infrastructure/content.go:35` — `AltyConfigContent(projectName)`
+**Generator:** `internal/bootstrap/infrastructure/content.go` — `AltyConfigContent(config domain.ProjectConfig)`
 
 ### Schema
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_name` | string | yes | Project name (from user input during `alty init`) |
-| `version` | string | yes | alty config schema version |
+| `project.name` | string | yes | Project name (directory name during `alty init`) |
+| `project.language` | string | no | Detected language (`"go"`, `"python"`, `"typescript"`). Omitted if not detected. |
+| `project.module_path` | string | no | Module path extracted from manifest (e.g. `go.mod`). Omitted if not detected. |
+| `tools.detected` | string[] | yes | AI coding tools found in project directory. Empty array if none. |
+| `discovery.completed` | boolean | yes | Whether guided discovery has been completed. |
+| `llm.provider` | string | no | LLM provider. Commented out by default. |
+| `llm.model` | string | no | LLM model. Commented out by default. |
+| `llm.api_key_env` | string | no | Environment variable name for API key. Commented out by default. |
 
 ### Example
 
 ```toml
 # alty project configuration
-project_name = "my-service"
-version = "0.1.0"
+
+[project]
+name = "my-service"
+language = "go"
+module_path = "github.com/user/my-service"
+
+[tools]
+detected = ["claude", "cursor"]
+
+[discovery]
+completed = false
+
+# [llm]
+# provider = ""
+# model = ""
+# api_key_env = ""
+# Uncomment and configure when LLM features are enabled.
 ```
 
 ---

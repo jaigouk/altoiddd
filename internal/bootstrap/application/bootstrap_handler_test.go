@@ -80,7 +80,7 @@ func (f *fakeFileWriter) WriteFile(_ context.Context, path string, content strin
 
 type fakeContentProvider struct{}
 
-func (f *fakeContentProvider) ContentFor(path string, projectName string) string {
+func (f *fakeContentProvider) ContentFor(path string, config domain.ProjectConfig) string {
 	return "test content for " + path
 }
 

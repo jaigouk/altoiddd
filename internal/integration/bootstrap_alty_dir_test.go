@@ -41,7 +41,9 @@ func TestInitCreatesAltyConfigTOML_GivenEmptyProject_WhenPreviewConfirmExecute_T
 	var parsed map[string]any
 	_, err = toml.Decode(string(content), &parsed)
 	require.NoError(t, err, ".alty/config.toml should contain valid TOML")
-	assert.NotEmpty(t, parsed["project_name"], "config.toml should include project_name")
+	project, ok := parsed["project"].(map[string]any)
+	require.True(t, ok, "config.toml should include [project] table")
+	assert.NotEmpty(t, project["name"], "config.toml [project] should include name")
 }
 
 func TestInitCreatesKnowledgeIndex_GivenEmptyProject_WhenPreviewConfirmExecute_ThenIndexTOMLExists(t *testing.T) {

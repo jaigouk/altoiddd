@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/alty-cli/alty/internal/bootstrap/application"
+	"github.com/alty-cli/alty/internal/bootstrap/domain"
 )
 
 // Compile-time check that ContentProviderAdapter satisfies ContentProvider.
@@ -16,10 +17,10 @@ var _ application.ContentProvider = (*ContentProviderAdapter)(nil)
 type ContentProviderAdapter struct{}
 
 // ContentFor returns the generated content for a planned file path.
-func (c *ContentProviderAdapter) ContentFor(path string, projectName string) string {
+func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectConfig) string {
 	switch path {
 	case ".alty/config.toml":
-		return AltyConfigContent(projectName)
+		return AltyConfigContent(config)
 	case ".alty/knowledge/_index.toml":
 		return KnowledgeIndexContent()
 	case ".alty/maintenance/doc-registry.toml":
@@ -32,11 +33,42 @@ func (c *ContentProviderAdapter) ContentFor(path string, projectName string) str
 }
 
 // AltyConfigContent returns valid TOML for .alty/config.toml.
-func AltyConfigContent(projectName string) string {
-	return fmt.Sprintf(`# alty project configuration
-project_name = %q
-version = "0.1.0"
-`, projectName)
+func AltyConfigContent(config domain.ProjectConfig) string {
+	var b strings.Builder
+	b.WriteString("# alty project configuration\n\n[project]\n")
+	fmt.Fprintf(&b, "name = %q\n", config.Name())
+
+	if config.Language() != "" {
+		fmt.Fprintf(&b, "language = %q\n", config.Language())
+	}
+
+	if config.ModulePath() != "" {
+		fmt.Fprintf(&b, "module_path = %q\n", config.ModulePath())
+	}
+
+	b.WriteString("\n[tools]\n")
+	tools := config.DetectedTools()
+	if len(tools) == 0 {
+		b.WriteString("detected = []\n")
+	} else {
+		quoted := make([]string, len(tools))
+		for i, t := range tools {
+			quoted[i] = fmt.Sprintf("%q", t)
+		}
+		fmt.Fprintf(&b, "detected = [%s]\n", strings.Join(quoted, ", "))
+	}
+
+	b.WriteString("\n[discovery]\ncompleted = false\n")
+
+	b.WriteString(`
+# [llm]
+# provider = ""
+# model = ""
+# api_key_env = ""
+# Uncomment and configure when LLM features are enabled.
+`)
+
+	return b.String()
 }
 
 // KnowledgeIndexContent returns valid TOML for .alty/knowledge/_index.toml.
