@@ -11,15 +11,20 @@ type Provider string
 
 // LLM provider constants.
 const (
-	ProviderAnthropic Provider = "anthropic"
-	ProviderOllama    Provider = "ollama"
-	ProviderVertexAI  Provider = "vertexai"
-	ProviderNone      Provider = "none"
+	ProviderAnthropic        Provider = "anthropic"
+	ProviderOllama           Provider = "ollama"
+	ProviderVertexAI         Provider = "vertexai"
+	ProviderOpenAI           Provider = "openai"
+	ProviderOpenAICompatible Provider = "openai_compatible"
+	ProviderNone             Provider = "none"
 )
 
 // AllProviders returns all valid Provider values.
 func AllProviders() []Provider {
-	return []Provider{ProviderAnthropic, ProviderOllama, ProviderVertexAI, ProviderNone}
+	return []Provider{
+		ProviderAnthropic, ProviderOllama, ProviderVertexAI,
+		ProviderOpenAI, ProviderOpenAICompatible, ProviderNone,
+	}
 }
 
 // Config holds configuration for LLM client creation.
@@ -27,12 +32,13 @@ type Config struct {
 	provider Provider
 	model    string
 	apiKey   string
+	baseURL  string
 	timeout  float64
 }
 
 // NewConfig creates a Config with the given values.
-func NewConfig(provider Provider, model, apiKey string, timeout float64) Config {
-	return Config{provider: provider, model: model, apiKey: apiKey, timeout: timeout}
+func NewConfig(provider Provider, model, apiKey, baseURL string, timeout float64) Config {
+	return Config{provider: provider, model: model, apiKey: apiKey, baseURL: baseURL, timeout: timeout}
 }
 
 // DefaultConfig returns a Config with no provider (graceful degradation).
@@ -49,6 +55,9 @@ func (c Config) Model() string { return c.model }
 // APIKey returns the API key.
 func (c Config) APIKey() string { return c.apiKey }
 
+// BaseURL returns the base URL for the provider API.
+func (c Config) BaseURL() string { return c.baseURL }
+
 // Timeout returns the timeout in seconds.
 func (c Config) Timeout() float64 { return c.timeout }
 
@@ -58,8 +67,13 @@ func (c Config) String() string {
 	if c.apiKey != "" {
 		masked = "***"
 	}
-	return fmt.Sprintf("Config(provider=%s, model=%q, api_key=%q, timeout=%.1f)",
+	s := fmt.Sprintf("Config(provider=%s, model=%q, api_key=%q, timeout=%.1f",
 		c.provider, c.model, masked, c.timeout)
+	if c.baseURL != "" {
+		s += fmt.Sprintf(", base_url=%q", c.baseURL)
+	}
+	s += ")"
+	return s
 }
 
 // Response is the result of an LLM call.

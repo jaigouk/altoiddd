@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
 	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
 	bootstrapinfra "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
@@ -29,6 +30,7 @@ import (
 	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
 	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
+	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
 	"github.com/alty-cli/alty/internal/shared/infrastructure/stack"
 	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
@@ -88,6 +90,7 @@ type App struct {
 	VersionHandler   *challengeapp.VersionHandler
 
 	// --- Infrastructure ---
+	LLMClient           llm.Client
 	EventBus            *eventbus.Bus
 	Subscriber          *eventbus.Subscriber
 	WorkflowCoordinator *shareddomain.WorkflowCoordinator
@@ -164,6 +167,20 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("starting event subscriber: %w", err)
 	}
 
+	// --- LLM credential detection ---
+	homeDir, _ := os.UserHomeDir()
+	credDetector := llm.NewCredentialDetector(os.Getenv, os.ReadFile, homeDir)
+	detectedCreds := credDetector.Detect()
+
+	var llmConfig llm.Config
+	if len(detectedCreds) > 0 {
+		best := detectedCreds[0]
+		llmConfig = llm.NewConfig(best.Provider(), best.Model(), best.APIKey(), best.BaseURL(), 30.0)
+	} else {
+		llmConfig = llm.DefaultConfig()
+	}
+	llmClient := llm.Factory{}.Create(llmConfig)
+
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
@@ -223,6 +240,7 @@ func NewApp() (*App, error) {
 		GapQueryHandler:           gapQueryHandler,
 		ChallengeHandler:          challengeHandler,
 		VersionHandler:            versionHandler,
+		LLMClient:                 llmClient,
 		EventBus:                  bus,
 		Subscriber:                subscriber,
 		WorkflowCoordinator:       coordinator,

@@ -17,7 +17,7 @@ import (
 func TestAllProviders(t *testing.T) {
 	t.Parallel()
 	providers := llm.AllProviders()
-	assert.Len(t, providers, 4)
+	assert.Len(t, providers, 6)
 }
 
 func TestProviderValues(t *testing.T) {
@@ -55,16 +55,17 @@ func TestConfigDefaults(t *testing.T) {
 
 func TestConfigCustomValues(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test", 60.0)
+	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test", "", 60.0)
 	assert.Equal(t, llm.ProviderAnthropic, cfg.Provider())
 	assert.Equal(t, "claude-sonnet-4-20250514", cfg.Model())
 	assert.Equal(t, "sk-test", cfg.APIKey())
+	assert.Empty(t, cfg.BaseURL())
 	assert.InDelta(t, 60.0, cfg.Timeout(), 0)
 }
 
 func TestConfigStringMasksAPIKey(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-secret-key-12345", 30.0)
+	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-secret-key-12345", "", 30.0)
 	s := cfg.String()
 	assert.NotContains(t, s, "sk-secret-key-12345")
 	assert.Contains(t, s, "***")
@@ -72,14 +73,14 @@ func TestConfigStringMasksAPIKey(t *testing.T) {
 
 func TestConfigStringShowsEmptyWhenNoAPIKey(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderNone, "", "", 30.0)
+	cfg := llm.NewConfig(llm.ProviderNone, "", "", "", 30.0)
 	s := cfg.String()
 	assert.NotContains(t, s, "***")
 }
 
 func TestConfigStringIncludesProviderAndModel(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test", 30.0)
+	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test", "", 30.0)
 	s := cfg.String()
 	assert.Contains(t, s, "anthropic")
 	assert.Contains(t, s, "claude-sonnet-4-20250514")
@@ -130,7 +131,7 @@ func TestNoopTextCompletionReturnsLLMUnavailable(t *testing.T) {
 
 func TestFactoryCreatesAnthropicWhenConfigured(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test-key", 30.0)
+	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "sk-test-key", "", 30.0)
 	factory := llm.Factory{}
 	client := factory.Create(cfg)
 	_, ok := client.(*llm.AnthropicClient)
@@ -139,7 +140,7 @@ func TestFactoryCreatesAnthropicWhenConfigured(t *testing.T) {
 
 func TestFactoryCreatesNoopForNoneProvider(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderNone, "", "", 30.0)
+	cfg := llm.NewConfig(llm.ProviderNone, "", "", "", 30.0)
 	factory := llm.Factory{}
 	client := factory.Create(cfg)
 	_, ok := client.(*llm.NoopClient)
@@ -148,7 +149,7 @@ func TestFactoryCreatesNoopForNoneProvider(t *testing.T) {
 
 func TestFactoryCreatesNoopWhenNoAPIKey(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "", 30.0)
+	cfg := llm.NewConfig(llm.ProviderAnthropic, "claude-sonnet-4-20250514", "", "", 30.0)
 	factory := llm.Factory{}
 	client := factory.Create(cfg)
 	_, ok := client.(*llm.NoopClient)
@@ -166,7 +167,7 @@ func TestFactoryDefaultsToNoop(t *testing.T) {
 
 func TestFactoryCreatesNoopForUnsupportedProvider(t *testing.T) {
 	t.Parallel()
-	cfg := llm.NewConfig(llm.ProviderOllama, "", "key", 30.0)
+	cfg := llm.NewConfig(llm.ProviderOllama, "", "key", "", 30.0)
 	factory := llm.Factory{}
 	client := factory.Create(cfg)
 	_, ok := client.(*llm.NoopClient)

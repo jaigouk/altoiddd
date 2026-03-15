@@ -15,6 +15,8 @@ func (f Factory) Create(config Config) Client {
 			return &NoopClient{}
 		}
 		return NewAnthropicClient(config.APIKey(), config.Model(), config.Timeout())
+	case ProviderOpenAI, ProviderOpenAICompatible:
+		return &NoopClient{}
 	case ProviderOllama, ProviderVertexAI:
 		return &NoopClient{}
 	case ProviderNone:
