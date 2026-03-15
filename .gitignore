@@ -68,3 +68,4 @@ website/.astro/
 website/design/
 website/.vercel/
 website/.netlify/
+.beads/dolt-monitor.pid.lock

@@ -30,6 +30,13 @@ type FileWriter interface {
 	WriteFile(ctx context.Context, path string, content string) error
 }
 
+// DirCreator ensures directories exist on the filesystem. Shared kernel port
+// used by bounded contexts that need to create directory structures.
+type DirCreator interface {
+	// EnsureDir creates the directory at path (including parents) if it does not exist.
+	EnsureDir(ctx context.Context, path string) error
+}
+
 // GitOps provides git operations needed by multiple bounded contexts.
 type GitOps interface {
 	// HasGit checks whether the directory is inside a git repository.

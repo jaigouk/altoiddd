@@ -171,7 +171,7 @@ func guideAnswerHandler(app *composition.App) func(context.Context, *mcp.CallToo
 			return r, m, e
 		}
 
-		session, err := app.DiscoveryHandler.AnswerQuestion(input.SessionID, input.QuestionID, input.Answer)
+		session, err := app.DiscoveryHandler.AnswerQuestion(input.SessionID, input.QuestionID, input.Answer) //nolint:contextcheck // Discovery interface deliberately omits context
 		if err != nil {
 			return toolError(err.Error())
 		}
@@ -187,7 +187,7 @@ func guideSkipQuestionHandler(app *composition.App) func(context.Context, *mcp.C
 			return r, m, e
 		}
 
-		session, err := app.DiscoveryHandler.SkipQuestion(input.SessionID, input.QuestionID, input.Reason)
+		session, err := app.DiscoveryHandler.SkipQuestion(input.SessionID, input.QuestionID, input.Reason) //nolint:contextcheck // Discovery interface deliberately omits context
 		if err != nil {
 			return toolError(err.Error())
 		}

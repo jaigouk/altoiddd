@@ -32,6 +32,7 @@ type RescueHandler struct {
 	fileWriter  sharedapp.FileWriter
 	publisher   sharedapp.EventPublisher
 	testRunner  TestRunner
+	dirCreator  sharedapp.DirCreator
 }
 
 // NewRescueHandler creates a new RescueHandler with injected dependencies.
@@ -41,6 +42,7 @@ func NewRescueHandler(
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
 	testRunner TestRunner,
+	dirCreator sharedapp.DirCreator,
 ) *RescueHandler {
 	return &RescueHandler{
 		projectScan: projectScan,
@@ -48,11 +50,14 @@ func NewRescueHandler(
 		fileWriter:  fileWriter,
 		publisher:   publisher,
 		testRunner:  testRunner,
+		dirCreator:  dirCreator,
 	}
 }
 
 // ValidatePreconditions validates git preconditions before rescue.
-func (h *RescueHandler) ValidatePreconditions(ctx context.Context, projectDir string) error {
+// When forceBranch is true and the branch already exists, it deletes the
+// existing branch instead of returning an error.
+func (h *RescueHandler) ValidatePreconditions(ctx context.Context, projectDir string, forceBranch bool) error {
 	hasGit, err := h.gitOps.HasGit(ctx, projectDir)
 	if err != nil {
 		return fmt.Errorf("check git repository: %w", err)
@@ -74,8 +79,14 @@ func (h *RescueHandler) ValidatePreconditions(ctx context.Context, projectDir st
 		return fmt.Errorf("check branch existence: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("branch %s already exists, delete it first or use --force-branch to override: %w",
-			branchName, domainerrors.ErrInvariantViolation)
+		if forceBranch {
+			if err := h.gitOps.DeleteBranch(ctx, projectDir, branchName); err != nil {
+				return fmt.Errorf("delete existing branch: %w", err)
+			}
+		} else {
+			return fmt.Errorf("branch %s already exists, delete it first or use --force-branch to override: %w",
+				branchName, domainerrors.ErrInvariantViolation)
+		}
 	}
 
 	return nil
@@ -87,9 +98,10 @@ func (h *RescueHandler) Rescue(
 	projectDir string,
 	profile vo.StackProfile,
 	validated bool,
+	forceBranch bool,
 ) (*rescuedomain.GapAnalysis, error) {
 	if !validated {
-		if err := h.ValidatePreconditions(ctx, projectDir); err != nil {
+		if err := h.ValidatePreconditions(ctx, projectDir, forceBranch); err != nil {
 			return nil, err
 		}
 	}
@@ -165,6 +177,16 @@ func (h *RescueHandler) ExecutePlan(ctx context.Context, analysis *rescuedomain.
 		}
 
 		target := filepath.Join(analysis.ProjectDir(), gap.Path())
+
+		if gap.IsDirectory() {
+			if h.dirCreator != nil {
+				if err := h.dirCreator.EnsureDir(ctx, target); err != nil {
+					return fmt.Errorf("create directory %s: %w", gap.Path(), err)
+				}
+			}
+			continue
+		}
+
 		stem := strings.TrimSuffix(filepath.Base(gap.Path()), filepath.Ext(gap.Path()))
 		content := fmt.Sprintf("# %s\n\n> TODO: Fill in content.\n", stem)
 		if err := h.fileWriter.WriteFile(ctx, target, content); err != nil {

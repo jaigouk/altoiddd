@@ -392,6 +392,34 @@ func TestGapConflictType(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// IsDirectory
+// ---------------------------------------------------------------------------
+
+func TestGap_IsDirectory(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		path    string
+		wantDir bool
+	}{
+		{"trailing slash is directory", ".alty/knowledge/", true},
+		{"no trailing slash is file", "docs/PRD.md", false},
+		{"root slash is directory", "/", true},
+		{"nested trailing slash", "src/domain/", true},
+		{"empty path is not directory", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gap := domain.NewGap("gap-1", domain.GapTypeMissingStructure, tt.path,
+				"test gap", domain.GapSeverityRequired)
+			assert.Equal(t, tt.wantDir, gap.IsDirectory())
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Uses shared GapAnalysisCompleted event
 // ---------------------------------------------------------------------------
 

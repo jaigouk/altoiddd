@@ -166,7 +166,7 @@ func rescueProjectHandler(app *composition.App) func(context.Context, *mcp.CallT
 		// Detect stack profile for the project.
 		profile := detectStackProfile(app, projectDir)
 
-		analysis, err := app.RescueHandler.Rescue(ctx, projectDir, profile, false)
+		analysis, err := app.RescueHandler.Rescue(ctx, projectDir, profile, false, false)
 		if err != nil {
 			return toolError(fmt.Sprintf("rescue: %s", err))
 		}

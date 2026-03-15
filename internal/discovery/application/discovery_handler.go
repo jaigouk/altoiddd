@@ -11,17 +11,32 @@ import (
 
 // DiscoveryHandler orchestrates the discovery session lifecycle.
 type DiscoveryHandler struct {
-	publisher sharedapp.EventPublisher
-	mu        sync.Mutex
-	sessions  map[string]*domain.DiscoverySession
+	publisher   sharedapp.EventPublisher
+	sessionRepo SessionRepository
+	mu          sync.Mutex
+	sessions    map[string]*domain.DiscoverySession
+}
+
+// HandlerOption configures optional dependencies for DiscoveryHandler.
+type HandlerOption func(*DiscoveryHandler)
+
+// WithSessionRepository injects an optional SessionRepository for persistence.
+func WithSessionRepository(repo SessionRepository) HandlerOption {
+	return func(h *DiscoveryHandler) {
+		h.sessionRepo = repo
+	}
 }
 
 // NewDiscoveryHandler creates a new DiscoveryHandler.
-func NewDiscoveryHandler(publisher sharedapp.EventPublisher) *DiscoveryHandler {
-	return &DiscoveryHandler{
+func NewDiscoveryHandler(publisher sharedapp.EventPublisher, opts ...HandlerOption) *DiscoveryHandler {
+	h := &DiscoveryHandler{
 		publisher: publisher,
 		sessions:  make(map[string]*domain.DiscoverySession),
 	}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
 }
 
 // StartSession starts a new discovery session from README content.
@@ -54,6 +69,9 @@ func (h *DiscoveryHandler) AnswerQuestion(sessionID, questionID, answer string) 
 	if err := session.AnswerQuestion(questionID, answer); err != nil {
 		return nil, fmt.Errorf("answer question %s: %w", questionID, err)
 	}
+	if err := h.persistSession(session); err != nil {
+		return nil, fmt.Errorf("persisting session after answer: %w", err)
+	}
 	return session, nil
 }
 
@@ -65,6 +83,9 @@ func (h *DiscoveryHandler) SkipQuestion(sessionID, questionID, reason string) (*
 	}
 	if err := session.SkipQuestion(questionID, reason); err != nil {
 		return nil, fmt.Errorf("skip question %s: %w", questionID, err)
+	}
+	if err := h.persistSession(session); err != nil {
+		return nil, fmt.Errorf("persisting session after skip: %w", err)
 	}
 	return session, nil
 }
@@ -105,6 +126,20 @@ func (h *DiscoveryHandler) GetSession(sessionID string) (*domain.DiscoverySessio
 		return nil, fmt.Errorf("no active discovery session with id '%s'", sessionID)
 	}
 	return session, nil
+}
+
+// persistSession saves the session if a SessionRepository is configured.
+// Returns nil when no repository is set (nil-safe).
+// Uses context.TODO() because the Discovery interface deliberately omits context
+// for synchronous CLI operations.
+func (h *DiscoveryHandler) persistSession(session *domain.DiscoverySession) error {
+	if h.sessionRepo == nil {
+		return nil
+	}
+	if err := h.sessionRepo.Save(context.TODO(), session); err != nil {
+		return fmt.Errorf("saving session: %w", err)
+	}
+	return nil
 }
 
 // ClassifySubdomain classifies a bounded context using the Khononov decision tree.

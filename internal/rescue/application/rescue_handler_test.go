@@ -123,6 +123,19 @@ func (f *fakeFileWriter) WriteFile(_ context.Context, path string, content strin
 	return nil
 }
 
+type fakeDirCreator struct {
+	createdDirs []string
+}
+
+func newFakeDirCreator() *fakeDirCreator {
+	return &fakeDirCreator{}
+}
+
+func (f *fakeDirCreator) EnsureDir(_ context.Context, path string) error {
+	f.createdDirs = append(f.createdDirs, path)
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Tests — Validate Preconditions
 // ---------------------------------------------------------------------------
@@ -132,34 +145,88 @@ func TestRescueHandler_ValidatePreconditions(t *testing.T) {
 
 	t.Run("raises if not git repo", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(false, true, false), nil, &fakePublisherR{}, nil)
-		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj")
+		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(false, true, false), nil, &fakePublisherR{}, nil, nil)
+		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not a git repository")
 	})
 
 	t.Run("raises on dirty tree", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(true, false, false), nil, &fakePublisherR{}, nil)
-		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj")
+		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(true, false, false), nil, &fakePublisherR{}, nil, nil)
+		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "dirty")
 	})
 
 	t.Run("raises if branch exists", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(true, true, true), nil, &fakePublisherR{}, nil)
-		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj")
+		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(true, true, true), nil, &fakePublisherR{}, nil, nil)
+		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "alty/init")
 	})
 
 	t.Run("passes for clean repo", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj")
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
 		require.NoError(t, err)
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Tests — Force Branch
+// ---------------------------------------------------------------------------
+
+func TestValidatePreconditions_WhenBranchExistsAndForceTrue_ExpectDeleteAndContinue(t *testing.T) {
+	t.Parallel()
+	gitOps := newFakeGitOps(true, true, true) // branch exists
+	handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+
+	err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", true)
+
+	require.NoError(t, err)
+	assert.True(t, gitOps.deleteBranchCalled, "should call DeleteBranch")
+	assert.Contains(t, gitOps.deletedBranches, "alty/init")
+}
+
+func TestValidatePreconditions_WhenBranchExistsAndForceFalse_ExpectError(t *testing.T) {
+	t.Parallel()
+	gitOps := newFakeGitOps(true, true, true) // branch exists
+	handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+
+	err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+	assert.Contains(t, err.Error(), "--force-branch")
+	assert.False(t, gitOps.deleteBranchCalled, "should not call DeleteBranch")
+}
+
+func TestValidatePreconditions_WhenBranchNotExistsAndForceTrue_ExpectNoDelete(t *testing.T) {
+	t.Parallel()
+	gitOps := newFakeGitOps(true, true, false) // branch does not exist
+	handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+
+	err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", true)
+
+	require.NoError(t, err)
+	assert.False(t, gitOps.deleteBranchCalled, "should not call DeleteBranch when branch does not exist")
+}
+
+func TestRescue_WhenForceBranch_ExpectDeleteBeforeCreate(t *testing.T) {
+	t.Parallel()
+	gitOps := newFakeGitOps(true, true, true) // branch exists
+	handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+
+	analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false, true)
+
+	require.NoError(t, err)
+	assert.True(t, gitOps.deleteBranchCalled, "should delete existing branch")
+	assert.Contains(t, gitOps.deletedBranches, "alty/init")
+	assert.Contains(t, gitOps.createdBranches, "alty/init", "should create branch after delete")
+	assert.NotNil(t, analysis)
 }
 
 // ---------------------------------------------------------------------------
@@ -171,8 +238,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 
 	t.Run("returns gap analysis in planned state", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		require.NoError(t, err)
 		assert.Equal(t, rescuedomain.AnalysisStatusPlanned, analysis.Status())
 		assert.NotNil(t, analysis.Scan())
@@ -183,15 +250,15 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 	t.Run("creates branch before scanning", func(t *testing.T) {
 		t.Parallel()
 		gitOps := defaultFakeGitOps()
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil)
-		handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+		handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		assert.Contains(t, gitOps.createdBranches, "alty/init")
 	})
 
 	t.Run("detects missing docs", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		gapPaths := make([]string, 0)
 		for _, g := range analysis.Gaps() {
 			gapPaths = append(gapPaths, g.Path())
@@ -203,8 +270,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 
 	t.Run("detects missing knowledge dir", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		var knowledgeGaps []rescuedomain.Gap
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingKnowledge {
@@ -224,8 +291,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 			[]string{"src/domain/", "src/application/", "src/infrastructure/"},
 			true, true, true, true, true,
 		)
-		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		require.NoError(t, err)
 		assert.Equal(t, rescuedomain.AnalysisStatusAnalyzed, analysis.Status())
 		assert.Empty(t, analysis.Gaps())
@@ -235,8 +302,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 	t.Run("with profile detects missing config", func(t *testing.T) {
 		t.Parallel()
 		profile := vo.PythonUvProfile{}
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false, false)
 		var configPaths []string
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingConfig {
@@ -250,8 +317,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 	t.Run("with profile detects missing structure", func(t *testing.T) {
 		t.Parallel()
 		profile := vo.PythonUvProfile{}
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false, false)
 		var structurePaths []string
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingStructure {
@@ -265,8 +332,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 
 	t.Run("none profile no structure gaps", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingStructure {
 				// Only .alty/ structure gaps allowed without profile
@@ -277,8 +344,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 
 	t.Run("none profile no pyproject gap", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingConfig {
 				assert.NotEqual(t, "pyproject.toml", g.Path())
@@ -297,8 +364,8 @@ func TestRescueHandler_ValidatedParameter(t *testing.T) {
 	t.Run("validated skips precondition check", func(t *testing.T) {
 		t.Parallel()
 		gitOps := newFakeGitOps(false, true, false) // not a git repo
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil)
-		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, true)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+		analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, true, false)
 		require.NoError(t, err)
 		assert.NotEmpty(t, analysis.Gaps())
 	})
@@ -306,8 +373,8 @@ func TestRescueHandler_ValidatedParameter(t *testing.T) {
 	t.Run("default validates preconditions", func(t *testing.T) {
 		t.Parallel()
 		gitOps := newFakeGitOps(false, true, false)
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil)
-		_, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
+		_, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not a git repository")
 	})
@@ -323,8 +390,8 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 	t.Run("completes analysis", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriter()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.NoError(t, err)
@@ -335,8 +402,8 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 	t.Run("writes files", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriter()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		handler.ExecutePlan(context.Background(), analysis)
 		assert.NotEmpty(t, writer.writtenFiles)
@@ -344,8 +411,8 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 
 	t.Run("without file writer raises", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.Error(t, err)
@@ -362,8 +429,8 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 			[]string{"src/domain/", "src/application/", "src/infrastructure/"},
 			true, true, true, true, true,
 		)
-		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), writer, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 		require.Error(t, err)
@@ -378,8 +445,8 @@ func TestRescueHandler_ExecutePlan(t *testing.T) {
 			false, true, true, false, false,
 		)
 		writer := newFakeFileWriter()
-		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), writer, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(&scan), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		handler.ExecutePlan(context.Background(), analysis)
 
 		for path := range writer.writtenFiles {
@@ -398,8 +465,8 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 	t.Run("required docs have required severity", func(t *testing.T) {
 		t.Parallel()
 		profile := vo.PythonUvProfile{}
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", profile, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingDoc {
 				if g.Path() == "docs/PRD.md" || g.Path() == "docs/DDD.md" || g.Path() == "docs/ARCHITECTURE.md" {
@@ -411,8 +478,8 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 
 	t.Run("alty config gap has recommended severity", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.Path() == ".alty/config.toml" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
@@ -422,8 +489,8 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 
 	t.Run("knowledge gap has recommended severity", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.Path() == ".alty/knowledge/" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
@@ -433,8 +500,8 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 
 	t.Run("agents md gap has recommended severity", func(t *testing.T) {
 		t.Parallel()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.Path() == "AGENTS.md" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
@@ -448,8 +515,8 @@ func TestRescueHandler_ExecutePlan_PublishesEvent(t *testing.T) {
 
 	pub := &fakePublisherR{}
 	writer := newFakeFileWriter()
-	handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, pub, nil)
-	analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+	handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, pub, nil, nil)
+	analysis, err := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 	require.NoError(t, err)
 
 	err = handler.ExecutePlan(context.Background(), analysis)
@@ -471,8 +538,8 @@ func TestRescueHandler_ExecutePlan_RunsTestsAfterScaffolding(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriter()
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -486,8 +553,8 @@ func TestRescueHandler_ExecutePlan_RunsTestsAfterScaffolding(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriter()
 		testRunner := newFakeTestRunner("") // no framework
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -500,8 +567,8 @@ func TestRescueHandler_ExecutePlan_RunsTestsAfterScaffolding(t *testing.T) {
 	t.Run("completes without test runner configured", func(t *testing.T) {
 		t.Parallel()
 		writer := newFakeFileWriter()
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -523,8 +590,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		gitOps := defaultFakeGitOps()
 		testRunner := newFakeTestRunner("")
 		testRunner.detectErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -542,8 +609,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		gitOps := defaultFakeGitOps()
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
 		testRunner.runErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -559,8 +626,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		writer := newFakeFileWriter()
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
 		testRunner.runErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		_ = handler.ExecutePlan(context.Background(), analysis)
 
@@ -574,8 +641,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		gitOps.checkoutPrevErr = assert.AnError
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
 		testRunner.runErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -591,8 +658,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		gitOps.deleteBranchErr = assert.AnError
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
 		testRunner.runErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -606,8 +673,8 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		writer := newFakeFileWriter()
 		testRunner := newFakeTestRunner(application.TestFrameworkGo)
 		testRunner.runErr = assert.AnError
-		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner)
-		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false)
+		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, testRunner, nil)
+		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 
 		err := handler.ExecutePlan(context.Background(), analysis)
 
@@ -615,4 +682,73 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		// Error should wrap the original test failure
 		assert.ErrorIs(t, err, assert.AnError)
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Tests — Execute Plan: Directory vs File Branching
+// ---------------------------------------------------------------------------
+
+func TestRescueHandler_ExecutePlan_WhenGapIsDirectory_ExpectDirCreatedNotFile(t *testing.T) {
+	t.Parallel()
+	writer := newFakeFileWriter()
+	dirCreator := newFakeDirCreator()
+	handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, dirCreator)
+	analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
+
+	err := handler.ExecutePlan(context.Background(), analysis)
+	require.NoError(t, err)
+
+	// Directory gaps (.alty/knowledge/, .alty/maintenance/) should use DirCreator
+	assert.NotEmpty(t, dirCreator.createdDirs, "directory gaps should call DirCreator")
+	for _, dir := range dirCreator.createdDirs {
+		assert.NotContains(t, writer.writtenFiles, dir, "directory gaps should not be written as files")
+	}
+}
+
+func TestRescueHandler_ExecutePlan_WhenGapIsFile_ExpectFileWritten(t *testing.T) {
+	t.Parallel()
+	writer := newFakeFileWriter()
+	dirCreator := newFakeDirCreator()
+	handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, dirCreator)
+	analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
+
+	err := handler.ExecutePlan(context.Background(), analysis)
+	require.NoError(t, err)
+
+	// File gaps (docs/PRD.md, .claude/CLAUDE.md, etc.) should use FileWriter
+	assert.NotEmpty(t, writer.writtenFiles, "file gaps should use FileWriter")
+	for path := range writer.writtenFiles {
+		for _, dir := range dirCreator.createdDirs {
+			assert.NotEqual(t, path, dir, "file writer should not get directory paths")
+		}
+	}
+}
+
+func TestRescueHandler_ExecutePlan_WhenMixedGaps_ExpectBothDirsAndFiles(t *testing.T) {
+	t.Parallel()
+	writer := newFakeFileWriter()
+	dirCreator := newFakeDirCreator()
+	handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), writer, &fakePublisherR{}, nil, dirCreator)
+	analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
+
+	err := handler.ExecutePlan(context.Background(), analysis)
+	require.NoError(t, err)
+
+	// Should have both directories and files created
+	assert.NotEmpty(t, dirCreator.createdDirs, "should create directories")
+	assert.NotEmpty(t, writer.writtenFiles, "should write files")
+
+	// Verify specific directory gaps went to DirCreator
+	hasKnowledgeDir := false
+	hasMaintenanceDir := false
+	for _, dir := range dirCreator.createdDirs {
+		if dir == "/tmp/proj/.alty/knowledge" {
+			hasKnowledgeDir = true
+		}
+		if dir == "/tmp/proj/.alty/maintenance" {
+			hasMaintenanceDir = true
+		}
+	}
+	assert.True(t, hasKnowledgeDir, ".alty/knowledge/ gap should create directory")
+	assert.True(t, hasMaintenanceDir, ".alty/maintenance/ gap should create directory")
 }

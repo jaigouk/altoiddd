@@ -99,13 +99,13 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 				}
 				return fmt.Errorf("asking skip reason: %w", skipErr)
 			}
-			session, err = a.handler.SkipQuestion(sessionID, question.ID(), reason)
+			session, err = a.handler.SkipQuestion(sessionID, question.ID(), reason) //nolint:contextcheck // Discovery interface deliberately omits context
 			if err != nil {
 				return fmt.Errorf("skipping question %s: %w", question.ID(), err)
 			}
 		} else {
 			// Answer the question
-			session, err = a.handler.AnswerQuestion(sessionID, question.ID(), answer)
+			session, err = a.handler.AnswerQuestion(sessionID, question.ID(), answer) //nolint:contextcheck // Discovery interface deliberately omits context
 			if err != nil {
 				return fmt.Errorf("answering question %s: %w", question.ID(), err)
 			}

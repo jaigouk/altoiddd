@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"strings"
 
 	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
 	"github.com/alty-cli/alty/internal/shared/domain/identity"
@@ -159,6 +160,9 @@ func (g Gap) Description() string { return g.description }
 
 // Severity returns the gap severity.
 func (g Gap) Severity() GapSeverity { return g.severity }
+
+// IsDirectory returns true if this gap represents a directory (path ends with "/").
+func (g Gap) IsDirectory() bool { return strings.HasSuffix(g.path, "/") }
 
 // MigrationPlan is an immutable plan for resolving gaps.
 type MigrationPlan struct {

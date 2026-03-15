@@ -21,6 +21,28 @@ func (f *fakePublisher) Publish(_ context.Context, event any) error {
 	return nil
 }
 
+// fakeSessionRepo is a spy that records Save calls.
+type fakeSessionRepo struct {
+	saved   []*domain.DiscoverySession
+	saveErr error
+}
+
+func (f *fakeSessionRepo) Save(_ context.Context, session *domain.DiscoverySession) error {
+	if f.saveErr != nil {
+		return f.saveErr
+	}
+	f.saved = append(f.saved, session)
+	return nil
+}
+
+func (f *fakeSessionRepo) Load(_ context.Context, _ string) (*domain.DiscoverySession, error) {
+	return nil, nil
+}
+
+func (f *fakeSessionRepo) Exists(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+
 // ---------------------------------------------------------------------------
 // Tests — Start Session
 // ---------------------------------------------------------------------------
@@ -285,4 +307,51 @@ func TestDiscoveryHandler_Complete_PublishesEvent(t *testing.T) {
 	require.Len(t, pub.published, 1)
 	_, ok := pub.published[0].(domain.DiscoveryCompletedEvent)
 	assert.True(t, ok, "expected DiscoveryCompletedEvent, got %T", pub.published[0])
+}
+
+// ---------------------------------------------------------------------------
+// Tests — Session Persistence (optional SessionRepository)
+// ---------------------------------------------------------------------------
+
+func TestDiscoveryHandler_AnswerQuestion_WhenSessionRepoExists_ExpectSaved(t *testing.T) {
+	t.Parallel()
+	repo := &fakeSessionRepo{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{}, application.WithSessionRepository(repo))
+	session, _ := handler.StartSession("Idea")
+	handler.DetectPersona(session.SessionID(), "1")
+
+	_, err := handler.AnswerQuestion(session.SessionID(), "Q1", "Users and admins")
+	require.NoError(t, err)
+
+	require.Len(t, repo.saved, 1)
+	assert.Equal(t, session.SessionID(), repo.saved[0].SessionID())
+}
+
+func TestDiscoveryHandler_SkipQuestion_WhenSessionRepoExists_ExpectSaved(t *testing.T) {
+	t.Parallel()
+	repo := &fakeSessionRepo{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{}, application.WithSessionRepository(repo))
+	session, _ := handler.StartSession("Idea")
+	handler.DetectPersona(session.SessionID(), "1")
+
+	_, err := handler.SkipQuestion(session.SessionID(), "Q1", "Not relevant")
+	require.NoError(t, err)
+
+	require.Len(t, repo.saved, 1)
+	assert.Equal(t, session.SessionID(), repo.saved[0].SessionID())
+}
+
+func TestDiscoveryHandler_WhenSessionRepoNil_ExpectNoSaveAttempt(t *testing.T) {
+	t.Parallel()
+	// No WithSessionRepository option — sessionRepo is nil
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	session, _ := handler.StartSession("Idea")
+	handler.DetectPersona(session.SessionID(), "1")
+
+	// Should not panic when sessionRepo is nil
+	_, err := handler.AnswerQuestion(session.SessionID(), "Q1", "Users and admins")
+	require.NoError(t, err)
+
+	_, err = handler.SkipQuestion(session.SessionID(), "Q2", "Not relevant")
+	require.NoError(t, err)
 }

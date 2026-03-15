@@ -99,7 +99,7 @@ func newTestRescueHandler(
 	fileWriter sharedapp.FileWriter,
 	publisher sharedapp.EventPublisher,
 ) *rescueapp.RescueHandler {
-	return rescueapp.NewRescueHandler(projectScan, gitOps, fileWriter, publisher, nil)
+	return rescueapp.NewRescueHandler(projectScan, gitOps, fileWriter, publisher, nil, nil)
 }
 
 // --- Tests ---
@@ -341,6 +341,71 @@ var (
 	_ sharedapp.FileWriter     = (*mockFileWriter)(nil)
 	_ sharedapp.EventPublisher = (*mockEventPublisher)(nil)
 )
+
+// --- Tests: --force-branch flag ---
+
+func TestInitCmd_ForceBranchFlag_Exists(t *testing.T) {
+	app := &composition.App{}
+	cmd := commands.NewInitCmd(app)
+
+	flag := cmd.Flags().Lookup("force-branch")
+	require.NotNil(t, flag, "--force-branch flag should exist")
+	assert.Equal(t, "false", flag.DefValue, "default should be false")
+}
+
+func TestRunRescue_ForceBranch_WhenBranchExists_DeletesAndContinues(t *testing.T) {
+	scan := rescuedomain.NewProjectScan(
+		".",
+		[]string{},
+		[]string{".claude/CLAUDE.md"},
+		[]string{},
+		false, false, true, false, false,
+	)
+
+	gitOps := &mockGitOps{
+		hasGit:       true,
+		isClean:      true,
+		branchExists: true, // branch exists
+	}
+	projectScan := &mockProjectScan{scanResult: scan}
+	fileWriter := newMockFileWriter()
+	publisher := &mockEventPublisher{}
+
+	handler := newTestRescueHandler(projectScan, gitOps, fileWriter, publisher)
+	app := &composition.App{RescueHandler: handler}
+
+	cmd := commands.NewInitCmd(app)
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--existing", "--force-branch"})
+
+	err := cmd.Execute()
+	// With --force-branch, should succeed despite branch existing
+	require.NoError(t, err)
+}
+
+func TestRunRescue_NoForceBranch_WhenBranchExists_ReturnsError(t *testing.T) {
+	gitOps := &mockGitOps{
+		hasGit:       true,
+		isClean:      true,
+		branchExists: true,
+	}
+	projectScan := &mockProjectScan{}
+	fileWriter := newMockFileWriter()
+	publisher := &mockEventPublisher{}
+
+	handler := newTestRescueHandler(projectScan, gitOps, fileWriter, publisher)
+	app := &composition.App{RescueHandler: handler}
+
+	cmd := commands.NewInitCmd(app)
+	var buf bytes.Buffer
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--existing"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+}
 
 // Suppress unused import warning.
 var (

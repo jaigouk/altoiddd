@@ -107,6 +107,7 @@ func NewApp() (*App, error) {
 	// 3. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
 	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer()
+	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alty")
 
 	// 4. DocHealth infrastructure
 	docScanner := dochealthinfra.NewFilesystemDocScanner()
@@ -166,7 +167,7 @@ func NewApp() (*App, error) {
 	contentProvider := &bootstrapinfra.ContentProviderAdapter{}
 	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider)
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
-	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher)
+	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
 	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter, publisher)
 	qualityGateHandler := fitnessapp.NewQualityGateHandler(gateRunner)
@@ -180,8 +181,10 @@ func NewApp() (*App, error) {
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
 	driftDetectionHandler := knowledgeapp.NewDriftDetectionHandler(driftDetector)
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
-	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher, testRunner)
+	dirCreator := persistence.NewFilesystemDirCreator()
+	rescueHandler := rescueapp.NewRescueHandler(projectScanner, gitOps, fileWriter, publisher, testRunner, dirCreator)
 	gapQueryHandler := rescueapp.NewGapQueryHandler(projectScanner, &stackProfileDetectorAdapter{})
+
 	challengeHandler := challengeapp.NewChallengeHandler(challenger)
 	versionParser := challengeinfra.NewYAMLFrontmatterParser()
 	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter, versionParser)

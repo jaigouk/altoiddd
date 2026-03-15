@@ -36,6 +36,20 @@ type Discovery interface {
 // Compile-time interface compliance check.
 var _ Discovery = (*DiscoveryHandler)(nil)
 
+// --- Session Repository Port ---
+
+// SessionRepository persists and retrieves discovery sessions.
+type SessionRepository interface {
+	// Save persists a discovery session.
+	Save(ctx context.Context, session *discoverydomain.DiscoverySession) error
+
+	// Load retrieves a discovery session by ID.
+	Load(ctx context.Context, sessionID string) (*discoverydomain.DiscoverySession, error)
+
+	// Exists checks whether a persisted session exists.
+	Exists(ctx context.Context, sessionID string) (bool, error)
+}
+
 // --- Artifact Renderer Port ---
 
 // ArtifactRenderer renders a DomainModel into markdown documents (PRD, DDD.md, ARCHITECTURE.md).

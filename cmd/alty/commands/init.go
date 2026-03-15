@@ -15,9 +15,10 @@ import (
 // NewInitCmd creates the "alty init" command.
 func NewInitCmd(app *composition.App) *cobra.Command {
 	var (
-		existing bool
-		dryRun   bool
-		yes      bool
+		existing    bool
+		dryRun      bool
+		yes         bool
+		forceBranch bool
 	)
 
 	cmd := &cobra.Command{
@@ -28,7 +29,7 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 Use --existing to rescue an existing project (alty init --existing).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if existing {
-				return runRescue(cmd, app, dryRun)
+				return runRescue(cmd, app, dryRun, forceBranch)
 			}
 			return runInit(cmd, app, dryRun, yes)
 		},
@@ -37,6 +38,7 @@ Use --existing to rescue an existing project (alty init --existing).`,
 	cmd.Flags().BoolVar(&existing, "existing", false, "Rescue an existing project")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show plan without executing")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
+	cmd.Flags().BoolVar(&forceBranch, "force-branch", false, "Delete existing alty/init branch before creating a new one")
 
 	return cmd
 }
@@ -97,17 +99,17 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool) er
 	return runGuide(cmd.Context(), app, false)
 }
 
-func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool) error {
+func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool, forceBranch bool) error {
 	ctx := context.Background()
 	projectDir := "."
 
 	// 1. Validate preconditions.
-	if err := app.RescueHandler.ValidatePreconditions(ctx, projectDir); err != nil {
+	if err := app.RescueHandler.ValidatePreconditions(ctx, projectDir, forceBranch); err != nil {
 		return fmt.Errorf("rescue preconditions: %w", err)
 	}
 
 	// 2. Run rescue analysis.
-	analysis, err := app.RescueHandler.Rescue(ctx, projectDir, nil, true)
+	analysis, err := app.RescueHandler.Rescue(ctx, projectDir, nil, true, forceBranch)
 	if err != nil {
 		return fmt.Errorf("rescue analysis: %w", err)
 	}
