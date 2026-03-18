@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	"github.com/alty-cli/alty/internal/discovery/domain"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	"github.com/alto-cli/alto/internal/discovery/domain"
 )
 
 // toolDirs maps tool names to their config directory relative to home.

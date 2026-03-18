@@ -8,9 +8,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/composition"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/composition"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // --- Input structs ---

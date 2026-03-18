@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/identity"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/identity"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // DiscoveryStatus represents the state of a discovery session.

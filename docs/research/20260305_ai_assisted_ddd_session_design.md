@@ -1,12 +1,12 @@
 # Research: AI-Assisted Iterative DDD Session Design
 
 **Date:** 2026-03-05
-**Spike Ticket:** alty-20c.1
+**Spike Ticket:** alto-20c.1
 **Status:** Final
 
 ## Summary
 
-alty's current guided discovery is a single-pass 10-question flow that produces shallow DDD artifacts in ~15 minutes. This spike designs an iterative, AI-assisted discovery session that produces deep artifacts (Bounded Context Canvas, rich ubiquitous language, well-defined aggregates) in under 2 hours — without requiring users to attend month-long workshop series.
+alto's current guided discovery is a single-pass 10-question flow that produces shallow DDD artifacts in ~15 minutes. This spike designs an iterative, AI-assisted discovery session that produces deep artifacts (Bounded Context Canvas, rich ubiquitous language, well-defined aggregates) in under 2 hours — without requiring users to attend month-long workshop series.
 
 **Key insight:** AI agents can compress DDD workshop time by playing three roles simultaneously — Facilitator (asks questions), Challenger (finds gaps), and Domain Researcher (gathers context) — creating rapid iteration loops that would take multiple human workshop sessions. A pomodoro-style cadence (25 min focus + 5 min review break) creates natural reflection points and prevents user fatigue.
 
@@ -170,7 +170,7 @@ Round 2: AI Challenge & Deepen (NEW) — Pomodoro format
     AI: Narrates failure scenarios:
         "Bob accepts Alice's booking but then cancels 2 hours
          before. What happens to the payment? Does Alice get
-         auto-rebooked? What's Bob's penalty?"
+         auto-rebooked? What's Bob's penalto?"
     AI: Narrates edge cases:
         "Alice tries to book Bob for Dec 15-18, but Bob already
          has a booking for Dec 16. Your invariant says 'no
@@ -246,7 +246,7 @@ Round 2: AI Challenge & Deepen (NEW) — Pomodoro format
 
   0:19-0:23  POLICY CONFLICT DETECTION (4 min)
     AI: Checks for contradicting policies:
-        "Policy 1: 'Cancel within 48h → penalty for sitter.'
+        "Policy 1: 'Cancel within 48h → penalto for sitter.'
          Policy 2: 'Sitter can block dates at any time.'
          Conflict: What if sitter blocks a date that has an
          existing booking? Is that a cancellation?"
@@ -413,7 +413,7 @@ Based on [ddd-crew Bounded Context Canvas v5](https://github.com/ddd-crew/bounde
 
 ## Business Decisions & Rules
 - [e.g., A sitter cannot have overlapping bookings]
-- [e.g., Cancellation within 48h incurs a penalty]
+- [e.g., Cancellation within 48h incurs a penalto]
 
 ## Assumptions
 - [e.g., All sitters are pre-verified before accepting bookings]
@@ -427,7 +427,7 @@ Based on [ddd-crew Bounded Context Canvas v5](https://github.com/ddd-crew/bounde
 ### 5. Express vs Deep Mode UX
 
 ```
-$ alty guide
+$ alto guide
 
 How thorough should the discovery session be?
 
@@ -473,15 +473,15 @@ Pomodoro 3A: +0 invariants, +0 terms, +1 story (converged — consider stopping)
 
 ### 7. Competitive Landscape
 
-| Tool | Approach | Strengths | Weaknesses vs alty |
+| Tool | Approach | Strengths | Weaknesses vs alto |
 |------|----------|-----------|-------------------|
-| **Qlerify** | Visual AI-powered EventStorming + code gen | Visual board, real-time collab, code generation, Jira integration | SaaS (not local), visual-first (alty is CLI), generates code (alty generates structure only), no iterative challenger role |
+| **Qlerify** | Visual AI-powered EventStorming + code gen | Visual board, real-time collab, code generation, Jira integration | SaaS (not local), visual-first (alto is CLI), generates code (alto generates structure only), no iterative challenger role |
 | **Context Mapper** | DSL-based DDD modeling | Formal CML language, generates diagrams, API contracts | Manual (no AI assist), steep learning curve, no guided discovery |
 | **Ruflo** | Multi-agent DDD swarms for Claude | 8 specialized agents (Domain Expert, Aggregate Designer, Context Mapper...), CLAUDE.MD templates | Agent orchestration platform (not bootstrapper), requires Claude specifically, no guided question flow, no iteration protocol |
 | **Generic LLM prompting** | "Design bounded contexts for X" | Fast, flexible, any LLM | No structure, no iteration, no human-in-the-loop gates, no artifact format standard |
 
-**alty's differentiation:**
-1. **Guided iteration, not one-shot generation** — Qlerify and LLM prompting generate artifacts in one pass. alty iterates with challenger + scenarios.
+**alto's differentiation:**
+1. **Guided iteration, not one-shot generation** — Qlerify and LLM prompting generate artifacts in one pass. alto iterates with challenger + scenarios.
 2. **CLI-native, local-first** — No SaaS dependency. Works offline after initial research.
 3. **Complexity-budget-aware depth** — Only Core subdomains get deep treatment. Others get appropriate shallowness.
 4. **Human-in-the-loop at every step** — AI suggests, human confirms. Never auto-generates without approval.
@@ -489,26 +489,26 @@ Pomodoro 3A: +0 invariants, +0 terms, +1 story (converged — consider stopping)
 
 ### 8. Academic Research Landscape (2025-2026)
 
-No arxiv papers directly study AI-assisted EventStorming or Domain Storytelling. However, adjacent research validates alty's design decisions and reveals key risks.
+No arxiv papers directly study AI-assisted EventStorming or Domain Storytelling. However, adjacent research validates alto's design decisions and reveals key risks.
 
 #### Directly Relevant Papers
 
-| Paper | Authors | Date | Key Finding | alty Implication |
+| Paper | Authors | Date | Key Finding | alto Implication |
 |-------|---------|------|-------------|-----------------|
-| **Leveraging Generative AI for Enhancing Domain-Driven Software Design** ([arxiv:2601.20909](https://arxiv.org/abs/2601.20909)) | Wiegand, Stepniak, Baier | Jan 2026 | Fine-tuned Code Llama generates DDD metamodel JSON with 0.99 BLEU score, but 19/50 ambiguous prompts produce parsing errors. Repetitive generation until token limit is a failure mode. | DDD artifact generation works for well-specified inputs but breaks on ambiguity. **alty must not auto-generate DDD artifacts from ambiguous user answers — always confirm.** |
-| **Software Architecture Meets LLMs: A Systematic Literature Review** ([arxiv:2505.16697](https://arxiv.org/abs/2505.16697)) | Schmid et al. (KIT) | May 2025 | 18 papers analyzed. Most use basic prompting. Gaps: code generation from architecture, conformance checking. LLMs "frequently surpass baselines" on architectural tasks. | Validates that LLMs can do architecture-level reasoning. **alty's challenger and simulator roles are architecturally sound.** Gap in conformance checking aligns with alty's fitness function approach. |
-| **LLM-Assisted Architecture Design Using ADD** ([arxiv:2506.22688](https://arxiv.org/abs/2506.22688)) | Cervantes, Kazman, Cai | Jun 2025 | LLM + explicit methodology docs + persona definitions → architectures "closely aligned with established solutions." But: "human oversight and iterative refinement remain essential." | Directly validates alty's approach: feed the LLM explicit DDD methodology + structured prompts + human-in-the-loop. **The iterative refinement finding confirms Rounds 2-3 design.** |
-| **Elicitron: LLM Agent-Based Simulation for Requirements Elicitation** ([arxiv:2404.16045](https://arxiv.org/abs/2404.16045)) | Ataei et al. | Apr 2024 (cited in 2025 surveys) | LLM agents simulate diverse users for requirements elicitation. Context-aware agent generation → more latent needs discovered than human interviews. | Validates alty's Customer Simulator (Role 4). **Context-aware generation is key — feed the simulator the full DDD.md, not just scenario prompts.** |
-| **LLMs for Requirements Engineering: SLR** ([arxiv:2509.11446](https://arxiv.org/abs/2509.11446)) | Zadenoori et al. | Sep 2025 | 74 studies reviewed. GPT models dominate. Shift from defect detection → elicitation and validation. "Limited use in industry settings." | Field is still exploratory. **alty's guided approach (structured questions, not open-ended generation) is more reliable than end-to-end LLM generation.** |
+| **Leveraging Generative AI for Enhancing Domain-Driven Software Design** ([arxiv:2601.20909](https://arxiv.org/abs/2601.20909)) | Wiegand, Stepniak, Baier | Jan 2026 | Fine-tuned Code Llama generates DDD metamodel JSON with 0.99 BLEU score, but 19/50 ambiguous prompts produce parsing errors. Repetitive generation until token limit is a failure mode. | DDD artifact generation works for well-specified inputs but breaks on ambiguity. **alto must not auto-generate DDD artifacts from ambiguous user answers — always confirm.** |
+| **Software Architecture Meets LLMs: A Systematic Literature Review** ([arxiv:2505.16697](https://arxiv.org/abs/2505.16697)) | Schmid et al. (KIT) | May 2025 | 18 papers analyzed. Most use basic prompting. Gaps: code generation from architecture, conformance checking. LLMs "frequently surpass baselines" on architectural tasks. | Validates that LLMs can do architecture-level reasoning. **alto's challenger and simulator roles are architecturally sound.** Gap in conformance checking aligns with alto's fitness function approach. |
+| **LLM-Assisted Architecture Design Using ADD** ([arxiv:2506.22688](https://arxiv.org/abs/2506.22688)) | Cervantes, Kazman, Cai | Jun 2025 | LLM + explicit methodology docs + persona definitions → architectures "closely aligned with established solutions." But: "human oversight and iterative refinement remain essential." | Directly validates alto's approach: feed the LLM explicit DDD methodology + structured prompts + human-in-the-loop. **The iterative refinement finding confirms Rounds 2-3 design.** |
+| **Elicitron: LLM Agent-Based Simulation for Requirements Elicitation** ([arxiv:2404.16045](https://arxiv.org/abs/2404.16045)) | Ataei et al. | Apr 2024 (cited in 2025 surveys) | LLM agents simulate diverse users for requirements elicitation. Context-aware agent generation → more latent needs discovered than human interviews. | Validates alto's Customer Simulator (Role 4). **Context-aware generation is key — feed the simulator the full DDD.md, not just scenario prompts.** |
+| **LLMs for Requirements Engineering: SLR** ([arxiv:2509.11446](https://arxiv.org/abs/2509.11446)) | Zadenoori et al. | Sep 2025 | 74 studies reviewed. GPT models dominate. Shift from defect detection → elicitation and validation. "Limited use in industry settings." | Field is still exploratory. **alto's guided approach (structured questions, not open-ended generation) is more reliable than end-to-end LLM generation.** |
 
 #### Domain Knowledge & Hallucination Papers
 
-| Paper | Authors | Date | Key Finding | alty Implication |
+| Paper | Authors | Date | Key Finding | alto Implication |
 |-------|---------|------|-------------|-----------------|
 | **RvLLM: LLM Runtime Verification with Domain Knowledge** ([arxiv:2505.18585](https://arxiv.org/abs/2505.18585)) | Zhang et al. | May 2025 | Domain experts define constraints in a specification language (ESL). LLM outputs are verified at runtime against these predicates. Better TPR/TNR balance than baselines. | **Domain Researcher outputs should be verified against user-confirmed facts.** User's answers are the "domain constraints"; AI research that contradicts them must be flagged, not silently applied. |
-| **Beyond the Prompt: Domain Knowledge Strategies for LLM Optimization in SE** ([arxiv:2602.02752](https://arxiv.org/abs/2602.02752)) | Srinivasan, Menzies | Feb 2026 | Compares four strategies: Human-in-the-Loop (H-DKP), Adaptive Multi-Stage Prompting, Progressive Refinement, Hybrid RAG. High-dimensional SE tasks (>11 features) still favor Bayesian methods. | Confirms that pure LLM approaches struggle with complex domains. **alty's human-in-the-loop design is the right call for DDD modeling.** |
+| **Beyond the Prompt: Domain Knowledge Strategies for LLM Optimization in SE** ([arxiv:2602.02752](https://arxiv.org/abs/2602.02752)) | Srinivasan, Menzies | Feb 2026 | Compares four strategies: Human-in-the-Loop (H-DKP), Adaptive Multi-Stage Prompting, Progressive Refinement, Hybrid RAG. High-dimensional SE tasks (>11 features) still favor Bayesian methods. | Confirms that pure LLM approaches struggle with complex domains. **alto's human-in-the-loop design is the right call for DDD modeling.** |
 | **Key Considerations for Domain Expert Involvement in LLM Design** ([arxiv:2602.14357](https://arxiv.org/abs/2602.14357)) | Szymanski et al. | Feb 2026 | 12-week ethnographic study. Key practices: workarounds for data collection, augmentation when expert input is limited, co-developed evaluation criteria, hybrid expert-developer-LLM evaluation. | **When the user (domain expert) provides limited input, AI augments — not replaces — their knowledge.** Evaluation criteria should be co-developed with the user. |
-| **Mitigating Hallucination: RAG, Reasoning, and Agentic Systems** ([arxiv:2510.24476](https://arxiv.org/abs/2510.24476)) | Survey | Oct 2025 | Three mitigation paradigms: (1) RAG grounds responses in retrieved knowledge, (2) reasoning enhancement improves logical consistency, (3) agentic systems enable self-correction through multi-agent debate. | alty uses all three: Domain Researcher does RAG, Challenger does reasoning, multi-role design enables cross-checking. **Add explicit source attribution to every AI-generated claim.** |
+| **Mitigating Hallucination: RAG, Reasoning, and Agentic Systems** ([arxiv:2510.24476](https://arxiv.org/abs/2510.24476)) | Survey | Oct 2025 | Three mitigation paradigms: (1) RAG grounds responses in retrieved knowledge, (2) reasoning enhancement improves logical consistency, (3) agentic systems enable self-correction through multi-agent debate. | alto uses all three: Domain Researcher does RAG, Challenger does reasoning, multi-role design enables cross-checking. **Add explicit source attribution to every AI-generated claim.** |
 
 #### Key Academic Insight: No One Has Done This Yet
 
@@ -517,7 +517,7 @@ The literature search reveals that **no published paper combines AI-assisted DDD
 1. **Full automation** — Generate DDD artifacts from text (arxiv:2601.20909). No iteration, no human feedback loop.
 2. **Human workshops with AI support** — Use AI to transcribe, summarize, or visualize workshop outputs. No AI challenger or simulator role.
 
-alty's three-round protocol (Express → Challenge → Simulate) with human gates at every pomodoro break is a novel combination. The closest analog is Elicitron's simulated user interviews, but applied to product requirements, not DDD modeling.
+alto's three-round protocol (Express → Challenge → Simulate) with human gates at every pomodoro break is a novel combination. The closest analog is Elicitron's simulated user interviews, but applied to product requirements, not DDD modeling.
 
 ### 9. Domain Knowledge Quality & Anti-Hallucination Design
 
@@ -573,7 +573,7 @@ Level 4: AI-INFERRED (lowest trust, requires challenge)
 
 #### RLM Over RAG for Domain Research
 
-alty already uses RLM (Recursive Language Model) patterns for knowledge retrieval (see `docs/RLM.md`). RLM is strictly better than RAG for domain research because:
+alto already uses RLM (Recursive Language Model) patterns for knowledge retrieval (see `docs/RLM.md`). RLM is strictly better than RAG for domain research because:
 
 - **RAG** does a one-shot retrieval: embed query → find top-k chunks → generate answer. If the first retrieval misses critical context, the answer is wrong.
 - **RLM** iterates: search → read → reason → search again based on what was found. The LLM generates code to navigate dependency chains, refining context at each step.
@@ -790,9 +790,9 @@ Adopt the **three-round protocol** (Express → Challenge → Simulate) with com
 
 ## Follow-up Tickets
 
-1. **Task: Bounded Context Canvas generation in DDD artifact output** — Add canvas markdown section per context to `alty generate` DDD.md output. Uses existing domain model data. No new AI roles.
+1. **Task: Bounded Context Canvas generation in DDD artifact output** — Add canvas markdown section per context to `alto generate` DDD.md output. Uses existing domain model data. No new AI roles.
 2. **Task: AI Challenger service for Round 2 discovery** — New `ChallengerService` domain service. Reads DDD.md v1, generates challenges, records user responses, produces DDD.md v2. Requires `DomainResearchPort`.
 3. **Task: Domain Research port + adapter** — `DomainResearchPort` protocol + web search adapter. Background research on problem domain before Round 2.
 4. **Task: Customer Simulator for Round 3 scenario testing** — New `ScenarioSimulatorService`. Generates and traces scenarios through domain model. Flags gaps.
-5. **Task: Express vs Deep mode in `alty guide`** — `DiscoveryMode` enum, CLI prompt, mode-aware session flow. Express = current, Deep = rounds 2+3.
+5. **Task: Express vs Deep mode in `alto guide`** — `DiscoveryMode` enum, CLI prompt, mode-aware session flow. Express = current, Deep = rounds 2+3.
 6. **Task: Iteration diff display and user approval flow** — Show v1→v2→v3 diffs between rounds. User approves/rejects each change.

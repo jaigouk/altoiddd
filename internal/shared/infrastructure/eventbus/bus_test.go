@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
+	"github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/eventbus"
 )
 
 // testEvent is a simple event used in tests.

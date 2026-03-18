@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/research/application"
-	"github.com/alty-cli/alty/internal/research/infrastructure"
+	"github.com/alto-cli/alto/internal/research/application"
+	"github.com/alto-cli/alto/internal/research/infrastructure"
 )
 
 // Compile-time interface check.
@@ -38,7 +38,7 @@ func writeBeadsIssues(t *testing.T, projectDir string, titles []string) {
 	var lines []byte
 	for i, title := range titles {
 		issue := map[string]string{
-			"id":     fmt.Sprintf("alty-t%d", i),
+			"id":     fmt.Sprintf("alto-t%d", i),
 			"title":  title,
 			"status": "open",
 		}
@@ -221,17 +221,17 @@ func TestFuzzyMatch_OptionalPrefixStripped(t *testing.T) {
 	assert.Equal(t, "t1", result)
 }
 
-func TestFuzzyMatch_ImplementAltyPrefixStripped(t *testing.T) {
+func TestFuzzyMatch_ImplementAltoPrefixStripped(t *testing.T) {
 	t.Parallel()
 	result := infrastructure.FuzzyMatch(
 		"Implement fitness function generation",
-		map[string]string{"t1": "Implement alty generate fitness"})
+		map[string]string{"t1": "Implement alto generate fitness"})
 	assert.Equal(t, "t1", result)
 }
 
 func TestFuzzyMatch_EmptyAfterStripNoMatch(t *testing.T) {
 	t.Parallel()
-	result := infrastructure.FuzzyMatch("Task:", map[string]string{"t1": "Implement alty detect"})
+	result := infrastructure.FuzzyMatch("Task:", map[string]string{"t1": "Implement alto detect"})
 	assert.Empty(t, result)
 }
 
@@ -241,7 +241,7 @@ func TestFuzzyMatch_KeywordOverlapAboveThreshold(t *testing.T) {
 	t.Parallel()
 	result := infrastructure.FuzzyMatch(
 		"Implement fitness function generation (import-linter + pytestarch)",
-		map[string]string{"t1": "Implement alty generate fitness (import-linter + pytestarch)"})
+		map[string]string{"t1": "Implement alto generate fitness (import-linter + pytestarch)"})
 	assert.Equal(t, "t1", result)
 }
 
@@ -275,7 +275,7 @@ func TestFuzzyMatch_ParentheticalToolsMatch(t *testing.T) {
 	t.Parallel()
 	result := infrastructure.FuzzyMatch(
 		"Task: Implement fitness generation (import-linter + pytestarch)",
-		map[string]string{"t1": "Implement alty generate fitness (import-linter + pytestarch)"})
+		map[string]string{"t1": "Implement alto generate fitness (import-linter + pytestarch)"})
 	assert.Equal(t, "t1", result)
 }
 

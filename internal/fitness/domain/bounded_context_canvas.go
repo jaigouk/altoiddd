@@ -1,7 +1,7 @@
 package domain
 
 import (
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Role is a role a bounded context plays in the domain.

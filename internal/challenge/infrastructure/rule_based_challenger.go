@@ -4,9 +4,9 @@ package infrastructure
 import (
 	"context"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // RuleBasedChallengerAdapter implements Challenger using rule-based heuristics.

@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 		"AGENTS.md",
 	}
 
-	altyConfigTargets = []string{
+	altoConfigTargets = []string{
 		".claude/CLAUDE.md",
 		".beads/issues.jsonl",
 	}
@@ -57,8 +57,8 @@ func (s *ProjectScanner) Scan(
 	if profile != nil {
 		manifest = profile.ProjectManifest()
 	}
-	configTargets := make([]string, len(altyConfigTargets))
-	copy(configTargets, altyConfigTargets)
+	configTargets := make([]string, len(altoConfigTargets))
+	copy(configTargets, altoConfigTargets)
 	if manifest != "" {
 		configTargets = append(configTargets, manifest)
 	}
@@ -83,11 +83,11 @@ func (s *ProjectScanner) Scan(
 		}
 	}
 
-	hasKnowledgeDir := dirExists(filepath.Join(projectDir, ".alty", "knowledge"))
+	hasKnowledgeDir := dirExists(filepath.Join(projectDir, ".alto", "knowledge"))
 	hasAgentsMD := fileExists(filepath.Join(projectDir, "AGENTS.md"))
 	hasGit := pathExists(filepath.Join(projectDir, ".git"))
-	hasAltyConfig := fileExists(filepath.Join(projectDir, ".alty", "config.toml"))
-	hasMaintenanceDir := dirExists(filepath.Join(projectDir, ".alty", "maintenance"))
+	hasAltoConfig := fileExists(filepath.Join(projectDir, ".alto", "config.toml"))
+	hasMaintenanceDir := dirExists(filepath.Join(projectDir, ".alto", "maintenance"))
 
 	return rescuedomain.NewProjectScan(
 		projectDir,
@@ -97,7 +97,7 @@ func (s *ProjectScanner) Scan(
 		hasKnowledgeDir,
 		hasAgentsMD,
 		hasGit,
-		hasAltyConfig,
+		hasAltoConfig,
 		hasMaintenanceDir,
 	), nil
 }

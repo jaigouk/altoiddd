@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/mcp"
+	"github.com/alto-cli/alto/internal/mcp"
 )
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ func TestSafeComponent_NullByte(t *testing.T) {
 
 func TestSafeTicketID_ValidIDs(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, mcp.SafeTicketID("alty-0m9.5"))
+	assert.NoError(t, mcp.SafeTicketID("alto-0m9.5"))
 	assert.NoError(t, mcp.SafeTicketID("k7m.12"))
 	assert.NoError(t, mcp.SafeTicketID("abc-123"))
 	assert.NoError(t, mcp.SafeTicketID("a"))

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/challenge/domain"
 )
 
 func TestChallengeTypeEnum(t *testing.T) {

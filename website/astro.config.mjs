@@ -3,10 +3,10 @@ import starlight from '@astrojs/starlight';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://alty.ai',
+  site: 'https://alto.ai',
   integrations: [
     starlight({
-      title: 'alty',
+      title: 'alto',
       customCss: ['./src/styles/global.css'],
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',

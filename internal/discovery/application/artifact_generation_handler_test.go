@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/discovery/application"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	fitnessinfra "github.com/alty-cli/alty/internal/fitness/infrastructure"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	"github.com/alty-cli/alty/internal/shared/domain/events"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	fitnessinfra "github.com/alto-cli/alto/internal/fitness/infrastructure"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	"github.com/alto-cli/alto/internal/shared/domain/events"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -567,7 +567,7 @@ func TestSplitAnswer(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Tests — Bounded Context Map YAML Generation (alty-cli-awl.9)
+// Tests — Bounded Context Map YAML Generation (alto-cli-awl.9)
 // ---------------------------------------------------------------------------
 
 func TestArtifactGenerationHandler_BuildPreview_IncludesBCMapContent(t *testing.T) {
@@ -760,10 +760,10 @@ func TestArtifactGenerationHandler_BCMapContent_EdgeCases(t *testing.T) {
 	})
 }
 
-func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltyDir(t *testing.T) {
+func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltoDir(t *testing.T) {
 	t.Parallel()
 
-	t.Run("writes bounded_context_map.yaml to projectDir/.alty/", func(t *testing.T) {
+	t.Run("writes bounded_context_map.yaml to projectDir/.alto/", func(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
 		writer := newFakeFileWriterA()
@@ -775,15 +775,15 @@ func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltyDir(t *testin
 
 		require.NoError(t, err)
 
-		// Should write to .alty/ under project dir
+		// Should write to .alto/ under project dir
 		found := false
 		for path := range writer.written {
-			if strings.Contains(path, ".alty/bounded_context_map.yaml") {
+			if strings.Contains(path, ".alto/bounded_context_map.yaml") {
 				found = true
 				break
 			}
 		}
-		assert.True(t, found, "expected bounded_context_map.yaml in .alty/ directory")
+		assert.True(t, found, "expected bounded_context_map.yaml in .alto/ directory")
 	})
 
 	t.Run("writes all four artifacts", func(t *testing.T) {
@@ -820,7 +820,7 @@ func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltyDir(t *testin
 }
 
 // ---------------------------------------------------------------------------
-// Tests — Rationale in bounded_context_map.yaml (alty-cli-r3i.3)
+// Tests — Rationale in bounded_context_map.yaml (alto-cli-r3i.3)
 // ---------------------------------------------------------------------------
 
 func TestArtifactGenerationHandler_BCMapContent_IncludesRationale(t *testing.T) {

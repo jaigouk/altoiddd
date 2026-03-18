@@ -10,11 +10,11 @@
 2. Does Roo Code support MCP? Config format? Go-specific integrations?
 3. What Go bindings exist for llama.cpp? Maturity?
 4. Is Ollama written in Go? Official Go client? OpenAI API compatibility?
-5. For a Go rewrite of alty: what is the best local LLM integration strategy?
+5. For a Go rewrite of alto: what is the best local LLM integration strategy?
 
 ## Executive Summary
 
-The Go ecosystem for AI coding tools and local LLM integration is remarkably strong as of March 2026. OpenCode (now Crush) and Roo Code both support MCP servers via JSON config. Ollama (164k stars, MIT, written in Go) provides the simplest local LLM path with an official Go API client and OpenAI-compatible endpoints. For direct llama.cpp integration without a server, yzma (Apache 2.0, no CGo required) is the most promising option. The recommended strategy for alty's Go rewrite is: connect to Ollama via its Go API client for local LLMs, and use sashabaranov/go-openai (Apache 2.0, 10.6k stars) as the universal OpenAI-compatible client that works with Ollama, OpenAI, Anthropic, and other providers.
+The Go ecosystem for AI coding tools and local LLM integration is remarkably strong as of March 2026. OpenCode (now Crush) and Roo Code both support MCP servers via JSON config. Ollama (164k stars, MIT, written in Go) provides the simplest local LLM path with an official Go API client and OpenAI-compatible endpoints. For direct llama.cpp integration without a server, yzma (Apache 2.0, no CGo required) is the most promising option. The recommended strategy for alto's Go rewrite is: connect to Ollama via its Go API client for local LLMs, and use sashabaranov/go-openai (Apache 2.0, 10.6k stars) as the universal OpenAI-compatible client that works with Ollama, OpenAI, Anthropic, and other providers.
 
 ---
 
@@ -74,7 +74,7 @@ The Go ecosystem for AI coding tools and local LLM integration is remarkably str
 | **Config Format** | JSON (`.crush.json` or `crush.json`) |
 | **Maintainer** | Charm (charmbracelet), original OpenCode author Kujtim Hoxha |
 
-**License warning:** FSL-1.1-MIT is a Functional Source License created by Sentry. It is **not** permissive open source. It prohibits commercial competitive use for the first 2 years, then converts to MIT. This means alty cannot fork or embed Crush code, but can generate configs for it.
+**License warning:** FSL-1.1-MIT is a Functional Source License created by Sentry. It is **not** permissive open source. It prohibits commercial competitive use for the first 2 years, then converts to MIT. This means alto cannot fork or embed Crush code, but can generate configs for it.
 
 **Config file locations (priority order):**
 1. Project: `.crush.json` or `crush.json`
@@ -82,7 +82,7 @@ The Go ecosystem for AI coding tools and local LLM integration is remarkably str
 
 **Config structure:** Similar to OpenCode (Crush is the continuation), with `mcp` section for MCP servers. Schema at `https://charm.land/crush.json`.
 
-**Key insight for alty:** The OpenCode/Crush config format is very close to Claude Code's approach -- JSON with provider, model, MCP, and tool sections. alty already generates Claude Code and Cursor configs; adding OpenCode/Crush config generation is straightforward.
+**Key insight for alto:** The OpenCode/Crush config format is very close to Claude Code's approach -- JSON with provider, model, MCP, and tool sections. alto already generates Claude Code and Cursor configs; adding OpenCode/Crush config generation is straightforward.
 
 **Source:** [Crush GitHub](https://github.com/charmbracelet/crush), [Crush Blog](https://charm.land/blog/crush-comes-home/), [The New Stack Review](https://thenewstack.io/terminal-user-interfaces-review-of-crush-ex-opencode-al/)
 
@@ -149,12 +149,12 @@ customModes:
 
 ### Go-Specific Features
 
-Roo Code is language-agnostic -- no Go-specific integrations beyond what any VS Code extension provides. It can execute Go commands via terminal, read Go files, and use Go-related MCP servers. No special Go support is needed for alty to generate Roo Code configs.
+Roo Code is language-agnostic -- no Go-specific integrations beyond what any VS Code extension provides. It can execute Go commands via terminal, read Go files, and use Go-related MCP servers. No special Go support is needed for alto to generate Roo Code configs.
 
-**Key insight for alty:** Roo Code config generation requires:
+**Key insight for alto:** Roo Code config generation requires:
 1. `.roo/mcp.json` -- MCP server config (same `mcpServers` format as Claude Code)
-2. `.roo/rules/*.md` -- Agent persona rules (maps to alty's agent personas)
-3. `.roomodes` -- Custom mode definitions (maps to alty's agent roles)
+2. `.roo/rules/*.md` -- Agent persona rules (maps to alto's agent personas)
+3. `.roomodes` -- Custom mode definitions (maps to alto's agent roles)
 
 **Source:** [Roo Code MCP Docs](https://docs.roocode.com/features/mcp/using-mcp-in-roo), [Roo Code Custom Modes](https://docs.roocode.com/features/custom-modes), [Roo Code Custom Instructions](https://docs.roocode.com/features/custom-instructions)
 
@@ -225,7 +225,7 @@ Roo Code is language-agnostic -- no Go-specific integrations beyond what any VS 
 
 Kronk wraps yzma with a high-level API that feels like using the OpenAI API. Includes a model server for chat completions, embeddings, and reranking. Covers 94% of llama.cpp functionality via yzma.
 
-**Relevance:** If alty ever needs to ship a self-contained model server, kronk shows it is feasible. But for alty's use case (connecting to local LLMs, not running them), this is overkill.
+**Relevance:** If alto ever needs to ship a self-contained model server, kronk shows it is feasible. But for alto's use case (connecting to local LLMs, not running them), this is overkill.
 
 **Source:** [kronk GitHub](https://github.com/ardanlabs/kronk)
 
@@ -348,16 +348,16 @@ For in-process llama.cpp integration without a server, use **yzma** instead.
 | OpenCode | `opencode.json` `agent` key | JSON | Inline agent definitions |
 | Crush | `.crush.json` `agent` key | JSON | Inline agent definitions |
 
-**Key insight for alty:** All tools share the same general pattern:
+**Key insight for alto:** All tools share the same general pattern:
 1. MCP server config (JSON, nearly identical across tools)
 2. Agent/persona rules (markdown files or JSON config)
 3. Project-level settings that override global defaults
 
-alty's config generator can use a shared domain model (MCP servers, agent personas, quality gates) and translate to each tool's native format.
+alto's config generator can use a shared domain model (MCP servers, agent personas, quality gates) and translate to each tool's native format.
 
 ---
 
-## 7. Decision: Local LLM Strategy for Go-based alty
+## 7. Decision: Local LLM Strategy for Go-based alto
 
 ### Option Analysis
 
@@ -375,7 +375,7 @@ alty's config generator can use a shared domain model (MCP servers, agent person
 - Use `sashabaranov/go-openai` as universal OpenAI-compatible client
 - Works with Ollama, OpenAI, Anthropic, Groq, Azure, any compatible provider
 - Zero binary size overhead; user installs Ollama separately
-- alty detects Ollama availability via `api.Heartbeat()`
+- alto detects Ollama availability via `api.Heartbeat()`
 - This covers 95% of local LLM use cases
 
 **Tier 2 (future, if needed): Direct llama.cpp via yzma**
@@ -393,7 +393,7 @@ alty's config generator can use a shared domain model (MCP servers, agent person
 
 ```
                       +-------------------+
-                      |   alty CLI (Go)    |
+                      |   alto CLI (Go)    |
                       +-------------------+
                               |
                     +--------------------+
@@ -419,7 +419,7 @@ The go-openai adapter can serve as the "universal" adapter for any OpenAI-compat
 
 ---
 
-## 8. Config Generation Impact for alty
+## 8. Config Generation Impact for alto
 
 Adding support for OpenCode/Crush and Roo Code requires these new config generators:
 
@@ -432,7 +432,7 @@ Adding support for OpenCode/Crush and Roo Code requires these new config generat
 - Output: `.roo/mcp.json`, `.roo/rules/*.md`, `.roomodes`
 - Content: MCP servers, agent persona rules as markdown, custom mode definitions
 - Complexity: Medium -- multiple files, markdown rule files, YAML/JSON mode defs
-- Note: `.roo/rules/` maps directly to alty's existing agent persona templates
+- Note: `.roo/rules/` maps directly to alto's existing agent persona templates
 
 ### Shared MCP Config Model
 All tools share enough structure that a single domain model can represent MCP config:
@@ -471,7 +471,7 @@ This maps cleanly to all five tool formats with minimal per-tool translation.
 
 ## License Summary
 
-| Library | License | Permissive? | OK for alty? |
+| Library | License | Permissive? | OK for alto? |
 |---------|---------|-------------|-------------|
 | OpenCode (archived) | MIT | Yes | N/A (archived) |
 | Crush | FSL-1.1-MIT | **No** (2-year restriction) | Config gen only, no code reuse |
@@ -489,7 +489,7 @@ This maps cleanly to all five tool formats with minimal per-tool translation.
 ## Follow-Up Work
 
 1. **Config generator tickets** -- Create implementation tickets for OpenCode/Crush and Roo Code config generators
-2. **LLM Port design** -- Design the `LLMPort` interface in alty's application layer
+2. **LLM Port design** -- Design the `LLMPort` interface in alto's application layer
 3. **Ollama adapter** -- Implement Ollama adapter using `ollama/api` package
 4. **Universal OpenAI adapter** -- Implement adapter using `sashabaranov/go-openai`
-5. **Tool detection** -- Add OpenCode/Crush and Roo Code to alty's tool detection logic
+5. **Tool detection** -- Add OpenCode/Crush and Roo Code to alto's tool detection logic

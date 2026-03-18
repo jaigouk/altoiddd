@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	challengeinfra "github.com/alto-cli/alto/internal/challenge/infrastructure"
 )
 
 // --- ParseDDDVersionFromContent tests ---

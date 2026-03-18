@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-06
 **Type:** Research Spike
-**Context:** WebSearchPort adapter for alty's knowledge base or research features
+**Context:** WebSearchPort adapter for alto's knowledge base or research features
 
 ---
 
@@ -147,7 +147,7 @@ async def async_text_search(query: str, max_results: int = 5) -> list[dict]:
     )
 ```
 
-**Recommendation:** `asyncio.to_thread()` is sufficient for alty's use case (infrequent, non-concurrent searches).
+**Recommendation:** `asyncio.to_thread()` is sufficient for alto's use case (infrequent, non-concurrent searches).
 
 ---
 
@@ -207,12 +207,12 @@ DuckDuckGo does **not publish** official rate limits. Based on community reports
 1. **Backend rotation:** `backend="auto"` tries multiple backends in random order, distributing load.
 2. **Proxy support:** `DDGS(proxy="socks5://...")` to rotate IPs.
 3. **Backoff:** Implement exponential backoff on `RatelimitException`.
-4. **Caching:** Cache results for identical queries (most important mitigation for alty's use case).
+4. **Caching:** Cache results for identical queries (most important mitigation for alto's use case).
 5. **Since ddgs is metasearch:** It aggregates across Bing, Google, Brave, DuckDuckGo -- spreading load across providers.
 
-### Risk Assessment for Alty
+### Risk Assessment for Alto
 
-**Low risk.** Alty's web search usage would be:
+**Low risk.** Alto's web search usage would be:
 - Spike research (infrequent, human-initiated)
 - Knowledge base updates (periodic, can be throttled)
 - Not bulk scraping or real-time high-volume queries
@@ -224,13 +224,13 @@ A simple in-memory or file-based cache with 15-minute TTL plus exponential backo
 ## 8. Installation
 
 ```bash
-# Using uv (alty's package manager)
+# Using uv (alto's package manager)
 uv add ddgs
 
 # Using pip
 pip install ddgs
 
-# With API server support (not needed for alty)
+# With API server support (not needed for alto)
 pip install ddgs[api]
 ```
 
@@ -337,7 +337,7 @@ class DdgsWebSearch:
 | Return fields? | `title`, `href`, `body` (no date in text search) |
 | Exceptions? | `DDGSException`, `RatelimitException`, `TimeoutException` |
 | Rate limits? | Undocumented; ~6-50 requests before throttling; mitigate with caching + backoff |
-| Python version? | >= 3.10 (compatible with alty's 3.12+ requirement) |
+| Python version? | >= 3.10 (compatible with alto's 3.12+ requirement) |
 | Dependencies? | primp, lxml, httpx, fake-useragent |
 
 ### Recommendation
@@ -346,11 +346,11 @@ class DdgsWebSearch:
 - Actively maintained (5 releases in 4 months)
 - MIT licensed
 - Zero API key required
-- Adequate for alty's low-volume, human-initiated search use case
+- Adequate for alto's low-volume, human-initiated search use case
 
 ### Key Risk
 
-Rate limiting is the primary risk. DuckDuckGo does not publish limits, and the library can be blocked after as few as 6-7 rapid requests. Mitigation: implement result caching and exponential backoff. For alty's expected usage pattern (infrequent spike research), this is low risk.
+Rate limiting is the primary risk. DuckDuckGo does not publish limits, and the library can be blocked after as few as 6-7 rapid requests. Mitigation: implement result caching and exponential backoff. For alto's expected usage pattern (infrequent spike research), this is low risk.
 
 ### Follow-Up Items
 

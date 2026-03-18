@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/docimport/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/docimport/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 func TestNewParseWarning(t *testing.T) {

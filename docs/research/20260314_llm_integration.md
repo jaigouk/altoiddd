@@ -3,14 +3,14 @@ last_reviewed: 2026-03-14
 owner: researcher
 status: complete
 type: spike
-ticket: alty-cli-f0g.1
+ticket: alto-cli-f0g.1
 ---
 
 # LLM Provider Detection and Integration Options
 
 ## Decision Context
 
-alty needs to detect LLM credentials at `alty init` time so the guided discovery flow can use LLM-powered features (natural language understanding, gap inference, DDD question enrichment). The codebase already has a provider-agnostic LLM layer that this spike must build on — not redesign.
+alto needs to detect LLM credentials at `alto init` time so the guided discovery flow can use LLM-powered features (natural language understanding, gap inference, DDD question enrichment). The codebase already has a provider-agnostic LLM layer that this spike must build on — not redesign.
 
 ### Existing Infrastructure (from `internal/shared/infrastructure/llm/`)
 
@@ -47,9 +47,9 @@ The detection order follows the principle of **closest scope wins** — project-
 | Priority | Source | Credentials Found | Rationale |
 |----------|--------|-------------------|-----------|
 | 1 (highest) | **CLI flags** | `--llm-provider`, `--llm-api-key`, `--llm-model` | Explicit user intent for this invocation |
-| 2 | **Project config** | `.alty/config.toml` `[llm]` section | Project-specific provider choice |
+| 2 | **Project config** | `.alto/config.toml` `[llm]` section | Project-specific provider choice |
 | 3 | **Environment variables** | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OLLAMA_HOST` | Standard provider env vars |
-| 4 | **User config** | `~/.config/alty/config.toml` `[llm]` section | User-level default |
+| 4 | **User config** | `~/.config/alto/config.toml` `[llm]` section | User-level default |
 | 5 | **Claude Code config** | `~/.claude.json` or `~/.claude/claude.json` | Opportunistic — user already has Anthropic key |
 | 6 (lowest) | **None detected** | → `ProviderNone` → `NoopClient` | Graceful degradation |
 
@@ -65,14 +65,14 @@ The detection order follows the principle of **closest scope wins** — project-
 
 ### Claude Code Config Detection
 
-When alty detects it's running inside a Claude Code session (or `~/.claude.json` exists), it can opportunistically read the Anthropic API key. This is a **read-only, best-effort** detection — alty never writes to Claude config files.
+When alto detects it's running inside a Claude Code session (or `~/.claude.json` exists), it can opportunistically read the Anthropic API key. This is a **read-only, best-effort** detection — alto never writes to Claude config files.
 
 **Detection logic:**
 ```
 1. Check if ~/.claude.json exists
 2. Parse JSON, look for api_key or auth token
 3. If found → suggest ProviderAnthropic with detected key
-4. User confirms or overrides during `alty init`
+4. User confirms or overrides during `alto init`
 ```
 
 Source: [Claude Code settings docs](https://code.claude.com/docs/en/settings), [Managing API Keys in Claude Code](https://support.claude.com/en/articles/12304248-managing-api-key-environment-variables-in-claude-code)
@@ -80,7 +80,7 @@ Source: [Claude Code settings docs](https://code.claude.com/docs/en/settings), [
 ### Config File Format
 
 ```toml
-# .alty/config.toml or ~/.config/alty/config.toml
+# .alto/config.toml or ~/.config/alto/config.toml
 [llm]
 provider = "anthropic"          # anthropic | openai | openai-compatible | ollama | vertexai | none
 model = "claude-sonnet-4-20250514"
@@ -115,10 +115,10 @@ The existing HTTP client is ~140 lines, handles one endpoint (Messages API), and
 
 **What it adds over existing HTTP client:**
 
-| Feature | Existing Client Has? | SDK Adds? | Value to alty |
+| Feature | Existing Client Has? | SDK Adds? | Value to alto |
 |---------|---------------------|-----------|---------------|
 | Messages API | Yes (hardcoded) | Yes (typed) | Low — we only use one endpoint |
-| Streaming | No | Yes | Low — alty doesn't stream |
+| Streaming | No | Yes | Low — alto doesn't stream |
 | Tool use / function calling | No | Yes (typed structs) | Medium — future DDD question enrichment |
 | Error types (`*anthropic.Error`) | Basic (`ErrLLMUnavailable`) | Rich (status, request/response dump) | Low — we wrap all errors anyway |
 | Auto-retry with backoff | No | Yes | Medium — production resilience |
@@ -126,7 +126,7 @@ The existing HTTP client is ~140 lines, handles one endpoint (Messages API), and
 | Model constants | Hardcoded string | Typed constants | Low — cosmetic |
 | API versioning | Hardcoded header | Automatic | Low |
 
-**Verdict:** The SDK adds tool use support and retry logic, but the existing 140-line HTTP client covers alty's current needs (text completion + JSON-schema structured output). **Do not add yet.** Revisit when tool use becomes a requirement (f0g.4 conversational flow).
+**Verdict:** The SDK adds tool use support and retry logic, but the existing 140-line HTTP client covers alto's current needs (text completion + JSON-schema structured output). **Do not add yet.** Revisit when tool use becomes a requirement (f0g.4 conversational flow).
 
 ### openai-go (official)
 
@@ -142,7 +142,7 @@ The existing HTTP client is ~140 lines, handles one endpoint (Messages API), and
 
 **What it adds over existing HTTP client:**
 
-| Feature | Value to alty |
+| Feature | Value to alto |
 |---------|---------------|
 | Structured outputs (native JSON schema) | Medium — typed schema enforcement |
 | Azure OpenAI support | Low — not a target provider |
@@ -150,7 +150,7 @@ The existing HTTP client is ~140 lines, handles one endpoint (Messages API), and
 | Typed model constants | Low |
 | `option.WithBaseURL()` | Key for LM Studio, vLLM, Groq, etc. |
 
-**Verdict:** If alty adds OpenAI/compatible provider support, we should write a direct HTTP client (like `AnthropicClient`) rather than pull in the SDK. The OpenAI Chat Completions API is simpler than Anthropic's Messages API — a direct client would be ~100 lines. **Do not add.** Write `OpenAIClient` adapter with `net/http`.
+**Verdict:** If alto adds OpenAI/compatible provider support, we should write a direct HTTP client (like `AnthropicClient`) rather than pull in the SDK. The OpenAI Chat Completions API is simpler than Anthropic's Messages API — a direct client would be ~100 lines. **Do not add.** Write `OpenAIClient` adapter with `net/http`.
 
 ### langchaingo
 
@@ -166,14 +166,14 @@ The existing HTTP client is ~140 lines, handles one endpoint (Messages API), and
 
 **What it adds over existing HTTP client:**
 
-| Feature | Value to alty |
+| Feature | Value to alto |
 |---------|---------------|
 | Multi-provider abstraction | We already have this (`Client` interface + `Factory`) |
-| Chain/Agent patterns | Not needed — alty is not an agent framework |
+| Chain/Agent patterns | Not needed — alto is not an agent framework |
 | Vector store integration | Not needed |
 | Memory management | Not needed |
 
-**Verdict:** **Do not add.** langchaingo is a framework, not a library. It would replace alty's clean `Client` interface with a much heavier abstraction. The dependency tree is massive for what alty needs. alty's existing `Client` + `Factory` pattern is the right level of abstraction.
+**Verdict:** **Do not add.** langchaingo is a framework, not a library. It would replace alto's clean `Client` interface with a much heavier abstraction. The dependency tree is massive for what alto needs. alto's existing `Client` + `Factory` pattern is the right level of abstraction.
 
 ### Summary Decision Matrix
 
@@ -440,18 +440,18 @@ Source: [Aider API Keys docs](https://aider.chat/docs/config/api-keys.html), [Ai
 
 Source: [Continue Model Providers docs](https://docs.continue.dev/customize/model-providers/overview), [Continue Configuration docs](https://docs.continue.dev/customize/deep-dives/configuration)
 
-**Pattern takeaway:** Secret interpolation (`${{ secrets.X }}`) is interesting but overkill for alty. The capability detection pattern (auto-detecting what a model supports) is worth noting for future work.
+**Pattern takeaway:** Secret interpolation (`${{ secrets.X }}`) is interesting but overkill for alto. The capability detection pattern (auto-detecting what a model supports) is worth noting for future work.
 
 ### Cross-Tool Pattern Summary
 
-| Pattern | Used By | Adopt for alty? |
+| Pattern | Used By | Adopt for alto? |
 |---------|---------|-----------------|
 | CLI flags > env vars > config file priority | Aider, Mods | **Yes** — standard and unsurprising |
 | Env var per provider (`PROVIDER_API_KEY`) | All tools | **Yes** — universal convention |
-| Auto-select provider from available keys | Aider | **Yes** — great UX for `alty init` |
+| Auto-select provider from available keys | Aider | **Yes** — great UX for `alto init` |
 | Config file never stores raw keys | Continue (via interpolation) | **Yes** — store env var name reference |
-| Named API configurations | Mods | **No** — overkill for alty's use case |
-| LiteLLM/framework abstraction | Aider | **No** — alty's `Client` interface is sufficient |
+| Named API configurations | Mods | **No** — overkill for alto's use case |
+| LiteLLM/framework abstraction | Aider | **No** — alto's `Client` interface is sufficient |
 | Local-first with zero config | Ollama | **Yes** — aligns with `NoopClient` pattern |
 
 ---
@@ -479,7 +479,7 @@ Based on this spike's findings, f0g.2 should implement:
    - Handle new providers in `Create` switch
 
 5. **Config file support** in composition root
-   - Read `.alty/config.toml` `[llm]` section
+   - Read `.alto/config.toml` `[llm]` section
    - Store `api_key_env` reference, never raw keys
 
 ### Additional Follow-Up Tickets
@@ -495,18 +495,18 @@ Based on this spike's findings, f0g.2 should implement:
 
 ## Research Questions — Answers
 
-### Q1: What LLM credential locations should alty detect?
+### Q1: What LLM credential locations should alto detect?
 
-**Answer:** Six sources in priority order: CLI flags → project `.alty/config.toml` → env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OLLAMA_HOST`) → user `~/.config/alty/config.toml` → Claude Code config (`~/.claude.json`) → none (→ `NoopClient`). See Section 1 for full details.
+**Answer:** Six sources in priority order: CLI flags → project `.alto/config.toml` → env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OLLAMA_HOST`) → user `~/.config/alto/config.toml` → Claude Code config (`~/.claude.json`) → none (→ `NoopClient`). See Section 1 for full details.
 
 ### Q2: Which Go SDKs add value over the existing direct HTTP client?
 
 **Answer:** None add sufficient value to justify the dependency cost today. The existing `AnthropicClient` pattern (direct HTTP, ~140 lines) should be replicated for OpenAI. anthropic-sdk-go becomes worth revisiting when tool use is needed (f0g.4). langchaingo is a hard no — wrong abstraction level. See Section 2 for full comparison.
 
-### Q3: Should alty support OpenAI/compatible providers?
+### Q3: Should alto support OpenAI/compatible providers?
 
 **Answer:** Yes. Add `ProviderOpenAI` and `ProviderOpenAICompatible` to the enum. Write a direct `OpenAIClient` HTTP adapter (~100 lines). The `ProviderOpenAICompatible` + `baseURL` covers LM Studio, vLLM, Groq, Together AI, and similar providers with one adapter. See Section 3.
 
 ### Q4: How do other CLI tools handle LLM credential detection?
 
-**Answer:** The universal pattern is CLI flags > env vars > config files, with env var names following `PROVIDER_API_KEY` convention. Aider's auto-model-selection (pick best model from available keys) is the standout UX pattern alty should adopt. All tools use local-first degradation. See Section 5.
+**Answer:** The universal pattern is CLI flags > env vars > config files, with env var names following `PROVIDER_API_KEY` convention. Aider's auto-model-selection (pick best model from available keys) is the standout UX pattern alto should adopt. All tools use local-first degradation. See Section 5.

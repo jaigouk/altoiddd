@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	researchdomain "github.com/alty-cli/alty/internal/research/domain"
+	researchdomain "github.com/alto-cli/alto/internal/research/domain"
 )
 
 // SpikeFollowUpHandler orchestrates spike follow-up auditing.

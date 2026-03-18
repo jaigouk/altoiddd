@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // -- ConversationalFlow --

@@ -1,4 +1,4 @@
-# alty SaaS Platform Design
+# alto SaaS Platform Design
 
 **Date:** 2026-02-23
 **Status:** Approved
@@ -8,18 +8,18 @@
 
 ## 1. Product Overview
 
-**Product:** alty
+**Product:** alto
 **Pitch:** "From idea to production-ready project, then keeps it healthy."
 
-alty evolves from a CLI bootstrapper into a full platform. The CLI scaffolds projects with DDD + TDD + SOLID. The web dashboard monitors, visualizes, and keeps projects healthy. The VSCode extension keeps it all accessible from the IDE.
+alto evolves from a CLI bootstrapper into a full platform. The CLI scaffolds projects with DDD + TDD + SOLID. The web dashboard monitors, visualizes, and keeps projects healthy. The VSCode extension keeps it all accessible from the IDE.
 
 ### Three Surfaces, One Product
 
 | Surface | Role | License | Revenue |
 |---------|------|---------|---------|
-| **alty CLI** | Bootstraps projects (DDD, templates, tickets) | Open-source (MIT) | Free -- drives adoption |
-| **alty Web** | Dashboard: DDD canvas, health scores, domain stories, team views, decay heatmaps, ticket grooming | Proprietary SaaS | $9-15/mo per seat |
-| **alty for VSCode** | IDE companion: Beads explorer, health badges, canvas preview, quick actions | Free extension | Free -- drives web signups |
+| **alto CLI** | Bootstraps projects (DDD, templates, tickets) | Open-source (MIT) | Free -- drives adoption |
+| **alto Web** | Dashboard: DDD canvas, health scores, domain stories, team views, decay heatmaps, ticket grooming | Proprietary SaaS | $9-15/mo per seat |
+| **alto for VSCode** | IDE companion: Beads explorer, health badges, canvas preview, quick actions | Free extension | Free -- drives web signups |
 
 ### Competitive Landscape
 
@@ -52,7 +52,7 @@ alty evolves from a CLI bootstrapper into a full platform. The CLI scaffolds pro
          |              |                 |
          v              v                 v
 +-----------------------------------------------------+
-|          alty API (FastAPI, Python)              |
+|          alto API (FastAPI, Python)              |
 |      HTMX partials + JSON API from same app          |
 |                                                      |
 |  Auth (Hanko) | Projects | LLM | Health | DDD Graph  |
@@ -113,7 +113,7 @@ Reference: [Made in EU -- it was harder than I thought](https://www.coinerella.c
 The CLI and API share the same Python domain models (`src/domain/`):
 
 ```
-alty/
+alto/
 +-- src/domain/          <-- shared between CLI and API
 +-- src/application/     <-- shared ports, CLI + API implement adapters
 +-- cli/                 <-- CLI-specific (Typer)
@@ -140,7 +140,7 @@ Ported from the existing Tachikoma Knowledge Navigator prototype. Hyperbolic-ins
 | `DDD.md` | Headings + YAML | Bounded Contexts (L1), Aggregates (L2), Entities/VOs (L3) |
 | `.beads/issues.jsonl` | JSON | Ticket nodes attached to their BC/aggregate |
 | `docs/ARCHITECTURE.md` | Heading parse | Layer nodes (domain/application/infra) |
-| `.alty/knowledge/` | TOML | Knowledge base nodes (future) |
+| `.alto/knowledge/` | TOML | Knowledge base nodes (future) |
 
 #### Node Visual Encoding
 
@@ -201,7 +201,7 @@ Subject -> verb -> object, with sequence numbers establishing narrative flow.
 
 #### What Makes This Better Than Egon.io
 
-| Egon.io (manual) | alty (auto + edit) |
+| Egon.io (manual) | alto (auto + edit) |
 |------------------|------------------------|
 | Start from blank canvas | Parse DDD.md domain stories -> generate initial layout |
 | Manually place actors | Actors extracted from bounded context definitions |
@@ -214,7 +214,7 @@ Subject -> verb -> object, with sequence numbers establishing narrative flow.
 #### Story Data Format
 
 ```yaml
-# .alty/stories/order-fulfillment.story.yaml
+# .alto/stories/order-fulfillment.story.yaml
 name: "Customer Places Order"
 bounded_context: OrderFulfillment
 actors:
@@ -259,7 +259,7 @@ links:
 DDD.md (bounded contexts, aggregates, use cases)
     | LLM parses (~$0.01 per story)
     v
-.alty/stories/*.story.yaml
+.alto/stories/*.story.yaml
     | SVG renderer
     v
 2D Story Canvas (interactive, editable)
@@ -298,9 +298,9 @@ Story files updated -> git versioned
 ```python
 for ticket in project.tickets:
     score = 100
-    score -= age_penalty(ticket.updated_at)          # -1 per day stale
-    score -= blocked_penalty(ticket.dependencies)     # -10 if blocked
-    score -= label_penalty(ticket.labels)             # -20 if review_needed
+    score -= age_penalto(ticket.updated_at)          # -1 per day stale
+    score -= blocked_penalto(ticket.dependencies)     # -10 if blocked
+    score -= label_penalto(ticket.labels)             # -20 if review_needed
     score -= llm_semantic_check(ticket, ddd_model)    # -5 to -30 for drift
     ticket.health_score = max(0, score)
 ```
@@ -329,7 +329,7 @@ The extension does NOT replicate the full 3D/2D canvases. It provides:
 2. **Webview panel** -- Lightweight read-only embed of the canvas (syncs from API when connected).
 3. **Health badges** -- File decorations showing health scores on `.beads/` files.
 4. **CodeLens** -- Above DDD model classes, shows which BC they belong to and health status.
-5. **Commands** -- "Open in alty dashboard" opens the full web canvas for that BC.
+5. **Commands** -- "Open in alto dashboard" opens the full web canvas for that BC.
 
 ---
 
@@ -363,7 +363,7 @@ Break-even: 1 paying Solo user. Target $2-5k/mo at 150-300 users.
 
 ### Phase 1: CLI + Web MVP (months 1-3)
 
-- alty CLI already exists (open-source, working)
+- alto CLI already exists (open-source, working)
 - FastAPI backend with SQLite
 - HTMX dashboard: project list, ticket view, basic health badges
 - 2D Story Canvas: manual authoring (SVG renderer, drag/drop)
@@ -392,7 +392,7 @@ Break-even: 1 paying Solo user. Target $2-5k/mo at 150-300 users.
 - CI/CD integration (health gates in pipeline)
 - Export to Miro/Confluence
 - Public API for integrations
-- **Goal:** Expand beyond alty users to general DDD market
+- **Goal:** Expand beyond alto users to general DDD market
 
 ---
 
@@ -401,7 +401,7 @@ Break-even: 1 paying Solo user. Target $2-5k/mo at 150-300 users.
 | Channel | Approach | Cost |
 |---------|----------|------|
 | VS Marketplace | Free extension drives discovery | $0 |
-| CLI upsell | Every `alty init` user sees "connect to dashboard" | $0 |
+| CLI upsell | Every `alto init` user sees "connect to dashboard" | $0 |
 | Domain Storytelling community | Auto-generated stories vs manual Egon.io | $0 |
 | DDD community (Slack, Discord, conferences) | Niche, high-intent | $0 |
 | Twitter/X | 3D navigator demos are inherently viral (GitS aesthetic) | $0 |

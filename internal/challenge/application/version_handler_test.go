@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	challengeinfra "github.com/alto-cli/alto/internal/challenge/infrastructure"
 )
 
 // --- Mocks ---

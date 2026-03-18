@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 var approachMap = map[string]string{

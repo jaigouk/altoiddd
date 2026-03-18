@@ -8,12 +8,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/stringutil"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/stringutil"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // classificationKeywords maps keywords to subdomain classifications.
@@ -108,7 +108,7 @@ func (h *ArtifactGenerationHandler) BuildPreview(
 
 // WriteArtifacts writes previously previewed artifacts to disk.
 // docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go (typically docs/).
-// projectDir is the project root where .alty/bounded_context_map.yaml goes.
+// projectDir is the project root where .alto/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) WriteArtifacts(
 	ctx context.Context,
 	preview *ArtifactPreview,
@@ -124,7 +124,7 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 	if err := h.writer.WriteFile(ctx, filepath.Join(docsDir, "ARCHITECTURE.md"), preview.ArchitectureContent); err != nil {
 		return fmt.Errorf("write architecture: %w", err)
 	}
-	bcMapPath := filepath.Join(projectDir, ".alty", "bounded_context_map.yaml")
+	bcMapPath := filepath.Join(projectDir, ".alto", "bounded_context_map.yaml")
 	if err := h.writer.WriteFile(ctx, bcMapPath, preview.BoundedContextMapYAML); err != nil {
 		return fmt.Errorf("write bounded context map: %w", err)
 	}
@@ -133,7 +133,7 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 
 // Generate is a convenience method that builds preview and writes in one step.
 // docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go.
-// projectDir is the project root where .alty/bounded_context_map.yaml goes.
+// projectDir is the project root where .alto/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) Generate(
 	ctx context.Context,
 	event discoverydomain.DiscoveryCompletedEvent,

@@ -15,15 +15,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	tooltranslationdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	"github.com/alto-cli/alto/internal/composition"
+	fitnessdomain "github.com/alto-cli/alto/internal/fitness/domain"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/eventbus"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	tooltranslationdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -226,7 +226,7 @@ func TestDocHealthFlow_GivenProjectWithRegistry_WhenHandle_ThenUsesRegistry(t *t
 	dir := t.TempDir()
 
 	// Create a registry file
-	registryDir := filepath.Join(dir, ".alty", "maintenance")
+	registryDir := filepath.Join(dir, ".alto", "maintenance")
 	require.NoError(t, os.MkdirAll(registryDir, 0o755))
 	registryContent := `[[docs]]
 path = "docs/CUSTOM.md"

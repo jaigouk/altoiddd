@@ -20,12 +20,12 @@ func TestSanitizeOutput_StripsAbsolutePaths(t *testing.T) {
 		},
 		{
 			name:  "macOS Users path",
-			input: "File at /Users/jaigouk/alty-cli/internal/mcp/audit.go",
+			input: "File at /Users/jaigouk/alto-cli/internal/mcp/audit.go",
 			want:  "File at audit.go",
 		},
 		{
 			name:  "tmp path",
-			input: "Created /tmp/alty-test-12345/output.txt",
+			input: "Created /tmp/alto-test-12345/output.txt",
 			want:  "Created output.txt",
 		},
 		{
@@ -40,7 +40,7 @@ func TestSanitizeOutput_StripsAbsolutePaths(t *testing.T) {
 		},
 		{
 			name:  "windows deep path",
-			input: `File at C:\Projects\alty\internal\mcp\audit.go`,
+			input: `File at C:\Projects\alto\internal\mcp\audit.go`,
 			want:  "File at audit.go",
 		},
 	}

@@ -12,7 +12,7 @@ event buses, NATS (standalone and embedded), Watermill, and mediator patterns.
 
 ## Context
 
-alty is a project bootstrapper that enforces DDD + TDD + SOLID. A Go rewrite is under
+alto is a project bootstrapper that enforces DDD + TDD + SOLID. A Go rewrite is under
 evaluation. The application needs:
 
 - Domain events within bounded contexts (e.g., "PRD generated" triggers ticket pipeline)
@@ -206,11 +206,11 @@ CQRS dispatcher paired with Watermill or NATS for infrastructure events.
 | CQRS support | Full CQRS + Event Sourcing |
 | Upgrade path | Good -- multiple backends |
 | Maintenance | CONCERN: last release Dec 2022, API marked "not final" |
-| Complexity | High -- full ES is overkill for alty's needs |
+| Complexity | High -- full ES is overkill for alto's needs |
 
 ### Verdict
 
-Powerful but overengineered for this use case. alty does not need event sourcing --
+Powerful but overengineered for this use case. alto does not need event sourcing --
 it needs domain events and command/query separation. The stale maintenance (3+ years
 since last release) is a risk. The "API not final" warning after 3 years of no
 releases suggests abandonment risk.
@@ -397,7 +397,7 @@ Source: [watermill-nats](https://github.com/ThreeDotsLabs/watermill-nats),
 
 ThreeDotsLabs maintains a complete DDD+CQRS+Clean Architecture example in Go
 using Watermill: [wild-workouts-go-ddd-example](https://github.com/ThreeDotsLabs/wild-workouts-go-ddd-example).
-This provides a battle-tested reference architecture for alty's Go rewrite.
+This provides a battle-tested reference architecture for alto's Go rewrite.
 
 ### Evaluation
 
@@ -441,7 +441,7 @@ This provides a battle-tested reference architecture for alty's Go rewrite.
 
 **Rationale:**
 
-1. **DDD-native CQRS.** Watermill's CQRS component provides exactly what alty needs:
+1. **DDD-native CQRS.** Watermill's CQRS component provides exactly what alto needs:
    typed command handlers (one handler per command), typed event handlers (multiple
    handlers per event), and a clean separation between command bus and event bus.
    This maps directly to DDD bounded context communication patterns.
@@ -454,7 +454,7 @@ This provides a battle-tested reference architecture for alty's Go rewrite.
 
 3. **Battle-tested DDD reference.** ThreeDotsLabs' Wild Workouts project provides a
    complete Go DDD+CQRS+Clean Architecture example using Watermill, directly
-   applicable to alty's architecture.
+   applicable to alto's architecture.
 
 4. **Middleware pipeline.** Built-in retry, recovery, correlation ID propagation, and
    throttling -- essential for an MCP server handling concurrent sub-agent requests.

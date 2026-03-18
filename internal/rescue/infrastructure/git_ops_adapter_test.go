@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/rescue/infrastructure"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
+	"github.com/alto-cli/alto/internal/rescue/infrastructure"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
 func TestGitOpsAdapterImplementsPort(t *testing.T) {
@@ -133,11 +133,11 @@ func TestCreateBranchCallsGit(t *testing.T) {
 	t.Parallel()
 	dir := initGitRepo(t)
 	adapter := &infrastructure.GitOpsAdapter{}
-	err := adapter.CreateBranch(context.Background(), dir, "alty/init")
+	err := adapter.CreateBranch(context.Background(), dir, "alto/init")
 	require.NoError(t, err)
 
 	// Verify branch was created and checked out
-	result, err := adapter.BranchExists(context.Background(), dir, "alty/init")
+	result, err := adapter.BranchExists(context.Background(), dir, "alto/init")
 	require.NoError(t, err)
 	assert.True(t, result)
 }
@@ -152,7 +152,7 @@ func TestValidBranchNamePasses(t *testing.T) {
 	adapter := &infrastructure.GitOpsAdapter{}
 
 	validNames := []string{
-		"alty/init",
+		"alto/init",
 		"feature/my-branch",
 		"fix_123",
 		"release/1.0",   // dots allowed
@@ -170,7 +170,7 @@ func TestInvalidBranchNameRaises(t *testing.T) {
 	dir := initGitRepo(t)
 	adapter := &infrastructure.GitOpsAdapter{}
 
-	invalidNames := []string{"alty init", "branch;rm -rf /", ""}
+	invalidNames := []string{"alto init", "branch;rm -rf /", ""}
 	for _, name := range invalidNames {
 		_, err := adapter.BranchExists(context.Background(), dir, name)
 		require.Error(t, err, "branch name %q should be invalid", name)

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/bootstrap/infrastructure"
+	"github.com/alto-cli/alto/internal/bootstrap/infrastructure"
 )
 
 // initGitRepo creates a git repo in the given directory with an initial commit.

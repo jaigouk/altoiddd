@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/alty-cli/alty/internal/rescue/domain"
+	"github.com/alto-cli/alto/internal/rescue/domain"
 )
 
 func TestGapAnalysisCompleted(t *testing.T) {

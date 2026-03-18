@@ -2,14 +2,14 @@
 last_reviewed: 2026-02-22
 type: spike
 status: complete
-topic: MCP Server Python SDK for alty
+topic: MCP Server Python SDK for alto
 ---
 
 # MCP Server Implementation in Python: Research Findings
 
 ## 1. Decision Context
 
-alty exposes two interfaces (PRD Section 6, Constraints):
+alto exposes two interfaces (PRD Section 6, Constraints):
 - **CLI (`vs`)** -- primary interface for humans
 - **MCP server** -- exposes the same capabilities to AI coding tools (Claude Code, Cursor, etc.)
 
@@ -49,7 +49,7 @@ Source: [github.com/modelcontextprotocol/python-sdk](https://github.com/modelcon
 
 Rationale:
 - MIT license (compatible with any project license)
-- Python 3.10+ (alty targets 3.12+ -- fully compatible)
+- Python 3.10+ (alto targets 3.12+ -- fully compatible)
 - Maintained by Anthropic / MCP project -- guaranteed protocol compliance
 - FastMCP high-level API is included -- no need for the standalone package
 - Fewer dependencies = simpler supply chain
@@ -67,11 +67,11 @@ from Python type annotations**. Docstrings become the tool description.
 ```python
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("alty")
+mcp = FastMCP("alto")
 
 @mcp.tool()
 def init_project(project_dir: str, existing: bool = False) -> dict[str, str]:
-    """Initialize a alty project.
+    """Initialize a alto project.
 
     Args:
         project_dir: Path to the project directory
@@ -131,14 +131,14 @@ For cases where you need explicit JSON Schema control (not auto-generated):
 from mcp.server.lowlevel import Server
 import mcp.types as types
 
-server = Server("alty")
+server = Server("alto")
 
 @server.list_tools()
 async def list_tools() -> list[types.Tool]:
     return [
         types.Tool(
             name="init_project",
-            description="Initialize a alty project",
+            description="Initialize a alto project",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -159,7 +159,7 @@ async def call_tool(name: str, arguments: dict) -> dict:
 
 Source: [Context7 - MCP Python SDK low-level example](https://context7.com/modelcontextprotocol/python-sdk/llms.txt)
 
-**Recommendation for alty:** Use the high-level FastMCP API. Auto-generated schemas
+**Recommendation for alto:** Use the high-level FastMCP API. Auto-generated schemas
 from type annotations keep tool definitions DRY and in sync with the application layer.
 Reserve the low-level API only if a specific tool needs a custom schema.
 
@@ -172,7 +172,7 @@ Resources expose read-only data to LLMs. They are analogous to GET endpoints in 
 ### Static Resources
 
 ```python
-@mcp.resource("alty://knowledge/ddd/{topic}")
+@mcp.resource("alto://knowledge/ddd/{topic}")
 def get_ddd_knowledge(topic: str) -> str:
     """Get DDD knowledge base content."""
     return knowledge_service.get_topic("ddd", topic)
@@ -183,12 +183,12 @@ def get_ddd_knowledge(topic: str) -> str:
 URI templates use `{param}` syntax. Parameters are extracted and passed to the function:
 
 ```python
-@mcp.resource("alty://project/{project_dir}/health")
+@mcp.resource("alto://project/{project_dir}/health")
 def get_project_health(project_dir: str) -> str:
     """Get doc-health and ticket-health for a project."""
     return health_service.check(project_dir)
 
-@mcp.resource("alty://project/{project_dir}/domain-model")
+@mcp.resource("alto://project/{project_dir}/domain-model")
 def get_domain_model(project_dir: str) -> str:
     """Get the current DDD model for a project."""
     return read_file(f"{project_dir}/docs/DDD.md")
@@ -197,7 +197,7 @@ def get_domain_model(project_dir: str) -> str:
 ### Async Resources with Context
 
 ```python
-@mcp.resource("alty://tickets/ready")
+@mcp.resource("alto://tickets/ready")
 async def get_ready_tickets(ctx: Context) -> str:
     """List tickets ready for work."""
     await ctx.info("Fetching ready tickets")
@@ -210,8 +210,8 @@ Source: [Context7 - MCP Python SDK resource examples](https://context7.com/model
 
 | Use Case | MCP Primitive | Rationale |
 |----------|--------------|-----------|
-| `alty init`, `alty guide`, `alty generate` | **Tool** | Write operations, side effects |
-| `alty doc-health`, `alty ticket-health` | **Tool** (with structured output) | Analysis with potential side effects (flags) |
+| `alto init`, `alto guide`, `alto generate` | **Tool** | Write operations, side effects |
+| `alto doc-health`, `alto ticket-health` | **Tool** (with structured output) | Analysis with potential side effects (flags) |
 | Knowledge base lookup | **Resource** | Read-only data retrieval |
 | Current domain model | **Resource** | Read-only project state |
 | Ticket list / details | **Resource** | Read-only query |
@@ -230,7 +230,7 @@ Source: [Context7 - MCP Python SDK resource examples](https://context7.com/model
 
 Source: [MCP SDK README](https://github.com/modelcontextprotocol/python-sdk), [MCP specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports)
 
-### stdio Transport (recommended for alty)
+### stdio Transport (recommended for alto)
 
 This is the standard for local MCP servers. The AI tool spawns the server as a subprocess
 and communicates via stdin/stdout. This is how Claude Code and Cursor invoke MCP servers.
@@ -245,9 +245,9 @@ Configuration in `.claude/settings.json`:
 ```json
 {
   "mcpServers": {
-    "alty": {
+    "alto": {
       "command": "uv",
-      "args": ["run", "alty-mcp"],
+      "args": ["run", "alto-mcp"],
       "cwd": "/path/to/project"
     }
   }
@@ -273,7 +273,7 @@ app = Starlette(routes=[
 ])
 ```
 
-**Recommendation for alty:** stdio as primary transport (matches how AI tools
+**Recommendation for alto:** stdio as primary transport (matches how AI tools
 invoke local servers). Streamable HTTP as optional for future remote/team use cases.
 
 ---
@@ -346,11 +346,11 @@ def init(project_dir: str, existing: bool):
 # src/infrastructure/mcp/server.py
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("alty")
+mcp = FastMCP("alto")
 
 @mcp.tool()
 def init_project(project_dir: str, existing: bool = False) -> dict[str, str]:
-    """Initialize a alty project."""
+    """Initialize a alto project."""
     handler = container.get(InitProjectHandler)
     result = handler.execute(InitProjectCommand(project_dir, existing))
     return {"status": result.status, "message": result.summary}
@@ -365,14 +365,14 @@ def init_project(project_dir: str, existing: bool = False) -> dict[str, str]:
 | Shared logic | Application command handlers | Both adapters call same handlers |
 | DI container | Simple factory or `dependency-injector` | Wire ports at startup |
 | Return types | Domain result objects | CLI formats as text, MCP as JSON |
-| Entry points | Two `pyproject.toml` scripts | `vs` for CLI, `alty-mcp` for server |
+| Entry points | Two `pyproject.toml` scripts | `vs` for CLI, `alto-mcp` for server |
 
 ### pyproject.toml Entry Points
 
 ```toml
 [project.scripts]
-alty = "src.infrastructure.cli.main:app"
-alty-mcp = "src.infrastructure.mcp.server:main"
+alto = "src.infrastructure.cli.main:app"
+alto-mcp = "src.infrastructure.mcp.server:main"
 ```
 
 Both entry points wire the same application layer with the same port implementations,
@@ -387,7 +387,7 @@ The absolute minimum to expose a tool via MCP:
 ```python
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("alty")
+mcp = FastMCP("alto")
 
 @mcp.tool()
 def doc_health(project_dir: str) -> dict[str, list[str]]:
@@ -420,14 +420,14 @@ class AppContext:
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     """Initialize shared services once at server startup."""
-    knowledge = KnowledgeService(Path(".alty/knowledge"))
+    knowledge = KnowledgeService(Path(".alto/knowledge"))
     scaffold = ScaffoldService()
     try:
         yield AppContext(knowledge=knowledge, scaffold=scaffold)
     finally:
         pass  # cleanup if needed
 
-mcp = FastMCP("alty", lifespan=app_lifespan)
+mcp = FastMCP("alto", lifespan=app_lifespan)
 
 @mcp.tool()
 async def lookup_knowledge(topic: str, ctx: Context) -> str:
@@ -438,12 +438,12 @@ async def lookup_knowledge(topic: str, ctx: Context) -> str:
 
 Source: [MCP SDK README - Lifespan pattern](https://github.com/modelcontextprotocol/python-sdk)
 
-This is the recommended pattern for alty: initialize the application layer services
+This is the recommended pattern for alto: initialize the application layer services
 in the lifespan, access them via `ctx.request_context.lifespan_context` in tool handlers.
 
 ---
 
-## 9. alty MCP Tool Inventory (Proposed)
+## 9. alto MCP Tool Inventory (Proposed)
 
 Based on PRD P0 capabilities, here are the MCP tools and resources the server should expose:
 
@@ -451,27 +451,27 @@ Based on PRD P0 capabilities, here are the MCP tools and resources the server sh
 
 | Tool Name | CLI Equivalent | Description | Key Parameters |
 |-----------|---------------|-------------|----------------|
-| `init_project` | `alty init` | Initialize new project | `project_dir`, `existing`, `tools[]` |
-| `guide_ddd` | `alty guide` | Start/continue guided DDD discovery | `project_dir`, `readme_content` |
-| `generate_artifacts` | `alty generate` | Generate PRD/DDD/ARCH from answers | `project_dir`, `artifact_type` |
-| `generate_fitness` | `alty generate fitness` | Generate architecture fitness tests | `project_dir` |
-| `generate_tickets` | `alty generate tickets` | Generate beads tickets from DDD | `project_dir`, `preview` |
-| `doc_health` | `alty doc-health` | Check document freshness | `project_dir` |
-| `ticket_health` | `alty ticket-health` | Check ticket staleness/flags | `project_dir` |
+| `init_project` | `alto init` | Initialize new project | `project_dir`, `existing`, `tools[]` |
+| `guide_ddd` | `alto guide` | Start/continue guided DDD discovery | `project_dir`, `readme_content` |
+| `generate_artifacts` | `alto generate` | Generate PRD/DDD/ARCH from answers | `project_dir`, `artifact_type` |
+| `generate_fitness` | `alto generate fitness` | Generate architecture fitness tests | `project_dir` |
+| `generate_tickets` | `alto generate tickets` | Generate beads tickets from DDD | `project_dir`, `preview` |
+| `doc_health` | `alto doc-health` | Check document freshness | `project_dir` |
+| `ticket_health` | `alto ticket-health` | Check ticket staleness/flags | `project_dir` |
 | `classify_subdomain` | (within guide) | Classify Core/Supporting/Generic | `subdomain_name`, `description` |
 
 ### Resources (read-only data)
 
 | Resource URI | Description |
 |-------------|-------------|
-| `alty://knowledge/ddd/{topic}` | DDD patterns and references |
-| `alty://knowledge/tools/{tool_name}` | AI tool convention docs |
-| `alty://knowledge/conventions/{topic}` | TDD/SOLID/quality gate references |
-| `alty://project/{dir}/domain-model` | Current DDD.md content |
-| `alty://project/{dir}/architecture` | Current ARCHITECTURE.md |
-| `alty://project/{dir}/prd` | Current PRD.md |
-| `alty://tickets/ready` | Tickets in ready state |
-| `alty://tickets/{id}` | Single ticket details |
+| `alto://knowledge/ddd/{topic}` | DDD patterns and references |
+| `alto://knowledge/tools/{tool_name}` | AI tool convention docs |
+| `alto://knowledge/conventions/{topic}` | TDD/SOLID/quality gate references |
+| `alto://project/{dir}/domain-model` | Current DDD.md content |
+| `alto://project/{dir}/architecture` | Current ARCHITECTURE.md |
+| `alto://project/{dir}/prd` | Current PRD.md |
+| `alto://tickets/ready` | Tickets in ready state |
+| `alto://tickets/{id}` | Single ticket details |
 
 ### Prompts (optional, for guided flows)
 
@@ -488,7 +488,7 @@ The official SDK supports mounting multiple servers via Starlette ASGI routing:
 
 ```python
 app = Starlette(routes=[
-    Mount("/alty", app=mcp.streamable_http_app()),
+    Mount("/alto", app=mcp.streamable_http_app()),
 ])
 ```
 
@@ -539,8 +539,8 @@ changes. Monitor the v2 migration guide when it stabilizes.
    capabilities (init, guide, generate, health checks, knowledge lookup) that both CLI
    and MCP adapters will use.
 2. **Task: Implement MCP server adapter** -- Wire FastMCP tool/resource decorators to
-   application command handlers. Entry point `alty-mcp` in pyproject.toml.
-3. **Task: MCP server configuration generation** -- `alty init` should generate
+   application command handlers. Entry point `alto-mcp` in pyproject.toml.
+3. **Task: MCP server configuration generation** -- `alto init` should generate
    `.claude/settings.json` and equivalent Cursor config with the MCP server definition.
 4. **Spike: Guided DDD flow over MCP** -- Research how to implement multi-turn
    conversational flows (the guide questions) within MCP's request/response model.

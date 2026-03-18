@@ -1,6 +1,6 @@
 # Go MCP SDK v1.4.0 Spike Report
 
-**Ticket:** alty-0m9.1 (Spike: Go MCP SDK v1.0)
+**Ticket:** alto-0m9.1 (Spike: Go MCP SDK v1.0)
 **Date:** 2026-03-08
 **Timebox:** 6 hours
 **Status:** Complete
@@ -70,7 +70,7 @@ Session ID available via `req.GetSession().ID()`.
 
 ```go
 server := mcp.NewServer(&mcp.Implementation{
-    Name:    "alty-mcp",
+    Name:    "alto-mcp",
     Version: "0.1.0",
 }, nil) // nil = default ServerOptions
 ```
@@ -103,7 +103,7 @@ mcp.AddTool(server, &mcp.Tool{
 server.AddResource(&mcp.Resource{
     Name:     "Hello Resource",
     MIMEType: "text/plain",
-    URI:      "alty://test/hello",
+    URI:      "alto://test/hello",
 }, func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
     return &mcp.ReadResourceResult{
         Contents: []*mcp.ResourceContents{
@@ -115,7 +115,7 @@ server.AddResource(&mcp.Resource{
 // Resource template
 server.AddResourceTemplate(&mcp.ResourceTemplate{
     Name:        "Named Resource",
-    URITemplate: "alty://test/{name}",
+    URITemplate: "alto://test/{name}",
     MIMEType:    "text/plain",
 }, templateHandler)
 ```
@@ -152,7 +152,7 @@ httpServer := &http.Server{Handler: middleware(mcpHandler)}
 |-------|---------|-----|
 | `jsonschema` tag format | Panic: `tag must not begin with 'WORD='` | Use plain text: `jsonschema:"description text"` |
 | Missing `TokenInfo.Expiration` | Auth rejects valid token: "token missing expiration" | Always set `Expiration` field |
-| `alty://` URI parsing | `url.Parse("alty://test/name")` → `Path="/name"`, NOT `Opaque` | Use `u.Path` and trim leading `/` |
+| `alto://` URI parsing | `url.Parse("alto://test/name")` → `Path="/name"`, NOT `Opaque` | Use `u.Path` and trim leading `/` |
 | stdio stdin handling | Empty response if stdin closes before server processes | Keep stdin open; use in-memory transport for tests |
 | `net.Listen` without context | golangci-lint `noctx` violation | Use `(&net.ListenConfig{}).Listen(ctx, "tcp", addr)` |
 | `context.Background()` in shutdown | golangci-lint `contextcheck` violation | Use `context.WithoutCancel(ctx)` |
@@ -179,7 +179,7 @@ httpServer := &http.Server{Handler: middleware(mcpHandler)}
 
 ---
 
-## 5. Architecture Decisions for alty-mcp
+## 5. Architecture Decisions for alto-mcp
 
 ### Transport Strategy
 
@@ -227,8 +227,8 @@ All modules verified: `go mod verify` → "all modules verified"
 
 | File | Purpose |
 |------|---------|
-| `cmd/alty-mcp/main.go` | PoC MCP server (268 lines) — echo tool, hello resource, name template, 3 transports, logging middleware |
-| `cmd/alty-mcp/main_test.go` | Test suite (463 lines) — 17 tests across in-memory, HTTP, SSE, auth |
+| `cmd/alto-mcp/main.go` | PoC MCP server (268 lines) — echo tool, hello resource, name template, 3 transports, logging middleware |
+| `cmd/alto-mcp/main_test.go` | Test suite (463 lines) — 17 tests across in-memory, HTTP, SSE, auth |
 | `docs/research/20260308_go_mcp_sdk_spike.md` | This report |
 
 ---

@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install alty and its prerequisites on your system
+description: Install alto and its prerequisites on your system
 sidebar:
   order: 2
 ---
@@ -10,7 +10,7 @@ sidebar:
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
 | Go | 1.26+ | Runtime and build tool |
-| Git | any | alty uses git for branch-based scaffolding |
+| Git | any | alto uses git for branch-based scaffolding |
 | Beads | latest | Git-native issue tracking (`bd` CLI) |
 
 ### Installing Go
@@ -32,15 +32,15 @@ bd --version
 
 Beads is optional for basic project bootstrapping but required for ticket generation and the ripple review workflow.
 
-## Install alty
+## Install alto
 
 ### From source (recommended)
 
 ```bash
-go install github.com/alty-cli/alty/cmd/alty@latest
+go install github.com/alto-cli/alto/cmd/alto@latest
 ```
 
-This places the `alty` binary in your `$GOPATH/bin` (typically `~/go/bin`). Make sure that directory is in your `PATH`:
+This places the `alto` binary in your `$GOPATH/bin` (typically `~/go/bin`). Make sure that directory is in your `PATH`:
 
 ```bash
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -52,19 +52,19 @@ Download the latest binary for your platform from the releases page and place it
 
 ```bash
 # Example for Linux amd64
-curl -L -o /usr/local/bin/alty <release-url>/alty-linux-amd64
-chmod +x /usr/local/bin/alty
+curl -L -o /usr/local/bin/alto <release-url>/alto-linux-amd64
+chmod +x /usr/local/bin/alto
 ```
 
 ### Verify installation
 
 ```bash
-alty version
+alto version
 ```
 
 ## Optional tools
 
-alty can detect and integrate with these tools during `alty init`:
+alto can detect and integrate with these tools during `alto init`:
 
 | Tool | Purpose |
 |------|---------|
@@ -75,16 +75,16 @@ alty can detect and integrate with these tools during `alty init`:
 | [golangci-lint](https://golangci-lint.run) | Go meta-linter for quality gates |
 | [Trivy](https://trivy.dev) | Security vulnerability scanner |
 
-alty detects which of these are installed and generates appropriate configuration files. You don't need all of them — just the ones you use.
+alto detects which of these are installed and generates appropriate configuration files. You don't need all of them — just the ones you use.
 
 ## Upgrading
 
 ```bash
-go install github.com/alty-cli/alty/cmd/alty@latest
+go install github.com/alto-cli/alto/cmd/alto@latest
 ```
 
 Check the current version:
 
 ```bash
-alty version
+alto version
 ```

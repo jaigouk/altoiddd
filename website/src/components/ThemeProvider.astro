@@ -11,14 +11,14 @@
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = stored || (prefersDark ? 'dark' : 'light');
-    const daisyTheme = theme === 'dark' ? 'alty-dark' : 'alty-light';
+    const daisyTheme = theme === 'dark' ? 'alto-dark' : 'alto-light';
     document.documentElement.setAttribute('data-theme', daisyTheme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
 
     // Re-apply on View Transition navigation
     document.addEventListener('astro:after-swap', function () {
       const t = localStorage.getItem(STORAGE_KEY) || (prefersDark ? 'dark' : 'light');
-      const dt = t === 'dark' ? 'alty-dark' : 'alty-light';
+      const dt = t === 'dark' ? 'alto-dark' : 'alto-light';
       document.documentElement.setAttribute('data-theme', dt);
       document.documentElement.classList.toggle('dark', t === 'dark');
     });

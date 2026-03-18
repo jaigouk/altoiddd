@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	researchdomain "github.com/alty-cli/alty/internal/research/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	researchdomain "github.com/alto-cli/alto/internal/research/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // DomainResearch searches for domain-specific knowledge from external sources.

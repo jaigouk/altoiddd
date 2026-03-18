@@ -1,16 +1,16 @@
 # Research: TechStack Strategy Design
 
 **Date:** 2026-03-03
-**Spike Ticket:** alty-5li.1
+**Spike Ticket:** alto-5li.1
 **Status:** Final
 
 ## Summary
 
-alty's pipeline is hardcoded to Python+uv in ~15 locations across 8 files. The fix: introduce a `StackProfile` protocol so stack-specific knowledge is pluggable, implement `PythonUvProfile` first, and gracefully skip stack-specific stages for unknown stacks.
+alto's pipeline is hardcoded to Python+uv in ~15 locations across 8 files. The fix: introduce a `StackProfile` protocol so stack-specific knowledge is pluggable, implement `PythonUvProfile` first, and gracefully skip stack-specific stages for unknown stacks.
 
 ## Research Question
 
-1. Where does alty assume Python? (answered — see Audit below)
+1. Where does alto assume Python? (answered — see Audit below)
 2. Which pipeline stages are stack-neutral vs stack-specific?
 3. What's the simplest design to make this extensible?
 
@@ -113,7 +113,7 @@ Add `is_python: bool` to DomainModel. If True, full pipeline. If False, skip fit
 
 ### Option C: TOML Knowledge Base
 
-Store stack profiles as `.alty/knowledge/stacks/python-uv.toml`. The pipeline reads TOML at runtime.
+Store stack profiles as `.alto/knowledge/stacks/python-uv.toml`. The pipeline reads TOML at runtime.
 
 **Pros:** User-editable, no code changes for new stacks.
 **Cons:** Overengineered for now. Same protocol still needed internally.
@@ -129,7 +129,7 @@ Store stack profiles as `.alty/knowledge/stacks/python-uv.toml`. The pipeline re
 
 ### User-Facing Flow
 
-1. During `alty guide` or `alty init`, ask: "Are you using Python with uv and pyproject.toml? (y/n)"
+1. During `alto guide` or `alto init`, ask: "Are you using Python with uv and pyproject.toml? (y/n)"
 2. If yes → attach `PythonUvProfile` to session → full pipeline
 3. If no → attach `GenericProfile` to session → PRD + DDD.md + ARCHITECTURE.md + tickets (without quality gate commands)
 
@@ -152,7 +152,7 @@ Each hardcoded location gets refactored to read from the profile:
 
 1. **Add `StackProfile` protocol + `PythonUvProfile` + `GenericProfile`** to `src/domain/models/`
 2. **Add `TechStack` value object** to `src/domain/models/` (language, package_manager, is_backend_only)
-3. **Add tech stack question** to discovery flow (or pre-flight in `alty init`)
+3. **Add tech stack question** to discovery flow (or pre-flight in `alto init`)
 4. **Thread profile through session → event → handlers** so each handler can access it
 5. **Refactor quality gate commands** — SubprocessGateRunner reads from profile
 6. **Refactor quality gate display** — tool_adapter + ticket_detail_renderer read from profile

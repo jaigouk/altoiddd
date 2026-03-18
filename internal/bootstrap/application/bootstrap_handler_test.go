@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/bootstrap/application"
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/bootstrap/application"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -290,7 +290,7 @@ func TestBootstrapHandler_SessionNotFound(t *testing.T) {
 func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 	t.Parallel()
 
-	t.Run("includes alty config", func(t *testing.T) {
+	t.Run("includes alto config", func(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
@@ -305,10 +305,10 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		for _, a := range preview.FileActions() {
 			paths = append(paths, a.Path())
 		}
-		assert.Contains(t, paths, ".alty/config.toml")
+		assert.Contains(t, paths, ".alto/config.toml")
 	})
 
-	t.Run("includes alty maintenance", func(t *testing.T) {
+	t.Run("includes alto maintenance", func(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
@@ -323,7 +323,7 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		for _, a := range preview.FileActions() {
 			paths = append(paths, a.Path())
 		}
-		assert.Contains(t, paths, ".alty/maintenance/doc-registry.toml")
+		assert.Contains(t, paths, ".alto/maintenance/doc-registry.toml")
 	})
 }
 
@@ -418,15 +418,15 @@ func TestBootstrapHandler_Execute_WritesCreateFiles(t *testing.T) {
 
 	assert.Len(t, fw.written, createCount, "should write one file per CREATE action")
 
-	// Verify .alty/config.toml was written via the content provider
+	// Verify .alto/config.toml was written via the content provider
 	var foundConfig bool
 	for _, w := range fw.written {
 		if filepath.Base(w.path) == "config.toml" {
-			assert.Contains(t, w.content, ".alty/config.toml")
+			assert.Contains(t, w.content, ".alto/config.toml")
 			foundConfig = true
 		}
 	}
-	assert.True(t, foundConfig, "expected .alty/config.toml to be written")
+	assert.True(t, foundConfig, "expected .alto/config.toml to be written")
 }
 
 func TestBootstrapHandler_Execute_SkipsExistingFiles(t *testing.T) {
@@ -556,8 +556,8 @@ func TestBootstrapHandler_Execute_WhenAllFilesSkipped_ExpectNoCommit(t *testing.
 	// Pre-create ALL planned files so every action is SKIP.
 	for _, planned := range []string{
 		"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md",
-		"AGENTS.md", ".alty/config.toml", ".alty/knowledge/_index.toml",
-		".alty/maintenance/doc-registry.toml",
+		"AGENTS.md", ".alto/config.toml", ".alto/knowledge/_index.toml",
+		".alto/maintenance/doc-registry.toml",
 	} {
 		full := filepath.Join(dir, planned)
 		require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
 )
 
 // Compile-time interface check.

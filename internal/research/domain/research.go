@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // TrustLevel classifies how much a piece of knowledge can be trusted.

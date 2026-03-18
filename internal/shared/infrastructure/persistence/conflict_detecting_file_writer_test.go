@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
+	"github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/persistence"
 )
 
 func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
@@ -36,7 +36,7 @@ func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
 			wantConflicts: 0,
 		},
 		{
-			name:     "rename adds _alty suffix before extension",
+			name:     "rename adds _alto suffix before extension",
 			strategy: valueobjects.ConflictStrategyRename,
 			setup: func(t *testing.T, dir string) {
 				t.Helper()
@@ -44,25 +44,25 @@ func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
 			},
 			writePath:      "file.md",
 			content:        "new content",
-			wantWrittenAt:  "file_alty.md",
+			wantWrittenAt:  "file_alto.md",
 			wantConflicts:  1,
 			wantOrigPath:   "file.md",
-			wantActualPath: "file_alty.md",
+			wantActualPath: "file_alto.md",
 		},
 		{
-			name:     "rename increments when _alty also exists",
+			name:     "rename increments when _alto also exists",
 			strategy: valueobjects.ConflictStrategyRename,
 			setup: func(t *testing.T, dir string) {
 				t.Helper()
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "file.md"), []byte("v1"), 0o644))
-				require.NoError(t, os.WriteFile(filepath.Join(dir, "file_alty.md"), []byte("v2"), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "file_alto.md"), []byte("v2"), 0o644))
 			},
 			writePath:      "file.md",
 			content:        "v3",
-			wantWrittenAt:  "file_alty_2.md",
+			wantWrittenAt:  "file_alto_2.md",
 			wantConflicts:  1,
 			wantOrigPath:   "file.md",
-			wantActualPath: "file_alty_2.md",
+			wantActualPath: "file_alto_2.md",
 		},
 		{
 			name:     "rename handles no extension",
@@ -73,10 +73,10 @@ func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
 			},
 			writePath:      "README",
 			content:        "new readme",
-			wantWrittenAt:  "README_alty",
+			wantWrittenAt:  "README_alto",
 			wantConflicts:  1,
 			wantOrigPath:   "README",
-			wantActualPath: "README_alty",
+			wantActualPath: "README_alto",
 		},
 		{
 			name:     "rename handles hidden files",
@@ -87,10 +87,10 @@ func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
 			},
 			writePath:      ".gitignore",
 			content:        "new ignore",
-			wantWrittenAt:  ".gitignore_alty",
+			wantWrittenAt:  ".gitignore_alto",
 			wantConflicts:  1,
 			wantOrigPath:   ".gitignore",
-			wantActualPath: ".gitignore_alty",
+			wantActualPath: ".gitignore_alto",
 		},
 		{
 			name:     "skip strategy does not write when conflict exists",
@@ -114,10 +114,10 @@ func TestConflictDetectingFileWriter_WriteFile(t *testing.T) {
 			},
 			writePath:      filepath.Join("docs", "guide.md"),
 			content:        "new guide",
-			wantWrittenAt:  filepath.Join("docs", "guide_alty.md"),
+			wantWrittenAt:  filepath.Join("docs", "guide_alto.md"),
 			wantConflicts:  1,
 			wantOrigPath:   filepath.Join("docs", "guide.md"),
-			wantActualPath: filepath.Join("docs", "guide_alty.md"),
+			wantActualPath: filepath.Join("docs", "guide_alto.md"),
 		},
 	}
 

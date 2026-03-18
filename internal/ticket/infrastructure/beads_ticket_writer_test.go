@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/ticket/application"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	"github.com/alty-cli/alty/internal/ticket/infrastructure"
+	"github.com/alto-cli/alto/internal/ticket/application"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/ticket/infrastructure"
 )
 
 // Compile-time interface satisfaction check.
@@ -33,7 +33,7 @@ func TestBeadsCLIWriter_WriteEpic(t *testing.T) {
 	}
 
 	assert.NotEmpty(t, epicID)
-	assert.Contains(t, epicID, "-") // beads IDs have format like "alty-cli-xxx"
+	assert.Contains(t, epicID, "-") // beads IDs have format like "alto-cli-xxx"
 }
 
 func TestBeadsCLIWriter_WriteTicket_Task(t *testing.T) {
@@ -80,8 +80,8 @@ func TestBeadsCLIWriter_ParseIssueID(t *testing.T) {
 	}{
 		{
 			name:     "standard output",
-			output:   "Created issue: alty-cli-abc — Test title",
-			expected: "alty-cli-abc",
+			output:   "Created issue: alto-cli-abc — Test title",
+			expected: "alto-cli-abc",
 		},
 		{
 			name:     "with newlines",

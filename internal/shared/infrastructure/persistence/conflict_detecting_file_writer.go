@@ -8,15 +8,15 @@ import (
 	"strings"
 	"sync"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Compile-time interface satisfaction check.
 var _ sharedapp.FileWriter = (*ConflictDetectingFileWriter)(nil)
 
 // ConflictDetectingFileWriter is a decorator around FileWriter that detects
-// existing files and renames alty output to avoid overwriting user content.
+// existing files and renames alto output to avoid overwriting user content.
 type ConflictDetectingFileWriter struct {
 	inner     sharedapp.FileWriter
 	strategy  valueobjects.ConflictStrategy
@@ -35,7 +35,7 @@ func NewConflictDetectingFileWriter(inner sharedapp.FileWriter, strategy valueob
 
 // WriteFile writes content to the given path. If the file already exists,
 // the configured conflict strategy determines behavior:
-//   - Rename: writes to an alternative path (e.g., file_alty.md)
+//   - Rename: writes to an alternative path (e.g., file_alto.md)
 //   - Skip: does not write, records the conflict
 func (w *ConflictDetectingFileWriter) WriteFile(ctx context.Context, path string, content string) error {
 	if !fileExists(path) {
@@ -101,20 +101,20 @@ func (w *ConflictDetectingFileWriter) addConflict(c valueobjects.FileConflict) {
 
 // findAvailablePath computes the first available renamed path:
 //
-//	file.md       -> file_alty.md -> file_alty_2.md -> ...
-//	README        -> README_alty  -> README_alty_2  -> ...
-//	.gitignore    -> .gitignore_alty -> .gitignore_alty_2 -> ...
+//	file.md       -> file_alto.md -> file_alto_2.md -> ...
+//	README        -> README_alto  -> README_alto_2  -> ...
+//	.gitignore    -> .gitignore_alto -> .gitignore_alto_2 -> ...
 func findAvailablePath(path string) string {
 	dir := filepath.Dir(path)
 	base, ext := splitNameExt(filepath.Base(path))
 
-	candidate := filepath.Join(dir, base+"_alty"+ext)
+	candidate := filepath.Join(dir, base+"_alto"+ext)
 	if !fileExists(candidate) {
 		return candidate
 	}
 
 	for i := 2; ; i++ {
-		candidate = filepath.Join(dir, fmt.Sprintf("%s_alty_%d%s", base, i, ext))
+		candidate = filepath.Join(dir, fmt.Sprintf("%s_alto_%d%s", base, i, ext))
 		if !fileExists(candidate) {
 			return candidate
 		}

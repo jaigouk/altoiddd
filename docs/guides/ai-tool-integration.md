@@ -1,11 +1,11 @@
 ---
 title: AI Tool Integration
-description: How alty works with Claude Code, Cursor, Roo Code, and OpenCode
+description: How alto works with Claude Code, Cursor, Roo Code, and OpenCode
 sidebar:
   order: 6
 ---
 
-alty generates domain-aware configurations for multiple AI coding tools from a single domain model. The same bounded contexts, ubiquitous language, and quality gates apply regardless of which tool you use.
+alto generates domain-aware configurations for multiple AI coding tools from a single domain model. The same bounded contexts, ubiquitous language, and quality gates apply regardless of which tool you use.
 
 ## Supported tools
 
@@ -19,12 +19,12 @@ alty generates domain-aware configurations for multiple AI coding tools from a s
 Detect which tools are installed on your system:
 
 ```bash
-alty detect
+alto detect
 ```
 
 ## How it works
 
-During `alty init`, alty detects your installed tools and generates configurations for each one. The generation pipeline:
+During `alto init`, alto detects your installed tools and generates configurations for each one. The generation pipeline:
 
 1. **Domain model** (from guided discovery) provides bounded contexts, ubiquitous language, and subdomain classifications
 2. **Tool Translation** maps domain concepts to each tool's native config format
@@ -34,12 +34,12 @@ During `alty init`, alty detects your installed tools and generates configuratio
 You can also regenerate configs after the initial bootstrap:
 
 ```bash
-alty generate configs
+alto generate configs
 ```
 
 ## Claude Code integration
 
-alty generates a complete Claude Code workspace:
+alto generates a complete Claude Code workspace:
 
 ```
 .claude/
@@ -73,29 +73,29 @@ Generate or regenerate a specific persona:
 
 ```bash
 # List available personas
-alty persona list
+alto persona list
 
 # Generate a persona for Claude Code
-alty persona generate developer
+alto persona generate developer
 
 # Generate for a different tool
-alty persona generate developer --tool cursor
+alto persona generate developer --tool cursor
 ```
 
 ## Cursor integration
 
-alty generates Cursor-compatible rules and agent definitions in `.cursor/`. The same domain knowledge — bounded contexts, ubiquitous language, quality gates — is expressed in Cursor's rule format.
+alto generates Cursor-compatible rules and agent definitions in `.cursor/`. The same domain knowledge — bounded contexts, ubiquitous language, quality gates — is expressed in Cursor's rule format.
 
 ## Global settings detection
 
-AI coding tools have global configs (e.g., `~/.claude/CLAUDE.md`) that can override local project settings. During `alty init`, alty scans for these and reports conflicts:
+AI coding tools have global configs (e.g., `~/.claude/CLAUDE.md`) that can override local project settings. During `alto init`, alto scans for these and reports conflicts:
 
 ```
 Global settings scan:
-  OK  ~/.claude/CLAUDE.md — compatible with alty defaults
+  OK  ~/.claude/CLAUDE.md — compatible with alto defaults
   CONFLICT  ~/.claude/settings.json has allowedTools restrictions
             Global restricts: Edit, Write require approval
-            Local:  alty agents expect Edit, Write available
+            Local:  alto agents expect Edit, Write available
             WARNING: agents may hit permission prompts
 
             Options:
@@ -104,11 +104,11 @@ Global settings scan:
               [3] Note in local CLAUDE.md that agents need these tools
 ```
 
-You choose the resolution per conflict. alty never silently creates local settings that will be overridden by global ones.
+You choose the resolution per conflict. alto never silently creates local settings that will be overridden by global ones.
 
 ## Multi-tool workflows
 
-If you use multiple AI coding tools on the same project, alty generates configs for all detected tools. The key guarantee: **same conventions, different formats**.
+If you use multiple AI coding tools on the same project, alto generates configs for all detected tools. The key guarantee: **same conventions, different formats**.
 
 - Ubiquitous language is identical across all tool configs
 - Quality gates run the same commands regardless of tool
@@ -119,11 +119,11 @@ This means you can switch between Claude Code and Cursor mid-project without los
 
 ## MCP server
 
-alty exposes its guided bootstrap and knowledge base as MCP (Model Context Protocol) tools. This allows AI coding tools that support MCP to call alty's capabilities directly:
+alto exposes its guided bootstrap and knowledge base as MCP (Model Context Protocol) tools. This allows AI coding tools that support MCP to call alto's capabilities directly:
 
 - **Guide tools** — run guided discovery questions programmatically
 - **Knowledge tools** — look up DDD patterns, tool conventions
 - **Challenge tools** — probe domain models for gaps
 - **Ticket tools** — verify ticket claims, check health
 
-The MCP server is a separate entry point (`alty-mcp`) that shares the same application core as the CLI.
+The MCP server is a separate entry point (`alto-mcp`) that shares the same application core as the CLI.

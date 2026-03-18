@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // ChallengeHandler orchestrates the research -> generate -> respond -> complete

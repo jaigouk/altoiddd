@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	"github.com/alty-cli/alty/internal/rescue/infrastructure"
+	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
+	"github.com/alto-cli/alto/internal/rescue/infrastructure"
 )
 
 // Compile-time interface check.

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ModelStore caches DomainModels by SessionID so that generate_artifacts

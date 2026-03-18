@@ -1,6 +1,6 @@
 package valueobjects
 
-// FileActionType is the kind of file operation alty plans to perform.
+// FileActionType is the kind of file operation alto plans to perform.
 type FileActionType string
 
 // File action type constants.

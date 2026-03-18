@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // makeValidModel creates a DomainModel that passes all 4 invariants.

@@ -4,7 +4,7 @@ package application
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
 )
 
 // Bootstrap defines the interface for project bootstrap operations.

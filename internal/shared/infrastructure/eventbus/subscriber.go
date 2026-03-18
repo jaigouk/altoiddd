@@ -9,7 +9,7 @@ import (
 
 	"github.com/ThreeDotsLabs/watermill/message"
 
-	"github.com/alty-cli/alty/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/application"
 )
 
 // registration holds a handler, the event type name, and the Go type for unmarshaling.

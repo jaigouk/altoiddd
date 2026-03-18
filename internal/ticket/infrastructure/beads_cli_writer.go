@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/ticket/application"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/ticket/application"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // Compile-time interface satisfaction check.

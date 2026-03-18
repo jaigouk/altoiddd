@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/alty-cli/alty/internal/discovery/application"
-	"github.com/alty-cli/alty/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/discovery/application"
+	"github.com/alto-cli/alto/internal/discovery/domain"
 )
 
 // AgentDiscoveryAdapter emits the full discovery session as JSONL for AI agent consumption.

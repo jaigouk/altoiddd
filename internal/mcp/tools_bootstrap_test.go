@@ -9,17 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	domain "github.com/alty-cli/alty/internal/knowledge/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
+	"github.com/alto-cli/alto/internal/composition"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	fitnessapp "github.com/alto-cli/alto/internal/fitness/application"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	domain "github.com/alto-cli/alto/internal/knowledge/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
 )
 
 // --- Stub implementations for happy-path tests ---

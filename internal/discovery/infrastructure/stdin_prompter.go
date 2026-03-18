@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/discovery/application"
+	"github.com/alto-cli/alto/internal/discovery/application"
 )
 
 // Compile-time interface satisfaction check.

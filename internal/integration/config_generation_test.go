@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
-	tooltranslationdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/persistence"
+	tooltranslationdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -269,7 +269,7 @@ func TestConfigGeneration_ConflictRename(t *testing.T) {
 	assert.Equal(t, "# User's existing config", string(original))
 
 	// Renamed file should exist
-	renamedPath := filepath.Join(tmpDir, ".claude/CLAUDE_alty.md")
+	renamedPath := filepath.Join(tmpDir, ".claude/CLAUDE_alto.md")
 	assert.FileExists(t, renamedPath)
 
 	// Renamed file should have generated content
@@ -312,7 +312,7 @@ func TestConfigGeneration_ConflictSkip(t *testing.T) {
 	assert.Equal(t, "# User's config", string(original))
 
 	// No renamed file should exist
-	renamedPath := filepath.Join(tmpDir, ".claude/CLAUDE_alty.md")
+	renamedPath := filepath.Join(tmpDir, ".claude/CLAUDE_alto.md")
 	assert.NoFileExists(t, renamedPath)
 
 	// Conflicts should still be recorded

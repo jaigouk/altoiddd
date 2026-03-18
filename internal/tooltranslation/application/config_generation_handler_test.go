@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/tooltranslation/application"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/tooltranslation/application"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ---------------------------------------------------------------------------

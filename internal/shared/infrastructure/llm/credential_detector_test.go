@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
 )
 
 // failReader always returns an error, simulating missing files.

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/persistence"
 )
 
 func TestFilesystemFileWriter(t *testing.T) {

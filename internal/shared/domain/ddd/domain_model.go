@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/events"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/events"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // DomainModel is the aggregate root for the Domain Model bounded context.

@@ -8,13 +8,13 @@ status: complete
 
 ## Research Question
 
-How should alty adapt DDD discovery questions for different user personas
+How should alto adapt DDD discovery questions for different user personas
 (technical vs non-technical), and what plain language equivalents exist for core
 DDD terminology?
 
 ## Context
 
-alty's PRD defines five personas (PRD Section 3):
+alto's PRD defines five personas (PRD Section 3):
 
 | Persona | Technical? | DDD Literacy |
 |---------|-----------|--------------|
@@ -213,7 +213,7 @@ let technical concepts emerge from the conversation. Never lead with jargon.
 - The core facilitation question: **"Who does what, with what, why?"**
 - Each story covers ONE concrete example, keeping discussions manageable
 
-**Key technique for alty:** The "who-does-what-with-what-why" framework
+**Key technique for alto:** The "who-does-what-with-what-why" framework
 maps directly to a conversational question sequence:
 1. "Who starts this process?" (Actor)
 2. "What do they do?" (Activity)
@@ -221,7 +221,7 @@ maps directly to a conversational question sequence:
 4. "Why do they do it?" (Business motivation)
 5. "What happens next?" (Flow / Event chain)
 
-**Adaptation for text-based CLI:** Since alty is text-only (no visual
+**Adaptation for text-based CLI:** Since alto is text-only (no visual
 sticky notes), the question flow replaces the pictographic language. The answers
 build a textual domain story that can later be visualized in docs.
 
@@ -236,7 +236,7 @@ build a textual domain story that can later be visualized in docs.
 - Events are written in past tense ("Order Placed", "Payment Received")
 - No technical vocabulary required -- "things that happened" is universal
 
-**Text-based equivalent for alty:**
+**Text-based equivalent for alto:**
 - Instead of colored stickies, use labeled categories in the conversation:
   - "What happened?" -> Domain Event
   - "Who did it?" -> Actor
@@ -262,7 +262,7 @@ Three Amigos / Specification Workshop pattern
 - Three Amigos (business, dev, QA) discuss one story at a time
 - Discovers edge cases through "What about when...?" questions
 
-**Text-based equivalent for alty:**
+**Text-based equivalent for alto:**
 - After identifying a key business object, ask: "Give me an example of a
   typical [order/request/application]"
 - Then probe: "What about when something goes wrong? What if the payment
@@ -283,9 +283,9 @@ Eight-step iterative process:
 7. **Define** -- Bounded Context Canvas
 8. **Code** -- Implementation
 
-**Relevance to alty:** Steps 1-5 map to the guided question flow. Steps
+**Relevance to alto:** Steps 1-5 map to the guided question flow. Steps
 6-8 map to artifact generation and ticket creation. The process is explicitly
-"not linear" -- alty should allow jumping between phases.
+"not linear" -- alto should allow jumping between phases.
 
 ### 5. SingleStone's Domain-Driven Discovery
 
@@ -298,7 +298,7 @@ Four-phase workshop methodology:
 3. **Explore Future State** -- Bounded contexts + Core Domain Charts
 4. **Create Roadmap** -- Now/Next/Later prioritization
 
-**Relevance to alty:** Phase 1 questions ("What problem? Who? What
+**Relevance to alto:** Phase 1 questions ("What problem? Who? What
 success? What constraints?") are ideal opening questions for ALL personas.
 
 ### 6. Qlerify (Commercial SaaS)
@@ -311,8 +311,8 @@ success? What constraints?") are ideal opening questions for ALL personas.
 - Asks: "Does this terminology reflect the language used in your business?"
 - Cloud-only, no local/CLI equivalent
 
-**Gap Qlerify fills vs alty:** Qlerify uses visual EventStorming boards;
-alty must achieve the same discovery through text-only conversation.
+**Gap Qlerify fills vs alto:** Qlerify uses visual EventStorming boards;
+alto must achieve the same discovery through text-only conversation.
 
 ---
 
@@ -467,11 +467,11 @@ Q9: "Here is the domain model I extracted: [summary]. Corrections?"
 
 ---
 
-## Implementation Recommendations for alty
+## Implementation Recommendations for alto
 
 ### 1. Persona Detection Strategy
 
-Detect persona early in the flow (during `alty init` or `alty guide`):
+Detect persona early in the flow (during `alto init` or `alto guide`):
 
 ```
 "Before we start, which best describes you?
@@ -504,7 +504,7 @@ Store questions in a structured format with both registers:
 
 ### 3. Internal Terminology Mapping
 
-Regardless of which register the questions use, alty should internally
+Regardless of which register the questions use, alto should internally
 map answers to DDD concepts. The generated artifacts (DDD.md, architecture
 tests, tickets) always use proper DDD terminology, but the glossary includes
 the user's original words.

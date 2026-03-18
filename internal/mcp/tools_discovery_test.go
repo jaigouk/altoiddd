@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	"github.com/alty-cli/alty/internal/discovery/domain"
-	mcptools "github.com/alty-cli/alty/internal/mcp"
+	"github.com/alto-cli/alto/internal/composition"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	"github.com/alto-cli/alto/internal/discovery/domain"
+	mcptools "github.com/alto-cli/alto/internal/mcp"
 )
 
 // stubDiscoveryPublisher implements sharedapp.EventPublisher for testing.

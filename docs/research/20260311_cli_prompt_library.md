@@ -5,11 +5,11 @@
 
 ## Summary
 
-Evaluated three options for implementing alty's interactive CLI prompts (`alty guide`): charmbracelet/huh, charmbracelet/bubbles (raw Bubble Tea), and raw stdin with bufio.Scanner. **Recommendation: charmbracelet/huh v2** -- it provides the exact prompt primitives alty needs (Select, Input, Text, Confirm) with built-in accessibility mode, minimal integration surface, and wraps cleanly behind a port interface.
+Evaluated three options for implementing alto's interactive CLI prompts (`alto guide`): charmbracelet/huh, charmbracelet/bubbles (raw Bubble Tea), and raw stdin with bufio.Scanner. **Recommendation: charmbracelet/huh v2** -- it provides the exact prompt primitives alto needs (Select, Input, Text, Confirm) with built-in accessibility mode, minimal integration surface, and wraps cleanly behind a port interface.
 
 ## Research Question
 
-Which CLI prompt library best fits alty's interactive discovery flow requirements?
+Which CLI prompt library best fits alto's interactive discovery flow requirements?
 
 - Persona selection (choose 1-4)
 - Question display with multi-line text input
@@ -37,7 +37,7 @@ Which CLI prompt library best fits alty's interactive discovery flow requirement
 | **Accessibility** | Built-in `WithAccessible(true)` mode for screen readers | [Context7 docs](/charmbracelet/huh), [Issue #611](https://github.com/charmbracelet/huh/issues/611) |
 | **Ctrl+C** | Returns `huh.ErrUserAborted` -- sentinel error | [Context7 docs](/charmbracelet/huh) |
 
-**API mapping to alty use cases:**
+**API mapping to alto use cases:**
 
 | Use Case | huh Component | Code Pattern |
 |----------|---------------|-------------|
@@ -69,7 +69,7 @@ Which CLI prompt library best fits alty's interactive discovery flow requirement
 | **Accessibility** | None built-in -- must implement manually | No accessibility package |
 | **Ctrl+C** | Manual: check `tea.KeyPressMsg` for "ctrl+c" and return `tea.Quit` | [Context7 docs](/charmbracelet/bubbletea) |
 
-**API mapping to alty use cases:**
+**API mapping to alto use cases:**
 
 Each prompt requires implementing the full Model-View-Update (MVU) pattern:
 - `Init() tea.Cmd`
@@ -102,7 +102,7 @@ For persona selection alone, you'd need: a model struct, key handling for arrow 
 | **Accessibility** | Inherently accessible (plain text I/O) | N/A |
 | **Ctrl+C** | Must handle `os.Signal` manually | N/A |
 
-**API mapping to alty use cases:**
+**API mapping to alto use cases:**
 
 | Use Case | Implementation |
 |----------|---------------|
@@ -168,7 +168,7 @@ This port keeps the domain clean regardless of which library implements the prom
 1. **Non-technical users** (PRD Personas: Product Owner, Domain Expert) -- needs polished UX, not raw terminal prompts. Eliminates raw stdin as primary option.
 2. **Cross-platform** (PRD: "works with Claude Code, Cursor, Roo Code, OpenCode") -- all three options satisfy this. No differentiator.
 3. **Accessibility** -- huh has first-class support. Raw stdin is inherently accessible. Bubbles requires custom work.
-4. **Dependency budget** -- alty already depends on Cobra (which is lightweight). Adding ~27 transitive deps from the Charm ecosystem is a real cost, but these are all pure Go, well-maintained, MIT-licensed packages from a reputable organization (Charm, 28k+ GitHub stars on bubbletea).
+4. **Dependency budget** -- alto already depends on Cobra (which is lightweight). Adding ~27 transitive deps from the Charm ecosystem is a real cost, but these are all pure Go, well-maintained, MIT-licensed packages from a reputable organization (Charm, 28k+ GitHub stars on bubbletea).
 5. **Maintainability** -- huh's declarative API means less custom code to maintain. Bubbles' MVU pattern means more custom code. Raw stdin means the most custom code.
 
 ## Recommendation
@@ -177,10 +177,10 @@ This port keeps the domain clean regardless of which library implements the prom
 
 **Rationale:**
 
-1. **Direct API match**: Every alty prompt type (Select, Input, Text, Confirm) maps 1:1 to a huh component. No glue code needed.
+1. **Direct API match**: Every alto prompt type (Select, Input, Text, Confirm) maps 1:1 to a huh component. No glue code needed.
 2. **Accessibility toggle**: `WithAccessible(true)` gives free screen reader support and is also useful for testing (no TUI, just stdin/stdout).
 3. **Ctrl+C is a sentinel error**: `huh.ErrUserAborted` integrates cleanly with Go error handling -- no signal goroutine needed.
-4. **Pure Go, MIT, actively maintained**: v2.0.3 released 2026-03-10. No CGO. Compatible with Go 1.23+ (alty uses 1.26).
+4. **Pure Go, MIT, actively maintained**: v2.0.3 released 2026-03-10. No CGO. Compatible with Go 1.23+ (alto uses 1.26).
 5. **Port-friendly**: Wraps trivially behind a `Prompter` interface, keeping domain layer clean.
 
 **Tradeoff acknowledged**: ~27 transitive dependencies is non-trivial. However, these are all from the Charm ecosystem (well-maintained, pure Go, MIT), and the alternative is writing and maintaining ~500+ lines of custom prompt code (bubbles) or ~300+ lines with poor UX (raw stdin).
@@ -196,13 +196,13 @@ This port keeps the domain clean regardless of which library implements the prom
 - [bubbletea v2 pkg.go.dev](https://pkg.go.dev/charm.land/bubbletea/v2) -- v2.0.2, MIT, Go 1.23+
 - [huh accessibility issue #611](https://github.com/charmbracelet/huh/issues/611) -- Screen reader improvements
 - [huh accessibility PR #620](https://github.com/charmbracelet/huh/pull/620) -- Prompt improvements for accessible mode
-- [alty Discovery ports](file:///home/kusanagi/Alty/alty-cli/internal/discovery/application/ports.go) -- Existing port interfaces
-- [alty PRD](file:///home/kusanagi/Alty/alty-cli/docs/PRD.md) -- Persona and UX requirements
+- [alto Discovery ports](file:///home/kusanagi/Alto/alto-cli/internal/discovery/application/ports.go) -- Existing port interfaces
+- [alto PRD](file:///home/kusanagi/Alto/alto-cli/docs/PRD.md) -- Persona and UX requirements
 
 ## Follow-up Tasks
 
 - [ ] Task 1: Define `Prompter` port interface in `internal/discovery/application/ports.go` (or CLI-level composition)
 - [ ] Task 2: Implement huh v2 adapter for `Prompter` in infrastructure layer
 - [ ] Task 3: Implement raw stdin adapter for `Prompter` (fallback / `--no-tui` flag)
-- [ ] Task 4: Add `--accessible` / `--no-tui` CLI flag to `alty guide` command
+- [ ] Task 4: Add `--accessible` / `--no-tui` CLI flag to `alto guide` command
 - [ ] Task 5: Wire huh v2 dependency: `go get github.com/charmbracelet/huh/v2@v2.0.3`

@@ -1,7 +1,7 @@
 # Research: Tier 3 Autonomous Event Side-Effects Design
 
 **Date:** 2026-03-09
-**Spike Ticket:** alty-4pp.11
+**Spike Ticket:** alto-4pp.11
 **Status:** Final
 
 ## Summary
@@ -43,7 +43,7 @@ This spike investigates Tier 3 event subscribers — those that perform autonomo
 
 **Safe Autonomous (Tier 3):** Infrastructure bookkeeping only. No user-visible artifacts. No files written. No tickets created. Failure is acceptable (log and continue).
 
-**Needs User Approval:** Produces files, documents, tickets, or other user-visible artifacts. alty's "Preview Before Action" principle applies.
+**Needs User Approval:** Produces files, documents, tickets, or other user-visible artifacts. alto's "Preview Before Action" principle applies.
 
 **Not Applicable:** No side-effect reaction defined or needed.
 
@@ -54,7 +54,7 @@ This spike investigates Tier 3 event subscribers — those that perform autonomo
 | `TicketFlagged` | **SAFE AUTONOMOUS** | `bd label add <ticketID> review_needed` | Infrastructure bookkeeping. Label is metadata, not user-visible artifact. Failure = label missing (acceptable). |
 | `FlagCleared` | **SAFE AUTONOMOUS** | `bd label remove <ticketID> review_needed` | Same as above. |
 | `BootstrapCompletedEvent` | NOT APPLICABLE | (none) | Session log already handled by slog. No additional side-effect needed. |
-| `ConfigsGenerated` | NEEDS APPROVAL | Write to `.alty/knowledge/tools/` | Cache update produces files. User should approve cache writes. |
+| `ConfigsGenerated` | NEEDS APPROVAL | Write to `.alto/knowledge/tools/` | Cache update produces files. User should approve cache writes. |
 | `DiscoveryCompletedEvent` | NEEDS APPROVAL | Artifact generation | Already handled by Tier 2 readiness → handler invocation. |
 | `DomainModelGenerated` | NEEDS APPROVAL | Multiple downstream workflows | Triggers fitness/tickets/configs — all need approval. |
 | `TicketPlanApproved` | NOT APPLICABLE | Ripple review | Already marks ripple_review ready; review itself requires user action. |
@@ -263,7 +263,7 @@ This follows the existing patterns (`SubprocessGateRunner`, `BeadsTicketReader`)
 
 **Answer:** Subprocess for Tier 3 implementation.
 
-Direct JSONL access would couple alty to beads internal format and bypass beads hooks (git sync, validation). The subprocess overhead (~50ms) is negligible for label operations that occur once per ticket close.
+Direct JSONL access would couple alto to beads internal format and bypass beads hooks (git sync, validation). The subprocess overhead (~50ms) is negligible for label operations that occur once per ticket close.
 
 ### Q4: Failure modes and rollback strategies?
 

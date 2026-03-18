@@ -3,10 +3,10 @@ last_reviewed: 2026-02-22
 owner: architecture
 status: complete
 type: spike
-ticket: alty-k7m.4
+ticket: alto-k7m.4
 ---
 
-# CLI & MCP Server Design: alty
+# CLI & MCP Server Design: alto
 
 > **Spike:** k7m.4 — Design CLI (`vs`) and MCP server interfaces
 > **Timebox:** 4 hours
@@ -32,7 +32,7 @@ ticket: alty-k7m.4
 
 The 10-question guided DDD discovery flow (persona detection, branching, playback loops)
 is too complex for any CLI framework's built-in prompting. This must be a custom
-**application-layer service** (`GuidedDiscoveryService`). The `alty guide` command is a
+**application-layer service** (`GuidedDiscoveryService`). The `alto guide` command is a
 thin Typer adapter calling that service.
 
 ### Dependencies added
@@ -74,7 +74,7 @@ vs
 │   ├── --tests                   # pytest
 │   └── --fitness                 # import-linter + pytestarch
 ├── kb                            # Knowledge Base context — RLM lookup (C18)
-│   └── <topic>                   # e.g., alty kb ddd/aggregate
+│   └── <topic>                   # e.g., alto kb ddd/aggregate
 ├── doc-health                    # Knowledge Base context — freshness report (C19)
 ├── doc-review                    # Knowledge Base context — mark docs as reviewed (C19)
 ├── ticket-health                 # Ticket Freshness context — review_needed report (C20)
@@ -89,29 +89,29 @@ vs
 
 | Command | Bounded Context | Application Port (Protocol) | DDD Aggregate |
 |---------|----------------|---------------------------|---------------|
-| `alty init` | Bootstrap | `BootstrapPort` | BootstrapSession |
-| `alty init --existing` | Rescue (via Bootstrap) | `RescuePort` | GapAnalysis |
-| `alty guide` | Guided Discovery | `DiscoveryPort` | DiscoverySession |
-| `alty generate artifacts` | Domain Model | `ArtifactGenerationPort` | DomainModel |
-| `alty generate fitness` | Architecture Testing | `FitnessGenerationPort` | FitnessTestSuite |
-| `alty generate tickets` | Ticket Pipeline | `TicketGenerationPort` | TicketPlan |
-| `alty generate configs` | Tool Translation | `ConfigGenerationPort` | ToolConfig |
-| `alty detect` | Bootstrap | `ToolDetectionPort` | (part of BootstrapSession) |
-| `alty check` | Architecture Testing | `QualityGatePort` | (orchestration) |
-| `alty kb <topic>` | Knowledge Base | `KnowledgeLookupPort` | KnowledgeEntry |
-| `alty doc-health` | Knowledge Base | `DocHealthPort` | (query) |
-| `alty doc-review` | Knowledge Base | `DocReviewPort` | (command) |
-| `alty ticket-health` | Ticket Freshness | `TicketHealthPort` | RippleReview |
-| `alty persona list` | Tool Translation | `PersonaQueryPort` | (query) |
-| `alty persona generate` | Tool Translation | `PersonaGenerationPort` | ToolConfig |
+| `alto init` | Bootstrap | `BootstrapPort` | BootstrapSession |
+| `alto init --existing` | Rescue (via Bootstrap) | `RescuePort` | GapAnalysis |
+| `alto guide` | Guided Discovery | `DiscoveryPort` | DiscoverySession |
+| `alto generate artifacts` | Domain Model | `ArtifactGenerationPort` | DomainModel |
+| `alto generate fitness` | Architecture Testing | `FitnessGenerationPort` | FitnessTestSuite |
+| `alto generate tickets` | Ticket Pipeline | `TicketGenerationPort` | TicketPlan |
+| `alto generate configs` | Tool Translation | `ConfigGenerationPort` | ToolConfig |
+| `alto detect` | Bootstrap | `ToolDetectionPort` | (part of BootstrapSession) |
+| `alto check` | Architecture Testing | `QualityGatePort` | (orchestration) |
+| `alto kb <topic>` | Knowledge Base | `KnowledgeLookupPort` | KnowledgeEntry |
+| `alto doc-health` | Knowledge Base | `DocHealthPort` | (query) |
+| `alto doc-review` | Knowledge Base | `DocReviewPort` | (command) |
+| `alto ticket-health` | Ticket Freshness | `TicketHealthPort` | RippleReview |
+| `alto persona list` | Tool Translation | `PersonaQueryPort` | (query) |
+| `alto persona generate` | Tool Translation | `PersonaGenerationPort` | ToolConfig |
 
 ### CLI Entry Point
 
 ```toml
 # pyproject.toml
 [project.scripts]
-alty = "src.infrastructure.cli.main:app"
-alty-mcp = "src.infrastructure.mcp.server:main"
+alto = "src.infrastructure.cli.main:app"
+alto-mcp = "src.infrastructure.mcp.server:main"
 ```
 
 ```python
@@ -120,7 +120,7 @@ import typer
 
 app = typer.Typer(
     name="vs",
-    help="alty: guided project bootstrapper (DDD + TDD + SOLID)",
+    help="alto: guided project bootstrapper (DDD + TDD + SOLID)",
     no_args_is_help=True,
 )
 
@@ -145,30 +145,30 @@ Tools handle write operations; resources handle read-only queries.
 
 | Tool Name | CLI Equivalent | Parameters | Returns |
 |-----------|---------------|------------|---------|
-| `init_project` | `alty init` | `project_dir: str, existing: bool = False` | `InitResult` |
-| `guide_ddd` | `alty guide` | `project_dir: str, quick: bool = False` | `DiscoveryResult` |
-| `generate_artifacts` | `alty generate artifacts` | `project_dir: str, artifact_type: str` | `GenerationResult` |
-| `generate_fitness` | `alty generate fitness` | `project_dir: str` | `FitnessResult` |
-| `generate_tickets` | `alty generate tickets` | `project_dir: str, preview: bool = True` | `TicketPlanResult` |
-| `generate_configs` | `alty generate configs` | `project_dir: str, tools: list[str]` | `ConfigResult` |
-| `detect_tools` | `alty detect` | `project_dir: str` | `DetectionResult` |
-| `check_quality` | `alty check` | `project_dir: str, gates: list[str]` | `QualityResult` |
-| `doc_health` | `alty doc-health` | `project_dir: str` | `DocHealthResult` |
-| `doc_review` | `alty doc-review` | `project_dir: str, docs: list[str]` | `ReviewResult` |
-| `ticket_health` | `alty ticket-health` | `project_dir: str` | `TicketHealthResult` |
+| `init_project` | `alto init` | `project_dir: str, existing: bool = False` | `InitResult` |
+| `guide_ddd` | `alto guide` | `project_dir: str, quick: bool = False` | `DiscoveryResult` |
+| `generate_artifacts` | `alto generate artifacts` | `project_dir: str, artifact_type: str` | `GenerationResult` |
+| `generate_fitness` | `alto generate fitness` | `project_dir: str` | `FitnessResult` |
+| `generate_tickets` | `alto generate tickets` | `project_dir: str, preview: bool = True` | `TicketPlanResult` |
+| `generate_configs` | `alto generate configs` | `project_dir: str, tools: list[str]` | `ConfigResult` |
+| `detect_tools` | `alto detect` | `project_dir: str` | `DetectionResult` |
+| `check_quality` | `alto check` | `project_dir: str, gates: list[str]` | `QualityResult` |
+| `doc_health` | `alto doc-health` | `project_dir: str` | `DocHealthResult` |
+| `doc_review` | `alto doc-review` | `project_dir: str, docs: list[str]` | `ReviewResult` |
+| `ticket_health` | `alto ticket-health` | `project_dir: str` | `TicketHealthResult` |
 
 ### MCP Resources
 
 | Resource URI | Description | Data Source |
 |-------------|-------------|-------------|
-| `alty://knowledge/ddd/{topic}` | DDD patterns/references | `.alty/knowledge/ddd/` |
-| `alty://knowledge/tools/{tool}` | AI tool conventions | `.alty/knowledge/tools/` |
-| `alty://knowledge/conventions/{topic}` | TDD/SOLID/quality gate refs | `.alty/knowledge/conventions/` |
-| `alty://project/{dir}/domain-model` | Current DDD.md | `docs/DDD.md` |
-| `alty://project/{dir}/architecture` | Current ARCHITECTURE.md | `docs/ARCHITECTURE.md` |
-| `alty://project/{dir}/prd` | Current PRD.md | `docs/PRD.md` |
-| `alty://tickets/ready` | Tickets in ready state | beads `bd ready` |
-| `alty://tickets/{id}` | Single ticket details | beads `bd show` |
+| `alto://knowledge/ddd/{topic}` | DDD patterns/references | `.alto/knowledge/ddd/` |
+| `alto://knowledge/tools/{tool}` | AI tool conventions | `.alto/knowledge/tools/` |
+| `alto://knowledge/conventions/{topic}` | TDD/SOLID/quality gate refs | `.alto/knowledge/conventions/` |
+| `alto://project/{dir}/domain-model` | Current DDD.md | `docs/DDD.md` |
+| `alto://project/{dir}/architecture` | Current ARCHITECTURE.md | `docs/ARCHITECTURE.md` |
+| `alto://project/{dir}/prd` | Current PRD.md | `docs/PRD.md` |
+| `alto://tickets/ready` | Tickets in ready state | beads `bd ready` |
+| `alto://tickets/{id}` | Single ticket details | beads `bd show` |
 
 ### MCP Server Entry Point
 
@@ -176,11 +176,11 @@ Tools handle write operations; resources handle read-only queries.
 # src/infrastructure/mcp/server.py
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("alty", lifespan=app_lifespan)
+mcp = FastMCP("alto", lifespan=app_lifespan)
 
 @mcp.tool()
 def init_project(project_dir: str, existing: bool = False) -> dict[str, str]:
-    """Initialize a alty project."""
+    """Initialize a alto project."""
     handler = ctx.app.bootstrap_handler
     result = handler.execute(InitProjectCommand(project_dir, existing))
     return {"status": result.status, "summary": result.summary}
@@ -199,19 +199,19 @@ Both CLI and MCP adapters depend on these ports. Infrastructure adapters impleme
 
 ```
 src/application/ports/
-├── bootstrap_port.py        # BootstrapPort — alty init orchestration
-├── rescue_port.py           # RescuePort — alty init --existing
-├── discovery_port.py        # DiscoveryPort — alty guide
+├── bootstrap_port.py        # BootstrapPort — alto init orchestration
+├── rescue_port.py           # RescuePort — alto init --existing
+├── discovery_port.py        # DiscoveryPort — alto guide
 ├── artifact_generation_port.py  # ArtifactGenerationPort
 ├── fitness_generation_port.py   # FitnessGenerationPort
 ├── ticket_generation_port.py    # TicketGenerationPort
 ├── config_generation_port.py    # ConfigGenerationPort
-├── tool_detection_port.py   # ToolDetectionPort — alty detect
-├── quality_gate_port.py     # QualityGatePort — alty check
-├── knowledge_lookup_port.py # KnowledgeLookupPort — alty kb
-├── doc_health_port.py       # DocHealthPort — alty doc-health
-├── ticket_health_port.py    # TicketHealthPort — alty ticket-health
-└── persona_port.py          # PersonaPort — alty persona
+├── tool_detection_port.py   # ToolDetectionPort — alto detect
+├── quality_gate_port.py     # QualityGatePort — alto check
+├── knowledge_lookup_port.py # KnowledgeLookupPort — alto kb
+├── doc_health_port.py       # DocHealthPort — alto doc-health
+├── ticket_health_port.py    # TicketHealthPort — alto ticket-health
+└── persona_port.py          # PersonaPort — alto persona
 ```
 
 ### Port Example
@@ -251,7 +251,7 @@ MCP (FastMCP) ─┘           │
 # src/infrastructure/composition.py
 def create_app() -> AppContext:
     """Wire all ports to their implementations."""
-    knowledge_service = FileKnowledgeService(Path(".alty/knowledge"))
+    knowledge_service = FileKnowledgeService(Path(".alto/knowledge"))
     scaffold_service = FileScaffoldService()
     beads_service = BeadsService()
     # ... wire all ports
@@ -284,7 +284,7 @@ The CLI adapts output based on the detected persona (from `docs/DDD.md` § 2: Ub
 
 **Technical register (Solo Developer):**
 ```
-alty guide — DDD Discovery (question 3/10)
+alto guide — DDD Discovery (question 3/10)
 
   Phase: Primary Story
   Context: Guided Discovery → DiscoverySession
@@ -297,7 +297,7 @@ alty guide — DDD Discovery (question 3/10)
 
 **Non-technical register (Product Owner):**
 ```
-alty guide — Project Discovery (question 3/10)
+alto guide — Project Discovery (question 3/10)
 
   Let's map out how your product works in practice.
 
@@ -330,9 +330,9 @@ class OutputFormatter:
 ### CLI Flags
 
 ```
-alty guide --persona developer     # Force technical register
-alty guide --persona po            # Force non-technical register
-alty guide                         # Auto-detect via persona question
+alto guide --persona developer     # Force technical register
+alto guide --persona po            # Force non-technical register
+alto guide                         # Auto-detect via persona question
 ```
 
 ---
@@ -341,17 +341,17 @@ alty guide                         # Auto-detect via persona question
 
 ### What This Is
 
-alty generates agent persona configs for AI coding tools. Each persona (developer,
+alto generates agent persona configs for AI coding tools. Each persona (developer,
 researcher, tech-lead, PM, QA) has domain-aware instructions that reference the project's
 ubiquitous language and bounded contexts.
 
 ### CLI Surface
 
 ```
-alty persona list                                    # Show available personas
-alty persona generate developer                      # Generate developer persona for detected tools
-alty persona generate --all                           # Generate all personas
-alty persona generate developer --tool claude-code    # Generate for specific tool
+alto persona list                                    # Show available personas
+alto persona generate developer                      # Generate developer persona for detected tools
+alto persona generate --all                           # Generate all personas
+alto persona generate developer --tool claude-code    # Generate for specific tool
 ```
 
 ### MCP Surface
@@ -362,7 +362,7 @@ def generate_persona(persona_name: str, tool: str | None = None) -> dict:
     """Generate agent persona configuration for an AI coding tool."""
     ...
 
-@mcp.resource("alty://personas/{name}")
+@mcp.resource("alto://personas/{name}")
 def get_persona(name: str) -> str:
     """Get persona definition."""
     ...
@@ -370,7 +370,7 @@ def get_persona(name: str) -> str:
 
 ### Generated Output
 
-For Claude Code, `alty persona generate developer` produces `.claude/agents/developer.md`
+For Claude Code, `alto persona generate developer` produces `.claude/agents/developer.md`
 with the project's ubiquitous language terms, bounded context boundaries, and DDD/TDD/SOLID
 rules embedded.
 
@@ -383,9 +383,9 @@ Addressing the 4 open questions from `docs/DDD.md` § 8:
 | Question | Recommendation |
 |----------|---------------|
 | Should MCP server be its own bounded context? | **No.** MCP is an infrastructure adapter (port), not a bounded context. Same as CLI — both are entry points to the same application core. |
-| How does `alty doc-health` relate to Ticket Freshness? | **Separate.** Doc freshness is time-based (Knowledge Base context). Ticket freshness is event-based (Ticket Freshness context). They share a health dashboard but have different domain logic. |
+| How does `alto doc-health` relate to Ticket Freshness? | **Separate.** Doc freshness is time-based (Knowledge Base context). Ticket freshness is event-based (Ticket Freshness context). They share a health dashboard but have different domain logic. |
 | Should Knowledge Base support user contributions? | **Not in P0.** Start curated-only. P2 could add community patterns via PR workflow. |
-| How does complexity budget interact with rescue mode? | **Ask the user.** During `alty init --existing`, after gap analysis, prompt for subdomain classification. Don't auto-classify — domain knowledge requires human input. |
+| How does complexity budget interact with rescue mode? | **Ask the user.** During `alto init --existing`, after gap analysis, prompt for subdomain classification. Don't auto-classify — domain knowledge requires human input. |
 
 ---
 
@@ -395,20 +395,20 @@ Addressing the 4 open questions from `docs/DDD.md` § 8:
 |---|-------|------|----------------|------------|
 | 1 | Set up Typer CLI entry point with subcommand stubs | Task | CLI Framework (Generic) | — |
 | 2 | Define application layer port Protocols | Task | Application Layer | — |
-| 3 | Implement `alty init` (new project flow) | Feature | Bootstrap | 1, 2 |
-| 4 | Implement `alty detect` (global settings scan) | Task | Bootstrap | 1, 2 |
-| 5 | Implement `alty guide` (10-question DDD flow) | Feature | Guided Discovery | 1, 2 |
-| 6 | Implement `alty generate artifacts` | Task | Domain Model | 5 |
-| 7 | Implement `alty generate fitness` | Task | Architecture Testing | 6 |
-| 8 | Implement `alty generate tickets` | Task | Ticket Pipeline | 6 |
-| 9 | Implement `alty generate configs` | Task | Tool Translation | 6 |
-| 10 | Implement `alty check` (quality gate runner) | Task | Architecture Testing | 1, 2 |
-| 11 | Implement `alty kb` (knowledge lookup) | Task | Knowledge Base | 1, 2 |
-| 12 | Migrate `alty doc-health` from bash to Python | Task | Knowledge Base | 1, 2 |
-| 13 | Implement `alty ticket-health` | Task | Ticket Freshness | 1, 2 |
-| 14 | Implement `alty persona` commands | Task | Tool Translation | 1, 2 |
+| 3 | Implement `alto init` (new project flow) | Feature | Bootstrap | 1, 2 |
+| 4 | Implement `alto detect` (global settings scan) | Task | Bootstrap | 1, 2 |
+| 5 | Implement `alto guide` (10-question DDD flow) | Feature | Guided Discovery | 1, 2 |
+| 6 | Implement `alto generate artifacts` | Task | Domain Model | 5 |
+| 7 | Implement `alto generate fitness` | Task | Architecture Testing | 6 |
+| 8 | Implement `alto generate tickets` | Task | Ticket Pipeline | 6 |
+| 9 | Implement `alto generate configs` | Task | Tool Translation | 6 |
+| 10 | Implement `alto check` (quality gate runner) | Task | Architecture Testing | 1, 2 |
+| 11 | Implement `alto kb` (knowledge lookup) | Task | Knowledge Base | 1, 2 |
+| 12 | Migrate `alto doc-health` from bash to Python | Task | Knowledge Base | 1, 2 |
+| 13 | Implement `alto ticket-health` | Task | Ticket Freshness | 1, 2 |
+| 14 | Implement `alto persona` commands | Task | Tool Translation | 1, 2 |
 | 15 | Implement MCP server adapter | Task | MCP Framework (Generic) | 2 |
-| 16 | Implement `alty init --existing` (rescue flow) | Feature | Rescue | 3, 5 |
+| 16 | Implement `alto init --existing` (rescue flow) | Feature | Rescue | 3, 5 |
 | 17 | Spike: Guided DDD flow over MCP (multi-turn) | Spike | MCP + Guided Discovery | 15 |
 
 ---
@@ -420,7 +420,7 @@ Addressing the 4 open questions from `docs/DDD.md` § 8:
 | Typer pre-1.0 (v0.24.1) — API could change | Low | Pin in lockfile; FastAPI ecosystem maintains backward compat |
 | MCP SDK v2 breaking changes | Medium | Pin `mcp>=1.26,<2.0`; monitor migration guide |
 | Guide flow too complex for CLI prompting | Medium | Application-layer service; CLI/MCP are thin adapters |
-| Bash `bin/alty` must coexist with Python `vs` | Low | Transitional: bash handles init/doc-health now; Python takes over progressively |
+| Bash `bin/alto` must coexist with Python `vs` | Low | Transitional: bash handles init/doc-health now; Python takes over progressively |
 | 10-question flow over MCP (stateful sessions) | Medium | Spike ticket #17; options: stateful server, context passing, MCP prompts |
 
 ---
@@ -431,4 +431,4 @@ Addressing the 4 open questions from `docs/DDD.md` § 8:
 - MCP SDK research: `docs/research/20260222_mcp_server_python_sdk.md`
 - DDD artifacts: `docs/DDD.md`
 - PRD: `docs/PRD.md`
-- Existing CLI: `bin/alty`
+- Existing CLI: `bin/alto`

@@ -2,14 +2,14 @@
 last_reviewed: 2026-02-22
 owner: product
 status: complete
-spike: alty-k7m.9
+spike: alto-k7m.9
 ---
 
 # Killer Features Research Report
 
 ## Research Question
 
-Which killer features should alty prioritize to differentiate from MetaGPT, Pythagora, Lovable/Bolt/v0, GPT-Engineer, and PRD generators (WriteMyPrd, Tara AI)?
+Which killer features should alto prioritize to differentiate from MetaGPT, Pythagora, Lovable/Bolt/v0, GPT-Engineer, and PRD generators (WriteMyPrd, Tara AI)?
 
 ## Decision
 
@@ -34,8 +34,8 @@ Which killer features should alty prioritize to differentiate from MetaGPT, Pyth
 - Complexity Budget (feature 3) is low effort and multiplies the value of features 1 and 2.
 
 **P1 (Growth) — 2 features:**
-- Rescue Mode is the deepest moat but requires `alty init` to be solid first. High effort, deferred.
-- Living Knowledge Base ships with basic structure in P0 (static `.alty/knowledge/`), smart drift detection added in P1.
+- Rescue Mode is the deepest moat but requires `alto init` to be solid first. High effort, deferred.
+- Living Knowledge Base ships with basic structure in P0 (static `.alto/knowledge/`), smart drift detection added in P1.
 
 ## 2. Persona Validation
 
@@ -58,7 +58,7 @@ Which killer features should alty prioritize to differentiate from MetaGPT, Pyth
 
 ### Direct Threats
 
-| Competitor | Status (Feb 2026) | Overlap with alty | Key Gap |
+| Competitor | Status (Feb 2026) | Overlap with alto | Key Gap |
 |---|---|---|---|
 | **Amazon Kiro** | Active, proprietary, cloud-only | Spec-driven: requirements, design, tasks, tests | No DDD, no Python, AWS-locked |
 | **GitHub Spec Kit** | v0.1.4, MIT, experimental | Constitution + Spec + Plan + Tasks | No DDD, no domain discovery |
@@ -76,7 +76,7 @@ No tool in the market combines:
 
 ### Risk Window
 
-The SDD (Spec-Driven Development) pattern is gaining traction in 2026. Kiro (AWS) and Spec-Kit (GitHub) follow requirements-to-tasks workflows but lack DDD. If AWS adds DDD support and Python templates, the gap narrows. The window to establish alty as the DDD-aware entrant is open now.
+The SDD (Spec-Driven Development) pattern is gaining traction in 2026. Kiro (AWS) and Spec-Kit (GitHub) follow requirements-to-tasks workflows but lack DDD. If AWS adds DDD support and Python templates, the gap narrows. The window to establish alto as the DDD-aware entrant is open now.
 
 ## 4. Feature-to-PRD Mapping
 
@@ -193,13 +193,13 @@ Key interactions:
 
 | Phase | Deliverable |
 |-------|-------------|
-| Phase 1: Foundation | PRD + DDD + Architecture for alty itself |
-| Phase 2: Core CLI | `alty init` + guided DDD questions + artifact generation |
+| Phase 1: Foundation | PRD + DDD + Architecture for alto itself |
+| Phase 2: Core CLI | `alto init` + guided DDD questions + artifact generation |
 | Phase 3: Fitness & Tickets | Architecture fitness function generation + ticket pipeline + complexity budget |
 | Phase 4: Multi-Tool | Config generation for Claude Code, Cursor, Antigravity, OpenCode |
 | Phase 5: MCP Server | MCP tools exposing same core as CLI |
-| Phase 6: Rescue Mode | `alty init --existing` with structural migration |
-| Phase 7: Doc Maintenance | `alty doc-health`, drift detection, maintenance registry |
+| Phase 6: Rescue Mode | `alto init --existing` with structural migration |
+| Phase 7: Doc Maintenance | `alto doc-health`, drift detection, maintenance registry |
 
 ### Section 9 (Open Questions) Changes
 
@@ -251,7 +251,7 @@ These should be created when the Phase 2 epic is established:
 | grimp | v3.14 (Dec 2025) | BSD-2 | Programmatic import graph API (underlies import-linter) |
 | deply | v0.8.0 | BSD-3 | YAML-driven + Mermaid diagram generation (secondary) |
 
-**Key finding:** Java has Context Mapper + ArchUnit + jMolecules for DDD-to-test pipelines. Python has nothing equivalent. alty would be building novel capability in the Python ecosystem.
+**Key finding:** Java has Context Mapper + ArchUnit + jMolecules for DDD-to-test pipelines. Python has nothing equivalent. alto would be building novel capability in the Python ecosystem.
 
 **Risk:** import-linter's Python API is read-only. Generating contracts means emitting TOML programmatically. A Pydantic model layer should wrap this to avoid string manipulation bugs.
 
@@ -259,14 +259,14 @@ These should be created when the Phase 2 epic is established:
 
 | Tool | Spec-Driven | DDD | Python | Local | Fitness Tests | Multi-Tool |
 |---|---|---|---|---|---|---|
-| alty | Yes | Yes | Yes | Yes | Yes | Yes |
+| alto | Yes | Yes | Yes | Yes | Yes | Yes |
 | Amazon Kiro | Yes | No | No | No | No | No |
 | GitHub Spec Kit | Yes | No | No | Yes | No | Partial |
 | BMAD Method | Yes | No | No | Yes | No | No |
 | MetaGPT | Partial | No | Broken (< 3.12) | Yes | No | No |
 | Qlerify | No | Yes | No | No | No | No |
 
-alty is the only tool that combines all six capabilities.
+alto is the only tool that combines all six capabilities.
 
 ## Sources
 

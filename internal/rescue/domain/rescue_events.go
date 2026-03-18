@@ -7,7 +7,7 @@
 package domain
 
 import (
-	sharedevents "github.com/alty-cli/alty/internal/shared/domain/events"
+	sharedevents "github.com/alto-cli/alto/internal/shared/domain/events"
 )
 
 // GapAnalysisCompleted is a type alias for the shared kernel event.

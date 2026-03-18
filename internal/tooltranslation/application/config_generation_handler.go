@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // adapterRegistry maps SupportedTool to their ToolAdapter factories.
@@ -60,7 +60,7 @@ func (h *ConfigGenerationHandler) BuildPreview(
 	}
 
 	if model.IsEmpty() {
-		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alto guide' or 'alto import' first: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 

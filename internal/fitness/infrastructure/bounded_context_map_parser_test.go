@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/fitness/domain"
-	"github.com/alty-cli/alty/internal/fitness/infrastructure"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/fitness/domain"
+	"github.com/alto-cli/alto/internal/fitness/infrastructure"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 func TestBoundedContextMapParser_Parse_ValidYAML(t *testing.T) {
@@ -19,8 +19,8 @@ func TestBoundedContextMapParser_Parse_ValidYAML(t *testing.T) {
 
 	yaml := `
 project:
-  name: "alty"
-  root_package: "github.com/alty-cli/alty"
+  name: "alto"
+  root_package: "github.com/alto-cli/alto"
 
 bounded_contexts:
   - name: "Bootstrap"
@@ -53,8 +53,8 @@ bounded_contexts:
 	bcMap, err := parser.Parse(context.Background(), yamlPath)
 
 	require.NoError(t, err)
-	assert.Equal(t, "alty", bcMap.ProjectName())
-	assert.Equal(t, "github.com/alty-cli/alty", bcMap.RootPackage())
+	assert.Equal(t, "alto", bcMap.ProjectName())
+	assert.Equal(t, "github.com/alto-cli/alto", bcMap.RootPackage())
 	assert.Len(t, bcMap.Contexts(), 2)
 
 	// Check Bootstrap context

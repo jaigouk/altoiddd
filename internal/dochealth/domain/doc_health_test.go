@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/dochealth/domain"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/dochealth/domain"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ---------------------------------------------------------------------------

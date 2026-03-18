@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/rescue/application"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/rescue/application"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ func TestRescueHandler_ValidatePreconditions(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), newFakeGitOps(true, true, true), nil, &fakePublisherR{}, nil, nil)
 		err := handler.ValidatePreconditions(context.Background(), "/tmp/proj", false)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "alty/init")
+		assert.Contains(t, err.Error(), "alto/init")
 	})
 
 	t.Run("passes for clean repo", func(t *testing.T) {
@@ -188,7 +188,7 @@ func TestValidatePreconditions_WhenBranchExistsAndForceTrue_ExpectDeleteAndConti
 
 	require.NoError(t, err)
 	assert.True(t, gitOps.deleteBranchCalled, "should call DeleteBranch")
-	assert.Contains(t, gitOps.deletedBranches, "alty/init")
+	assert.Contains(t, gitOps.deletedBranches, "alto/init")
 }
 
 func TestValidatePreconditions_WhenBranchExistsAndForceFalse_ExpectError(t *testing.T) {
@@ -224,8 +224,8 @@ func TestRescue_WhenForceBranch_ExpectDeleteBeforeCreate(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, gitOps.deleteBranchCalled, "should delete existing branch")
-	assert.Contains(t, gitOps.deletedBranches, "alty/init")
-	assert.Contains(t, gitOps.createdBranches, "alty/init", "should create branch after delete")
+	assert.Contains(t, gitOps.deletedBranches, "alto/init")
+	assert.Contains(t, gitOps.createdBranches, "alto/init", "should create branch after delete")
 	assert.NotNil(t, analysis)
 }
 
@@ -252,7 +252,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 		gitOps := defaultFakeGitOps()
 		handler := application.NewRescueHandler(newFakeScanner(nil), gitOps, nil, &fakePublisherR{}, nil, nil)
 		handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
-		assert.Contains(t, gitOps.createdBranches, "alty/init")
+		assert.Contains(t, gitOps.createdBranches, "alto/init")
 	})
 
 	t.Run("detects missing docs", func(t *testing.T) {
@@ -279,7 +279,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 			}
 		}
 		assert.Len(t, knowledgeGaps, 1)
-		assert.Equal(t, ".alty/knowledge/", knowledgeGaps[0].Path())
+		assert.Equal(t, ".alto/knowledge/", knowledgeGaps[0].Path())
 	})
 
 	t.Run("all artifacts present returns analyzed with no gaps", func(t *testing.T) {
@@ -336,8 +336,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingStructure {
-				// Only .alty/ structure gaps allowed without profile
-				assert.Contains(t, g.Path(), ".alty/")
+				// Only .alto/ structure gaps allowed without profile
+				assert.Contains(t, g.Path(), ".alto/")
 			}
 		}
 	})
@@ -476,12 +476,12 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 		}
 	})
 
-	t.Run("alty config gap has recommended severity", func(t *testing.T) {
+	t.Run("alto config gap has recommended severity", func(t *testing.T) {
 		t.Parallel()
 		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
-			if g.Path() == ".alty/config.toml" {
+			if g.Path() == ".alto/config.toml" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
 			}
 		}
@@ -492,7 +492,7 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
-			if g.Path() == ".alty/knowledge/" {
+			if g.Path() == ".alto/knowledge/" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
 			}
 		}
@@ -600,7 +600,7 @@ func TestRescueHandler_ExecutePlan_Rollback(t *testing.T) {
 		assert.Contains(t, err.Error(), "detect")
 		assert.True(t, gitOps.checkoutPrevCalled, "should checkout previous branch")
 		assert.True(t, gitOps.deleteBranchCalled, "should delete branch")
-		assert.Contains(t, gitOps.deletedBranches, "alty/init")
+		assert.Contains(t, gitOps.deletedBranches, "alto/init")
 	})
 
 	t.Run("rolls back on test run failure", func(t *testing.T) {
@@ -698,7 +698,7 @@ func TestRescueHandler_ExecutePlan_WhenGapIsDirectory_ExpectDirCreatedNotFile(t 
 	err := handler.ExecutePlan(context.Background(), analysis)
 	require.NoError(t, err)
 
-	// Directory gaps (.alty/knowledge/, .alty/maintenance/) should use DirCreator
+	// Directory gaps (.alto/knowledge/, .alto/maintenance/) should use DirCreator
 	assert.NotEmpty(t, dirCreator.createdDirs, "directory gaps should call DirCreator")
 	for _, dir := range dirCreator.createdDirs {
 		assert.NotContains(t, writer.writtenFiles, dir, "directory gaps should not be written as files")
@@ -742,13 +742,13 @@ func TestRescueHandler_ExecutePlan_WhenMixedGaps_ExpectBothDirsAndFiles(t *testi
 	hasKnowledgeDir := false
 	hasMaintenanceDir := false
 	for _, dir := range dirCreator.createdDirs {
-		if dir == "/tmp/proj/.alty/knowledge" {
+		if dir == "/tmp/proj/.alto/knowledge" {
 			hasKnowledgeDir = true
 		}
-		if dir == "/tmp/proj/.alty/maintenance" {
+		if dir == "/tmp/proj/.alto/maintenance" {
 			hasMaintenanceDir = true
 		}
 	}
-	assert.True(t, hasKnowledgeDir, ".alty/knowledge/ gap should create directory")
-	assert.True(t, hasMaintenanceDir, ".alty/maintenance/ gap should create directory")
+	assert.True(t, hasKnowledgeDir, ".alto/knowledge/ gap should create directory")
+	assert.True(t, hasMaintenanceDir, ".alto/maintenance/ gap should create directory")
 }

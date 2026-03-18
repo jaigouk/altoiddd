@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
 )
 
 // --- NewDDDVersion constructor tests ---

@@ -4,7 +4,7 @@ package application
 import (
 	"context"
 
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
 )
 
 // KnowledgeLookup provides versioned, RLM-addressable access to DDD patterns,

@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/rescue/domain"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/rescue/domain"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ---------------------------------------------------------------------------
@@ -374,7 +374,7 @@ func TestMigrationPlanFields(t *testing.T) {
 	t.Run("default branch name", func(t *testing.T) {
 		t.Parallel()
 		plan := domain.NewMigrationPlan("plan-1", []domain.Gap{makeGap()}, "", false)
-		assert.Equal(t, "alty/init", plan.BranchName())
+		assert.Equal(t, "alto/init", plan.BranchName())
 	})
 
 	t.Run("custom branch name", func(t *testing.T) {
@@ -403,7 +403,7 @@ func TestGap_IsDirectory(t *testing.T) {
 		path    string
 		wantDir bool
 	}{
-		{"trailing slash is directory", ".alty/knowledge/", true},
+		{"trailing slash is directory", ".alto/knowledge/", true},
 		{"no trailing slash is file", "docs/PRD.md", false},
 		{"root slash is directory", "/", true},
 		{"nested trailing slash", "src/domain/", true},

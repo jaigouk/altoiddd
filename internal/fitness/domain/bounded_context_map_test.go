@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/fitness/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/fitness/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -123,10 +123,10 @@ func TestNewBoundedContextMap(t *testing.T) {
 		domain.NewBoundedContextEntry("Discovery", "discovery", vo.SubdomainCore, []string{"domain", "application", "infrastructure"}, nil),
 	}
 
-	bcMap := domain.NewBoundedContextMap("alty", "github.com/alty-cli/alty", contexts)
+	bcMap := domain.NewBoundedContextMap("alto", "github.com/alto-cli/alto", contexts)
 
-	assert.Equal(t, "alty", bcMap.ProjectName())
-	assert.Equal(t, "github.com/alty-cli/alty", bcMap.RootPackage())
+	assert.Equal(t, "alto", bcMap.ProjectName())
+	assert.Equal(t, "github.com/alto-cli/alto", bcMap.RootPackage())
 	assert.Len(t, bcMap.Contexts(), 2)
 }
 
@@ -154,7 +154,7 @@ func TestBoundedContextMapFindContext(t *testing.T) {
 		domain.NewBoundedContextEntry("Discovery", "discovery", vo.SubdomainCore, nil, nil),
 	}
 
-	bcMap := domain.NewBoundedContextMap("alty", "github.com/alty-cli/alty", contexts)
+	bcMap := domain.NewBoundedContextMap("alto", "github.com/alto-cli/alto", contexts)
 
 	// Found
 	entry, found := bcMap.FindContext("Bootstrap")
@@ -174,7 +174,7 @@ func TestBoundedContextMapContextNames(t *testing.T) {
 		domain.NewBoundedContextEntry("Discovery", "discovery", vo.SubdomainCore, nil, nil),
 	}
 
-	bcMap := domain.NewBoundedContextMap("alty", "github.com/alty-cli/alty", contexts)
+	bcMap := domain.NewBoundedContextMap("alto", "github.com/alto-cli/alto", contexts)
 
 	names := bcMap.ContextNames()
 	assert.Len(t, names, 2)
@@ -192,7 +192,7 @@ func TestBoundedContextMapContextsWithClassification(t *testing.T) {
 		domain.NewBoundedContextEntry("FileGen", "filegen", vo.SubdomainGeneric, nil, nil),
 	}
 
-	bcMap := domain.NewBoundedContextMap("alty", "github.com/alty-cli/alty", contexts)
+	bcMap := domain.NewBoundedContextMap("alto", "github.com/alto-cli/alto", contexts)
 
 	coreContexts := bcMap.ContextsWithClassification(vo.SubdomainCore)
 	assert.Len(t, coreContexts, 2)

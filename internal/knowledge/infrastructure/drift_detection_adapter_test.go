@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/knowledge/domain"
-	"github.com/alty-cli/alty/internal/knowledge/infrastructure"
+	"github.com/alto-cli/alto/internal/knowledge/domain"
+	"github.com/alto-cli/alto/internal/knowledge/infrastructure"
 )
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ func TestDriftDetectionAdapter_Detect(t *testing.T) {
 	t.Run("returns empty report when no meta files", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "test-tool")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "test-tool")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		adapter := infrastructure.NewDriftDetectionAdapter(tmpDir)
@@ -49,7 +49,7 @@ func TestDriftDetectionAdapter_Detect(t *testing.T) {
 	t.Run("detects stale entry from last_verified", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "claude-code")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "claude-code")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		// Create _meta.toml with old last_verified date
@@ -73,7 +73,7 @@ last_verified = "2025-01-01"
 	t.Run("no stale for recently verified entry", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "claude-code")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "claude-code")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		// Create _meta.toml with recent last_verified date (within 14-day threshold)
@@ -97,7 +97,7 @@ last_verified = "` + recentDate + `"
 	t.Run("treats missing last_verified as stale", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "test-tool")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "test-tool")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		// Create _meta.toml without last_verified
@@ -120,7 +120,7 @@ version_range = ">=1.0.0"
 	t.Run("skips malformed toml gracefully", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "bad-tool")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "bad-tool")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		// Create malformed _meta.toml
@@ -140,7 +140,7 @@ version_range = ">=1.0.0"
 
 		// Create two tool directories with stale entries
 		for _, tool := range []string{"tool-a", "tool-b"} {
-			kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", tool)
+			kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", tool)
 			require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 			metaContent := `[tool]
@@ -163,7 +163,7 @@ last_verified = "2024-01-01"
 	t.Run("entry path contains tool name", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "cursor")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "cursor")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		metaContent := `[tool]
@@ -200,7 +200,7 @@ last_verified = "2024-01-01"
 	t.Run("custom threshold changes staleness detection", func(t *testing.T) {
 		t.Parallel()
 		tmpDir := t.TempDir()
-		kbDir := filepath.Join(tmpDir, ".alty", "knowledge", "tools", "test-tool")
+		kbDir := filepath.Join(tmpDir, ".alto", "knowledge", "tools", "test-tool")
 		require.NoError(t, os.MkdirAll(kbDir, 0o755))
 
 		// Create _meta.toml with 20-day-old date

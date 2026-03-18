@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 func TestTemplateType_String(t *testing.T) {

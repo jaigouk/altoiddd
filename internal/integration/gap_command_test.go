@@ -9,17 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
 )
 
 // ===========================================================================
-// Scenario: alty gap reports structural gaps
+// Scenario: alto gap reports structural gaps
 // ===========================================================================
 
 func TestGapEmptyProject_GivenEmptyDirectory_WhenAnalyzeGaps_ThenReportsAllRequiredGaps(t *testing.T) {
 	t.Parallel()
 
-	// Given: an empty directory (no docs, no configs, no .alty)
+	// Given: an empty directory (no docs, no configs, no .alto)
 	app := newApp(t)
 	dir := t.TempDir()
 
@@ -67,10 +67,10 @@ func TestGapCompleteProject_GivenFullyStructuredProject_WhenAnalyzeGaps_ThenRepo
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".claude"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".claude", "CLAUDE.md"), []byte("# Claude\n"), 0o644))
 
-	// Create recommended .alty structure
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty", "knowledge"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty", "maintenance"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alty", "config.toml"), []byte("project_name = \"test\"\n"), 0o644))
+	// Create recommended .alto structure
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "maintenance"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte("project_name = \"test\"\n"), 0o644))
 
 	// Create AGENTS.md
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("# Agents\n"), 0o644))
@@ -83,10 +83,10 @@ func TestGapCompleteProject_GivenFullyStructuredProject_WhenAnalyzeGaps_ThenRepo
 	assert.Empty(t, report.Entries, "fully structured project should have no gaps")
 }
 
-func TestGapPartialProject_GivenProjectMissingAlty_WhenAnalyzeGaps_ThenReportsAltyGapsAsRecommended(t *testing.T) {
+func TestGapPartialProject_GivenProjectMissingAlto_WhenAnalyzeGaps_ThenReportsAltoGapsAsRecommended(t *testing.T) {
 	t.Parallel()
 
-	// Given: a project with docs and configs but no .alty/ directory
+	// Given: a project with docs and configs but no .alto/ directory
 	app := newApp(t)
 	dir := t.TempDir()
 
@@ -107,27 +107,27 @@ func TestGapPartialProject_GivenProjectMissingAlty_WhenAnalyzeGaps_ThenReportsAl
 	report, err := app.GapQueryHandler.AnalyzeGaps(context.Background(), dir)
 	require.NoError(t, err)
 
-	// Then: .alty gaps should be recommended, not required
-	altyGaps := map[string]string{}
+	// Then: .alto gaps should be recommended, not required
+	altoGaps := map[string]string{}
 	for _, e := range report.Entries {
-		if e.Path == ".alty/config.toml" ||
-			e.Path == ".alty/knowledge/" ||
-			e.Path == ".alty/maintenance/" {
-			altyGaps[e.Path] = e.Severity
+		if e.Path == ".alto/config.toml" ||
+			e.Path == ".alto/knowledge/" ||
+			e.Path == ".alto/maintenance/" {
+			altoGaps[e.Path] = e.Severity
 		}
 	}
 
-	assert.NotEmpty(t, altyGaps, "should detect missing .alty/ structure")
-	for path, sev := range altyGaps {
+	assert.NotEmpty(t, altoGaps, "should detect missing .alto/ structure")
+	for path, sev := range altoGaps {
 		assert.Equal(t, string(rescuedomain.GapSeverityRecommended), sev,
-			".alty gap %s should be recommended severity", path)
+			".alto gap %s should be recommended severity", path)
 	}
 
 	// Should have no required gaps (docs and configs are present)
 	assert.False(t, report.HasRequired, "should have no required gaps when docs/configs present")
 }
 
-func TestGapEmptyProject_GivenEmptyDir_WhenAnalyzeGaps_ThenReportsRecommendedAltyGaps(t *testing.T) {
+func TestGapEmptyProject_GivenEmptyDir_WhenAnalyzeGaps_ThenReportsRecommendedAltoGaps(t *testing.T) {
 	t.Parallel()
 
 	// Given: an empty directory
@@ -138,11 +138,11 @@ func TestGapEmptyProject_GivenEmptyDir_WhenAnalyzeGaps_ThenReportsRecommendedAlt
 	report, err := app.GapQueryHandler.AnalyzeGaps(context.Background(), dir)
 	require.NoError(t, err)
 
-	// Then: should include recommended .alty gaps
+	// Then: should include recommended .alto gaps
 	recommendedPaths := map[string]bool{
-		".alty/config.toml":  false,
-		".alty/knowledge/":   false,
-		".alty/maintenance/": false,
+		".alto/config.toml":  false,
+		".alto/knowledge/":   false,
+		".alto/maintenance/": false,
 	}
 
 	for _, e := range report.Entries {

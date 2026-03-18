@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // FitnessGeneration generates architecture fitness functions (import-linter

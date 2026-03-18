@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/discovery/domain"
 )
 
 // JSONSessionRenderer renders discovery session state as JSON for AI agent consumption

@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
+	"github.com/alto-cli/alto/internal/composition"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	fitnessapp "github.com/alto-cli/alto/internal/fitness/application"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
 )
 
 // =============================================================================
@@ -138,7 +138,7 @@ func TestSecurity_PathTraversal_Resource(t *testing.T) {
 	session := setupSecurityServer(t)
 
 	_, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/ddd/../../../etc/passwd",
+		URI: "alto://knowledge/ddd/../../../etc/passwd",
 	})
 	// Should return error — either protocol error or resource not found.
 	require.Error(t, err)

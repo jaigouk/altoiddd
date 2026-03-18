@@ -73,7 +73,7 @@ func FuzzSafeComponent(f *testing.F) {
 // FuzzSafeTicketID fuzzes the SafeTicketID function to verify that
 // accepted IDs match the expected format.
 func FuzzSafeTicketID(f *testing.F) {
-	f.Add("alty-0m9.5")
+	f.Add("alto-0m9.5")
 	f.Add("k7m.12")
 	f.Add("'; DROP TABLE issues; --")
 	f.Add("$(whoami)")

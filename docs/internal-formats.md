@@ -1,28 +1,28 @@
-# .alty/ Internal File Formats
+# .alto/ Internal File Formats
 
-This document describes every file that alty creates inside the `.alty/` directory.
-These schemas are the source of truth for manual creation, debugging, and the `alty import` command.
+This document describes every file that alto creates inside the `.alto/` directory.
+These schemas are the source of truth for manual creation, debugging, and the `alto import` command.
 
 ## File Inventory
 
-### Created by `alty init` (BootstrapHandler)
+### Created by `alto init` (BootstrapHandler)
 
 Source: `internal/bootstrap/application/bootstrap_handler.go:34-42` (`plannedFiles` list)
 Content generators: `internal/bootstrap/infrastructure/content.go`
 
 | File | Format | Generator Function | Source Line |
 |------|--------|--------------------|-------------|
-| `.alty/config.toml` | TOML | `AltyConfigContent()` | `content.go:35` |
-| `.alty/knowledge/_index.toml` | TOML | `KnowledgeIndexContent()` | `content.go:43` |
-| `.alty/maintenance/doc-registry.toml` | TOML | `DocRegistryContent()` | `content.go:67` |
+| `.alto/config.toml` | TOML | `AltoConfigContent()` | `content.go:35` |
+| `.alto/knowledge/_index.toml` | TOML | `KnowledgeIndexContent()` | `content.go:43` |
+| `.alto/maintenance/doc-registry.toml` | TOML | `DocRegistryContent()` | `content.go:67` |
 
-### Created by `alty guide` (ArtifactGenerationHandler)
+### Created by `alto guide` (ArtifactGenerationHandler)
 
 Source: `internal/discovery/application/artifact_generation_handler.go:127`
 
 | File | Format | Generator Function | Source Line |
 |------|--------|--------------------|-------------|
-| `.alty/bounded_context_map.yaml` | YAML | `renderBoundedContextMapYAML()` | `artifact_generation_handler.go:391` |
+| `.alto/bounded_context_map.yaml` | YAML | `renderBoundedContextMapYAML()` | `artifact_generation_handler.go:391` |
 
 ### Files that do NOT exist
 
@@ -30,17 +30,17 @@ Source: `internal/discovery/application/artifact_generation_handler.go:127`
 
 ---
 
-## 1. `.alty/config.toml`
+## 1. `.alto/config.toml`
 
-**Purpose:** Project-level alty configuration. Created during `alty init` with detected project settings.
+**Purpose:** Project-level alto configuration. Created during `alto init` with detected project settings.
 
-**Generator:** `internal/bootstrap/infrastructure/content.go` — `AltyConfigContent(config domain.ProjectConfig)`
+**Generator:** `internal/bootstrap/infrastructure/content.go` — `AltoConfigContent(config domain.ProjectConfig)`
 
 ### Schema
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project.name` | string | yes | Project name (directory name during `alty init`) |
+| `project.name` | string | yes | Project name (directory name during `alto init`) |
 | `project.language` | string | no | Detected language (`"go"`, `"python"`, `"typescript"`). Omitted if not detected. |
 | `project.module_path` | string | no | Module path extracted from manifest (e.g. `go.mod`). Omitted if not detected. |
 | `tools.detected` | string[] | yes | AI coding tools found in project directory. Empty array if none. |
@@ -52,7 +52,7 @@ Source: `internal/discovery/application/artifact_generation_handler.go:127`
 ### Example
 
 ```toml
-# alty project configuration
+# alto project configuration
 
 [project]
 name = "my-service"
@@ -74,9 +74,9 @@ completed = false
 
 ---
 
-## 2. `.alty/knowledge/_index.toml`
+## 2. `.alto/knowledge/_index.toml`
 
-**Purpose:** Index of the knowledge base. Maps section names to subdirectories under `.alty/knowledge/`. Each section contains RLM-addressable documents.
+**Purpose:** Index of the knowledge base. Maps section names to subdirectories under `.alto/knowledge/`. Each section contains RLM-addressable documents.
 
 **Generator:** `internal/bootstrap/infrastructure/content.go:43` — `KnowledgeIndexContent()`
 
@@ -86,15 +86,15 @@ completed = false
 |-------|------|----------|-------------|
 | `knowledge.version` | integer | yes | Knowledge index schema version |
 | `sections` | array of table | yes | List of knowledge sections |
-| `sections[].name` | string | yes | Section directory name under `.alty/knowledge/` |
+| `sections[].name` | string | yes | Section directory name under `.alto/knowledge/` |
 | `sections[].description` | string | yes | Human-readable section purpose |
 
 ### Example
 
 ```toml
-# alty knowledge base index
+# alto knowledge base index
 #
-# Sections map to subdirectories under .alty/knowledge/.
+# Sections map to subdirectories under .alto/knowledge/.
 # Each section contains RLM-addressable documents.
 
 [knowledge]
@@ -115,9 +115,9 @@ description = "TDD, SOLID, quality gate references"
 
 ---
 
-## 3. `.alty/maintenance/doc-registry.toml`
+## 3. `.alto/maintenance/doc-registry.toml`
 
-**Purpose:** Tracks which project documents to monitor for freshness, their owners, and review cadence. Used by `alty doc-health`.
+**Purpose:** Tracks which project documents to monitor for freshness, their owners, and review cadence. Used by `alto doc-health`.
 
 **Generator:** `internal/bootstrap/infrastructure/content.go:67` — `DocRegistryContent()`
 
@@ -134,7 +134,7 @@ description = "TDD, SOLID, quality gate references"
 ### Example
 
 ```toml
-# alty document registry
+# alto document registry
 #
 # Tracks which docs to monitor, their owners, and review cadence.
 
@@ -159,9 +159,9 @@ review_days = 90
 
 ---
 
-## 4. `.alty/bounded_context_map.yaml`
+## 4. `.alto/bounded_context_map.yaml`
 
-**Purpose:** Machine-readable map of bounded contexts, their subdomain classifications, layers, and inter-context relationships. Used by `alty fitness generate` to validate architecture conformance.
+**Purpose:** Machine-readable map of bounded contexts, their subdomain classifications, layers, and inter-context relationships. Used by `alto fitness generate` to validate architecture conformance.
 
 **Generator:** `internal/discovery/application/artifact_generation_handler.go:391` — `renderBoundedContextMapYAML()`
 **Parser:** `internal/fitness/infrastructure/bounded_context_map_parser.go:15-31`

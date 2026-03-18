@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/alty-cli/alty/internal/fitness/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/fitness/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // boundedContextMapYAML is the YAML structure for parsing.

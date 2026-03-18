@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Gate labels for bullet-point rendering in tickets.

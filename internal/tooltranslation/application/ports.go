@@ -4,9 +4,9 @@ package application
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ConfigGeneration generates tool-native configurations from a domain model

@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working on the alty project.
+This file provides guidance to Claude Code when working on the alto project.
 
 ## Project Overview
 
-alty is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Roo Code, and OpenCode.
+alto is a guided project bootstrapper that turns a simple idea (4-5 sentences) into a structured, production-ready project. It enforces DDD + TDD + SOLID before AI coding tools start writing code. It works with Claude Code, Cursor, Roo Code, and OpenCode.
 
-**Key interfaces:** CLI (`cmd/alty`) and MCP server (planned).
+**Key interfaces:** CLI (`cmd/alto`) and MCP server (planned).
 
 ## Quick Reference
 
@@ -18,9 +18,9 @@ go test ./... -race              # Tests with race detector
 golangci-lint run ./...          # Lint (auto-fix: --fix)
 
 # CLI testing
-go run ./cmd/alty help           # Show commands
-go run ./cmd/alty init           # Test new project flow
-go run ./cmd/alty doc-health     # Test doc health check
+go run ./cmd/alto help           # Show commands
+go run ./cmd/alto init           # Test new project flow
+go run ./cmd/alto doc-health     # Test doc health check
 
 # Issue tracking (Beads)
 bd ready                         # Find available work
@@ -107,8 +107,8 @@ All enforced by `.golangci.yml` v2 config:
 ### Project Structure
 
 ```
-alty/
-├── cmd/alty/                    # CLI entry point (Cobra)
+alto/
+├── cmd/alto/                    # CLI entry point (Cobra)
 ├── internal/
 │   ├── bootstrap/               # Bootstrap bounded context
 │   │   ├── domain/              # Entities, VOs, aggregates
@@ -171,7 +171,7 @@ alty/
 - **Do not proceed** to next ticket without explicit user permission
 - **Dogfooding rule** -- When we encounter a process problem, fix it for ourselves AND for the product. Update the relevant ticket via `/prd-traceability` to find it, or create a new ticket if none exists.
 
-## What alty IS and IS NOT
+## What alto IS and IS NOT
 
 **IS:** The architect that runs before builders. It produces blueprints, guardrails, and structured tickets for AI coding tools to execute.
 
@@ -254,7 +254,7 @@ import (
 
     "github.com/stretchr/testify/assert"  // 2. Third-party
 
-    "github.com/alty-cli/alty/internal/shared/domain/errors"  // 3. Local
+    "github.com/alto-cli/alto/internal/shared/domain/errors"  // 3. Local
 )
 ```
 
@@ -349,12 +349,12 @@ assert.InDelta(t, 42.0, val, 0)  // not assert.Equal(t, 42.0, val)
 ## Design Context
 
 ### Users
-Developers, team leads, and product owners who use AI coding tools (Claude Code, Cursor, Roo Code, OpenCode) to build software. They arrive at alty's website looking for a tool that prevents their AI-generated code from becoming unmaintainable. They value structure, reliability, and professionalism. They are skeptical of "AI hype" aesthetics and respond to tools that look like they were built by engineers, not marketers.
+Developers, team leads, and product owners who use AI coding tools (Claude Code, Cursor, Roo Code, OpenCode) to build software. They arrive at alto's website looking for a tool that prevents their AI-generated code from becoming unmaintainable. They value structure, reliability, and professionalism. They are skeptical of "AI hype" aesthetics and respond to tools that look like they were built by engineers, not marketers.
 
 ### Brand Personality
 **Structured. Confident. Developer-native.**
 
-alty is the senior architect in the room — not flashy, not loud, but undeniably competent. The interface should evoke the feeling of opening a well-maintained CLI tool: clean, purposeful, no wasted space. Confidence without arrogance.
+alto is the senior architect in the room — not flashy, not loud, but undeniably competent. The interface should evoke the feeling of opening a well-maintained CLI tool: clean, purposeful, no wasted space. Confidence without arrogance.
 
 ### Aesthetic Direction
 - **Visual tone:** Restrained, dark-first, information-dense. Inspired by Linear's precision, Warp's charcoal depth, and Supabase's developer-native feel.

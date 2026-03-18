@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	"github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/discovery/infrastructure"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	"github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/discovery/infrastructure"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ func TestFileSystemSessionRepositoryImplementsPort(t *testing.T) {
 
 func TestFileSystemSessionRepository_Save_WhenDirNotExists_ExpectCreatedAndWritten(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), "nested", ".alty")
+	baseDir := filepath.Join(t.TempDir(), "nested", ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	session := domain.NewDiscoverySession("Test README content")
@@ -50,7 +50,7 @@ func TestFileSystemSessionRepository_Save_WhenDirNotExists_ExpectCreatedAndWritt
 
 func TestFileSystemSessionRepository_Load_WhenFileExists_ExpectSessionRestored(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	// Save first
@@ -67,7 +67,7 @@ func TestFileSystemSessionRepository_Load_WhenFileExists_ExpectSessionRestored(t
 
 func TestFileSystemSessionRepository_Load_WhenFileNotExists_ExpectNotFoundError(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	_, err := repo.Load(context.Background(), "nonexistent-id")
@@ -77,7 +77,7 @@ func TestFileSystemSessionRepository_Load_WhenFileNotExists_ExpectNotFoundError(
 
 func TestFileSystemSessionRepository_Load_WhenCorruptedJSON_ExpectWrappedError(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	require.NoError(t, os.MkdirAll(baseDir, 0o755))
 
 	// Write corrupted JSON
@@ -96,7 +96,7 @@ func TestFileSystemSessionRepository_Load_WhenCorruptedJSON_ExpectWrappedError(t
 
 func TestFileSystemSessionRepository_Exists_WhenFileExists_ExpectTrue(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	session := domain.NewDiscoverySession("Test README")
@@ -109,7 +109,7 @@ func TestFileSystemSessionRepository_Exists_WhenFileExists_ExpectTrue(t *testing
 
 func TestFileSystemSessionRepository_Exists_WhenFileNotExists_ExpectFalse(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	exists, err := repo.Exists(context.Background(), "nonexistent-id")
@@ -123,7 +123,7 @@ func TestFileSystemSessionRepository_Exists_WhenFileNotExists_ExpectFalse(t *tes
 
 func TestFileSystemSessionRepository_SaveLoad_RoundTrip_ExpectAllFieldsPreserved(t *testing.T) {
 	t.Parallel()
-	baseDir := filepath.Join(t.TempDir(), ".alty")
+	baseDir := filepath.Join(t.TempDir(), ".alto")
 	repo := infrastructure.NewFileSystemSessionRepository(baseDir)
 
 	// Build a session with persona, answers, skipped, and playback

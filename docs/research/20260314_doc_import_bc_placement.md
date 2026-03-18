@@ -1,6 +1,6 @@
 # Spike: Doc Import Bounded Context Placement
 
-**Ticket:** alty-cli-2pg
+**Ticket:** alto-cli-2pg
 **Date:** 2026-03-14
 **Status:** Complete
 
@@ -22,7 +22,7 @@ Doc import is a distinct capability with its own domain language (parsing, extra
 
 **Coupling:** Minimal. Depends only on shared kernel types (`*ddd.DomainModel`, value objects in `internal/shared/domain/valueobjects/`, `internal/shared/domain/ddd/`). No imports from discovery, fitness, or ticket contexts. No new cross-context dependencies.
 
-**DDD alignment:** DDD.md already lists "DocImport" and "DocParser" as terms pending this spike (lines 232-234). The glossary explicitly marks them as "TBD (pending spike alty-cli-2pg)" without assigning a bounded context. Creating `internal/docimport/` gives them a home.
+**DDD alignment:** DDD.md already lists "DocImport" and "DocParser" as terms pending this spike (lines 232-234). The glossary explicitly marks them as "TBD (pending spike alto-cli-2pg)" without assigning a bounded context. Creating `internal/docimport/` gives them a home.
 
 **Practicality:**
 - 3 new directories: `internal/docimport/{domain,application,infrastructure}/`
@@ -33,7 +33,7 @@ Doc import is a distinct capability with its own domain language (parsing, extra
 **Files affected:**
 - `internal/composition/app.go` — add `DocImportHandler` field and wiring (~10 lines)
 - `docs/DDD.md` — update DocImport/DocParser entries from "TBD" to "DocImport"
-- `.alty/bounded_context_map.yaml` (if applicable) — add DocImport context
+- `.alto/bounded_context_map.yaml` (if applicable) — add DocImport context
 
 ### Option 2: Extend Shared Kernel with DomainModel Factory
 
@@ -79,7 +79,7 @@ package application
 import (
     "context"
 
-    "github.com/alty-cli/alty/internal/shared/domain/ddd"
+    "github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // DocImporter parses existing documentation files and constructs a DomainModel.
@@ -171,7 +171,7 @@ Both paths converge at `*ddd.DomainModel`. The `DomainModelGenerated` event is e
 
 ## Follow-Up Ticket Updates
 
-### alty-cli-623.2 (Implement alty import command)
+### alto-cli-623.2 (Implement alto import command)
 
 **Current DDD Alignment section says:**
 - Bounded Context: Discovery
@@ -185,7 +185,7 @@ Both paths converge at `*ddd.DomainModel`. The `DomainModelGenerated` event is e
 - No DiscoveryCompletedEvent — works directly with DomainModel
 - Design section's parsing strategy is correct but should reference the new BC path
 
-### alty-cli-623.3 (Add --from-docs flag to generate commands)
+### alto-cli-623.3 (Add --from-docs flag to generate commands)
 
 **Current DDD Alignment section says:**
 - Bounded Context: Ticket, Fitness, Bootstrap
@@ -194,8 +194,8 @@ Both paths converge at `*ddd.DomainModel`. The `DomainModelGenerated` event is e
 - The `--from-docs` flag triggers DocImportHandler, which produces a `*ddd.DomainModel`
 - The model is then passed to existing handlers (FitnessGenerationHandler, TicketGenerationHandler) unchanged
 - No changes needed in ticket, fitness, or bootstrap contexts themselves
-- The CLI layer (`cmd/alty/`) handles the flag and calls DocImportHandler instead of requiring a DiscoveryCompletedEvent
-- Consider: `--from-docs` may be better named `--import` to align with the `alty import` command
+- The CLI layer (`cmd/alto/`) handles the flag and calls DocImportHandler instead of requiring a DiscoveryCompletedEvent
+- Consider: `--from-docs` may be better named `--import` to align with the `alto import` command
 
 ## Risks
 
@@ -203,4 +203,4 @@ Both paths converge at `*ddd.DomainModel`. The `DomainModelGenerated` event is e
 
 2. **Invariant gaps.** Imported docs may not satisfy DomainModel's Finalize() invariants (e.g., missing subdomain classifications, UL terms not appearing in stories). Mitigation: the handler should support partial models and present the user with a list of what needs to be added.
 
-3. **Scope creep.** "Parse any markdown" is unbounded. Mitigation: start with a strict parser for alty-generated docs (which have known heading structure), then expand to freeform docs in a later ticket.
+3. **Scope creep.** "Parse any markdown" is unbounded. Mitigation: start with a strict parser for alto-generated docs (which have known heading structure), then expand to freeform docs in a later ticket.

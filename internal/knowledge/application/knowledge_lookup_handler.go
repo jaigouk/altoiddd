@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/knowledge/domain"
+	"github.com/alto-cli/alto/internal/knowledge/domain"
 )
 
 // KnowledgeReader is a handler-local interface for reading knowledge entries.

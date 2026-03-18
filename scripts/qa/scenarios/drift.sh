@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# QA Scenario: Knowledge Drift Detection (alty-cli-y79)
+# QA Scenario: Knowledge Drift Detection (alto-cli-y79)
 #
 # Acceptance Criteria:
 # 1. DriftDetectionHandler filters by tool (case-insensitive)
 # 2. DriftDetectionAdapter scans _meta.toml for staleness
 # 3. Default threshold is 14 days
-# 4. CLI command: alty kb drift [tool]
+# 4. CLI command: alto kb drift [tool]
 # 5. Returns exit code 1 when errors present
 # 6. Gracefully handles missing/malformed files
 
@@ -62,7 +62,7 @@ check_exit_code() {
 }
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  Scenario: Knowledge Drift Detection (alty-cli-y79)"
+echo "  Scenario: Knowledge Drift Detection (alto-cli-y79)"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
@@ -93,20 +93,20 @@ check "DefaultStaleThresholdDays = 14" grep -q "DefaultStaleThresholdDays = 14" 
 check "WithStaleThreshold method exists" grep -q "func.*WithStaleThreshold" internal/knowledge/infrastructure/drift_detection_adapter.go
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AC4: CLI command alty kb drift [tool]
+# AC4: CLI command alto kb drift [tool]
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo "AC4: CLI command alty kb drift [tool]"
-check "kb.go has drift subcommand" grep -q "newKBDriftCmd" cmd/alty/commands/kb.go
-check "Drift command accepts optional tool arg" grep -q "MaximumNArgs(1)" cmd/alty/commands/kb.go
+echo "AC4: CLI command alto kb drift [tool]"
+check "kb.go has drift subcommand" grep -q "newKBDriftCmd" cmd/alto/commands/kb.go
+check "Drift command accepts optional tool arg" grep -q "MaximumNArgs(1)" cmd/alto/commands/kb.go
 
 # Build and test CLI
 echo ""
 echo "AC4b: CLI integration tests"
-go build -o /tmp/alty-test ./cmd/alty
-check_output_contains "alty kb drift runs without error" "No drift detected" /tmp/alty-test kb drift
-check_output_contains "alty kb shows categories" "Knowledge Base Categories" /tmp/alty-test kb
-rm -f /tmp/alty-test
+go build -o /tmp/alto-test ./cmd/alto
+check_output_contains "alto kb drift runs without error" "No drift detected" /tmp/alto-test kb drift
+check_output_contains "alto kb shows categories" "Knowledge Base Categories" /tmp/alto-test kb
+rm -f /tmp/alto-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AC5: Graceful handling of edge cases
@@ -125,7 +125,7 @@ check "Test: custom threshold" grep -q "custom threshold changes staleness detec
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "AC6: Documentation"
-check "README documents kb drift" grep -q "alty kb drift" README.md
+check "README documents kb drift" grep -q "alto kb drift" README.md
 check "README explains 14-day threshold" grep -q "14 days" README.md
 
 # ─────────────────────────────────────────────────────────────────────────────

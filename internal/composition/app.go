@@ -9,33 +9,33 @@ import (
 	"log/slog"
 	"os"
 
-	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
-	bootstrapinfra "github.com/alty-cli/alty/internal/bootstrap/infrastructure"
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
-	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
-	dochealthinfra "github.com/alty-cli/alty/internal/dochealth/infrastructure"
-	docimportapp "github.com/alty-cli/alty/internal/docimport/application"
-	docimportinfra "github.com/alty-cli/alty/internal/docimport/infrastructure"
-	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
-	fitnessinfra "github.com/alty-cli/alty/internal/fitness/infrastructure"
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	knowledgeinfra "github.com/alty-cli/alty/internal/knowledge/infrastructure"
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	rescueinfra "github.com/alty-cli/alty/internal/rescue/infrastructure"
-	researchapp "github.com/alty-cli/alty/internal/research/application"
-	researchinfra "github.com/alty-cli/alty/internal/research/infrastructure"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/persistence"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/stack"
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
-	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
+	bootstrapapp "github.com/alto-cli/alto/internal/bootstrap/application"
+	bootstrapinfra "github.com/alto-cli/alto/internal/bootstrap/infrastructure"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengeinfra "github.com/alto-cli/alto/internal/challenge/infrastructure"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	discoveryinfra "github.com/alto-cli/alto/internal/discovery/infrastructure"
+	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
+	dochealthinfra "github.com/alto-cli/alto/internal/dochealth/infrastructure"
+	docimportapp "github.com/alto-cli/alto/internal/docimport/application"
+	docimportinfra "github.com/alto-cli/alto/internal/docimport/infrastructure"
+	fitnessapp "github.com/alto-cli/alto/internal/fitness/application"
+	fitnessinfra "github.com/alto-cli/alto/internal/fitness/infrastructure"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	knowledgeinfra "github.com/alto-cli/alto/internal/knowledge/infrastructure"
+	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
+	rescueinfra "github.com/alto-cli/alto/internal/rescue/infrastructure"
+	researchapp "github.com/alto-cli/alto/internal/research/application"
+	researchinfra "github.com/alto-cli/alto/internal/research/infrastructure"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/eventbus"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/persistence"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/stack"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ticketinfra "github.com/alto-cli/alto/internal/ticket/infrastructure"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
 )
 
 // Version is the application version. Set via ldflags at build time.
@@ -118,7 +118,7 @@ func NewApp() (*App, error) {
 	// 3. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
 	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer()
-	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alty")
+	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alto")
 
 	// 4. DocHealth infrastructure
 	docScanner := dochealthinfra.NewFilesystemDocScanner()
@@ -128,7 +128,7 @@ func NewApp() (*App, error) {
 	gateRunner := fitnessinfra.NewSubprocessGateRunner("", stackProfile)
 
 	// 6. Knowledge infrastructure
-	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader(".alty/knowledge")
+	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader(".alto/knowledge")
 	driftDetector := knowledgeinfra.NewDriftDetectionAdapter(".")
 
 	// 7. Rescue infrastructure

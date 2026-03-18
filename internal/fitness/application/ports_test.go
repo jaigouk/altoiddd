@@ -3,9 +3,9 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/fitness/application"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/fitness/application"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Compile-time interface satisfaction checks.

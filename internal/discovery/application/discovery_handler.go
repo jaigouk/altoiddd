@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/alty-cli/alty/internal/discovery/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
+	"github.com/alto-cli/alto/internal/discovery/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
 // DiscoveryHandler orchestrates the discovery session lifecycle.

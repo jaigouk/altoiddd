@@ -48,10 +48,10 @@ These are complementary. Ripple review won't catch a capability that was missing
 |----|---------------|-----------------|----------------------|
 | C1 | CLI tool (`vs`) | Bootstrap | CLI command tree, subcommands |
 | C2 | MCP server | Bootstrap | MCP tool schemas, shared ports |
-| C3 | `.alty/` project directory | Bootstrap | Directory structure, config.toml |
-| C4 | `alty init` with preview | Bootstrap | Preview, confirm, file safety |
+| C3 | `.alto/` project directory | Bootstrap | Directory structure, config.toml |
+| C4 | `alto init` with preview | Bootstrap | Preview, confirm, file safety |
 | C5 | Global settings detection | Bootstrap | Tool detection, conflict resolution |
-| C6 | Existing project adoption (`alty init --existing`) | Rescue | Branch safety, gap report, scaffolding |
+| C6 | Existing project adoption (`alto init --existing`) | Rescue | Branch safety, gap report, scaffolding |
 | C7 | Gap analysis | Rescue | Scan, compare, report |
 | C8 | Guided project bootstrap | Guided Discovery | Conversational flow, question phases |
 | C9 | DDD question framework | Guided Discovery | 10 questions, dual register, persona detection |
@@ -64,7 +64,7 @@ These are complementary. Ripple review won't catch a capability that was missing
 | C16 | Complexity budget | Domain Model | Core/Supporting/Generic classification + treatment levels |
 | C17 | Multi-tool support | Tool Translation | Claude Code, Cursor, Roo Code, OpenCode configs |
 | C18 | Knowledge base (RLM) | Knowledge Base | Addressable docs, DDD patterns, tool conventions |
-| C19 | Doc maintenance commands | Knowledge Base | `alty doc-health`, `alty doc-review` |
+| C19 | Doc maintenance commands | Knowledge Base | `alto doc-health`, `alto doc-review` |
 | C20 | Ticket freshness & ripple review | Ticket Freshness | Close → flag → context diff → review flow |
 | C25 | Template-enforced ticket creation | Ticket Pipeline + Tool Translation + Ticket Freshness | Every ticket created (manual or generated) MUST use beads templates; generated CLAUDE.md enforces this in grooming checklist step 1 and after-close protocol step 2. Tickets: k7m.12 (after-close protocol design), k7m.20 (generated tickets use templates), k7m.21 (generated CLAUDE.md includes enforcement) |
 
@@ -109,13 +109,13 @@ PRD TRACEABILITY REPORT: <scope>
 ============================================================
 
 COVERED  C8  Guided project bootstrap
-  → alty-k7m.4 (deliverable: CLI command tree for alty init)
+  → alto-k7m.4 (deliverable: CLI command tree for alto init)
 
 COVERED  C9  DDD question framework
-  → alty-k7m.4 (deliverable: alty guide design)
+  → alto-k7m.4 (deliverable: alto guide design)
 
 GAP      C19 Doc maintenance commands
-  → No ticket deliverable mentions alty doc-health or alty doc-review
+  → No ticket deliverable mentions alto doc-health or alto doc-review
   → Should be in: CLI/MCP design spike (k7m.4)
 
 ============================================================

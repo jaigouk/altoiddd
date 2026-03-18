@@ -6,8 +6,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	"github.com/alty-cli/alty/internal/challenge/domain"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	"github.com/alto-cli/alto/internal/challenge/domain"
 )
 
 // frontmatterData is used for YAML parsing/serialization.

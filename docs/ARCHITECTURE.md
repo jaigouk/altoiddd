@@ -4,7 +4,7 @@ owner: architecture
 status: draft
 ---
 
-# Architecture: alty
+# Architecture: alto
 
 > **Prerequisites:** This document was written AFTER `docs/PRD.md` (approved 2026-02-22)
 > and `docs/DDD.md` (10 bounded contexts, 5 aggregates, 10 subdomains). Architecture
@@ -25,9 +25,9 @@ status: draft
 2. **Local-first** -- Express mode (default) runs entirely locally with zero network calls.
    Deep mode (optional) may use LLM APIs and web search for AI-assisted challenge,
    research, and simulation — but every Deep mode feature has a local fallback (rule-based
-   heuristics, empty research briefing) so alty works offline. No paid APIs required for
+   heuristics, empty research briefing) so alto works offline. No paid APIs required for
    core functionality. _(Source: PRD section 6, budget/resource constraints; updated by
-   iterative DDD discovery protocol spike alty-20c.1)_
+   iterative DDD discovery protocol spike alto-20c.1)_
 
 3. **Preview before action** -- All file operations, ticket creation, and config
    generation show a preview and require explicit user confirmation before writing
@@ -63,7 +63,7 @@ status: draft
           +------------------+------------------+
           |                  |                  |
       CLI (vs)        MCP Server         VS Code Extension
-     [Cobra]         (alty-mcp)          (alty-vscode-extension)
+     [Cobra]         (alto-mcp)          (alto-vscode-extension)
      [Go]            [mcp-go]            [TypeScript + Svelte]
           |               |                     |
           |               |              MCP Client (stdio)
@@ -75,7 +75,7 @@ status: draft
                   |
    +--------------+---------------+
    |              |               |
-Domain Layer  Infrastructure   .alty/
+Domain Layer  Infrastructure   .alto/
 (Pure Go)       Adapters       (Project State)
    |              |               |
    | Guided      |    +-----------+---------+
@@ -101,7 +101,7 @@ Domain Layer  Infrastructure   .alty/
 | Component             | Responsibility                                          | Bounded Context      | Classification |
 | --------------------- | ------------------------------------------------------- | -------------------- | -------------- |
 | `vs` CLI              | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
-| `alty-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
+| `alto-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
 | 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
 | DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
 | DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
@@ -110,7 +110,7 @@ Domain Layer  Infrastructure   .alty/
 | RippleReview          | Event-driven freshness flagging on ticket close         | Ticket Freshness     | Core           |
 | ToolConfig            | Domain model to tool-native config translation          | Tool Translation     | Supporting     |
 | KnowledgeEntry        | RLM-addressable docs, TOML-based tool conventions       | Knowledge Base       | Supporting     |
-| BootstrapSession      | Orchestrate `alty init` flow                            | Bootstrap            | Supporting     |
+| BootstrapSession      | Orchestrate `alto init` flow                            | Bootstrap            | Supporting     |
 | GapAnalysis           | Scan existing projects, generate migration plans        | Rescue               | Supporting     |
 | ResearchSpike         | Guided research, library evaluation, ADR generation     | Research             | Supporting     |
 | FileScaffoldService   | Render templates, write files with safety rules         | File Generation      | Generic        |
@@ -156,14 +156,14 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 
 ```
 cmd/
-+-- alty/                           # CLI entry point (Cobra)
++-- alto/                           # CLI entry point (Cobra)
 |   +-- main.go                     # Cobra root command
 |   +-- commands/                   # Subcommand implementations
-|       +-- init.go                 # alty init
-|       +-- guide.go                # alty guide
-|       +-- doc_health.go           # alty doc-health
-|       +-- detect.go               # alty detect
-+-- alty-mcp/                       # MCP server entry point
+|       +-- init.go                 # alto init
+|       +-- guide.go                # alto guide
+|       +-- doc_health.go           # alto doc-health
+|       +-- detect.go               # alto detect
++-- alto-mcp/                       # MCP server entry point
     +-- main.go                     # mcp-go server startup
 internal/
 +-- bootstrap/                      # Bootstrap bounded context
@@ -287,9 +287,9 @@ How bounded contexts communicate, from `docs/DDD.md` section 4 context map:
 | Upstream Context     | Downstream Context   | Integration Pattern                 | Data Format                             |
 | -------------------- | -------------------- | ----------------------------------- | --------------------------------------- |
 | Guided Discovery     | Domain Model         | Domain Event (DiscoveryCompleted)   | In-memory event object                  |
-| Domain Model         | Architecture Testing | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
-| Domain Model         | Ticket Pipeline      | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
-| Domain Model         | Tool Translation     | Domain Event (DomainModelGenerated) | `.alty/domain-model.yaml`               |
+| Domain Model         | Architecture Testing | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
+| Domain Model         | Ticket Pipeline      | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
+| Domain Model         | Tool Translation     | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
 | Knowledge Base       | Tool Translation     | Query (lookup)                      | TOML entries via KnowledgeLookupPort    |
 | Ticket Pipeline      | Beads (external)     | ACL (subprocess)                    | `bd create` + `bd dep add` CLI commands |
 | Beads (external)     | Ticket Freshness     | ACL + Domain Event                  | `bd show --json` parsed by ACL adapter  |
@@ -301,7 +301,7 @@ _(Source: DDD.md section 4 context map; CLI+MCP design spike section 4)_
 
 ### Event Flow: End-to-End Bootstrap
 
-The complete `alty init` flow crosses all bounded contexts in this order:
+The complete `alto init` flow crosses all bounded contexts in this order:
 
 ```
 1. Bootstrap      -> detect installed tools (ToolDetectionPort)
@@ -309,7 +309,7 @@ The complete `alty init` flow crosses all bounded contexts in this order:
 3. Guided Discovery -> 10-question DDD flow (DiscoveryPort)
    emits: DiscoveryCompleted
 4. Domain Model   -> generate DDD artifacts (ArtifactGenerationPort)
-   writes: docs/DDD.md + .alty/domain-model.yaml
+   writes: docs/DDD.md + .alto/domain-model.yaml
    emits: DomainModelGenerated
 5. Architecture Testing -> generate fitness functions (FitnessGenerationPort)
    writes: arch-go.yml (dependency rules)
@@ -333,19 +333,19 @@ Each step shows a preview and waits for user approval before proceeding.
 | Aggregate        | Storage                                   | Rationale                                                   |
 | ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
 | DiscoverySession | In-memory (session duration)              | Stateful conversation; persisted only when complete         |
-| DomainModel      | `.alty/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
+| DomainModel      | `.alto/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
 | FitnessTestSuite | In-memory during generation               | Output written to `arch-go.yml` (107 dependency rules)      |
 | TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
 | RippleReview     | Beads labels + comments                   | Uses existing beads features; no custom storage needed      |
 | ToolConfig       | In-memory during generation               | Output written to `.claude/`, `.cursor/`, etc.              |
-| KnowledgeEntry   | `.alty/knowledge/` directory tree         | TOML for tool conventions, Markdown for DDD/convention refs |
+| KnowledgeEntry   | `.alto/knowledge/` directory tree         | TOML for tool conventions, Markdown for DDD/convention refs |
 | BootstrapSession | In-memory (session duration)              | Orchestration state; no persistence needed                  |
 | GapAnalysis      | In-memory during scan                     | Output is a gap report shown to user                        |
 
-### Shared YAML IR: `.alty/domain-model.yaml`
+### Shared YAML IR: `.alto/domain-model.yaml`
 
 The domain model YAML is the central intermediate representation consumed by multiple
-downstream generators. It is produced by `alty generate artifacts` (Domain Model context)
+downstream generators. It is produced by `alto generate artifacts` (Domain Model context)
 and consumed by:
 
 - **Architecture Testing** -- reads `bounded_contexts` and `subdomains` to generate
@@ -360,7 +360,7 @@ _(Source: ticket pipeline spike section 1; fitness function spike section 2)_
 #### Schema Summary
 
 ```yaml
-# .alty/domain-model.yaml
+# .alto/domain-model.yaml
 version: "1.0"
 project_name: "example-project"
 generated_at: "2026-02-23T10:00:00Z"
@@ -465,7 +465,7 @@ Each CLI command maps to one bounded context entry point. Commands are thin infr
 adapters calling application-layer command/query handlers via ports.
 
 ```
-alty
+alto
 +-- init                          # Bootstrap context (orchestrator)
 |   +-- --existing                # -> delegates to Rescue context
 +-- guide                         # Guided Discovery context
@@ -484,7 +484,7 @@ alty
 |   +-- --tests                   # go test -race
 |   +-- --fitness                 # arch-go validation
 +-- kb                            # Knowledge Base -> RLM lookup
-|   +-- <topic>                   # e.g., alty kb ddd/aggregate
+|   +-- <topic>                   # e.g., alto kb ddd/aggregate
 +-- doc-health                    # Knowledge Base -> freshness report
 +-- doc-review                    # Knowledge Base -> mark docs as reviewed
 +-- ticket-health                 # Ticket Freshness -> review_needed report
@@ -499,32 +499,32 @@ alty
 
 | Command                   | Bounded Context        | Port (Interface)         | Aggregate                  |
 | ------------------------- | ---------------------- | ------------------------ | -------------------------- |
-| `alty init`               | Bootstrap              | `BootstrapPort`          | BootstrapSession           |
-| `alty init --existing`    | Rescue (via Bootstrap) | `RescuePort`             | GapAnalysis                |
-| `alty guide`              | Guided Discovery       | `DiscoveryPort`          | DiscoverySession           |
-| `alty generate artifacts` | Domain Model           | `ArtifactGenerationPort` | DomainModel                |
-| `alty generate fitness`   | Architecture Testing   | `FitnessGenerationPort`  | FitnessTestSuite           |
-| `alty generate tickets`   | Ticket Pipeline        | `TicketGenerationPort`   | TicketPlan                 |
-| `alty generate configs`   | Tool Translation       | `ConfigGenerationPort`   | ToolConfig                 |
-| `alty detect`             | Bootstrap              | `ToolDetectionPort`      | (part of BootstrapSession) |
-| `alty check`              | Architecture Testing   | `QualityGatePort`        | (orchestration)            |
-| `alty kb <topic>`         | Knowledge Base         | `KnowledgeLookupPort`    | KnowledgeEntry             |
-| `alty doc-health`         | Knowledge Base         | `DocHealthPort`          | (query)                    |
-| `alty doc-review`         | Knowledge Base         | `DocReviewPort`          | (command)                  |
-| `alty ticket-health`      | Ticket Freshness       | `TicketHealthPort`       | (query)                    |
-| `alty persona`            | Tool Translation       | `PersonaPort`            | ToolConfig                 |
+| `alto init`               | Bootstrap              | `BootstrapPort`          | BootstrapSession           |
+| `alto init --existing`    | Rescue (via Bootstrap) | `RescuePort`             | GapAnalysis                |
+| `alto guide`              | Guided Discovery       | `DiscoveryPort`          | DiscoverySession           |
+| `alto generate artifacts` | Domain Model           | `ArtifactGenerationPort` | DomainModel                |
+| `alto generate fitness`   | Architecture Testing   | `FitnessGenerationPort`  | FitnessTestSuite           |
+| `alto generate tickets`   | Ticket Pipeline        | `TicketGenerationPort`   | TicketPlan                 |
+| `alto generate configs`   | Tool Translation       | `ConfigGenerationPort`   | ToolConfig                 |
+| `alto detect`             | Bootstrap              | `ToolDetectionPort`      | (part of BootstrapSession) |
+| `alto check`              | Architecture Testing   | `QualityGatePort`        | (orchestration)            |
+| `alto kb <topic>`         | Knowledge Base         | `KnowledgeLookupPort`    | KnowledgeEntry             |
+| `alto doc-health`         | Knowledge Base         | `DocHealthPort`          | (query)                    |
+| `alto doc-review`         | Knowledge Base         | `DocReviewPort`          | (command)                  |
+| `alto ticket-health`      | Ticket Freshness       | `TicketHealthPort`       | (query)                    |
+| `alto persona`            | Tool Translation       | `PersonaPort`            | ToolConfig                 |
 
 _(Source: CLI+MCP design spike section 2)_
 
 ### 6.3 CLI Entry Points
 
 ```go
-// cmd/alty/main.go
+// cmd/alto/main.go
 func main() {
     cmd.Execute() // Cobra root command
 }
 
-// cmd/alty-mcp/main.go
+// cmd/alto-mcp/main.go
 func main() {
     server.Run() // mcp-go server
 }
@@ -539,30 +539,30 @@ Tools handle write operations; resources handle read-only queries.
 
 | Tool Name            | CLI Equivalent            | Parameters                                 |
 | -------------------- | ------------------------- | ------------------------------------------ |
-| `init_project`       | `alty init`               | `project_dir: str, existing: bool = False` |
-| `guide_ddd`          | `alty guide`              | `project_dir: str, quick: bool = False`    |
-| `generate_artifacts` | `alty generate artifacts` | `project_dir: str, artifact_type: str`     |
-| `generate_fitness`   | `alty generate fitness`   | `project_dir: str`                         |
-| `generate_tickets`   | `alty generate tickets`   | `project_dir: str, preview: bool = True`   |
-| `generate_configs`   | `alty generate configs`   | `project_dir: str, tools: list[str]`       |
-| `detect_tools`       | `alty detect`             | `project_dir: str`                         |
-| `check_quality`      | `alty check`              | `project_dir: str, gates: list[str]`       |
-| `doc_health`         | `alty doc-health`         | `project_dir: str`                         |
-| `ticket_health`      | `alty ticket-health`      | `project_dir: str`                         |
+| `init_project`       | `alto init`               | `project_dir: str, existing: bool = False` |
+| `guide_ddd`          | `alto guide`              | `project_dir: str, quick: bool = False`    |
+| `generate_artifacts` | `alto generate artifacts` | `project_dir: str, artifact_type: str`     |
+| `generate_fitness`   | `alto generate fitness`   | `project_dir: str`                         |
+| `generate_tickets`   | `alto generate tickets`   | `project_dir: str, preview: bool = True`   |
+| `generate_configs`   | `alto generate configs`   | `project_dir: str, tools: list[str]`       |
+| `detect_tools`       | `alto detect`             | `project_dir: str`                         |
+| `check_quality`      | `alto check`              | `project_dir: str, gates: list[str]`       |
+| `doc_health`         | `alto doc-health`         | `project_dir: str`                         |
+| `ticket_health`      | `alto ticket-health`      | `project_dir: str`                         |
 
 **MCP Resources:**
 
 | Resource URI                               | Description                 | Data Source                    |
 | ------------------------------------------ | --------------------------- | ------------------------------ |
-| `alty://knowledge/tools/{tool}/{subtopic}` | AI tool conventions         | `.alty/knowledge/tools/`       |
-| `alty://knowledge/ddd/{topic}`             | DDD patterns/references     | `.alty/knowledge/ddd/`         |
-| `alty://knowledge/conventions/{topic}`     | TDD/SOLID/quality gate refs | `.alty/knowledge/conventions/` |
-| `alty://knowledge/cross-tool/{topic}`      | Cross-tool mappings         | `.alty/knowledge/cross-tool/`  |
-| `alty://project/{dir}/domain-model`        | Current DDD.md              | `docs/DDD.md`                  |
-| `alty://project/{dir}/architecture`        | Current ARCHITECTURE.md     | `docs/ARCHITECTURE.md`         |
-| `alty://tickets/ready`                     | Tickets in ready state      | beads `bd ready`               |
-| `alty://tickets/{id}`                      | Single ticket details       | beads `bd show`                |
-| `alty://personas/{name}`                   | Agent persona definition    | Generated persona files        |
+| `alto://knowledge/tools/{tool}/{subtopic}` | AI tool conventions         | `.alto/knowledge/tools/`       |
+| `alto://knowledge/ddd/{topic}`             | DDD patterns/references     | `.alto/knowledge/ddd/`         |
+| `alto://knowledge/conventions/{topic}`     | TDD/SOLID/quality gate refs | `.alto/knowledge/conventions/` |
+| `alto://knowledge/cross-tool/{topic}`      | Cross-tool mappings         | `.alto/knowledge/cross-tool/`  |
+| `alto://project/{dir}/domain-model`        | Current DDD.md              | `docs/DDD.md`                  |
+| `alto://project/{dir}/architecture`        | Current ARCHITECTURE.md     | `docs/ARCHITECTURE.md`         |
+| `alto://tickets/ready`                     | Tickets in ready state      | beads `bd ready`               |
+| `alto://tickets/{id}`                      | Single ticket details       | beads `bd show`                |
+| `alto://personas/{name}`                   | Agent persona definition    | Generated persona files        |
 
 _(Source: CLI+MCP design spike sections 3-4; MCP SDK spike)_
 
@@ -592,7 +592,7 @@ MCP (mcp-go) ---+           |
 // internal/composition/adapters.go
 func NewAppContext() *AppContext {
     // Wire all ports to their implementations
-    knowledgeService := knowledge.NewFileKnowledgeReader(".alty/knowledge")
+    knowledgeService := knowledge.NewFileKnowledgeReader(".alto/knowledge")
     scaffoldService := persistence.NewFileScaffoldService()
     beadsService := external.NewBeadsCliWriter()
     // ... wire all ports
@@ -606,7 +606,7 @@ func NewAppContext() *AppContext {
 }
 ```
 
-Both CLI (`cmd/alty/main.go`) and MCP (`cmd/alty-mcp/main.go`) call `NewAppContext()` at
+Both CLI (`cmd/alto/main.go`) and MCP (`cmd/alto-mcp/main.go`) call `NewAppContext()` at
 startup to get the same wired application context.
 
 _(Source: CLI+MCP design spike sections 4, 7)_
@@ -636,7 +636,7 @@ _(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)_
 #### Pipeline
 
 ```
-.alty/domain-model.yaml (bounded_contexts section)
+.alto/domain-model.yaml (bounded_contexts section)
         |
         v
 BoundedContextMapParser (Infrastructure: YAML reader)
@@ -681,7 +681,7 @@ file is written (fail-fast design).
 - Compliance threshold: 100% (all rules must pass)
 - Coverage threshold: 60% (only bounded contexts have rules; shared/composition exempt)
 
-_(Source: fitness function spike sections 3, 4, 6, 7; epic alty-cli-awl implementation)_
+_(Source: fitness function spike sections 3, 4, 6, 7; epic alto-cli-awl implementation)_
 
 ### 7.2 Domain Story to Ticket Pipeline
 
@@ -691,7 +691,7 @@ _(Source: fitness function spike sections 3, 4, 6, 7; epic alty-cli-awl implemen
 #### Pipeline
 
 ```
-.alty/domain-model.yaml
+.alto/domain-model.yaml
         |
 [1. Parse and Validate]     -- Go structs in domain layer
         |
@@ -767,7 +767,7 @@ classify_subdomain(name, classification, rationale)
   -> SubdomainClassification value object
         |
         v
-.alty/domain-model.yaml (subdomains[].treatment)
+.alto/domain-model.yaml (subdomains[].treatment)
         |
    +----+----+----+
    |         |         |
@@ -826,7 +826,7 @@ configs (for tools that support richer features like agents, modes, skills).
 
 #### Generation Matrix
 
-From `.alty/knowledge/cross-tool/generation-matrix.toml`:
+From `.alto/knowledge/cross-tool/generation-matrix.toml`:
 
 | Output               | Claude Code                              | Cursor                      | Roo Code                           | OpenCode                        |
 | -------------------- | ---------------------------------------- | --------------------------- | ---------------------------------- | ------------------------------- |
@@ -848,9 +848,9 @@ From `.alty/knowledge/cross-tool/generation-matrix.toml`:
 
 #### Limitations
 
-- **Cursor global config is SQLite** -- alty cannot generate or compare global
+- **Cursor global config is SQLite** -- alto cannot generate or compare global
   config files for Cursor. Can detect the DB file exists but cannot read settings without
-  SQLite queries. `alty detect` warns users to check manually.
+  SQLite queries. `alto detect` warns users to check manually.
 - **No agent/persona concept in Cursor** -- personas encoded as rule files instead.
 
 _(Source: knowledge base spike sections 1-4, 9)_
@@ -863,11 +863,11 @@ _(Source: knowledge base spike sections 1-4, 9)_
 #### Pipeline
 
 ```
-alty init --existing
+alto init --existing
         |
 [1. Verify clean git tree]     -- abort if dirty
         |
-[2. Create branch]             -- alty/init (abort if exists)
+[2. Create branch]             -- alto/init (abort if exists)
         |
 [3. Scan existing project]     -- code, docs, configs, folder structure
         |
@@ -893,7 +893,7 @@ alty init --existing
 | ------------------------------ | --------------------------------------------------------------- |
 | Never overwrite existing files | Skip if target exists                                           |
 | Clean git tree required        | `git status --porcelain` check before any operation             |
-| All changes on branch          | `git checkout -b alty/init`                                     |
+| All changes on branch          | `git checkout -b alto/init`                                     |
 | Never merge for user           | User reviews diff and merges manually                           |
 | Zero test regression           | Run existing test suite after scaffolding; roll back on failure |
 
@@ -901,13 +901,13 @@ _(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety 
 
 ### 7.6 Living Knowledge Base
 
-**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `.alty/` directory
+**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `.alto/` directory
 **Spike source:** `docs/research/20260222_knowledge_base_structure.md`
 
 #### Directory Structure
 
 ```
-.alty/knowledge/
+.alto/knowledge/
   _index.toml                     # Master index for RLM O(1) lookup
   tools/
     claude-code/
@@ -949,7 +949,7 @@ _(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety 
   cross-tool/
     agents-md.toml                # AGENTS.md cross-tool standard
     concept-mapping.toml          # How concepts map across tools
-    generation-matrix.toml        # What alty generates per tool
+    generation-matrix.toml        # What alto generates per tool
   ddd/
     tactical-patterns.md          # Entities, VOs, Aggregates
     strategic-patterns.md         # Bounded Contexts, Context Maps
@@ -966,7 +966,7 @@ _(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety 
 Every knowledge entry is addressable by a deterministic path:
 
 ```
-alty://knowledge/{category}/{tool_or_topic}/{subtopic}?version={version}
+alto://knowledge/{category}/{tool_or_topic}/{subtopic}?version={version}
 ```
 
 Resolution is O(1) -- direct path construction, no search, no index scan:
@@ -1015,8 +1015,8 @@ next_review_date = "2026-05-22"    # 90-day freshness window (PRD NFR)
 schema_version = 1
 ```
 
-`alty doc-health --knowledge` compares these fields against installed tool versions
-(from `alty detect`) to report stale entries.
+`alto doc-health --knowledge` compares these fields against installed tool versions
+(from `alto detect`) to report stale entries.
 
 _(Source: knowledge base spike sections 4-7)_
 
@@ -1072,7 +1072,7 @@ Step 4: Groom Next
   -> present results, ask user if ready to start
 ```
 
-#### `alty ticket-health` Report
+#### `alto ticket-health` Report
 
 Read-only freshness report via `TicketHealthPort`:
 
@@ -1157,7 +1157,7 @@ contracts. The LLMClient is a shared implementation detail that adapters use int
 #### Provider Configuration
 
 ```toml
-# .alty/config.toml
+# .alto/config.toml
 [llm]
 provider = "anthropic"          # anthropic | ollama | vertexai | none
 model = "claude-sonnet-4-20250514"       # Provider-specific model ID
@@ -1199,13 +1199,13 @@ model = "gemini-2.0-flash"
 
 _(Source: AI-assisted DDD discovery spike section 9; Claude Agent SDK evaluation)_
 
-## 8. `.alty/` Project Directory
+## 8. `.alto/` Project Directory
 
-Every project initialized with `alty init` gets this directory:
+Every project initialized with `alto init` gets this directory:
 
 ```
-.alty/
-+-- config.toml                   # Project-specific alty settings
+.alto/
++-- config.toml                   # Project-specific alto settings
 +-- domain-model.yaml             # Machine-readable DDD IR (generated)
 +-- knowledge/                    # RLM-addressable knowledge base (copied from seed)
 |   +-- _index.toml               # Master index
@@ -1261,11 +1261,11 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | Concern                       | Mitigation                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Input validation              | All user input (README content, question answers, persona selection) validated by domain types and value objects before processing                                                           |
-| File safety                   | Never overwrite existing files. Conflict rename: `filename_alty.md`. Preview all writes. Explicit confirm before any action. _(PRD section 6 file safety rules)_                            |
+| File safety                   | Never overwrite existing files. Conflict rename: `filename_alto.md`. Preview all writes. Explicit confirm before any action. _(PRD section 6 file safety rules)_                            |
 | Subprocess injection          | All subprocess calls use list-form arguments (not shell=True). Ticket content written to temp files via `--body-file`, never passed as shell arguments. _(ticket pipeline spike section 4)_ |
-| Branch safety                 | `alty init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. _(PRD section 4 scenario 2)_     |
+| Branch safety                 | `alto init --existing` always creates a new branch. Never writes to current branch. Never merges. Requires clean git tree. Zero test regression hard gate. _(PRD section 4 scenario 2)_     |
 | No silent installs            | Tool installation (beads, trivy, shannon) is optional and shown separately in preview. _(PRD section 5.2)_                                                                                  |
-| Global config detection       | `alty detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. _(PRD section 5.2.1)_                             |
+| Global config detection       | `alto detect` scans for global AI tool configs that override local settings. Reports conflicts. Lets user choose resolution per conflict. _(PRD section 5.2.1)_                             |
 | No secrets in generated files | Generated configs contain project structure and domain terms, not API keys, passwords, or personal information.                                                                             |
 | No network access (Express)   | Express mode is fully local. Deep mode optionally uses LLM APIs + web search with local fallback. API keys via env vars only, never stored in project files. No telemetry. _(PRD section 6; updated by iterative discovery spike)_ |
 
@@ -1277,17 +1277,17 @@ File System ---- Safety Rules ----> File writes (preview + confirm + never overw
 | Package manager      | Go modules                                                 | Standard Go dependency management                                                                   |
 | CLI framework        | Cobra                                                      | Industry standard; subcommands; integrated help _(CLI framework spike ADR)_                        |
 | MCP framework        | mcp-go                                                     | Go MCP SDK; stdio transport _(MCP SDK spike ADR)_                                                  |
-| Architecture testing | arch-go                                                    | MIT-licensed, config-based dependency rules _(fitness function spike ADR; epic alty-cli-awl)_      |
+| Architecture testing | arch-go                                                    | MIT-licensed, config-based dependency rules _(fitness function spike ADR; epic alto-cli-awl)_      |
 | YAML editing         | gopkg.in/yaml.v3                                           | Round-trip preservation of formatting                                                              |
 | Issue tracking       | Beads v0.55.4+                                             | Git-native, works offline, embedded Dolt backend                                                   |
-| Distribution         | Go binary                                                  | `go install github.com/alty-cli/alty@latest`                                                       |
-| Entry points         | `alty` (CLI) + `alty-mcp` (MCP server)                     | Both compiled from `cmd/alty` and `cmd/alty-mcp`                                                   |
+| Distribution         | Go binary                                                  | `go install github.com/alto-cli/alto@latest`                                                       |
+| Entry points         | `alto` (CLI) + `alto-mcp` (MCP server)                     | Both compiled from `cmd/alto` and `cmd/alto-mcp`                                                   |
 
 ### Dependencies
 
 ```go
 // go.mod
-module github.com/alty-cli/alty
+module github.com/alto-cli/alto
 
 go 1.26
 
@@ -1324,7 +1324,7 @@ From `docs/PRD.md` section 6:
 | Paid API dependencies | Zero                                             | Core functionality requires no paid services _(PRD section 6)_ |
 | Go version            | 1.26+                                            | Target audience stack _(PRD section 6)_                        |
 | File safety           | Never overwrite, preview first, explicit confirm | 9 file safety rules _(PRD section 6)_                          |
-| Test regression       | Zero on `alty init --existing`                   | Hard gate, no exceptions _(PRD section 6)_                     |
+| Test regression       | Zero on `alto init --existing`                   | Hard gate, no exceptions _(PRD section 6)_                     |
 
 ## 13. Architecture Decision Records
 
@@ -1332,11 +1332,11 @@ From `docs/PRD.md` section 6:
 | ------- | ---------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------- |
 | ADR-001 | CLI framework: Cobra (MIT)                                                                     | Accepted | `docs/research/20260222_cli_framework_comparison.md`            |
 | ADR-002 | MCP framework: mcp-go SDK                                                                      | Accepted | `docs/research/20260308_go_mcp_sdk_spike.md`                    |
-| ADR-003 | Architecture testing: arch-go (MIT-licensed) with config-based dependency rules                | Accepted | `docs/research/20260223_fitness_function_design.md` section 5; updated by epic alty-cli-awl (depguard GPL → arch-go MIT migration) |
+| ADR-003 | Architecture testing: arch-go (MIT-licensed) with config-based dependency rules                | Accepted | `docs/research/20260223_fitness_function_design.md` section 5; updated by epic alto-cli-awl (depguard GPL → arch-go MIT migration) |
 | ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human)      | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
 | ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation)              | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4    |
 | ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes)          | Accepted | `docs/research/20260223_ripple_review_design.md` section 1      |
-| ADR-007 | Shared YAML IR at `.alty/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
+| ADR-007 | Shared YAML IR at `.alto/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
 | ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs                           | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3  |
 | ADR-009 | YAML editing: gopkg.in/yaml.v3 for round-trip preservation                                     | Accepted | `docs/research/20260223_fitness_function_design.md` section 8   |
 | ADR-010 | 13 application-layer ports (Go interfaces) shared between CLI and MCP                          | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
@@ -1353,10 +1353,10 @@ Decisions resolved by spikes but requiring validation during implementation:
       _(fitness function spike section 9)_
 
 - [x] **Domain purity rules** -- arch-go `shouldOnlyDependsOn` with `external: ["$gostd"]`
-      ensures domain layers only import Go stdlib. Validated in epic alty-cli-awl.
+      ensures domain layers only import Go stdlib. Validated in epic alto-cli-awl.
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
-      tests. Regeneration should preserve user-added items. Design a `# alty:generated`
+      tests. Regeneration should preserve user-added items. Design a `# alto:generated`
       marker convention. _(fitness function spike section 9)_
 
 - [ ] **Guided DDD flow over MCP (stateful sessions)** -- The 10-question flow is stateful.

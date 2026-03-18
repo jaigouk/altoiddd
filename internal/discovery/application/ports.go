@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // --- Discovery Port ---

@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/rescue/application"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/rescue/application"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -52,16 +52,16 @@ func TestGapQueryHandler_AnalyzeGaps_WhenMissingDocs_ExpectGapsReturned(t *testi
 	assert.NotEmpty(t, docEntries, "should detect missing documentation gaps")
 }
 
-func TestGapQueryHandler_AnalyzeGaps_WhenMissingAltyConfig_ExpectRecommendedGap(t *testing.T) {
+func TestGapQueryHandler_AnalyzeGaps_WhenMissingAltoConfig_ExpectRecommendedGap(t *testing.T) {
 	t.Parallel()
 
-	// Given: a project with all docs but no .alty/config.toml
+	// Given: a project with all docs but no .alto/config.toml
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"},
 		[]string{".claude/CLAUDE.md"},
 		nil,
-		true, true, true, false, true, // hasAltyConfig = false
+		true, true, true, false, true, // hasAltoConfig = false
 	)
 	scanner := newFakeScanner(&scan)
 	handler := application.NewGapQueryHandler(scanner, &fakeProfileDetector{})
@@ -74,13 +74,13 @@ func TestGapQueryHandler_AnalyzeGaps_WhenMissingAltyConfig_ExpectRecommendedGap(
 
 	var configEntry *application.GapReportEntry
 	for _, e := range report.Entries {
-		if e.Path == ".alty/config.toml" {
+		if e.Path == ".alto/config.toml" {
 			e := e
 			configEntry = &e
 			break
 		}
 	}
-	require.NotNil(t, configEntry, "should detect missing .alty/config.toml")
+	require.NotNil(t, configEntry, "should detect missing .alto/config.toml")
 	assert.Equal(t, string(rescuedomain.GapSeverityRecommended), configEntry.Severity)
 }
 
@@ -91,7 +91,7 @@ func TestGapQueryHandler_AnalyzeGaps_WhenCleanProject_ExpectEmptyGaps(t *testing
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
-		[]string{".claude/CLAUDE.md", ".alty/config.toml"},
+		[]string{".claude/CLAUDE.md", ".alto/config.toml"},
 		nil,
 		true, true, true, true, true,
 	)
@@ -113,7 +113,7 @@ func TestGapQueryHandler_AnalyzeGaps_WhenStackProfile_ExpectProfileGapsIncluded(
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
-		[]string{".claude/CLAUDE.md", ".alty/config.toml"},
+		[]string{".claude/CLAUDE.md", ".alto/config.toml"},
 		nil,
 		true, true, true, true, true,
 	)

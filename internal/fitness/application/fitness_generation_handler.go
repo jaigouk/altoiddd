@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/fitness/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/stringutil"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/fitness/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/stringutil"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // FitnessPreview holds the preview data for fitness test generation.
@@ -82,7 +82,7 @@ func (h *FitnessGenerationHandler) BuildPreviewWithBCMap(
 	}
 
 	if model.IsEmpty() {
-		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alto guide' or 'alto import' first: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 

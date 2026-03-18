@@ -3,9 +3,9 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/discovery/application"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	"github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // Compile-time interface satisfaction checks.

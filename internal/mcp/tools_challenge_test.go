@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	challengeinfra "github.com/alty-cli/alty/internal/challenge/infrastructure"
-	"github.com/alty-cli/alty/internal/composition"
-	mcptools "github.com/alty-cli/alty/internal/mcp"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	challengeinfra "github.com/alto-cli/alto/internal/challenge/infrastructure"
+	"github.com/alto-cli/alto/internal/composition"
+	mcptools "github.com/alto-cli/alto/internal/mcp"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // --- Test mock ---

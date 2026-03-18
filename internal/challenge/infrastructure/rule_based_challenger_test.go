@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/challenge/infrastructure"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/challenge/infrastructure"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 func makeModelWithGaps(t *testing.T) *ddd.DomainModel {

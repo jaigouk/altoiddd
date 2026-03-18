@@ -11,8 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // FileKnowledgeReader reads knowledge entries from the local filesystem.

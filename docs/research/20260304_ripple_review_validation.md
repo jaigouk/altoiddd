@@ -3,12 +3,12 @@ date: 2026-03-04
 topic: Ripple Review Spike Validation
 status: final
 type: spike
-ticket: alty-2j7.2
+ticket: alto-2j7.2
 ---
 
 # Ripple Review Spike Validation
 
-> **Spike:** alty-2j7.2 -- Validate ripple review design against current codebase
+> **Spike:** alto-2j7.2 -- Validate ripple review design against current codebase
 > **Primary Reference:** `docs/research/20260223_ripple_review_design.md` (spike k7m.12)
 > **Decision:** The spike design is substantially implemented. Remaining gaps are
 > small and well-scoped for child tickets 2j7.9, 2j7.10, 2j7.11.
@@ -67,7 +67,7 @@ The remaining delta is concentrated in three areas:
 | Empty context guard: abort | `bin/bd-ripple` lines 58-68: aborts with error if empty or "Closed" | ALIGNED | Was listed as GAP in spike but has since been fixed |
 | Structured comment format (section 1.3) | Comment body is basic markdown, no checklist | GAP | Same as section 1 finding |
 | Exit codes | `set -euo pipefail` at top; explicit `exit 1` on errors, `exit 0` on no candidates | ALIGNED | None |
-| `--json` flag for machine-readable output | Not implemented | GAP | Spike section 2.5 specifies `--json` flag for `alty ticket-health` integration |
+| `--json` flag for machine-readable output | Not implemented | GAP | Spike section 2.5 specifies `--json` flag for `alto ticket-health` integration |
 | Deduplication of candidates | `bin/bd-ripple` lines 128-131: `sort -u` | ALIGNED | None |
 
 **Section 2 verdict: 7 ALIGNED, 2 GAP (comment checklist format, --json flag)**
@@ -91,11 +91,11 @@ The remaining delta is concentrated in three areas:
 
 ---
 
-### 4. `alty ticket-health` Command Design (Spike Section 4)
+### 4. `alto ticket-health` Command Design (Spike Section 4)
 
 | Spike Element | Current State | Status | Delta |
 |---|---|---|---|
-| `alty ticket-health` CLI command registered | `src/infrastructure/cli/main.py` line 483: stub returning "not yet implemented" | ALIGNED (stub) | Command exists but is not wired to handler |
+| `alto ticket-health` CLI command registered | `src/infrastructure/cli/main.py` line 483: stub returning "not yet implemented" | ALIGNED (stub) | Command exists but is not wired to handler |
 | `TicketHealthPort` protocol | `src/application/ports/ticket_health_port.py`: `report(project_dir) -> TicketHealthReport` | ALIGNED | None |
 | `TicketReaderProtocol` | `src/application/queries/ticket_health_handler.py` lines 22-27: `read_open_tickets()`, `read_flags()` | ALIGNED | None |
 | `TicketHealthHandler` query handler | `src/application/queries/ticket_health_handler.py`: builds report from reader | ALIGNED | None |
@@ -162,7 +162,7 @@ The remaining delta is concentrated in three areas:
 | Spike Element | Current State | Status | Delta |
 |---|---|---|---|
 | Ripple review + PRD traceability complementary | CLAUDE.md grooming checklist: step 2 (freshness) + step 3 (PRD traceability) | ALIGNED | None |
-| `alty doc-health` vs `alty ticket-health` separate | Separate ports: `DocHealthPort` and `TicketHealthPort`; separate bounded contexts | ALIGNED | None |
+| `alto doc-health` vs `alto ticket-health` separate | Separate ports: `DocHealthPort` and `TicketHealthPort`; separate bounded contexts | ALIGNED | None |
 | Beads ACL layer for Ticket Freshness | Not implemented (no infrastructure adapter) | GAP | Spike section 8.3 specifies the ACL mapping table. No adapter exists. |
 | Follow-up intent / spike audit | `src/domain/models/follow_up_intent.py` + `SpikeFollowUpPort` | DRIFT | These were NOT in the spike design. They were added post-spike as an extension to the after-close protocol. Codebase is ahead. |
 
@@ -230,7 +230,7 @@ Based on gaps G1 and G2, the following changes should be in scope:
 
 2. **Add `--json` output flag** (G2): When `--json` is passed, output a JSON array of
    flagged ticket IDs and context summaries instead of human-readable text. This enables
-   `alty ticket-health` to call `bd-ripple` programmatically.
+   `alto ticket-health` to call `bd-ripple` programmatically.
 
 3. **Consider NOT adding `--json` to bd-ripple**: The spike says the `--json` flag enables
    `ticket-health` integration, but the `TicketHealthHandler` uses `TicketReaderProtocol`
@@ -296,7 +296,7 @@ Based on gaps G4, G5, G6, G9, G11:
 ### CLAUDE.md Template Already Complete
 
 The `.claude/CLAUDE.md` template (for bootstrapped projects) already contains the
-full 4-step after-close protocol matching spike section 6.3. Both alty's own `CLAUDE.md`
+full 4-step after-close protocol matching spike section 6.3. Both alto's own `CLAUDE.md`
 and the template `CLAUDE.md` are in sync and aligned with the spike. No template changes
 needed (spike section 6 task 2 is DONE).
 
@@ -331,7 +331,7 @@ The `RippleReview` aggregate, value objects, and domain events are well-tested:
 - Application handler: `src/application/queries/ticket_health_handler.py`
 - Application port: `src/application/ports/ticket_health_port.py`
 - Bash script: `bin/bd-ripple`
-- CLAUDE.md (alty): `CLAUDE.md` (after-close protocol, grooming checklist)
+- CLAUDE.md (alto): `CLAUDE.md` (after-close protocol, grooming checklist)
 - CLAUDE.md (template): `.claude/CLAUDE.md`
 - Ticket template: `docs/beads_templates/beads-ticket-template.md`
 - Stub template: `docs/beads_templates/beads-stub-template.md`

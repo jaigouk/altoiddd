@@ -1,6 +1,6 @@
 package domain
 
-import vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+import vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 
 // ResolveProfile maps a TechStack to the corresponding StackProfile.
 // Returns PythonUvProfile for "python", GenericProfile otherwise.

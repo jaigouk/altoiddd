@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"log/slog"
 
-	bootstrapdomain "github.com/alty-cli/alty/internal/bootstrap/domain"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/events"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	ticketinfra "github.com/alty-cli/alty/internal/ticket/infrastructure"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	bootstrapdomain "github.com/alto-cli/alto/internal/bootstrap/domain"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	fitnessdomain "github.com/alto-cli/alto/internal/fitness/domain"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/events"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/eventbus"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	ticketinfra "github.com/alto-cli/alto/internal/ticket/infrastructure"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // wireEventSubscribers creates a Subscriber with handlers for all domain events.

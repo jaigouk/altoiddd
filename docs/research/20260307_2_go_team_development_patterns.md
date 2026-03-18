@@ -123,14 +123,14 @@ type Repository interface {
 
 ### 1.2 Monorepo Pattern (Multiple Bounded Contexts)
 
-For projects with multiple bounded contexts (like alty with Bootstrap, Knowledge,
+For projects with multiple bounded contexts (like alto with Bootstrap, Knowledge,
 ToolTranslation, etc.):
 
 ```
 project-root/
   go.mod
   cmd/
-    alty/main.go
+    alto/main.go
   internal/
     bootstrap/              # Bounded context 1
       domain/
@@ -1069,7 +1069,7 @@ project's `CLAUDE.md` or equivalent:
 
 ## Recommendation
 
-For alty's Go project templates, generate the following quality gate pipeline as
+For alto's Go project templates, generate the following quality gate pipeline as
 the default:
 
 1. **Makefile** with `build`, `test`, `lint`, `vet`, `fmt`, `audit`, `arch-lint`,
@@ -1111,6 +1111,6 @@ AI-generated Go code mistakes before they reach code review.
 
 - [ ] Create ticket: Implement Go project template with Makefile, `.golangci.yml`, `.go-arch-lint.yml`, and DDD directory structure
 - [ ] Create ticket: Add Go-specific CLAUDE.md template section with anti-hallucination rules
-- [ ] Create ticket: Add Go quality gate commands to alty's config generation (replaces ruff/mypy/pytest equivalents)
+- [ ] Create ticket: Add Go quality gate commands to alto's config generation (replaces ruff/mypy/pytest equivalents)
 - [ ] Create ticket: Implement Go table-driven test template generation for domain entities
 - [ ] Create ticket: Add Go DDD code review checklist to tech-lead agent persona

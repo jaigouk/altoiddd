@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
 )
 
 // DocInferenceHandler orchestrates LLM-powered doc inference with regex fallback.

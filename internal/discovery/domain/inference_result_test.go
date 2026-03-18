@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 func TestNewInferenceResult_WhenModelAndConfidence_ExpectAccessors(t *testing.T) {

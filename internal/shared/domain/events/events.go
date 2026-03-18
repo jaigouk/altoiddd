@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // DomainModelGenerated is emitted when a DomainModel passes all invariant checks.

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ChallengeType classifies what a challenge probes in the domain model.

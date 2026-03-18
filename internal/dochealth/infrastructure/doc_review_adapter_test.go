@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/dochealth/infrastructure"
+	"github.com/alto-cli/alto/internal/dochealth/infrastructure"
 )
 
 func TestDocReviewAdapter_MarkReviewed_UpdatesFrontmatter(t *testing.T) {
@@ -126,10 +126,10 @@ func TestDocReviewAdapter_MarkAllReviewed_UpdatesAll(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "doc2.md"), []byte(doc2), 0o644))
 
 	// Also create the registry so docs are discoverable.
-	altyDir := filepath.Join(dir, ".alty", "maintenance")
-	require.NoError(t, os.MkdirAll(altyDir, 0o755))
+	altoDir := filepath.Join(dir, ".alto", "maintenance")
+	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	registry := "[[docs]]\npath = \"docs/doc1.md\"\nreview_interval_days = 30\n\n[[docs]]\npath = \"docs/doc2.md\"\nreview_interval_days = 30\n"
-	require.NoError(t, os.WriteFile(filepath.Join(altyDir, "doc-registry.toml"), []byte(registry), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "doc-registry.toml"), []byte(registry), 0o644))
 
 	adapter := infrastructure.NewDocReviewAdapter(infrastructure.NewFilesystemDocScanner())
 	reviewDate := time.Date(2026, 3, 8, 0, 0, 0, 0, time.UTC)
@@ -149,10 +149,10 @@ func TestDocReviewAdapter_ReviewableDocs_FindsStaleDocs(t *testing.T) {
 	staleDoc := "---\nlast_reviewed: \"" + staleDate + "\"\nreview_interval_days: 30\n---\n# Stale\n"
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "stale.md"), []byte(staleDoc), 0o644))
 
-	altyDir := filepath.Join(dir, ".alty", "maintenance")
-	require.NoError(t, os.MkdirAll(altyDir, 0o755))
+	altoDir := filepath.Join(dir, ".alto", "maintenance")
+	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	registry := "[[docs]]\npath = \"docs/stale.md\"\nreview_interval_days = 30\n"
-	require.NoError(t, os.WriteFile(filepath.Join(altyDir, "doc-registry.toml"), []byte(registry), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "doc-registry.toml"), []byte(registry), 0o644))
 
 	adapter := infrastructure.NewDocReviewAdapter(infrastructure.NewFilesystemDocScanner())
 	statuses, err := adapter.ReviewableDocs(context.Background(), dir)
@@ -177,8 +177,8 @@ func TestDocReviewAdapter_ReviewableDocs_RegistryError_Propagates(t *testing.T) 
 	dir := t.TempDir()
 
 	// Create registry dir but make the file a directory to cause a read error.
-	altyDir := filepath.Join(dir, ".alty", "maintenance")
-	require.NoError(t, os.MkdirAll(altyDir, 0o755))
+	altoDir := filepath.Join(dir, ".alto", "maintenance")
+	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	// Create doc-registry.toml as a directory (not a file) — LoadRegistry will stat it
 	// as existing but fail to read it. However, the current LoadRegistry swallows
 	// read errors (returns nil, nil). So we test the "empty entries" path.

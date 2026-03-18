@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
 )
 
 // manifestEntry maps a manifest file to its language.
@@ -43,7 +43,7 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		language        string
 		manifestPath    string
 		hasDocsFolder   bool
-		hasAltyConfig   bool
+		hasAltoConfig   bool
 		hasAIToolConfig bool
 	)
 
@@ -63,9 +63,9 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		hasDocsFolder = true
 	}
 
-	// Check for .alty/config.toml.
-	if fileExists(filepath.Join(projectDir, ".alty", "config.toml")) {
-		hasAltyConfig = true
+	// Check for .alto/config.toml.
+	if fileExists(filepath.Join(projectDir, ".alto", "config.toml")) {
+		hasAltoConfig = true
 	}
 
 	// Check for AI tool configs.
@@ -84,7 +84,7 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		hasSourceCode,
 		language,
 		hasDocsFolder,
-		hasAltyConfig,
+		hasAltoConfig,
 		hasAIToolConfig,
 		manifestPath,
 		modulePath,

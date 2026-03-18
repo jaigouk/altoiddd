@@ -11,7 +11,7 @@ status: complete
 
 Understand the current state of MetaGPT and Pythagora (GPT Pilot) as of early 2026, with focus on
 architecture enforcement, DDD support, multi-tool compatibility, and existing project migration — the
-four axes where alty is seeking to differentiate.
+four axes where alto is seeking to differentiate.
 
 ---
 
@@ -237,7 +237,7 @@ GPT Pilot / Pythagora is not compatible with external AI tools:
 ## 3. The Broader Vibe Coding Gap Landscape
 
 Beyond MetaGPT and Pythagora specifically, the 2025-2026 vibe coding landscape reveals structural
-gaps that define the opportunity space for alty.
+gaps that define the opportunity space for alto.
 
 ### 3.1 The Architectural Collapse Problem
 
@@ -263,7 +263,7 @@ currently provides a systematic, project-scoped mechanism for doing this.
 
 ### 3.2 The Emerging Spec-Driven Development (SDD) Space
 
-A new category of tools emerged in 2025 that are closer to alty's intent:
+A new category of tools emerged in 2025 that are closer to alto's intent:
 
 | Tool | Workflow | DDD? | Existing projects? | Multi-tool? |
 |------|---------|------|--------------------|-------------|
@@ -317,7 +317,7 @@ AI coding tool's context window.
 
 ---
 
-## 4. Gap Analysis — Where alty Has Clear Differentiation
+## 4. Gap Analysis — Where alto Has Clear Differentiation
 
 ### 4.1 Confirmed Gaps (No Competing Tool Covers These)
 
@@ -330,22 +330,22 @@ AI coding tool's context window.
 | **Zero test regression gate for adoption** | No tool applies a hard "existing tests must pass" constraint during project scaffolding |
 | **Domain-aware agent personas** | No tool generates per-project agent personas that know the domain's ubiquitous language |
 
-### 4.2 Partial Overlap (alty Must Differentiate Within)
+### 4.2 Partial Overlap (alto Must Differentiate Within)
 
-| Feature | Competitor | alty Differentiation |
+| Feature | Competitor | alto Differentiation |
 |---------|-----------|--------------------------|
-| Structured ticket/task generation | Kiro, Spec-Kit, MetaGPT (tasks from requirements) | alty ties tickets to DDD boundaries + enforces TDD phases (RED/GREEN/REFACTOR) + quality gates |
-| Artifact generation (PRD, architecture docs) | MetaGPT (generates PRD, architecture diagrams) | alty generates DDD-aligned artifacts: bounded contexts, aggregate maps, ubiquitous language dictionary |
-| Conversational project bootstrap | GPT Pilot (spec writer asks clarifying questions) | alty asks DDD-specific questions (domain stories, actors, domain events) not just technical requirements |
-| Quality gate enforcement | MetaGPT (test generation + retry loop) | alty enforces ruff + mypy + pytest as a hard gate tied to ticket closure, not just code generation |
+| Structured ticket/task generation | Kiro, Spec-Kit, MetaGPT (tasks from requirements) | alto ties tickets to DDD boundaries + enforces TDD phases (RED/GREEN/REFACTOR) + quality gates |
+| Artifact generation (PRD, architecture docs) | MetaGPT (generates PRD, architecture diagrams) | alto generates DDD-aligned artifacts: bounded contexts, aggregate maps, ubiquitous language dictionary |
+| Conversational project bootstrap | GPT Pilot (spec writer asks clarifying questions) | alto asks DDD-specific questions (domain stories, actors, domain events) not just technical requirements |
+| Quality gate enforcement | MetaGPT (test generation + retry loop) | alto enforces ruff + mypy + pytest as a hard gate tied to ticket closure, not just code generation |
 
 ### 4.3 Python 3.12 as a Hard Constraint Advantage
 
-alty targets Python 3.12+ with `uv`. MetaGPT explicitly requires `<3.12` with no timeline for
+alto targets Python 3.12+ with `uv`. MetaGPT explicitly requires `<3.12` with no timeline for
 upgrade (open issue since May 2025). This means:
 
 - MetaGPT cannot be used in any project environment using Python 3.12+ (the current standard)
-- alty operates in exactly the environment MetaGPT is blocked from
+- alto operates in exactly the environment MetaGPT is blocked from
 - Teams adopting modern Python toolchains (uv, Python 3.12+) have no MetaGPT-compatible alternative
 
 **Source**: [MetaGPT Python 3.12 issue #1835](https://github.com/FoundationAgents/MetaGPT/issues/1835)
@@ -354,7 +354,7 @@ upgrade (open issue since May 2025). This means:
 
 ## 5. Summary Table
 
-| Dimension | MetaGPT | GPT Pilot / Pythagora | alty Target |
+| Dimension | MetaGPT | GPT Pilot / Pythagora | alto Target |
 |-----------|---------|----------------------|-----------------|
 | **License** | MIT | MIT (OSS) / proprietary (commercial) | MIT (planned) |
 | **Python 3.12+** | No (blocked) | Not applicable (Node.js) | Yes — required |
@@ -377,7 +377,7 @@ community contributors). They could add DDD methodology in 2026. However, the Ma
 (Jan 2026) of these tools found no DDD integration, and the spec-driven workflow's "requirements →
 design → tasks" framing is fundamentally different from "domain stories → bounded contexts → aggregates."
 
-**Mitigation**: alty's depth of DDD integration (domain storytelling, ubiquitous language
+**Mitigation**: alto's depth of DDD integration (domain storytelling, ubiquitous language
 generation, aggregate design questions, layer enforcement) would take months to replicate.
 
 ### Risk 2: MetaGPT Python 3.12 Fix
@@ -394,7 +394,7 @@ The Pythagora commercial platform (pythagora.ai) is actively growing (80k users)
 to Python, add DDD support, and become a competitor.
 
 **Mitigation**: Commercial SaaS platforms have incentives to keep users on their platform — they
-will not generate configs for Claude Code or Cursor that would reduce platform stickiness. alty's
+will not generate configs for Claude Code or Cursor that would reduce platform stickiness. alto's
 multi-tool, local-first, no-cloud-dependency model is structurally incompatible with their business
 model.
 

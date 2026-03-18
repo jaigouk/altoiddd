@@ -13,11 +13,11 @@ topic: Python Architecture Testing and Fitness Function Tools
 2. What tools exist for enforcing architectural boundaries in Python via fitness functions?
 3. Are there tools that auto-generate architecture tests from domain models or bounded context maps?
 4. What is the state of test generation from architectural specifications?
-5. If alty wanted to auto-generate architecture fitness function tests from a bounded context map, what libraries would it build on?
+5. If alto wanted to auto-generate architecture fitness function tests from a bounded context map, what libraries would it build on?
 
 ## 2. Context
 
-alty generates DDD project scaffolding including bounded context maps, layer structure
+alto generates DDD project scaffolding including bounded context maps, layer structure
 (`domain/`, `application/`, `infrastructure/`), and architectural docs. A capability under
 consideration is auto-generating architecture fitness function tests from those artifacts so
 generated projects arrive with enforced boundaries from day one.
@@ -337,16 +337,16 @@ you would need to:
 | Low-level custom analysis | `grimp` | Direct API access to the import graph for custom rules |
 | Beyond imports (decorators, naming, inheritance) | `deply` | YAML config, generatable from a template |
 
-**Recommended approach for alty:**
+**Recommended approach for alto:**
 
 Generate `pyproject.toml` import-linter contracts from the bounded context map at project
 init time. This is the simplest and most composable option:
-1. alty reads bounded context map (YAML)
+1. alto reads bounded context map (YAML)
 2. Generates `[[tool.importlinter.contracts]]` sections for each bounded context
 3. Developer runs `lint-imports` or `uv run lint-imports` in CI
 
 For richer rule-as-code (fitness function style), generate pytestarch test files:
-1. alty generates `tests/architecture/test_layers.py`
+1. alto generates `tests/architecture/test_layers.py`
 2. File contains pytestarch `Rule()` assertions derived from the context map
 3. Runs with `uv run pytest tests/architecture/`
 
@@ -384,19 +384,19 @@ part of the CI pipeline rather than one-off checks.
 
 ---
 
-## 8. Recommendations for alty
+## 8. Recommendations for alto
 
 ### Primary Recommendation
 
-Use **import-linter** for generated architecture fitness functions in alty scaffolding.
+Use **import-linter** for generated architecture fitness functions in alto scaffolding.
 
 **Rationale:**
 - Actively maintained (released Feb 6, 2026 — days before this research)
 - Permissive license (BSD-2)
-- Config-driven: alty can generate TOML contracts from a bounded context map without
+- Config-driven: alto can generate TOML contracts from a bounded context map without
   any runtime Python code generation
 - Runs standalone CLI (`lint-imports`) and integrates with `uv run`
-- Supports exactly the DDD layer pattern alty uses (domain/application/infrastructure)
+- Supports exactly the DDD layer pattern alto uses (domain/application/infrastructure)
 - Highest real-world adoption among Python architecture testing tools
 
 ### Secondary Recommendation
@@ -405,7 +405,7 @@ Use **pytestarch** for more expressive, code-based fitness functions where rules
 context-specific or conditional.
 
 **Rationale:**
-- Rules are Python code → composable with alty's Python code generation
+- Rules are Python code → composable with alto's Python code generation
 - Apache-2.0 license
 - Actively maintained (27 releases, 8 contributors)
 - Supports visualization of dependency graphs (useful for generated projects)
@@ -417,7 +417,7 @@ context-specific or conditional.
 
 ### What Does Not Exist Yet
 
-No tool auto-generates fitness function tests from a bounded context map. alty would be
+No tool auto-generates fitness function tests from a bounded context map. alto would be
 building novel capability by generating `import-linter` TOML blocks or `pytestarch` test
 files from its bounded context representation. The building blocks exist; the connector is
 the gap.

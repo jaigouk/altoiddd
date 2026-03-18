@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // TicketVerifyHandler verifies quantitative claims in tickets.

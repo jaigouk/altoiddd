@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // PersonaPreview holds rendered persona content ready for user review.

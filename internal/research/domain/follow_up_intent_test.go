@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/research/domain"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/research/domain"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ func TestFollowUpAuditResult(t *testing.T) {
 		result := domain.NewFollowUpAuditResult(
 			"k7m.8", "report.md",
 			intents,
-			[]string{"alty-abc", "alty-def"},
+			[]string{"alto-abc", "alto-def"},
 			intents[:3],
 		)
 		assert.Equal(t, 3, result.OrphanedCount())
@@ -115,7 +115,7 @@ func TestFollowUpAuditResult(t *testing.T) {
 		result := domain.NewFollowUpAuditResult(
 			"k7m.8", "report.md",
 			[]domain.FollowUpIntent{intent},
-			[]string{"alty-abc"},
+			[]string{"alto-abc"},
 			nil,
 		)
 		assert.False(t, result.HasOrphans())

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Original project_setup script - kept as reference for alty init design
-# See the actual implementation at bin/alty
+# Original project_setup script - kept as reference for alto init design
+# See the actual implementation at bin/alto
 #
 # Key patterns to preserve:
 # - Tool detection and installation (beads, context7)
@@ -10,12 +10,12 @@
 # - Global config awareness (~/.claude/CLAUDE.md)
 # - Summary report at the end
 #
-# Key changes for alty:
+# Key changes for alto:
 # - Preview-first, confirm before action
 # - Never overwrite existing files
-# - Conflict rename with _alty suffix
+# - Conflict rename with _alto suffix
 # - Global settings detection and conflict reporting
 # - Branch for existing projects (--existing)
 # - Test verification for existing projects (zero regression gate)
 # - Drop grepai, notebooklm
-# - Add .alty/ directory, knowledge base, templates
+# - Add .alto/ directory, knowledge base, templates

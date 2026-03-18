@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 const bdTimeoutSeconds = 10

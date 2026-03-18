@@ -28,7 +28,7 @@ The Go ecosystem has reached strong parity with Python for CLI+MCP+LLM projects 
 | **Used by** | Kubernetes (kubectl), Hugo, GitHub CLI, Docker, Terraform |
 
 **Strengths:**
-- Subcommand-based CLI with nested commands (maps well to `alty init`, `alty doc-health`, etc.)
+- Subcommand-based CLI with nested commands (maps well to `alto init`, `alto doc-health`, etc.)
 - POSIX-compliant flags with persistent flags (global flags cascade to subcommands)
 - Auto-generated help, man pages, shell completions (bash, zsh, fish, PowerShell)
 - Built-in argument validation (`cobra.MinimumNArgs`, `cobra.ExactArgs`, etc.)
@@ -78,7 +78,7 @@ The Go ecosystem has reached strong parity with Python for CLI+MCP+LLM projects 
 
 ### Recommendation
 
-**Cobra** is the clear choice for a DDD-structured CLI app with multiple subcommands. Its command tree model maps naturally to alty's `init`, `doc-health`, `version` subcommands. The Apache 2.0 license is permissive. urfave/cli is better suited for simpler tools.
+**Cobra** is the clear choice for a DDD-structured CLI app with multiple subcommands. Its command tree model maps naturally to alto's `init`, `doc-health`, `version` subcommands. The Apache 2.0 license is permissive. urfave/cli is better suited for simpler tools.
 
 ---
 
@@ -643,7 +643,7 @@ The RLM (Recursive Language Model) pattern is used in two ways:
 
 2. **In commands:** `architecture-docs` uses RLM conceptually — documents as addressable variables via a knowledge map. This is a prompt pattern, not a code dependency. Works identically in Go.
 
-The full RLM paper (Zhang et al., 2025) describes a REPL sandbox with AST validation and code execution. alty does NOT use this — it uses the iterative reasoning loop only. If the full REPL sandbox is needed later, Go provides stronger sandboxing options: `yaegi` (Go interpreter), Wasm sandboxes, or OS-level isolation via `exec.Command` with restricted permissions. See `docs/RLM.md` for the full pattern reference.
+The full RLM paper (Zhang et al., 2025) describes a REPL sandbox with AST validation and code execution. alto does NOT use this — it uses the iterative reasoning loop only. If the full REPL sandbox is needed later, Go provides stronger sandboxing options: `yaegi` (Go interpreter), Wasm sandboxes, or OS-level isolation via `exec.Command` with restricted permissions. See `docs/RLM.md` for the full pattern reference.
 
 ### Moderate Risks
 
@@ -655,7 +655,7 @@ The full RLM paper (Zhang et al., 2025) describes a REPL sandbox with AST valida
 
 ### Not a Gap: Multi-Tool Support (Tool-Agnostic Architecture)
 
-alty is NOT locked to Claude Code. It supports multiple AI coding tools via config generation. All tools use JSON-based MCP config with nearly identical structure:
+alto is NOT locked to Claude Code. It supports multiple AI coding tools via config generation. All tools use JSON-based MCP config with nearly identical structure:
 
 | Tool | Config Location | MCP Format | Status |
 |------|----------------|------------|--------|
@@ -664,9 +664,9 @@ alty is NOT locked to Claude Code. It supports multiple AI coding tools via conf
 | Roo Code | `.roo/mcp.json`, `.roo/rules/*.md`, `.roomodes` | JSON | To implement |
 | OpenCode/Crush | `opencode.json` / `.crush.json` | JSON | To implement |
 
-**Key finding:** OpenCode is written in **Go** (MIT, 11.3K stars, archived → continued as Crush by Charmbracelet, 21K stars). Crush uses FSL-1.1-MIT (2-year commercial restriction), but alty only generates config files for it — no license concern. The fact that a major AI coding tool is written in Go reinforces the Go migration case.
+**Key finding:** OpenCode is written in **Go** (MIT, 11.3K stars, archived → continued as Crush by Charmbracelet, 21K stars). Crush uses FSL-1.1-MIT (2-year commercial restriction), but alto only generates config files for it — no license concern. The fact that a major AI coding tool is written in Go reinforces the Go migration case.
 
-A single domain model in alty can represent MCP config and translate to each tool's native format with minimal per-tool adapter logic. This is already the design pattern in the Python codebase.
+A single domain model in alto can represent MCP config and translate to each tool's native format with minimal per-tool adapter logic. This is already the design pattern in the Python codebase.
 
 ### Not a Gap: Local LLM Support
 
@@ -695,7 +695,7 @@ See full details: [docs/research/20260307_1_go_ai_tool_ecosystem_local_llm.md](2
 10. **Cross-compilation** -- trivial multi-platform builds vs Python's painful packaging story
 11. **Startup time** -- 10-50ms vs 200-500ms for Python CLI
 12. **Memory footprint** -- significantly lower than Python for long-running MCP server processes
-13. **Ecosystem alignment** -- Both Ollama (164K stars) and OpenCode (11.3K stars) are written in Go. alty joins a Go-native AI tooling ecosystem.
+13. **Ecosystem alignment** -- Both Ollama (164K stars) and OpenCode (11.3K stars) are written in Go. alto joins a Go-native AI tooling ecosystem.
 
 ---
 

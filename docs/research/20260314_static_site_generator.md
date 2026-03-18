@@ -1,22 +1,22 @@
-# Research: Static Site Generator for alty.ai
+# Research: Static Site Generator for alto.ai
 
 **Date:** 2026-03-14
-**Spike Ticket:** alty-cli-dkc
+**Spike Ticket:** alto-cli-dkc
 **Status:** Final
 
 ## Summary
 
-**Recommendation: Astro + Starlight** for the alty.ai website. It is the only candidate that excels at both marketing/landing pages AND documentation from the same project, with verified support for referencing `../docs/*.md` from a `website/` subdirectory via the `glob()` loader. Hugo is a strong runner-up for Go ecosystem alignment but falls short on design quality ceiling for marketing pages.
+**Recommendation: Astro + Starlight** for the alto.ai website. It is the only candidate that excels at both marketing/landing pages AND documentation from the same project, with verified support for referencing `../docs/*.md` from a `website/` subdirectory via the `glob()` loader. Hugo is a strong runner-up for Go ecosystem alignment but falls short on design quality ceiling for marketing pages.
 
 ## Research Question
 
-What is the best static site generator for alty's public-facing website (alty.ai), given:
+What is the best static site generator for alto's public-facing website (alto.ai), given:
 1. Source content is existing Markdown in `docs/` (PRD.md, DDD.md, ARCHITECTURE.md)
 2. The Go repo root must stay clean -- no `package.json`/`node_modules` at root
 3. Must support both marketing pages (hero, features, CTAs) AND documentation (nav, search, code blocks)
 4. SSG tooling must live entirely in a `website/` subdirectory
 5. Must be able to reference `../docs/*.md` as content sources
-6. Need to integrate metadata from `.alty/maintenance/doc-registry.toml`
+6. Need to integrate metadata from `.alto/maintenance/doc-registry.toml`
 
 ## Options Considered
 
@@ -77,7 +77,7 @@ Astro 5.12+ has built-in TOML support in content collections via the `glob()` an
 
 ```typescript
 const docRegistry = defineCollection({
-  loader: file("../.alty/maintenance/doc-registry.toml"),
+  loader: file("../.alto/maintenance/doc-registry.toml"),
   schema: z.object({
     owner: z.string(),
     last_reviewed: z.string(),
@@ -133,7 +133,7 @@ source = 'content'
 target = 'content'
 
 [[module.mounts]]
-source = '/absolute/path/to/alty-cli/docs'
+source = '/absolute/path/to/alto-cli/docs'
 target = 'content/docs'
 ```
 
@@ -159,7 +159,7 @@ Hugo natively reads TOML data files from the `data/` directory, accessible via `
 
 ```toml
 [[module.mounts]]
-source = '/absolute/path/to/.alty/maintenance'
+source = '/absolute/path/to/.alto/maintenance'
 target = 'data/maintenance'
 ```
 
@@ -221,7 +221,7 @@ MkDocs 2.0 was announced as a "ground-up rewrite" with "potentially significant 
 - MkDocs 2.0 rewrite creates stability risk
 - Python dependency (not Go-native, not JS either -- a third runtime)
 - Design ceiling too low for a product website
-- Not suitable for alty.ai's dual marketing + docs requirement
+- Not suitable for alto.ai's dual marketing + docs requirement
 
 ### 4. Docusaurus
 
@@ -282,13 +282,13 @@ However, the entire site ships as a React SPA, meaning heavier client-side JS th
 | Go ecosystem alignment | No (JS/TS) | Yes (Go binary) | No |
 | Active development | Very active (Astro 6 just released) | Active | Mixed |
 
-The main trade-off is **Go ecosystem alignment vs. design quality ceiling**. Hugo is Go-native and requires zero JS, but its templating system makes professional marketing pages significantly harder to build. For a product website that represents alty to potential users, design quality wins over ecosystem purity.
+The main trade-off is **Go ecosystem alignment vs. design quality ceiling**. Hugo is Go-native and requires zero JS, but its templating system makes professional marketing pages significantly harder to build. For a product website that represents alto to potential users, design quality wins over ecosystem purity.
 
 The `website/` isolation pattern keeps the JS tooling fully separated:
 
 ```
-alty-cli/
-  cmd/alty/           # Go CLI
+alto-cli/
+  cmd/alto/           # Go CLI
   internal/           # Go domain code
   docs/               # Markdown source content
   website/            # Astro + Starlight (self-contained)
@@ -351,9 +351,9 @@ If the requirement were "documentation only" (no marketing pages), or if zero JS
 
 1. **Scaffold Astro + Starlight in `website/`** -- Initialize the project, configure glob loader to reference `../docs/`, verify build works. Create landing page skeleton and docs section.
 
-2. **Configure TOML integration** -- Set up content collection for `.alty/maintenance/doc-registry.toml`, display doc freshness metadata (owner, last_reviewed) on documentation pages.
+2. **Configure TOML integration** -- Set up content collection for `.alto/maintenance/doc-registry.toml`, display doc freshness metadata (owner, last_reviewed) on documentation pages.
 
-3. **Design landing page** -- Create the alty.ai landing page with hero section, feature grid, and CTA. This is design work, not SSG configuration.
+3. **Design landing page** -- Create the alto.ai landing page with hero section, feature grid, and CTA. This is design work, not SSG configuration.
 
 4. **Set up CI build** -- Add `website/` build step to CI pipeline. Output goes to `website/dist/` as static HTML.
 

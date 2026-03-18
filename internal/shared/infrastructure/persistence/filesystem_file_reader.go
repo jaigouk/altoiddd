@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
 // Compile-time interface satisfaction check.

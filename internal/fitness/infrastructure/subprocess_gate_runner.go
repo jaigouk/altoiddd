@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	fitnessapp "github.com/alto-cli/alto/internal/fitness/application"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 const defaultTimeoutSeconds = 300

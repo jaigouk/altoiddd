@@ -2,7 +2,7 @@
 
 > **Date:** 2026-03-05
 > **Type:** Research
-> **Purpose:** Survey of DDD meetings, techniques, and artifacts that practitioners actually use in 2025-2026. Informs alty's guided discovery flow and generated artifacts.
+> **Purpose:** Survey of DDD meetings, techniques, and artifacts that practitioners actually use in 2025-2026. Informs alto's guided discovery flow and generated artifacts.
 
 ## The DDD Starter Modelling Process (8 Steps)
 
@@ -122,9 +122,9 @@ Integrates three frameworks:
 - **Architecture for Flow** (Nick Tune) — Wardley Mapping as a first-class DDD artifact
 - **Storystorming** ([storystorming.com](https://storystorming.com/)) — emerging hybrid of Domain Storytelling and EventStorming
 
-## Gap Analysis: alty vs 2026 State of the Art
+## Gap Analysis: alto vs 2026 State of the Art
 
-| alty currently generates | Status |
+| alto currently generates | Status |
 |--------------------------|--------|
 | Domain Stories (step 2) | Done |
 | Ubiquitous Language glossary | Done |
@@ -132,19 +132,19 @@ Integrates three frameworks:
 | Context Map with relationships (step 5-6) | Done |
 | Aggregate design with invariants (step 8) | Done |
 
-| alty is missing | Priority | Notes |
+| alto is missing | Priority | Notes |
 |-----------------|----------|-------|
 | Business Model Canvas (step 1) | Low | Overkill for solo dev / small project bootstrapping |
-| Core Domain Chart visual | Medium | alty classifies subdomains but doesn't produce the visual chart |
-| Domain Message Flow (step 5) | Medium | alty has context map but not explicit message flow diagrams |
-| Bounded Context Canvas (step 7) | **High** | The standard structured artifact for documenting each context. alty generates text-based context descriptions but not the canvas format. |
+| Core Domain Chart visual | Medium | alto classifies subdomains but doesn't produce the visual chart |
+| Domain Message Flow (step 5) | Medium | alto has context map but not explicit message flow diagrams |
+| Bounded Context Canvas (step 7) | **High** | The standard structured artifact for documenting each context. alto generates text-based context descriptions but not the canvas format. |
 | Example Mapping | Low | Too granular for bootstrapping — useful during implementation |
 | Team Topologies alignment (step 6) | Low | Relevant for teams, not solo devs |
 | Wardley Mapping integration | Low | Valuable but complex; better as a future spike |
 
 ### Recommendation
 
-The **Bounded Context Canvas** is the highest-value gap. It's the industry standard for documenting bounded contexts and would make alty's output immediately recognizable to DDD practitioners. Consider adding canvas generation to `alty generate` output.
+The **Bounded Context Canvas** is the highest-value gap. It's the industry standard for documenting bounded contexts and would make alto's output immediately recognizable to DDD practitioners. Consider adding canvas generation to `alto generate` output.
 
 ## Sources
 

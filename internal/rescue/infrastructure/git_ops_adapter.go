@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
 var branchNamePattern = regexp.MustCompile(`^[a-zA-Z0-9/_.\-]+$`)

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/knowledge/application"
-	"github.com/alty-cli/alty/internal/knowledge/domain"
+	"github.com/alto-cli/alto/internal/knowledge/application"
+	"github.com/alto-cli/alto/internal/knowledge/domain"
 )
 
 // ---------------------------------------------------------------------------

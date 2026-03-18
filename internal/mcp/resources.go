@@ -11,13 +11,13 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/alty-cli/alty/internal/composition"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
+	"github.com/alto-cli/alto/internal/composition"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
 )
 
 // --- URI parsing helpers ---
 
-// extractURIPath parses an alty:// URI and returns the path (without leading slash).
+// extractURIPath parses an alto:// URI and returns the path (without leading slash).
 func extractURIPath(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -48,7 +48,7 @@ func resourceText(uri, mimeType, text string) (*mcp.ReadResourceResult, error) {
 
 func knowledgeDDDHandler(app *composition.App) mcp.ResourceHandler {
 	return func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://knowledge/ddd/{topic} → host=knowledge, path=/ddd/{topic}
+		// alto://knowledge/ddd/{topic} → host=knowledge, path=/ddd/{topic}
 		path, err := extractURIPath(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -68,7 +68,7 @@ func knowledgeDDDHandler(app *composition.App) mcp.ResourceHandler {
 
 func knowledgeToolsHandler(app *composition.App) mcp.ResourceHandler {
 	return func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://knowledge/tools/{tool}/{subtopic}
+		// alto://knowledge/tools/{tool}/{subtopic}
 		path, err := extractURIPath(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -134,7 +134,7 @@ func knowledgeCrossToolHandler(app *composition.App) mcp.ResourceHandler {
 
 func projectDocHandler(_ *composition.App, docSubpath, docName string) mcp.ResourceHandler {
 	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://project/{dir}/{docSubpath} → host=project, path=/{dir}/{docSubpath}
+		// alto://project/{dir}/{docSubpath} → host=project, path=/{dir}/{docSubpath}
 		u, err := url.Parse(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -198,7 +198,7 @@ func ticketsReadyHandler(app *composition.App) mcp.ResourceHandler {
 
 func ticketByIDHandler(_ *composition.App) mcp.ResourceHandler {
 	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://tickets/{id} → host=tickets, path=/{id}
+		// alto://tickets/{id} → host=tickets, path=/{id}
 		u, err := url.Parse(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -222,7 +222,7 @@ func ticketByIDHandler(_ *composition.App) mcp.ResourceHandler {
 
 func personaHandler(app *composition.App) mcp.ResourceHandler {
 	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://personas/{type} → host=personas, path=/{type}
+		// alto://personas/{type} → host=personas, path=/{type}
 		u, err := url.Parse(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -249,35 +249,35 @@ func personaHandler(app *composition.App) mcp.ResourceHandler {
 
 // --- Registration ---
 
-// RegisterResources registers all MCP resources for the alty server.
+// RegisterResources registers all MCP resources for the alto server.
 func RegisterResources(server *mcp.Server, app *composition.App) {
 	// Knowledge base resources (4 templates)
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "DDD Knowledge",
 		Description: "DDD knowledge base entries by topic",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://knowledge/ddd/{topic}",
+		URITemplate: "alto://knowledge/ddd/{topic}",
 	}, knowledgeDDDHandler(app))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Tool Knowledge",
 		Description: "Tool-specific knowledge base entries",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://knowledge/tools/{tool}/{subtopic}",
+		URITemplate: "alto://knowledge/tools/{tool}/{subtopic}",
 	}, knowledgeToolsHandler(app))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Conventions Knowledge",
 		Description: "Project convention knowledge base entries",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://knowledge/conventions/{topic}",
+		URITemplate: "alto://knowledge/conventions/{topic}",
 	}, knowledgeConventionsHandler(app))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Cross-Tool Knowledge",
 		Description: "Cross-tool knowledge base entries",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://knowledge/cross-tool/{topic}",
+		URITemplate: "alto://knowledge/cross-tool/{topic}",
 	}, knowledgeCrossToolHandler(app))
 
 	// Project document resources (3 templates)
@@ -285,35 +285,35 @@ func RegisterResources(server *mcp.Server, app *composition.App) {
 		Name:        "Project Domain Model",
 		Description: "Project DDD domain model (docs/DDD.md)",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://project/{dir}/domain-model",
+		URITemplate: "alto://project/{dir}/domain-model",
 	}, projectDocHandler(app, "domain-model", "DDD.md"))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Project Architecture",
 		Description: "Project architecture document (docs/ARCHITECTURE.md)",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://project/{dir}/architecture",
+		URITemplate: "alto://project/{dir}/architecture",
 	}, projectDocHandler(app, "architecture", "ARCHITECTURE.md"))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Project PRD",
 		Description: "Project product requirements document (docs/PRD.md)",
 		MIMEType:    "text/markdown",
-		URITemplate: "alty://project/{dir}/prd",
+		URITemplate: "alto://project/{dir}/prd",
 	}, projectDocHandler(app, "prd", "PRD.md"))
 
 	// Ticket resources (1 static + 1 template)
 	server.AddResource(&mcp.Resource{
 		Name:     "Ready Tickets",
 		MIMEType: "text/plain",
-		URI:      "alty://tickets/ready",
+		URI:      "alto://tickets/ready",
 	}, ticketsReadyHandler(app))
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "Ticket by ID",
 		Description: "Ticket details by ID",
 		MIMEType:    "text/plain",
-		URITemplate: "alty://tickets/{id}",
+		URITemplate: "alto://tickets/{id}",
 	}, ticketByIDHandler(app))
 
 	// Persona resource (1 template)
@@ -321,7 +321,7 @@ func RegisterResources(server *mcp.Server, app *composition.App) {
 		Name:        "Persona",
 		Description: "Persona definition by type (e.g. solo_developer, team_lead)",
 		MIMEType:    "text/plain",
-		URITemplate: "alty://personas/{type}",
+		URITemplate: "alto://personas/{type}",
 	}, personaHandler(app))
 }
 
@@ -329,7 +329,7 @@ func RegisterResources(server *mcp.Server, app *composition.App) {
 
 func sessionStatusHandler(coord *shareddomain.WorkflowCoordinator) mcp.ResourceHandler {
 	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// alty://session/{session_id}/status
+		// alto://session/{session_id}/status
 		u, err := url.Parse(req.Params.URI)
 		if err != nil {
 			return resourceError(req.Params.URI, err.Error())
@@ -387,6 +387,6 @@ func RegisterResourcesWithCoordinator(server *mcp.Server, app *composition.App, 
 		Name:        "Session Status",
 		Description: "Workflow session status showing step states and available actions",
 		MIMEType:    "application/json",
-		URITemplate: "alty://session/{session_id}/status",
+		URITemplate: "alto://session/{session_id}/status",
 	}, sessionStatusHandler(coord))
 }

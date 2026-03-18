@@ -83,8 +83,8 @@ internal/
 │   ├── events/          # Domain events
 │   └── valueobjects/    # Shared value objects
 cmd/
-├── alty/main.go          # CLI entry point (Cobra)
-└── alty-mcp/main.go      # MCP server entry point
+├── alto/main.go          # CLI entry point (Cobra)
+└── alto-mcp/main.go      # MCP server entry point
 ```
 
 ## Go DDD Patterns

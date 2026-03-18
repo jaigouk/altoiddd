@@ -227,7 +227,7 @@ While not Python-specific, this widely-cited post-mortem illustrates big-bang re
 incremental migration with production validation is the only proven approach. The $2.4M
 failure reinforces that big-bang rewrites of large systems remain high-risk.
 
-**Relevance to alty:** alty's Python codebase is currently ~800 tests / medium size. An
+**Relevance to alto:** alto's Python codebase is currently ~800 tests / medium size. An
 incremental approach with the Strangler Fig pattern (migrating bounded context by bounded
 context) is the safest path. The AI-assisted migration approach from Winder AI is relevant
 if augmented with integration tests and dead-code cleanup gates.
@@ -430,9 +430,9 @@ guardrails.
 
 **Source:** [Anthropic - 2026 Agentic Coding Trends Report](https://resources.anthropic.com/hubfs/2026%20Agentic%20Coding%20Trends%20Report.pdf)
 
-### 3.5 Relevance to alty
+### 3.5 Relevance to alto
 
-alty's agent persona model (researcher, developer, qa-engineer, tech-lead, project-manager)
+alto's agent persona model (researcher, developer, qa-engineer, tech-lead, project-manager)
 maps directly to Claude Code's subagent architecture. For a Go migration:
 
 - Use **researcher** subagent for spike research
@@ -484,18 +484,18 @@ GoChannel.
 
 **Source:** [ThreeDotsLabs Blog - Watermill 1.5 Released](https://threedots.tech/post/watermill-1-5/)
 
-### 4.5 Assessment for alty CLI
+### 4.5 Assessment for alto CLI
 
-GoChannel is **suitable** for alty's CLI use case because:
+GoChannel is **suitable** for alto's CLI use case because:
 
-- alty CLI is a single-process, short-lived application
+- alto CLI is a single-process, short-lived application
 - Events are used for intra-process communication (not cross-service)
 - Message loss is acceptable (events drive side-effects, not core logic)
 - The CQRS abstraction layer means swapping to NATS/SQLite requires zero app code changes
 
 GoChannel is **not suitable** if:
 
-- alty MCP server needs durable event delivery
+- alto MCP server needs durable event delivery
 - Events must survive process crashes
 - Consumer groups are needed for parallel processing
 
@@ -573,7 +573,7 @@ GitHub Issue #498 on anthropics/claude-agent-sdk-python requests official Go SDK
 
 **Source:** [GitHub Issue #498 - Go SDK Support Request](https://github.com/anthropics/claude-agent-sdk-python/issues/498)
 
-### 5.5 Assessment for alty
+### 5.5 Assessment for alto
 
 **severity1/claude-agent-sdk-go is NOT recommended for production use** because:
 
@@ -584,24 +584,24 @@ GitHub Issue #498 on anthropics/claude-agent-sdk-python requests official Go SDK
 5. **Fragmented ecosystem:** 5+ competing forks, no community consensus
 6. **Fundamental architecture flaw:** CLI subprocess wrapper introduces 1-3s latency per query
 
-**Alternative strategy for alty Go port:**
+**Alternative strategy for alto Go port:**
 
 - Use `anthropic-sdk-go` (MIT, official, v1.26.0+) for direct API calls -- this covers the
   port adapter pattern (LLM interaction via Anthropic Messages API)
-- Build agent orchestration natively in Go using alty's own domain model + Watermill CQRS
-- The Claude Agent SDK's value (agent loop, built-in tools) can be replicated since alty
+- Build agent orchestration natively in Go using alto's own domain model + Watermill CQRS
+- The Claude Agent SDK's value (agent loop, built-in tools) can be replicated since alto
   already defines its own agent personas and tool access patterns
 
 ---
 
-## 6. Synthesis: Migration Risk Matrix for alty
+## 6. Synthesis: Migration Risk Matrix for alto
 
 ### 6.1 Risk Assessment
 
 | Risk | Severity | Likelihood | Mitigation |
 |---|---|---|---|
 | Code expansion (2-3x LOC) | Medium | High | Accept; Go verbosity is offset by compiler safety |
-| Loss of Python AI/ML ecosystem | Low | N/A | alty does not use AI/ML libraries; LLM calls use HTTP API |
+| Loss of Python AI/ML ecosystem | Low | N/A | alto does not use AI/ML libraries; LLM calls use HTTP API |
 | AI agent generates poor Go | High | High | Go compiler catches most issues; golangci-lint covers rest |
 | Package hallucination | Medium | Medium | `go build` fails immediately; Go module proxy validates |
 | Multi-agent coordination overhead | Medium | Medium | Limit to 3-4 agents; decompose tasks to package level |
@@ -629,7 +629,7 @@ Based on the five case studies:
 | Topic | Why | Suggested Ticket Type |
 |---|---|---|
 | SQLite Pub/Sub for Watermill MCP server | Better than GoChannel for durable events | Spike |
-| go-modern-guidelines plugin integration | Ensure alty generates correct CLAUDE.md for Go projects | Task |
-| Strangler Fig migration plan for alty | Bounded context migration order and validation strategy | Spike |
+| go-modern-guidelines plugin integration | Ensure alto generates correct CLAUDE.md for Go projects | Task |
+| Strangler Fig migration plan for alto | Bounded context migration order and validation strategy | Spike |
 | Dead code detection workflow for AI-assisted Go | Automated gate in CI/CD pipeline | Task |
-| anthropic-sdk-go agent loop design | Build alty's agent orchestration natively | Spike |
+| anthropic-sdk-go agent loop design | Build alto's agent orchestration natively | Spike |

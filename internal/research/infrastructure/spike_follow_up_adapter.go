@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	researchapp "github.com/alty-cli/alty/internal/research/application"
-	researchdomain "github.com/alty-cli/alty/internal/research/domain"
+	researchapp "github.com/alto-cli/alto/internal/research/application"
+	researchdomain "github.com/alto-cli/alto/internal/research/domain"
 )
 
 // Compile-time interface check.

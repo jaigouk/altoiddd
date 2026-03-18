@@ -31,7 +31,7 @@ if [[ -z "$TICKET_ID" ]]; then
     echo "Produces a structured report with READY / NEEDS UPDATE / NEEDS SPLIT verdict."
     echo ""
     echo "Examples:"
-    echo "  bd-groom alty-0m9.2"
+    echo "  bd-groom alto-0m9.2"
     exit 1
 fi
 

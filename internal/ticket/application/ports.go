@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // BeadsWriter writes beads tickets and epics to the issue tracker.

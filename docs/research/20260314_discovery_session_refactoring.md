@@ -1,6 +1,6 @@
 # Spike: DiscoverySession Refactoring for Conversational Flow
 
-**Ticket:** alty-cli-3yp
+**Ticket:** alto-cli-3yp
 **Date:** 2026-03-14
 **Researcher:** researcher-session
 **Status:** Complete
@@ -408,7 +408,7 @@ Proposed UL for Discovery's conversational flow:
 
 ## 7. Follow-Up Ticket Updates for f0g.4
 
-### Required Changes to alty-cli-f0g.4
+### Required Changes to alto-cli-f0g.4
 
 **UL Section:**
 - Replace `GapAnalysis` with `ModelGap` / `ModelCompleteness`

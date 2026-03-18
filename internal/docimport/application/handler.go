@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/docimport/domain"
+	"github.com/alto-cli/alto/internal/docimport/domain"
 )
 
 // DocImportHandler orchestrates the import of domain models from existing documentation.

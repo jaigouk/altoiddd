@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-08
 **Auditor:** QA Engineer (security-focused review)
-**Scope:** Existing Go codebase (`internal/`, `cmd/`) ahead of MCP server implementation (Epic 3, alty-0m9)
+**Scope:** Existing Go codebase (`internal/`, `cmd/`) ahead of MCP server implementation (Epic 3, alto-0m9)
 **Method:** Static code analysis of all Go source files, dependency scanning via `govulncheck`
 
 ---
@@ -28,12 +28,12 @@ The codebase demonstrates good security hygiene in several areas: session IDs us
 ### [F1] HIGH: Path Traversal in FilesystemFileWriter -- No Path Sanitization
 
 **Affected Files:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/shared/infrastructure/persistence/filesystem_file_writer.go`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/tooltranslation/application/persona_handler.go` (line 79)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/tooltranslation/application/config_generation_handler.go` (line 94)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/rescue/application/rescue_handler.go` (line 161)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/ticket/application/ticket_generation_handler.go` (line 78)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/discovery/application/artifact_generation_handler.go` (line 98)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/shared/infrastructure/persistence/filesystem_file_writer.go`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/tooltranslation/application/persona_handler.go` (line 79)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/tooltranslation/application/config_generation_handler.go` (line 94)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/rescue/application/rescue_handler.go` (line 161)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/ticket/application/ticket_generation_handler.go` (line 78)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/discovery/application/artifact_generation_handler.go` (line 98)
 
 **Description:**
 `FilesystemFileWriter.WriteFile()` accepts an arbitrary path and writes content to it with `os.MkdirAll` + `os.WriteFile`. There is no validation that the resolved path stays within a project directory boundary. The `filepath.Join(outputDir, subPath)` pattern used by all callers is vulnerable to traversal when `subPath` contains `..` segments or absolute paths.
@@ -69,7 +69,7 @@ No other file path input has this protection.
 ### [F2] HIGH: Unsanitized ticketID Passed to exec.Command
 
 **Affected File:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/ticket/infrastructure/beads_ticket_reader.go` (line 189)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/ticket/infrastructure/beads_ticket_reader.go` (line 189)
 
 **Description:**
 The `readFlagsFromBDComments` method passes `ticketID` directly to `exec.CommandContext`:
@@ -96,9 +96,9 @@ The `getFlaggedIDs` method at line 157 has a similar pattern but uses a hardcode
 ### [F3] HIGH: Session Memory Leak -- No Periodic Cleanup Goroutine
 
 **Affected Files:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/discovery/application/discovery_handler.go` (line 13)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/bootstrap/application/bootstrap_handler.go` (line 42)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/shared/infrastructure/persistence/session_store.go`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/discovery/application/discovery_handler.go` (line 13)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/bootstrap/application/bootstrap_handler.go` (line 42)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/shared/infrastructure/persistence/session_store.go`
 
 **Description:**
 Three separate session stores exist in the codebase:
@@ -123,8 +123,8 @@ In CLI mode this is harmless (process exits). In MCP server mode (long-running p
 ### [F4] MEDIUM: TOCTOU Race in BootstrapHandler -- Session Mutation Outside Lock
 
 **Affected Files:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/bootstrap/application/bootstrap_handler.go` (lines 90-92, 136-138)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/discovery/application/discovery_handler.go` (lines 26-28, 93-95)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/bootstrap/application/bootstrap_handler.go` (lines 90-92, 136-138)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/discovery/application/discovery_handler.go` (lines 26-28, 93-95)
 
 **Description:**
 Both handlers use a "lock-get-unlock-mutate" pattern:
@@ -162,9 +162,9 @@ The domain aggregates (`BootstrapSession`, `DiscoverySession`) are not thread-sa
 ### [F5] MEDIUM: Error Messages Leak Internal File Paths
 
 **Affected Files (representative samples):**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/shared/infrastructure/persistence/filesystem_file_writer.go` (lines 32, 35)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/knowledge/infrastructure/file_knowledge_reader.go` (line 42)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/fitness/infrastructure/subprocess_gate_runner.go` (line 87-94)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/shared/infrastructure/persistence/filesystem_file_writer.go` (lines 32, 35)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/knowledge/infrastructure/file_knowledge_reader.go` (line 42)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/fitness/infrastructure/subprocess_gate_runner.go` (line 87-94)
 
 **Description:**
 Many error messages include full filesystem paths:
@@ -200,7 +200,7 @@ In CLI mode these paths help debugging. In MCP mode, they would be returned in J
 ### [F6] MEDIUM: filepath.Walk Follows Symlinks -- Potential Information Disclosure
 
 **Affected File:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/dochealth/infrastructure/filesystem_doc_scanner.go` (line 118)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/dochealth/infrastructure/filesystem_doc_scanner.go` (line 118)
 
 **Description:**
 `ScanUnregistered` uses `filepath.Walk()` to traverse the docs directory:
@@ -227,12 +227,12 @@ Additionally, `os.Stat` (used pervasively) follows symlinks by default. No code 
 ### [F7] MEDIUM: No Input Size Limits on File Reads
 
 **Affected Files:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/dochealth/infrastructure/filesystem_doc_scanner.go` (lines 37, 79, 165) -- `os.ReadFile`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/knowledge/infrastructure/file_knowledge_reader.go` (lines 119, 140) -- `os.ReadFile`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/research/infrastructure/spike_follow_up_adapter.go` (line 125) -- `os.ReadFile`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/research/infrastructure/markdown_spike_parser.go` (line 53) -- `os.ReadFile`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/knowledge/infrastructure/knowledge_drift_detector.go` (line 262) -- `os.ReadFile`
-- `/Users/jaigoukkim/Alty/alty-cli/internal/ticket/infrastructure/beads_ticket_reader.go` (lines 83, 116) -- `bufio.NewScanner` (default 64KB buffer, but no line count limit)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/dochealth/infrastructure/filesystem_doc_scanner.go` (lines 37, 79, 165) -- `os.ReadFile`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/knowledge/infrastructure/file_knowledge_reader.go` (lines 119, 140) -- `os.ReadFile`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/research/infrastructure/spike_follow_up_adapter.go` (line 125) -- `os.ReadFile`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/research/infrastructure/markdown_spike_parser.go` (line 53) -- `os.ReadFile`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/knowledge/infrastructure/knowledge_drift_detector.go` (line 262) -- `os.ReadFile`
+- `/Users/jaigoukkim/Alto/alto-cli/internal/ticket/infrastructure/beads_ticket_reader.go` (lines 83, 116) -- `bufio.NewScanner` (default 64KB buffer, but no line count limit)
 
 **Description:**
 All file reads use `os.ReadFile()` which loads the entire file into memory with no size limit. The `bufio.Scanner` in `BeadsTicketReader` uses the default 64KB line buffer but processes an unbounded number of lines.
@@ -271,9 +271,9 @@ No handler implements any form of rate limiting, request throttling, or concurre
 ### [F9] LOW: Session ID Exposed in Error Messages
 
 **Affected Files:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/discovery/application/discovery_handler.go` (line 97)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/bootstrap/application/bootstrap_handler.go` (line 140)
-- `/Users/jaigoukkim/Alty/alty-cli/internal/shared/infrastructure/persistence/session_store.go` (lines 58, 63)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/discovery/application/discovery_handler.go` (line 97)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/bootstrap/application/bootstrap_handler.go` (line 140)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/shared/infrastructure/persistence/session_store.go` (lines 58, 63)
 
 **Description:**
 Error messages include the session ID:
@@ -305,7 +305,7 @@ func NewID() string {
 ### [F10] LOW: SubprocessGateRunner Commands Are Not Validated
 
 **Affected File:**
-- `/Users/jaigoukkim/Alty/alty-cli/internal/fitness/infrastructure/subprocess_gate_runner.go` (lines 42-45, 74)
+- `/Users/jaigoukkim/Alto/alto-cli/internal/fitness/infrastructure/subprocess_gate_runner.go` (lines 42-45, 74)
 
 **Description:**
 `NewSubprocessGateRunner` accepts a `StackProfile` and uses its `QualityGateCommands()` to determine what subprocesses to run:
@@ -319,7 +319,7 @@ func NewSubprocessGateRunner(projectDir string, profile vo.StackProfile) *Subpro
 }
 ```
 
-Currently, profiles are hardcoded (`PythonUvProfile`, `GenericProfile`). However, if a future stack profile is loaded from user-provided configuration (e.g., `.alty/config.toml`), an attacker could inject arbitrary commands:
+Currently, profiles are hardcoded (`PythonUvProfile`, `GenericProfile`). However, if a future stack profile is loaded from user-provided configuration (e.g., `.alto/config.toml`), an attacker could inject arbitrary commands:
 ```toml
 [quality_gates]
 lint = ["rm", "-rf", "/"]

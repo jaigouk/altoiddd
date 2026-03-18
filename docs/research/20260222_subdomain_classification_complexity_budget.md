@@ -124,7 +124,7 @@ DDD subdomain types:
 
 ### Primary Decision Tree (Khononov-derived)
 
-This is the recommended decision tree for alty's guided classification:
+This is the recommended decision tree for alto's guided classification:
 
 ```
 Q1: Could you buy or adopt an off-the-shelf / open-source solution
@@ -258,9 +258,9 @@ Sources:
 - [Geabunea: DDD Tactical Decision Tree](https://medium.com/@dangeabunea/the-domain-driven-design-tactical-decision-tree-i-wish-i-knew-10-years-ago-906b65905b33)
 - [SAP DDD Resources](https://github.com/SAP/curated-resources-for-domain-driven-design/blob/main/blog/0002-core-concepts.md)
 
-### alty Treatment Levels (Proposed)
+### alto Treatment Levels (Proposed)
 
-Mapping the above to alty's concrete outputs:
+Mapping the above to alto's concrete outputs:
 
 | Dimension | Core | Supporting | Generic |
 |-----------|------|------------|---------|
@@ -335,7 +335,7 @@ Sources:
 | Notifications & Reminders | Generic | Twilio, SNS -- commodity |
 | Payments & Co-pays | Generic | Stripe -- solved problem |
 
-### Developer Tooling / CLI (like alty itself)
+### Developer Tooling / CLI (like alto itself)
 
 | Subdomain | Classification | Rationale |
 |-----------|---------------|-----------|
@@ -350,12 +350,12 @@ Sources:
 
 ---
 
-## 6. Guided Classification Flow for alty
+## 6. Guided Classification Flow for alto
 
 ### Recommended Implementation
 
 During the DDD discovery conversation, after identifying subdomains (via domain stories
-or EventStorming), alty should guide classification with this flow:
+or EventStorming), alto should guide classification with this flow:
 
 ```
 For each identified subdomain:
@@ -440,7 +440,7 @@ would not threaten the business, it is not Core.
 ### Risk: Classification Changes Over Time
 
 Subdomains evolve. What starts as Core may become Generic as the market matures
-(Wardley evolution). alty should support reclassification with a migration path
+(Wardley evolution). alto should support reclassification with a migration path
 that adjusts treatment levels.
 
 ### Risk: Boundary Between Supporting and Generic
@@ -452,7 +452,7 @@ Generic. If no existing solution fits, it is Supporting even if simple.
 
 No tool currently automates subdomain classification. Qlerify (commercial SaaS) is the
 closest, offering DDD-aware domain discovery, but classification is still manual.
-alty's guided question flow would be novel.
+alto's guided question flow would be novel.
 ([Qlerify subdomain docs](https://www.qlerify.com/dddconcepts/subdomain))
 
 ### Open Question: Granularity of Treatment Levels

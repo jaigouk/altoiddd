@@ -345,7 +345,7 @@ Source: [GitHub issues](https://github.com/anthropics/claude-agent-sdk-python/is
 - **Low-latency applications** -- subprocess spawn adds 1-3s overhead per call
 - **Environments without Node.js** -- requires npm-installed CLI
 
-### For alty's Go migration specifically
+### For alto's Go migration specifically
 
 The same dual-SDK recommendation from the Python evaluation applies to Go:
 

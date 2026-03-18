@@ -20,7 +20,7 @@
 
 ### Decision: Separate Repo (Recommended)
 
-When migrating a Python CLI+MCP project (alty-cli) to Go, the evidence strongly favors a
+When migrating a Python CLI+MCP project (alto-cli) to Go, the evidence strongly favors a
 **separate repository** for the Go rewrite.
 
 ### Real-World Migration Case Studies
@@ -50,7 +50,7 @@ The general industry pattern for language migrations is one of three approaches:
 2. **Gradual migration via services** -- both languages run concurrently (Khan Academy approach)
 3. **Wrapper approach** -- Python calls Go (or vice versa) via FFI/subprocess
 
-For a CLI tool like alty, the **complete rewrite in a new repo** is the most practical
+For a CLI tool like alto, the **complete rewrite in a new repo** is the most practical
 because:
 
 - No service communication needed (it is a CLI, not a distributed system)
@@ -78,8 +78,8 @@ because:
 ### Recommendation
 
 **Use a separate repository for the Go rewrite.** The Python source code is a reference
-document during migration, not a runtime dependency. Keep `alty-cli` (Python) and create
-`alty` or `alty-go` as the new repository. The Python repo can be archived once migration
+document during migration, not a runtime dependency. Keep `alto-cli` (Python) and create
+`alto` or `alto-go` as the new repository. The Python repo can be archived once migration
 is complete.
 
 If the team wants to reference Python source during development, use a workspace with both
@@ -99,14 +99,14 @@ Go module paths must follow these rules (from the Go Modules Reference):
 
 **Source:** [Go Modules Reference](https://go.dev/ref/mod)
 
-### Options for alty
+### Options for alto
 
 | Module Path | Pros | Cons | When to Use |
 |-------------|------|------|-------------|
-| `github.com/alty-cli/alty` | Standard convention; go install works; vanity URL possible | Requires GitHub repo for downloads | Open source or public distribution |
-| `git.example.com/org/alty` | Works with any Git host; GOPRIVATE-compatible | Requires GOPRIVATE env var setup; custom domain needed | Private Git server |
-| `alty.dev/cli` | Short, professional vanity URL; decoupled from hosting | Requires HTTP server with go-import meta tags | Professional open-source project |
-| `example.com/alty` | Placeholder; spec-compliant | Not real; cannot go install | Documentation and examples only |
+| `github.com/alto-cli/alto` | Standard convention; go install works; vanity URL possible | Requires GitHub repo for downloads | Open source or public distribution |
+| `git.example.com/org/alto` | Works with any Git host; GOPRIVATE-compatible | Requires GOPRIVATE env var setup; custom domain needed | Private Git server |
+| `alto.dev/cli` | Short, professional vanity URL; decoupled from hosting | Requires HTTP server with go-import meta tags | Professional open-source project |
+| `example.com/alto` | Placeholder; spec-compliant | Not real; cannot go install | Documentation and examples only |
 
 ### Key Rules
 
@@ -117,22 +117,22 @@ Go module paths must follow these rules (from the Go Modules Reference):
    public module proxy and checksum database.
 
 3. **Major version suffix**: For v2+, the module path must end with `/v2` (e.g.,
-   `github.com/alty-cli/alty/v2`). This is enforced by the toolchain. For v0/v1, no suffix.
+   `github.com/alto-cli/alto/v2`). This is enforced by the toolchain. For v0/v1, no suffix.
 
 4. **Internal imports** follow the module path:
    ```go
-   import "github.com/alty-cli/alty/internal/bootstrap/domain"
-   import "github.com/alty-cli/alty/internal/shared/events"
+   import "github.com/alto-cli/alto/internal/bootstrap/domain"
+   import "github.com/alto-cli/alto/internal/shared/events"
    ```
 
-5. **Vanity import paths** (e.g., `alty.dev/cli`) require an HTTP server that responds to
+5. **Vanity import paths** (e.g., `alto.dev/cli`) require an HTTP server that responds to
    `?go-get=1` with a `<meta name="go-import">` tag pointing to the actual repository.
    This decouples the import path from the hosting provider.
 
 ### Recommendation
 
-Use `github.com/alty-cli/alty` if the project will be hosted on GitHub. If using a private
-Git server, use the server's domain (e.g., `git.yourorg.com/alty/alty`). Both patterns are
+Use `github.com/alto-cli/alto` if the project will be hosted on GitHub. If using a private
+Git server, use the server's domain (e.g., `git.yourorg.com/alto/alto`). Both patterns are
 fully standard.
 
 **Source:** [Go Modules Reference](https://go.dev/ref/mod), [go.mod file reference](https://go.dev/doc/modules/gomod-ref), [DigitalOcean: Private Go Modules](https://www.digitalocean.com/community/tutorials/how-to-use-a-private-go-module-in-your-own-project), [Taking Control of Go Module Paths](https://www.n16f.net/blog/taking-control-of-your-go-module-paths/)
@@ -141,22 +141,22 @@ fully standard.
 
 ## 3. Go DDD Project Structure Best Practices (2025-2026)
 
-### 3.1 Recommended Structure for alty
+### 3.1 Recommended Structure for alto
 
 Combining patterns from ThreeDotsLabs Wild Workouts, Damiano Petrungaro, and the official
 Go module layout guide:
 
 ```
-alty/
-  go.mod                           # module github.com/alty-cli/alty
+alto/
+  go.mod                           # module github.com/alto-cli/alto
   go.sum
   Makefile                         # Quality gates: build, test, lint, audit
   .golangci.yml                    # golangci-lint v2 config
   .go-arch-lint.yml                # Architecture boundary rules
   cmd/
-    alty/                          # CLI binary entry point
+    alto/                          # CLI binary entry point
       main.go                     # Minimal: wires deps, runs root Cobra command
-    alty-mcp/                      # MCP server binary entry point
+    alto-mcp/                      # MCP server binary entry point
       main.go                     # Minimal: wires deps, starts MCP server
   internal/                        # Compiler-enforced: no external imports
     bootstrap/                     # Bounded Context: Project Bootstrap
@@ -265,7 +265,7 @@ internal/
 
 **Recommendation:** Use `internal/` at root for external boundary enforcement, plus
 go-arch-lint for intra-module DDD layer rules. This is the most practical balance for
-alty's scope (single CLI tool, not microservices).
+alto's scope (single CLI tool, not microservices).
 
 ### 3.4 Where Domain Events Live
 
@@ -277,7 +277,7 @@ Three patterns observed in the Go DDD ecosystem:
 | **Shared kernel** | `internal/shared/events/` | Easy cross-context subscriptions | Risk of coupling; shared kernel grows |
 | **Per-context** | `internal/bootstrap/domain/events/` | Middle ground; BC-scoped | Still needs shared types for cross-BC events |
 
-**Recommendation for alty:** Use the **per-aggregate + shared kernel hybrid**:
+**Recommendation for alto:** Use the **per-aggregate + shared kernel hybrid**:
 
 - Events that are specific to one aggregate live in that aggregate's package (e.g.,
   `ProjectCreated` in `internal/bootstrap/domain/project/events.go`)
@@ -433,36 +433,36 @@ func (r *FSRepo) FindByID(ctx context.Context, id string) (*project.Project, err
 
 | Approach | Example | Pros | Cons |
 |----------|---------|------|------|
-| **Single binary, subcommand** | `alty serve` for MCP | One binary to distribute; shared domain code; simpler CI | Binary size includes both CLI+MCP deps; `alty serve` confusing for CLI-only users |
-| **Separate binaries** | `cmd/alty/` + `cmd/alty-mcp/` | Clean separation; each binary includes only needed deps; clear purpose | Two binaries to distribute; shared code via `internal/` |
-| **Single binary, auto-detect** | `alty` (detects if invoked via stdio) | Simplest distribution; one binary | Complex startup logic; harder to debug |
+| **Single binary, subcommand** | `alto serve` for MCP | One binary to distribute; shared domain code; simpler CI | Binary size includes both CLI+MCP deps; `alto serve` confusing for CLI-only users |
+| **Separate binaries** | `cmd/alto/` + `cmd/alto-mcp/` | Clean separation; each binary includes only needed deps; clear purpose | Two binaries to distribute; shared code via `internal/` |
+| **Single binary, auto-detect** | `alto` (detects if invoked via stdio) | Simplest distribution; one binary | Complex startup logic; harder to debug |
 
 **Source:** [Go Module Layout](https://go.dev/doc/modules/layout), [Cobra Issue #641](https://github.com/spf13/cobra/issues/641)
 
-### 4.2 Recommended Pattern for alty
+### 4.2 Recommended Pattern for alto
 
 Use **separate binaries** with shared `internal/` packages:
 
 ```
 cmd/
-  alty/                            # CLI binary
+  alto/                            # CLI binary
     main.go                        # Wires Cobra commands, runs CLI
-  alty-mcp/                        # MCP server binary
+  alto-mcp/                        # MCP server binary
     main.go                        # Wires MCP server, starts stdio/SSE
 ```
 
 Both binaries share the same `internal/` domain and application code. The difference is
 only at the presentation layer:
 
-- `cmd/alty/main.go` wires Cobra commands that call application use cases
-- `cmd/alty-mcp/main.go` wires MCP server tools that call the same application use cases
+- `cmd/alto/main.go` wires Cobra commands that call application use cases
+- `cmd/alto-mcp/main.go` wires MCP server tools that call the same application use cases
 
 This is the standard Go pattern for projects with multiple entry points. Users install
 each binary separately:
 
 ```bash
-go install github.com/alty-cli/alty/cmd/alty@latest
-go install github.com/alty-cli/alty/cmd/alty-mcp@latest
+go install github.com/alto-cli/alto/cmd/alto@latest
+go install github.com/alto-cli/alto/cmd/alto-mcp@latest
 ```
 
 ### 4.3 Cobra + MCP Go SDK Coexistence
@@ -476,11 +476,11 @@ They share no initialization, no global state, and no conflicting dependencies. 
 binary's `main.go` simply imports one framework:
 
 ```go
-// cmd/alty/main.go
+// cmd/alto/main.go
 package main
 
 import (
-    "github.com/alty-cli/alty/internal/cli"
+    "github.com/alto-cli/alto/internal/cli"
 )
 
 func main() {
@@ -489,11 +489,11 @@ func main() {
 ```
 
 ```go
-// cmd/alty-mcp/main.go
+// cmd/alto-mcp/main.go
 package main
 
 import (
-    "github.com/alty-cli/alty/internal/mcpserver"
+    "github.com/alto-cli/alto/internal/mcpserver"
 )
 
 func main() {
@@ -512,9 +512,9 @@ path from Cobra.
 If single-binary distribution is a priority:
 
 ```go
-// cmd/alty/main.go -- single binary with Cobra
-// alty init, alty doc-health      -> CLI commands
-// alty serve                      -> starts MCP server
+// cmd/alto/main.go -- single binary with Cobra
+// alto init, alto doc-health      -> CLI commands
+// alto serve                      -> starts MCP server
 
 var serveCmd = &cobra.Command{
     Use:   "serve",
@@ -586,9 +586,9 @@ linters:
           files:
             - "**/internal/**/domain/**/*.go"
           deny:
-            - pkg: "github.com/alty-cli/alty/internal/**/application"
+            - pkg: "github.com/alto-cli/alto/internal/**/application"
               desc: "Domain layer must not import application layer"
-            - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+            - pkg: "github.com/alto-cli/alto/internal/**/infrastructure"
               desc: "Domain layer must not import infrastructure layer"
             - pkg: "github.com/spf13/cobra"
               desc: "Domain layer must not import CLI framework"
@@ -604,7 +604,7 @@ linters:
           files:
             - "**/internal/**/application/**/*.go"
           deny:
-            - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+            - pkg: "github.com/alto-cli/alto/internal/**/infrastructure"
               desc: "Application layer must not import infrastructure layer"
             - pkg: "github.com/spf13/cobra"
               desc: "Application layer must not import CLI framework"
@@ -638,7 +638,7 @@ formatters:
       sections:
         - standard                 # stdlib
         - default                  # third-party
-        - prefix(github.com/alty-cli/alty)  # project imports
+        - prefix(github.com/alto-cli/alto)  # project imports
 
 # --- Output ---
 output:
@@ -739,7 +739,7 @@ go-arch-lint          -->  CATCHES (application component has no canUse for cobr
    relationships via `mayDependOn` and `canUse`. Generates visual dependency graphs.
    More expressive than depguard for architecture rules.
 
-### 6.4 Recommended Combination for alty
+### 6.4 Recommended Combination for alto
 
 | Layer | Tool | Config |
 |-------|------|--------|
@@ -749,7 +749,7 @@ go-arch-lint          -->  CATCHES (application component has no canUse for cobr
 | **Deprecated packages** | depguard | Deny `io/ioutil`, `github.com/pkg/errors` |
 | **Vendor dependencies** | go-arch-lint | `canUse` per component |
 
-### 6.5 go-arch-lint Configuration for alty
+### 6.5 go-arch-lint Configuration for alto
 
 ```yaml
 # .go-arch-lint.yml
@@ -863,9 +863,9 @@ deps:
 | Question | Recommendation | Confidence |
 |----------|---------------|------------|
 | 1. Repo strategy | **Separate repo** for Go rewrite | HIGH |
-| 2. Module path | `github.com/alty-cli/alty` (or private Git server equivalent) | HIGH |
+| 2. Module path | `github.com/alto-cli/alto` (or private Git server equivalent) | HIGH |
 | 3. Project structure | `internal/` with bounded contexts, per-aggregate domain packages | HIGH |
-| 4. CLI+MCP pattern | **Separate binaries** (`cmd/alty/`, `cmd/alty-mcp/`) | HIGH |
+| 4. CLI+MCP pattern | **Separate binaries** (`cmd/alto/`, `cmd/alto-mcp/`) | HIGH |
 | 5. golangci-lint config | v2 format with depguard, errorlint, revive, gofumpt, gci | HIGH |
 | 6. Boundary enforcement | **All three combined**: `internal/` + depguard + go-arch-lint | HIGH |
 
@@ -887,7 +887,7 @@ without the expressive `mayDependOn` syntax or visual dependency graphs.
 - [ ] Create ticket: Scaffold Go project with recommended DDD structure (cmd/, internal/, Makefile)
 - [ ] Create ticket: Configure golangci-lint v2 with DDD-focused linter set
 - [ ] Create ticket: Configure go-arch-lint with bounded context dependency rules
-- [ ] Create ticket: Set up separate cmd/alty/ (Cobra) and cmd/alty-mcp/ (MCP SDK) entry points
+- [ ] Create ticket: Set up separate cmd/alto/ (Cobra) and cmd/alto-mcp/ (MCP SDK) entry points
 - [ ] Create ticket: Define domain event types in shared/events/ and per-aggregate packages
 - [ ] Create ticket: Port domain models from Python to Go with NewXxx constructors and sentinel errors
 

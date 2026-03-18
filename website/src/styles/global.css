@@ -3,14 +3,14 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: alty-light --default, alty-dark --prefersdark;
+  themes: alto-light --default, alto-dark --prefersdark;
   root: ":root";
   logs: false;
 }
 
-/* alty-dark theme — Midnight Teal palette (oklch) */
+/* alto-dark theme — Midnight Teal palette (oklch) */
 @plugin "daisyui/theme" {
-  name: "alty-dark";
+  name: "alto-dark";
   default: false;
   prefersdark: true;
   color-scheme: dark;
@@ -51,9 +51,9 @@
   --noise: 0;
 }
 
-/* alty-light theme */
+/* alto-light theme */
 @plugin "daisyui/theme" {
-  name: "alty-light";
+  name: "alto-light";
   default: true;
   prefersdark: false;
   color-scheme: light;

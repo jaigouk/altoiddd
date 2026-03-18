@@ -3,7 +3,7 @@ date: 2026-02-23
 topic: Ticket Freshness and Ripple Review Design
 status: complete
 type: spike
-ticket: alty-k7m.12
+ticket: alto-k7m.12
 ---
 
 # Ticket Freshness and Ripple Review Design
@@ -14,9 +14,9 @@ ticket: alty-k7m.12
 
 ## Summary
 
-This document provides the complete design for alty's ticket freshness system: the
-data model, the close-time hook, the pick-up-time flow, the `alty ticket-health` command,
-two-tier ticket generation rules, and the after-close protocol that alty generates
+This document provides the complete design for alto's ticket freshness system: the
+data model, the close-time hook, the pick-up-time flow, the `alto ticket-health` command,
+two-tier ticket generation rules, and the after-close protocol that alto generates
 into every bootstrapped project's CLAUDE.md.
 
 The design uses only existing beads capabilities (labels, comments, dependencies) and
@@ -47,7 +47,7 @@ dependencies, comments, close_reason, etc.). Adding custom fields would require 
 changes or a sidecar file. Using labels + comments works today with no beads changes.
 
 The tradeoff: `last_reviewed` is stored as a comment (searchable via `bd list
---desc-contains` on comments) rather than as a sortable date field. The `alty ticket-health`
+--desc-contains` on comments) rather than as a sortable date field. The `alto ticket-health`
 command will parse comments to extract dates. This is acceptable for the expected scale
 (tens of tickets, not thousands).
 
@@ -84,7 +84,7 @@ When a flag is cleared, a review comment MUST be added:
 **Changes:** <one-line summary of what was updated, or "No changes needed">
 ```
 
-This creates an audit trail. The `alty ticket-health` command parses `**Reviewed:**` lines
+This creates an audit trail. The `alto ticket-health` command parses `**Reviewed:**` lines
 to determine `last_reviewed` timestamps.
 
 ### 1.5 Domain Model Alignment
@@ -206,7 +206,7 @@ Output: list of flagged ticket IDs
 | Related traversal | Not traversed | Add `related` deps (both directions) |
 | Comment format | Basic markdown | Structured format with review checklist (section 1.3) |
 | Exit code | Always 0 | Exit 1 on error, 0 on success |
-| Machine-readable output | None | Add `--json` flag for `alty ticket-health` integration |
+| Machine-readable output | None | Add `--json` flag for `alto ticket-health` integration |
 
 ---
 
@@ -281,7 +281,7 @@ This ensures the audit trail is complete even when no edits are made.
 
 ---
 
-## 4. `alty ticket-health` Command Design
+## 4. `alto ticket-health` Command Design
 
 ### 4.1 Purpose
 
@@ -291,7 +291,7 @@ no mutations. Maps to the `TicketHealthPort` protocol in the application layer.
 ### 4.2 Command Interface
 
 ```
-alty ticket-health [--epic <epic-id>] [--json]
+alto ticket-health [--epic <epic-id>] [--json]
 
 Options:
   --epic <epic-id>    Scope to a specific epic (default: all epics)
@@ -311,7 +311,7 @@ Flagged for review: 3 tickets
 Oldest unreviewed: k7m.8 (last reviewed: 2026-02-15, 8 days ago)
 
 By epic:
-  alty-k7m (Phase 1 Foundation)
+  alto-k7m (Phase 1 Foundation)
     Total: 12 | Open: 7 | Flagged: 3 | Closed: 5
     Freshness: 71% (5 of 7 open tickets reviewed within 7 days)
 
@@ -340,7 +340,7 @@ Summary:
   },
   "epics": [
     {
-      "id": "alty-k7m",
+      "id": "alto-k7m",
       "title": "Phase 1 Foundation",
       "total": 12,
       "open": 7,
@@ -385,7 +385,7 @@ Thresholds:
 
 ### 4.7 Implementation Notes
 
-The `alty ticket-health` command is a thin CLI adapter over the `TicketHealthPort` protocol.
+The `alto ticket-health` command is a thin CLI adapter over the `TicketHealthPort` protocol.
 The port calls beads CLI commands (`bd list`, `bd children`, `bd comments`) via an
 infrastructure adapter (the Beads ACL layer). The domain logic is the comment parsing and
 freshness calculation.
@@ -513,7 +513,7 @@ bd ready
 
 ### 6.3 CLAUDE.md Section (Verbatim for Generated Projects)
 
-This is the exact text that `alty init` generates into the bootstrapped project's CLAUDE.md.
+This is the exact text that `alto init` generates into the bootstrapped project's CLAUDE.md.
 It replaces the current inline comments with a formal, numbered protocol.
 
 ```markdown
@@ -575,7 +575,7 @@ for user to ask." AI agents (Claude Code, Cursor agents, etc.) read CLAUDE.md at
 session start and follow it. There is no technical hook that prevents an agent from
 skipping the protocol -- the enforcement is convention-based, like all CLAUDE.md rules.
 
-The `alty ticket-health` command provides a **detection** mechanism: if flagged tickets
+The `alto ticket-health` command provides a **detection** mechanism: if flagged tickets
 accumulate without being reviewed, the freshness percentage drops, making the problem
 visible.
 
@@ -634,14 +634,14 @@ Ripple review and PRD traceability are complementary safety nets:
 Both run during the grooming checklist. Ripple review is step 2 (freshness), PRD
 traceability is step 3 (completeness). Neither replaces the other.
 
-### 8.2 With `alty doc-health`
+### 8.2 With `alto doc-health`
 
-`alty doc-health` (Knowledge Base context) tracks document freshness using time-based
-`last_reviewed` dates in a doc registry TOML file. `alty ticket-health` (Ticket Freshness
+`alto doc-health` (Knowledge Base context) tracks document freshness using time-based
+`last_reviewed` dates in a doc registry TOML file. `alto ticket-health` (Ticket Freshness
 context) tracks ticket freshness using event-based ripple flags.
 
 They are separate commands in separate bounded contexts. The open question in DDD.md
-section 8 ("How does `alty doc-health` relate to Ticket Freshness?") is answered: they are
+section 8 ("How does `alto doc-health` relate to Ticket Freshness?") is answered: they are
 separate contexts with separate mechanisms (time-based vs event-based). Both report
 freshness but on different artifact types (docs vs tickets).
 
@@ -669,7 +669,7 @@ The Ticket Freshness bounded context interacts with Beads through an Anticorrupt
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | Comment parsing is fragile | Medium | Use exact format prefixes (`**Reviewed:**`, `**Ripple review needed**`). Test parsing with edge cases. |
-| Agents skip the protocol | High | `alty ticket-health` detects accumulating flags. Include protocol in generated CLAUDE.md verbatim. |
+| Agents skip the protocol | High | `alto ticket-health` detects accumulating flags. Include protocol in generated CLAUDE.md verbatim. |
 | Over-flagging (too many ripples) | Low | Only siblings + dependents + related are flagged. Epics with 5-15 tickets produce manageable ripple counts. |
 | Empty context diffs | Medium | `bd-ripple` aborts if context is empty. Require `--reason` on `bd close`. |
 | Flag fatigue (always flagged) | Low | Two-tier generation means far-term stubs have nothing to review. Only near-term tickets with real AC trigger meaningful reviews. |
@@ -694,7 +694,7 @@ The Ticket Freshness bounded context interacts with Beads through an Anticorrupt
 | 2 | Update `CLAUDE.md` after-close protocol to formal 4-step numbered format (section 6.3) | Task | Bootstrap (template) | None |
 | 3 | Add freshness guidance to ticket template header (section 7.1) | Task | Bootstrap (template) | None |
 | 4 | Create stub ticket template variant (section 7.2) | Task | Bootstrap (template) | None |
-| 5 | Implement `alty ticket-health` CLI command with comment parsing and freshness report | Task | Ticket Freshness | k7m.4 (CLI framework) |
+| 5 | Implement `alto ticket-health` CLI command with comment parsing and freshness report | Task | Ticket Freshness | k7m.4 (CLI framework) |
 | 6 | Implement `TicketHealthPort` protocol and Beads ACL adapter | Task | Ticket Freshness | 5 |
 | 7 | Write domain model for RippleReview aggregate (Python, with invariant enforcement) | Task | Ticket Freshness | k7m.4 |
 | 8 | Write domain model for TicketHealthReport read model (Python, freshness calculation) | Task | Ticket Freshness | 7 |
@@ -715,12 +715,12 @@ The ripple review system is well-served by the current approach: a bash script
 3. Formalize the after-close protocol in CLAUDE.md (section 6.3)
 
 **Phase 7 actions** (requires CLI framework from k7m.4):
-4. Implement `alty ticket-health` as a Python command with comment parsing
+4. Implement `alto ticket-health` as a Python command with comment parsing
 5. Implement RippleReview domain model with proper invariant enforcement
 6. Generate the after-close protocol into bootstrapped projects' CLAUDE.md
 
 The key finding is that **no beads schema changes are needed**. Labels + comments are
-sufficient for the data model at the expected scale. The `alty ticket-health` command
+sufficient for the data model at the expected scale. The `alto ticket-health` command
 provides the detection layer, and the CLAUDE.md protocol provides the enforcement layer.
 
 ---

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ContractType enumerates import-linter contract types.

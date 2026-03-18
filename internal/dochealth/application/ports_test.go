@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/alty-cli/alty/internal/dochealth/application"
-	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
+	"github.com/alto-cli/alto/internal/dochealth/application"
+	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
 )
 
 // Compile-time interface satisfaction checks.

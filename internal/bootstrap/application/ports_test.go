@@ -3,7 +3,7 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/bootstrap/application"
+	"github.com/alto-cli/alto/internal/bootstrap/application"
 )
 
 // Compile-time interface satisfaction checks.

@@ -2,22 +2,22 @@
 date: 2026-03-03
 author: researcher
 status: complete
-topic: Multi-Language/Multi-Stack Tooling for alty
+topic: Multi-Language/Multi-Stack Tooling for alto
 ---
 
-# Research: Multi-Language/Multi-Stack Tooling for alty
+# Research: Multi-Language/Multi-Stack Tooling for alto
 
 **Date:** 2026-03-03
 **Status:** Final
 
 ## Summary
 
-This spike evaluates OSS tools that could help alty handle multi-language/multi-stack
+This spike evaluates OSS tools that could help alto handle multi-language/multi-stack
 project scaffolding across five problem areas: stack detection, project layout conventions,
 quality gate knowledge, architecture fitness testing, and template-based scaffolding. The
 research finds **strong options for scaffolding (Copier) and architecture testing per-language**,
 but **no single tool solves stack/framework detection or cross-language layout conventions**.
-Those two problems will require alty to build its own knowledge base.
+Those two problems will require alto to build its own knowledge base.
 
 ## Research Questions
 
@@ -66,7 +66,7 @@ at *languages* (Python, Go, Rust, TypeScript). Framework detection requires insp
 - **Config files**: `next.config.js`, `vite.config.ts`, `tsconfig.json` paths
 - **Directory conventions**: `pages/` or `app/` (Next.js), `src/routes/` (SvelteKit)
 
-**Minimal approach for alty:**
+**Minimal approach for alto:**
 
 A `StackDetector` domain service that reads package manifests and config files,
 returning a `DetectedStack` value object (language, framework, build tool, test runner).
@@ -86,7 +86,7 @@ indicators:
 ```
 
 Estimated effort: 1 ticket (small). The indicator registry lives in
-`.alty/knowledge/stacks/` and is extensible by users.
+`.alto/knowledge/stacks/` and is extensible by users.
 
 ---
 
@@ -99,12 +99,12 @@ Go+Chi is Y." This is **domain knowledge**, not a tool problem.
 
 ### Verdict: Build it ourselves (knowledge base)
 
-**Minimal approach for alty:**
+**Minimal approach for alto:**
 
-A `LayoutConvention` registry in `.alty/knowledge/stacks/` with per-stack TOML files:
+A `LayoutConvention` registry in `.alto/knowledge/stacks/` with per-stack TOML files:
 
 ```toml
-# .alty/knowledge/stacks/python_fastapi.toml
+# .alto/knowledge/stacks/python_fastapi.toml
 [layout]
 domain = "src/domain/"
 application = "src/application/"
@@ -117,7 +117,7 @@ services = "src/domain/services/"
 ports = "src/application/ports/"
 adapters = "src/infrastructure/"
 
-# .alty/knowledge/stacks/go_chi.toml
+# .alto/knowledge/stacks/go_chi.toml
 [layout]
 domain = "internal/domain/"
 application = "internal/app/"
@@ -131,7 +131,7 @@ ports = "internal/app/ports/"
 adapters = "internal/infra/"
 ```
 
-This is the same living knowledge base pattern alty already uses for tool conventions.
+This is the same living knowledge base pattern alto already uses for tool conventions.
 Estimated effort: 1-2 tickets per supported stack.
 
 ---
@@ -147,7 +147,7 @@ No OSS tool maps "given stack X, use linters Y." This is also domain knowledge.
 **Minimal approach:** Extend the stack convention files:
 
 ```toml
-# .alty/knowledge/stacks/python_fastapi.toml
+# .alto/knowledge/stacks/python_fastapi.toml
 [quality_gates]
 lint = "uv run ruff check ."
 lint_fix = "uv run ruff check --fix ."
@@ -160,13 +160,13 @@ lint = "ruff"
 typecheck = "mypy"
 test = "pytest"
 
-# .alty/knowledge/stacks/go_chi.toml
+# .alto/knowledge/stacks/go_chi.toml
 [quality_gates]
 lint = "golangci-lint run"
 test = "go test ./..."
 format = "gofmt -w ."
 
-# .alty/knowledge/stacks/typescript_nextjs.toml
+# .alto/knowledge/stacks/typescript_nextjs.toml
 [quality_gates]
 lint = "npx eslint ."
 typecheck = "npx tsc --noEmit"
@@ -189,7 +189,7 @@ This is the most complex problem. Each language has its own ecosystem of tools.
 | [import-linter](https://github.com/seddonym/import-linter) | ~800 | 2.10 | 2026-02-06 | BSD-2-Clause |
 | [pytestarch](https://github.com/zyskarch/pytestarch) | ~200 | 2.0+ | Active 2025-2026 | Apache-2.0 |
 
-**Status:** Already designed in `20260223_fitness_function_design.md`. alty generates
+**Status:** Already designed in `20260223_fitness_function_design.md`. alto generates
 import-linter TOML contracts + pytestarch test files from the bounded context map.
 
 ### TypeScript / JavaScript
@@ -295,7 +295,7 @@ and Cargo workspace structure provide built-in boundary enforcement through visi
 (`pub`, `pub(crate)`, `pub(super)`) that other languages lack. Rust's `mod` system means
 you cannot accidentally import from a private module.
 
-**Rust recommendation:** For Rust, alty should generate:
+**Rust recommendation:** For Rust, alto should generate:
 1. **Cargo workspace structure** with crate-per-bounded-context (built-in boundary enforcement)
 2. **cargo-modules `--acyclic` checks** in CI to detect circular dependencies
 3. **`#[cfg(test)]` integration tests** that assert module structure if needed
@@ -312,7 +312,7 @@ its module system provides architectural enforcement at the compiler level.
 | Go | arch-go | YAML | 250 | MIT | Feb 2026 |
 | Rust | cargo-modules + workspace layout | Cargo.toml | 1,200 | MPL-2.0 | Oct 2025 |
 
-**Key finding:** Each language has its own config format. alty's fitness function generator
+**Key finding:** Each language has its own config format. alto's fitness function generator
 must produce **language-specific outputs** from the same bounded context map input. The
 YAML schema designed in `20260223_fitness_function_design.md` is extensible to this -- we
 add a `target_language` field and dispatch to language-specific renderers.
@@ -337,26 +337,26 @@ add a `target_language` field and dispatch to language-specific renderers.
 | Python API | `from copier import run_copy` -- full programmatic control |
 | Key Feature | **Template updates** -- when template evolves, Copier can update existing projects |
 
-**Why Copier is the best fit for alty:**
+**Why Copier is the best fit for alto:**
 
-1. **Python native** -- alty is Python, Copier is Python. Direct dependency, no subprocess.
+1. **Python native** -- alto is Python, Copier is Python. Direct dependency, no subprocess.
 2. **Programmatic API** -- `run_copy(template_path, dest, data={...})` does exactly what
-   alty needs: generate from a template with answers.
+   alto needs: generate from a template with answers.
 3. **Language agnostic** -- templates are just directories of files with Jinja2 placeholders.
    Can scaffold Python, Go, Rust, TypeScript -- anything.
 4. **Template update lifecycle** -- `run_update()` can re-apply template changes to
-   existing projects. This directly supports `alty init --existing` rescue mode.
+   existing projects. This directly supports `alto init --existing` rescue mode.
 5. **Active maintenance** -- 4 releases in Jan-Feb 2026 alone.
 6. **Questionnaire support** -- `copier.yml` defines questions with types, defaults,
-   validators. alty can either use this or pass answers directly via `data=`.
+   validators. alto can either use this or pass answers directly via `data=`.
 
 ```python
 from copier import run_copy
 
-# alty generates the answers from guided DDD discovery,
+# alto generates the answers from guided DDD discovery,
 # then passes them to Copier for file generation
 worker = run_copy(
-    "path/to/alty/templates/python_fastapi",
+    "path/to/alto/templates/python_fastapi",
     "./user-project",
     data={
         "project_name": "my_service",
@@ -394,7 +394,7 @@ support. Copier is its modern successor with a superset of features.
 | License | BSD-2-Clause |
 | Concern | Node.js ecosystem. Adding Node.js as a runtime dependency for a Python CLI is undesirable. |
 
-**Why not Yeoman:** Wrong ecosystem. alty is Python; adding a Node.js dependency is
+**Why not Yeoman:** Wrong ecosystem. alto is Python; adding a Node.js dependency is
 architecturally unsound.
 
 #### Hygen (Node.js)
@@ -458,18 +458,18 @@ Python library.
 Nx was considered because it handles multi-language monorepos with task orchestration,
 boundary enforcement (`@nx/enforce-module-boundaries`), and project generation.
 
-**Why not Nx for alty:**
+**Why not Nx for alto:**
 
-1. **Node.js runtime dependency** -- alty is Python. Adding Node.js + npm is a heavy
+1. **Node.js runtime dependency** -- alto is Python. Adding Node.js + npm is a heavy
    dependency for users who are scaffolding Go or Rust projects.
-2. **Monorepo-first** -- Nx assumes a monorepo structure. alty scaffolds individual
+2. **Monorepo-first** -- Nx assumes a monorepo structure. alto scaffolds individual
    projects, not monorepos.
 3. **Opinionated project structure** -- Nx imposes its own `apps/` + `libs/` layout that
    conflicts with DDD-native structures.
-4. **Overkill** -- alty needs template rendering and config generation, not a build system.
+4. **Overkill** -- alto needs template rendering and config generation, not a build system.
 
-However, alty should be *aware* of Nx -- if a user's project is an Nx monorepo, alty
-should respect its structure during `alty init --existing`.
+However, alto should be *aware* of Nx -- if a user's project is an Nx monorepo, alto
+should respect its structure during `alto init --existing`.
 
 ---
 
@@ -477,13 +477,13 @@ should respect its structure during `alty init --existing`.
 
 ### What to adopt as dependencies
 
-| Tool | Problem | How alty uses it | Integration |
+| Tool | Problem | How alto uses it | Integration |
 |---|---|---|---|
-| **Copier** (v9.12.0) | P5: Scaffolding | Template rendering engine for `alty init` | Python dependency (`from copier import run_copy`) |
+| **Copier** (v9.12.0) | P5: Scaffolding | Template rendering engine for `alto init` | Python dependency (`from copier import run_copy`) |
 
-### What to generate as project output (not alty dependencies)
+### What to generate as project output (not alto dependencies)
 
-| Tool | Problem | What alty generates | Target Language |
+| Tool | Problem | What alto generates | Target Language |
 |---|---|---|---|
 | import-linter | P4: Fitness tests | TOML contract configs | Python |
 | pytestarch | P4: Fitness tests | Python test files | Python |
@@ -496,7 +496,7 @@ should respect its structure during `alty init --existing`.
 | Problem | Approach | Estimated Effort |
 |---|---|---|
 | P1: Stack detection | `StackDetector` service + indicator registry (TOML) | 1 ticket (small) |
-| P2: Layout conventions | Per-stack convention files in `.alty/knowledge/stacks/` | 1-2 tickets per stack |
+| P2: Layout conventions | Per-stack convention files in `.alto/knowledge/stacks/` | 1-2 tickets per stack |
 | P3: Quality gate knowledge | Folded into layout convention files | Same as above |
 | P4: Cross-language fitness function renderer | Extend existing fitness function generator with language dispatch | 1 ticket (medium) per language |
 
@@ -508,9 +508,9 @@ should respect its structure during `alty init --existing`.
    minor version and test on upgrade. The `run_copy()` API has been stable since v7.
 
 2. **Per-language fitness tools are shallow** -- arch-go (250 stars), ArchUnitTS (334 stars)
-   are small projects. They could become unmaintained. Mitigation: alty generates config
+   are small projects. They could become unmaintained. Mitigation: alto generates config
    files, not code that imports these libraries. If a tool dies, users can replace it
-   without changing alty.
+   without changing alto.
 
 3. **Stack detection heuristics will have false positives** -- A project with both
    `next.config.js` and `package.json` containing Express could be misdetected. Mitigation:
@@ -519,7 +519,7 @@ should respect its structure during `alty init --existing`.
 
 4. **Layout conventions are opinionated** -- "Where does domain code go in Go?" has
    multiple valid answers (`internal/domain/`, `pkg/domain/`, `domain/`). Mitigation:
-   conventions are defaults, not enforced. Users can override via `.alty/config.toml`.
+   conventions are defaults, not enforced. Users can override via `.alto/config.toml`.
 
 5. **Rust needs least tooling, Go needs most** -- Rust's module system provides built-in
    enforcement. Go has no module visibility beyond package-level, so it needs the most
@@ -548,8 +548,8 @@ should respect its structure during `alty init --existing`.
 
 ## Follow-up Tasks
 
-- [ ] Evaluate adding `copier` as a dependency to alty's `pyproject.toml`
+- [ ] Evaluate adding `copier` as a dependency to alto's `pyproject.toml`
 - [ ] Design `StackDetector` domain service + indicator registry schema
-- [ ] Create `.alty/knowledge/stacks/` convention files for Python, Go, TypeScript, Rust
+- [ ] Create `.alto/knowledge/stacks/` convention files for Python, Go, TypeScript, Rust
 - [ ] Extend fitness function generator (`20260223_fitness_function_design.md`) with per-language renderers
 - [ ] Design the bounded context map schema extension for `target_language` field

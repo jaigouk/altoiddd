@@ -9,10 +9,10 @@ type: spike
 
 ## Decision Context
 
-alty needs a CLI framework for the `vs` command. The CLI must support:
+alto needs a CLI framework for the `vs` command. The CLI must support:
 
-- **9+ subcommands**: `alty init`, `alty guide`, `alty generate`, `alty check`, `alty kb`,
-  `alty detect`, `alty doc-health`, `alty doc-review`, `alty ticket-health`
+- **9+ subcommands**: `alto init`, `alto guide`, `alto generate`, `alto check`, `alto kb`,
+  `alto detect`, `alto doc-health`, `alto doc-review`, `alto ticket-health`
 - **Interactive multi-step prompting**: 10-question guided DDD discovery flow with
   persona detection, validation, playback loops, and branching logic
 - **Rich terminal output**: progress indicators, tables, colored text, previews
@@ -105,7 +105,7 @@ def cli(): pass
 @click.option("--existing", is_flag=True, help="Apply to existing project")
 @click.option("--force-branch", is_flag=True, help="Force branch creation")
 def init(existing: bool, force_branch: bool):
-    """Initialize a alty project."""
+    """Initialize a alto project."""
     ...
 
 # Repeat for each of 9 commands with their options
@@ -182,14 +182,14 @@ def init(existing: bool, force_branch: bool):
 
 ```python
 # ~25 lines for command group setup (no business logic)
-app = typer.Typer(help="alty: DDD project bootstrap")
+app = typer.Typer(help="alto: DDD project bootstrap")
 
 @app.command()
 def init(
     existing: bool = typer.Option(False, help="Apply to existing project"),
     force_branch: bool = typer.Option(False, help="Force branch creation"),
 ):
-    """Initialize a alty project."""
+    """Initialize a alto project."""
     ...
 
 # Each command: function signature IS the CLI interface
@@ -251,10 +251,10 @@ Approximately 40-50% less boilerplate than Click for equivalent functionality.
 
 ```python
 # ~80+ lines for command group setup (no business logic)
-parser = argparse.ArgumentParser(description="alty")
+parser = argparse.ArgumentParser(description="alto")
 subparsers = parser.add_subparsers(dest="command")
 
-init_parser = subparsers.add_parser("init", help="Initialize a alty project")
+init_parser = subparsers.add_parser("init", help="Initialize a alto project")
 init_parser.add_argument("--existing", action="store_true", help="Apply to existing project")
 init_parser.add_argument("--force-branch", action="store_true", help="Force branch creation")
 
@@ -312,7 +312,7 @@ the flow. However:
 - **argparse**: zero help -- pure `input()` calls
 
 The guided flow will live in the **application layer** (use cases), not in the CLI
-framework itself. The CLI command (`alty guide`) calls the application service, which
+framework itself. The CLI command (`alto guide`) calls the application service, which
 drives the conversation. This means the framework's prompting is used for simple
 confirmations, while the complex flow is custom regardless.
 
@@ -362,10 +362,10 @@ Rich's Console with different themes handles the output side.
 1. **Typer is pre-1.0** (v0.24.1). API could change before 1.0.
    - **Mitigation**: Typer has been in production use since 2020. The FastAPI team
      maintains backward compatibility. Breaking changes are rare and well-documented.
-   - **Mitigation**: alty pins dependencies via uv lockfile.
+   - **Mitigation**: alto pins dependencies via uv lockfile.
 
 2. **Typer adds 3 dependencies** (click, rich, shellingham) vs Click's zero.
-   - **Mitigation**: alty already needs Rich for terminal output (PRD requires
+   - **Mitigation**: alto already needs Rich for terminal output (PRD requires
      "rich terminal output"). shellingham is tiny (shell detection). click is proven.
      These are not additional dependencies -- they are dependencies we would add anyway.
 
@@ -394,7 +394,7 @@ Rich's Console with different themes handles the output side.
 
 ### Rationale
 
-1. **Type hints are the API**. alty enforces mypy strict and type annotations
+1. **Type hints are the API**. alto enforces mypy strict and type annotations
    everywhere (per CLAUDE.md). Typer's design philosophy directly aligns -- function
    signatures with type hints become the CLI interface with zero decorator boilerplate.
 
@@ -428,7 +428,7 @@ that:
 - Supports playback ("here is what you said, want to change anything?")
 - Is testable independently of the CLI framework
 
-The CLI command (`alty guide`) will be a thin adapter that calls this service, using
+The CLI command (`alto guide`) will be a thin adapter that calls this service, using
 `typer.prompt()` and `rich.print()` for individual I/O operations within the flow.
 
 ### Dependency footprint
@@ -441,7 +441,7 @@ typer 0.24.1
 ```
 
 All three are permissively licensed (MIT/BSD). Total added: 4 packages.
-Since alty needs Rich anyway, the effective addition is: typer + shellingham (2 packages).
+Since alto needs Rich anyway, the effective addition is: typer + shellingham (2 packages).
 
 ---
 

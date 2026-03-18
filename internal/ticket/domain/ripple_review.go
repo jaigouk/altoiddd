@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // ReviewChecklistTemplate is the standard review checklist for ripple reviews.

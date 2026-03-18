@@ -1,7 +1,7 @@
 # Research: Go Migration Team Execution
 
 **Date:** 2026-03-07
-**Spike Ticket:** alty-7oe
+**Spike Ticket:** alto-7oe
 **Status:** Final
 
 ## Summary
@@ -38,7 +38,7 @@ Week 3 — Layer 3: Infrastructure + CLI + MCP (4 parallel devs)
           ├── dev-infra-io:     persistence/ + git/ + subprocess/ + tool_detection/
           ├── dev-infra-llm:    anthropic/ + ollama/ + openai/ + challenge/ + simulation/
           ├── dev-infra-search: search/ + beads/ + eventbus/ + RLM adapter
-          └── dev-cli:          cmd/alty/ (Cobra) + cmd/alty-mcp/ (MCP SDK) + composition/
+          └── dev-cli:          cmd/alto/ (Cobra) + cmd/alto-mcp/ (MCP SDK) + composition/
           + tech-lead reviews, qa-engineer integration tests
 ```
 
@@ -189,7 +189,7 @@ gofumpt -l .
 Agents use this format when reporting completion:
 
 ```
-TICKET: alty-xxx
+TICKET: alto-xxx
 STATUS: COMPLETE | BLOCKED | NEEDS_REVIEW
 FILES_CHANGED: [list]
 COMPILE: PASS | FAIL (with error)
@@ -251,7 +251,7 @@ NOTES: [brief summary of what was implemented]
 | dev-infra-io | `infrastructure/persistence/`, `infrastructure/git/`, `infrastructure/subprocess/` | Easy | os/exec, file I/O |
 | dev-infra-llm | `infrastructure/anthropic/`, `infrastructure/ollama/`, `infrastructure/openai/` | Medium | SDK adapters |
 | dev-infra-search | `infrastructure/search/`, `infrastructure/beads/`, `infrastructure/eventbus/` | Medium | Custom HTTP, Watermill |
-| dev-cli | `cmd/alty/`, `cmd/alty-mcp/`, `internal/composition/` | Medium | Cobra, MCP SDK, DI wiring |
+| dev-cli | `cmd/alto/`, `cmd/alto-mcp/`, `internal/composition/` | Medium | Cobra, MCP SDK, DI wiring |
 
 **dev-cli depends on all other infra agents** (needs adapters for DI wiring). Starts after others are ~80% done, or starts with stub adapters.
 
@@ -454,7 +454,7 @@ For each Python file to translate:
 
 ## Structured Report Format
 
-TICKET: alty-xxx
+TICKET: alto-xxx
 STATUS: COMPLETE | BLOCKED | NEEDS_REVIEW
 FILES_CHANGED: [list]
 COMPILE: PASS

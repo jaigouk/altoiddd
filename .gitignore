@@ -1,11 +1,11 @@
 # Go binaries
-/alty
-/alty-mcp
+/alto
+/alto-mcp
 *.exe
 *.test
 /dist/
-bin/alty
-bin/alty-mcp
+bin/alto
+bin/alto-mcp
 
 # Go build artifacts
 coverage.out
@@ -40,7 +40,7 @@ Thumbs.db
 .dolt/
 *.db
 
-# Impeccable design skills (local tool, not part of alty-cli)
+# Impeccable design skills (local tool, not part of alto-cli)
 # Flat structure required — Claude Code only discovers .claude/skills/*/SKILL.md
 .claude/skills/adapt/
 .claude/skills/animate/

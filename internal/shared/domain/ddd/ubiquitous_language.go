@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // UbiquitousLanguage is an entity managing the shared vocabulary of a domain model.

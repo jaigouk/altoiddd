@@ -17,7 +17,7 @@ topic: Go Architecture Testing Tools for DDD Layer Enforcement
 
 ## 2. Context
 
-alty generates DDD project scaffolding including bounded context maps, layer structure
+alto generates DDD project scaffolding including bounded context maps, layer structure
 (`domain/`, `application/`, `infrastructure/`), and architectural docs. A key capability
 (DDD.md line 16, step 16) is auto-generating fitness function tests from bounded context maps.
 
@@ -51,7 +51,7 @@ tools would improve enforcement, especially for auto-generation from DDD artifac
 Defines named rules with file glob patterns and deny/allow lists. Each rule targets
 specific file paths and blocks imports of specific packages.
 
-**Current alty config** (`.golangci.yml` lines 44-79):
+**Current alto config** (`.golangci.yml` lines 44-79):
 ```yaml
 depguard:
   rules:
@@ -59,9 +59,9 @@ depguard:
       files:
         - "**/internal/**/domain/**/*.go"
       deny:
-        - pkg: "github.com/alty-cli/alty/internal/**/application"
+        - pkg: "github.com/alto-cli/alto/internal/**/application"
           desc: "Domain layer must not import application layer"
-        - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+        - pkg: "github.com/alto-cli/alto/internal/**/infrastructure"
           desc: "Domain layer must not import infrastructure layer"
         - pkg: "github.com/spf13/cobra"
           desc: "Domain layer must not import CLI framework"
@@ -71,7 +71,7 @@ depguard:
       files:
         - "**/internal/**/application/**/*.go"
       deny:
-        - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+        - pkg: "github.com/alto-cli/alto/internal/**/infrastructure"
           desc: "Application layer must not import infrastructure layer"
         - pkg: "github.com/spf13/cobra"
           desc: "Application layer must not import CLI framework"
@@ -233,7 +233,7 @@ dependenciesRules:
 
 **Auto-generation potential:** HIGH. Pattern-based rules work well:
 - `**.domain.**` covers all contexts at once (like depguard wildcards)
-- Threshold feature useful for brownfield projects alty handles (`init --existing`)
+- Threshold feature useful for brownfield projects alto handles (`init --existing`)
 - Content rules could enforce "domain packages must have value objects"
 
 ### 3.4 go-cleanarch
@@ -253,7 +253,7 @@ dependenciesRules:
 
 **Strengths:**
 - Zero configuration -- works if you follow naming conventions
-- Written by the Watermill author (same ecosystem as alty)
+- Written by the Watermill author (same ecosystem as alto)
 
 **Limitations:**
 - **Not maintained since 2021** -- 4+ years stale
@@ -313,7 +313,7 @@ The simplest approach: use Go's `internal/` package convention. Packages under
 `internal/bootstrap/` are invisible outside `bootstrap/`. However, this only enforces
 external visibility, not inward dependency flow (domain importing infrastructure).
 
-**Recommendation for alty:** Pattern 2 (depguard + go-arch-lint) provides the best
+**Recommendation for alto:** Pattern 2 (depguard + go-arch-lint) provides the best
 combination for a project that generates DDD scaffolding for others. depguard gives
 CI-integrated lint enforcement; go-arch-lint provides the semantic model that maps
 to DDD concepts and generates dependency graphs for documentation.
@@ -325,7 +325,7 @@ to DDD concepts and generates dependency graphs for documentation.
 ### 6.1 Current State
 
 No tool exists that auto-generates depguard config from a bounded context map.
-This is a greenfield capability that alty would pioneer.
+This is a greenfield capability that alto would pioneer.
 
 ### 6.2 Generation Strategy
 
@@ -344,7 +344,7 @@ This is a greenfield capability that alty would pioneer.
 
 ```yaml
 # Auto-generated from DDD.md bounded contexts
-# DO NOT EDIT MANUALLY -- regenerate with: alty fitness generate
+# DO NOT EDIT MANUALLY -- regenerate with: alto fitness generate
 
 depguard:
   rules:
@@ -415,7 +415,7 @@ depguard:
 
 ```yaml
 # Auto-generated from DDD.md bounded contexts
-# Regenerate with: alty fitness generate
+# Regenerate with: alto fitness generate
 
 version: 3
 workdir: internal
@@ -492,7 +492,7 @@ This is the key insight: **the context map IS the dependency specification.**
 **REVISED based on license analysis:**
 
 depguard is GPL-3.0. While it doesn't link into the compiled binary, some enterprises have
-blanket GPL restrictions even for tooling. Since alty generates configurations that users
+blanket GPL restrictions even for tooling. Since alto generates configurations that users
 adopt, recommending GPL tooling could create adoption barriers.
 
 **arch-go (MIT, v2.1.2, Feb 2026) is the recommended tool because:**
@@ -502,8 +502,8 @@ adopt, recommending GPL tooling could create adoption barriers.
 4. **Single tool** — replaces depguard + go-arch-lint with one MIT-licensed tool
 
 **What to implement:**
-1. **Auto-generation** — alty generates `arch-go.yml` from `docs/DDD.md` bounded contexts
-2. **Threshold modes** — 100% for greenfield, 80% for `alty init --existing`
+1. **Auto-generation** — alto generates `arch-go.yml` from `docs/DDD.md` bounded contexts
+2. **Threshold modes** — 100% for greenfield, 80% for `alto init --existing`
 3. **Cross-context isolation** — derive deny rules from context map relationships
 4. **Remove depguard** — remove manual depguard rules from `.golangci.yml`
 
@@ -527,7 +527,7 @@ adopt, recommending GPL tooling could create adoption barriers.
 depguard v2.2.1 is integrated into golangci-lint v2.11.3 as part of the `standard` linter
 preset. Configuration uses named rules with file glob patterns and deny/allow lists.
 Three list modes: `original` (default), `strict`, `lax`. Supports `$all`, `$test`, `$gostd`
-variables. **Cannot be auto-generated** from any existing tool -- this would be a new alty
+variables. **Cannot be auto-generated** from any existing tool -- this would be a new alto
 capability.
 
 Source: [golangci-lint settings](https://golangci-lint.run/docs/linters/configuration/),
@@ -570,7 +570,7 @@ derived from the context map.
    `arch-go.yml` from parsed DDD.md bounded contexts and context map relationships.
 2. **Remove depguard from .golangci.yml** — GPL-3.0 license is a concern; arch-go
    provides equivalent functionality under MIT.
-3. **Add brownfield threshold support** — `alty init --existing` generates arch-go
+3. **Add brownfield threshold support** — `alto init --existing` generates arch-go
    config with 80% compliance threshold for gradual adoption.
 4. **Cross-context isolation rules** — derive `shouldNotDependsOn` rules from the
    context map (contexts without declared relationships are isolated).

@@ -1,4 +1,4 @@
-// Package domain contains shared domain types for the alty application.
+// Package domain contains shared domain types for the alto application.
 package domain
 
 import (
@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------

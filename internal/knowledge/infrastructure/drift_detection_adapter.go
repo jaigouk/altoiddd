@@ -9,8 +9,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	"github.com/alty-cli/alty/internal/knowledge/domain"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	"github.com/alto-cli/alto/internal/knowledge/domain"
 )
 
 // Compile-time interface check.
@@ -53,7 +53,7 @@ func (a *DriftDetectionAdapter) Detect(ctx context.Context) (domain.DriftReport,
 
 	var signals []domain.DriftSignal
 
-	toolsDir := filepath.Join(a.projectDir, ".alty", "knowledge", "tools")
+	toolsDir := filepath.Join(a.projectDir, ".alto", "knowledge", "tools")
 	entries, err := os.ReadDir(toolsDir)
 	if err != nil {
 		if os.IsNotExist(err) {

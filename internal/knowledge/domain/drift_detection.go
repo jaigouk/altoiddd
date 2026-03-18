@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // DriftSignalType enumerates the kinds of drift that can be detected.

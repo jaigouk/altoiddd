@@ -3,10 +3,10 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/tooltranslation/application"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/tooltranslation/application"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // Compile-time interface satisfaction checks.

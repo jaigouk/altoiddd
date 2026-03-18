@@ -1,35 +1,35 @@
 # Research: Saga/Workflow Orchestration for Human-in-the-Loop Event Chains
 
 **Date:** 2026-03-10
-**Spike Ticket:** alty-4pp.13
+**Spike Ticket:** alto-4pp.13
 **Status:** Complete
-**Dependencies:** alty-4pp.10 (SessionTracker), alty-4pp.11 (Tier 3 autonomous effects)
+**Dependencies:** alto-4pp.10 (SessionTracker), alto-4pp.11 (Tier 3 autonomous effects)
 
 ## Summary
 
-This spike investigates whether alty should adopt saga/process manager patterns for orchestrating its multi-step bootstrap workflow (discovery -> artifacts -> fitness -> tickets -> configs), given that every step requires human approval ("preview before action").
+This spike investigates whether alto should adopt saga/process manager patterns for orchestrating its multi-step bootstrap workflow (discovery -> artifacts -> fitness -> tickets -> configs), given that every step requires human approval ("preview before action").
 
-**Recommendation:** Do NOT adopt a formal saga pattern. Instead, evolve the existing SessionTracker into a **WorkflowCoordinator** -- a lightweight state machine that tracks step completion, enforces ordering constraints, and provides "what's next?" queries. This gives us the benefits of saga observability without the complexity of event-driven saga orchestration, which is architecturally mismatched with alty's human-in-the-loop constraint.
+**Recommendation:** Do NOT adopt a formal saga pattern. Instead, evolve the existing SessionTracker into a **WorkflowCoordinator** -- a lightweight state machine that tracks step completion, enforces ordering constraints, and provides "what's next?" queries. This gives us the benefits of saga observability without the complexity of event-driven saga orchestration, which is architecturally mismatched with alto's human-in-the-loop constraint.
 
 ---
 
 ## 1. Research Questions Answered
 
-### Q1: How should alty orchestrate multi-step workflows?
+### Q1: How should alto orchestrate multi-step workflows?
 
-**Answer: Imperative orchestration with state tracking is the correct pattern for alty.**
+**Answer: Imperative orchestration with state tracking is the correct pattern for alto.**
 
-The key insight is that alty's workflow is **not a saga** in the distributed systems sense. Sagas solve the problem of coordinating transactions across services that may fail independently and need compensating actions. Alty's workflow has none of these characteristics:
+The key insight is that alto's workflow is **not a saga** in the distributed systems sense. Sagas solve the problem of coordinating transactions across services that may fail independently and need compensating actions. Alto's workflow has none of these characteristics:
 
-| Saga Property | Alty's Workflow | Match? |
+| Saga Property | Alto's Workflow | Match? |
 |---------------|-----------------|--------|
 | Distributed transactions | Single process, single machine | No |
 | Compensating actions needed | No rollback (preview prevents errors) | No |
 | Services fail independently | All handlers in same process | No |
 | Long-running (hours/days) | Minutes per session | No |
-| Multiple actors | Single human + alty CLI | No |
+| Multiple actors | Single human + alto CLI | No |
 
-What alty actually needs is **workflow state tracking**: knowing which steps are done, which are available, and what the user should do next. This is a state machine problem, not a saga problem.
+What alto actually needs is **workflow state tracking**: knowing which steps are done, which are available, and what the user should do next. This is a state machine problem, not a saga problem.
 
 **Sources:**
 - [Saga Pattern Demystified](https://blog.bytebytego.com/p/saga-pattern-demystified-orchestration) -- Sagas coordinate distributed transactions
@@ -40,14 +40,14 @@ What alty actually needs is **workflow state tracking**: knowing which steps are
 
 **Answer: The "Checkpoint + Resume" pattern, not reactive event chains.**
 
-The fundamental mismatch between sagas and alty's workflow is the **control inversion**:
+The fundamental mismatch between sagas and alto's workflow is the **control inversion**:
 
 - **Saga pattern:** Event A fires -> subscriber automatically triggers step B -> event B fires -> subscriber triggers step C. The system drives progress.
-- **Alty's reality:** Step A completes -> user sees preview for step B -> user decides IF and WHEN to proceed -> user explicitly calls step B. The human drives progress.
+- **Alto's reality:** Step A completes -> user sees preview for step B -> user decides IF and WHEN to proceed -> user explicitly calls step B. The human drives progress.
 
-Temporal.io handles this elegantly with **signals** -- a workflow blocks on `workflow.GetSignalChannel()` waiting for external input. But Temporal requires a server infrastructure (Temporal Server + database) that is completely mismatched with alty's "local-first, zero network" constraint.
+Temporal.io handles this elegantly with **signals** -- a workflow blocks on `workflow.GetSignalChannel()` waiting for external input. But Temporal requires a server infrastructure (Temporal Server + database) that is completely mismatched with alto's "local-first, zero network" constraint.
 
-The correct pattern for alty is:
+The correct pattern for alto is:
 
 ```
 Step completes -> emit event -> SessionTracker marks next steps "ready"
@@ -56,14 +56,14 @@ Step completes -> emit event -> SessionTracker marks next steps "ready"
                                 -> Handler checks "is this step ready?" before executing
 ```
 
-This is what alty already does (SessionTracker from alty-4pp.10), but informally. The improvement is formalizing it.
+This is what alto already does (SessionTracker from alto-4pp.10), but informally. The improvement is formalizing it.
 
 **Sources:**
 - [Temporal Human-in-the-Loop](https://docs.temporal.io/ai-cookbook/human-in-the-loop-python) -- Signal-based wait for human input
 - [Temporal Long-Running Workflows](https://temporal.io/blog/very-long-running-workflows) -- Workflow.GetSignalChannel for human approval
 - `internal/shared/domain/session_tracker.go:108-119` -- Current MarkReady/MarkCompleted pattern
 
-### Q3: Should alty use Watermill's Router/CQRS EventProcessor or a custom saga coordinator?
+### Q3: Should alto use Watermill's Router/CQRS EventProcessor or a custom saga coordinator?
 
 **Answer: Neither. Watermill does not have a built-in saga/process manager.**
 
@@ -75,7 +75,7 @@ Key findings:
 
 3. **Watermill's Router is designed for autonomous message processing** -- handlers consume from a topic and produce to another topic. There is no built-in "pause and wait for external signal" capability.
 
-4. **Current eventbus abstraction works well for what it does** (Tier 1 logging, Tier 2 readiness, Tier 3 autonomous effects). The problem is not with the event bus; it's that saga orchestration is the wrong pattern for alty's workflow.
+4. **Current eventbus abstraction works well for what it does** (Tier 1 logging, Tier 2 readiness, Tier 3 autonomous effects). The problem is not with the event bus; it's that saga orchestration is the wrong pattern for alto's workflow.
 
 **Sources:**
 - [Watermill Issue #7: Saga Support](https://github.com/ThreeDotsLabs/watermill/issues/7) -- Still open, no built-in support
@@ -111,7 +111,7 @@ These limitations confirm that GoChannel is designed for notification-style even
 
 ### Q5: What does the migration path look like from imperative to event-driven orchestration?
 
-**Answer: There is no migration needed. Imperative orchestration with state tracking IS the right architecture for alty.**
+**Answer: There is no migration needed. Imperative orchestration with state tracking IS the right architecture for alto.**
 
 The current architecture is correct for the problem domain:
 
@@ -143,7 +143,7 @@ The improvement path is not "imperative -> event-driven saga" but rather "inform
 | **New step addition** | Add tool handler | Add event + subscriber + saga step | Add state + transition |
 | **Testing** | Unit test handlers | Integration test event chains | Unit test state machine |
 | **Dependencies** | None new | Watermill Router + middleware | qmuntal/stateless (optional) |
-| **Fits alty's domain** | Yes | No (alty is not distributed) | Yes |
+| **Fits alto's domain** | Yes | No (alto is not distributed) | Yes |
 
 ---
 
@@ -158,9 +158,9 @@ The improvement path is not "imperative -> event-driven saga" but rather "inform
 | **Complexity** | Zero | Schema management, file locking | Avoid premature |
 | **When to upgrade** | -- | When MCP runs as long-lived daemon | Phase 2 |
 
-**Decision: Stay with in-memory GoChannel for now.** The CLI is short-lived (minutes). MCP via stdio is also short-lived (one conversation). SQLite persistence becomes valuable only when alty runs as a long-lived MCP server (daemon mode), which is not currently on the roadmap.
+**Decision: Stay with in-memory GoChannel for now.** The CLI is short-lived (minutes). MCP via stdio is also short-lived (one conversation). SQLite persistence becomes valuable only when alto runs as a long-lived MCP server (daemon mode), which is not currently on the roadmap.
 
-If crash recovery becomes important, the simplest path is persisting `WorkflowCoordinator` state to a JSON file in `.alty/sessions/`, not adopting SQLite pub/sub.
+If crash recovery becomes important, the simplest path is persisting `WorkflowCoordinator` state to a JSON file in `.alto/sessions/`, not adopting SQLite pub/sub.
 
 ---
 
@@ -245,7 +245,7 @@ func (c *WorkflowCoordinator) SessionContext(sessionID string) (*SessionContext,
 - Thread safety: Yes
 - CGO: No (pure Go)
 
-**Decision: Do NOT adopt stateless.** Alty's workflow state machine is simple enough (5 steps, 4 states, linear transitions) that a hand-rolled implementation is clearer, has zero dependencies, and avoids learning curve. The `stateless` library shines for complex FSMs with many states, guards, and nested hierarchies -- alty's workflow is none of these.
+**Decision: Do NOT adopt stateless.** Alto's workflow state machine is simple enough (5 steps, 4 states, linear transitions) that a hand-rolled implementation is clearer, has zero dependencies, and avoids learning curve. The `stateless` library shines for complex FSMs with many states, guards, and nested hierarchies -- alto's workflow is none of these.
 
 If the workflow grows significantly more complex (10+ steps, conditional branching, nested sub-workflows), revisit `stateless`.
 
@@ -278,7 +278,7 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 
 ### Phase 3: Optional Persistence (deferred until MCP daemon mode)
 
-1. Persist `WorkflowSession` state to `.alty/sessions/<session-id>.json`
+1. Persist `WorkflowSession` state to `.alto/sessions/<session-id>.json`
 2. On startup, load existing sessions
 3. TTL-based cleanup of old sessions
 4. Only pursue when MCP server runs as a long-lived daemon
@@ -286,7 +286,7 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 ### What We Explicitly Do NOT Do
 
 - **No Watermill Router for workflow orchestration** -- Router is for autonomous message processing
-- **No saga coordinator** -- alty's workflow is not a distributed transaction
+- **No saga coordinator** -- alto's workflow is not a distributed transaction
 - **No SQLite event store** -- in-memory state is fine for short-lived CLI sessions
 - **No Temporal/workflow engine** -- massive overkill for 5-step linear flow
 - **No compensating transactions** -- preview-before-action prevents the need for rollback
@@ -295,7 +295,7 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 
 ## 6. Answers to Spike Research Questions
 
-### Q1: How should alty orchestrate multi-step workflows?
+### Q1: How should alto orchestrate multi-step workflows?
 **Keep imperative orchestration.** Evolve SessionTracker into a WorkflowCoordinator that formalizes step ordering and preconditions. The human drives the workflow; events notify about state changes.
 
 ### Q2: What patterns work for hybrid CLI + MCP with human-in-the-loop?
@@ -316,9 +316,9 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 
 **Decision (2026-03-10):** No epic needed. The scope is small (2 tickets for immediate work), this is evolution of existing code (not a new system), and Phase 3 is explicitly deferred until MCP daemon mode becomes a priority. Standalone tickets with proper dependencies are sufficient.
 
-### alty-vf2: Evolve SessionTracker into WorkflowCoordinator
+### alto-vf2: Evolve SessionTracker into WorkflowCoordinator
 
-**Ticket ID:** `alty-vf2`
+**Ticket ID:** `alto-vf2`
 **Type:** Task
 **Priority:** P2
 **Bounded Context:** shared/domain
@@ -335,14 +335,14 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 - [ ] 90%+ test coverage on state transitions
 - [ ] All quality gates pass
 
-### alty-6q5: Integrate WorkflowCoordinator with MCP Tools
+### alto-6q5: Integrate WorkflowCoordinator with MCP Tools
 
-**Ticket ID:** `alty-6q5`
+**Ticket ID:** `alto-6q5`
 **Type:** Task
 **Priority:** P2
 **Bounded Context:** mcp, composition
-**Depends on:** alty-vf2
-**Status:** Open, Blocked by alty-vf2
+**Depends on:** alto-vf2
+**Status:** Open, Blocked by alto-vf2
 
 **Description:** Update MCP tool handlers in `tools_bootstrap.go` to use `WorkflowCoordinator.CanExecute()` before processing and `BeginStep()`/`CompleteStep()` around execution. Add MCP resource `session_status` returning available actions. Remove `ModelStore`. Update tool descriptions with precondition documentation.
 
@@ -381,6 +381,6 @@ If the workflow grows significantly more complex (10+ steps, conditional branchi
 - `internal/composition/event_subscribers.go` -- Tier 1/2/3 event wiring
 - `internal/shared/infrastructure/eventbus/bus.go` -- GoChannel config (BlockPublishUntilSubscriberAck)
 - `docs/ARCHITECTURE.md:51-53` -- "Human-in-the-loop" design principle
-- `docs/PRD.md:119` -- "alty init with preview" (P0 requirement)
+- `docs/PRD.md:119` -- "alto init with preview" (P0 requirement)
 - `docs/research/20260307_6_watermill_cqrs_deep_dive.md` -- Prior Watermill CQRS research
 - `docs/research/20260309_tier3_autonomous_effects_design.md` -- Tier 3 subscriber design

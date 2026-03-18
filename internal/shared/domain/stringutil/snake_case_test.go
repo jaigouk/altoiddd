@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/alty-cli/alty/internal/shared/domain/stringutil"
+	"github.com/alto-cli/alto/internal/shared/domain/stringutil"
 )
 
 func TestToSnakeCase(t *testing.T) {

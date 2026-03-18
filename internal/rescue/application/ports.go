@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Test framework constants.
@@ -23,7 +23,7 @@ type ProjectScan interface {
 }
 
 // Rescue handles analyzing an existing project, planning migration steps,
-// and executing the rescue flow (alty init --existing).
+// and executing the rescue flow (alto init --existing).
 type Rescue interface {
 	// Analyze analyzes an existing project for structural gaps.
 	Analyze(ctx context.Context, projectDir string) (*rescuedomain.GapAnalysis, error)

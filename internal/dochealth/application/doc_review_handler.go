@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alty-cli/alty/internal/dochealth/domain"
+	"github.com/alto-cli/alto/internal/dochealth/domain"
 )
 
 // DocReviewHandler orchestrates document review operations.

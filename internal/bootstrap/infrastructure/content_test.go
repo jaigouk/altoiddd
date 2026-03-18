@@ -7,19 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
-	"github.com/alty-cli/alty/internal/bootstrap/infrastructure"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
+	"github.com/alto-cli/alto/internal/bootstrap/infrastructure"
 )
 
-func TestAltyConfigContent_IsValidTOML(t *testing.T) {
+func TestAltoConfigContent_IsValidTOML(t *testing.T) {
 	t.Parallel()
 
 	config := domain.NewProjectConfig("my-project", "go", "github.com/user/my-project", []string{"claude", "cursor"})
-	content := infrastructure.AltyConfigContent(config)
+	content := infrastructure.AltoConfigContent(config)
 
 	var parsed map[string]any
 	_, err := toml.Decode(content, &parsed)
-	require.NoError(t, err, "AltyConfigContent must produce valid TOML")
+	require.NoError(t, err, "AltoConfigContent must produce valid TOML")
 
 	project, ok := parsed["project"].(map[string]any)
 	require.True(t, ok, "expected [project] table")
@@ -38,11 +38,11 @@ func TestAltyConfigContent_IsValidTOML(t *testing.T) {
 	assert.Equal(t, false, discovery["completed"])
 }
 
-func TestAltyConfigContent_WhenEmptyLanguage_OmitsLanguageLine(t *testing.T) {
+func TestAltoConfigContent_WhenEmptyLanguage_OmitsLanguageLine(t *testing.T) {
 	t.Parallel()
 
 	config := domain.NewProjectConfig("svc", "", "", nil)
-	content := infrastructure.AltyConfigContent(config)
+	content := infrastructure.AltoConfigContent(config)
 
 	var parsed map[string]any
 	_, err := toml.Decode(content, &parsed)
@@ -55,11 +55,11 @@ func TestAltyConfigContent_WhenEmptyLanguage_OmitsLanguageLine(t *testing.T) {
 	assert.False(t, hasModule, "empty module_path should be omitted")
 }
 
-func TestAltyConfigContent_WhenNoTools_EmitsEmptyArray(t *testing.T) {
+func TestAltoConfigContent_WhenNoTools_EmitsEmptyArray(t *testing.T) {
 	t.Parallel()
 
 	config := domain.NewProjectConfig("svc", "go", "", nil)
-	content := infrastructure.AltyConfigContent(config)
+	content := infrastructure.AltoConfigContent(config)
 
 	var parsed map[string]any
 	_, err := toml.Decode(content, &parsed)

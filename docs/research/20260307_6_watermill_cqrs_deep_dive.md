@@ -104,7 +104,7 @@ Layer 1:  Publisher/Subscriber (raw message send/receive)
 Backend:  GoChannel | NATS | Kafka | SQL | SQLite | Redis | ...
 ```
 
-Each layer builds on the one below. For alty, we primarily use Layer 3 (CQRS) which internally manages Layers 2 and 1.
+Each layer builds on the one below. For alto, we primarily use Layer 3 (CQRS) which internally manages Layers 2 and 1.
 
 Source: [Watermill Getting Started](https://watermill.io/learn/getting-started/)
 
@@ -331,7 +331,7 @@ Source: [Watermill CQRS Docs](https://watermill.io/docs/cqrs/)
 | `ProtobufMarshaler` | Protocol Buffers (old) | Legacy | **Deprecated** (use `ProtoMarshaler`) |
 | `CommandEventMarshalerDecorator` | Wraps any marshaler | Add metadata (partition keys, etc.) | v1.5.1+ |
 
-For alty, `JSONMarshaler` is the clear choice -- human-readable payloads, simple debugging, no protobuf codegen needed.
+For alto, `JSONMarshaler` is the clear choice -- human-readable payloads, simple debugging, no protobuf codegen needed.
 
 Source: [pkg.go.dev cqrs package](https://pkg.go.dev/github.com/ThreeDotsLabs/watermill@v1.5.1/components/cqrs)
 
@@ -482,7 +482,7 @@ Source: [Watermill GoChannel Docs](https://watermill.io/pubsubs/gochannel/)
 
 1. **Same instance required.** GoChannel has no global state. You must use the same `*GoChannel` instance for publishing and subscribing. This is a common gotcha.
 
-2. **Non-persistent by default.** If a message is published with no active subscribers, it is **discarded**. For alty's CLI, this is fine -- events are published and consumed in the same process during a single run.
+2. **Non-persistent by default.** If a message is published with no active subscribers, it is **discarded**. For alto's CLI, this is fine -- events are published and consumed in the same process during a single run.
 
 3. **Non-blocking publish.** `Publish()` sends messages to subscribers in background goroutines. The call returns immediately.
 
@@ -493,7 +493,7 @@ Source: [Watermill GoChannel Docs](https://watermill.io/pubsubs/gochannel/)
 Source: [Watermill GoChannel Docs](https://watermill.io/pubsubs/gochannel/),
 [Watermill 1.5 Release](https://threedots.tech/post/watermill-1-5/)
 
-### Recommended Config for alty CLI
+### Recommended Config for alto CLI
 
 ```go
 pubSub := gochannel.NewGoChannel(
@@ -513,7 +513,7 @@ For testing, consider `BlockPublishUntilSubscriberAck: true` to make event flow 
 
 ### Performance
 
-GoChannel achieves **315,776 msg/s publish** and **138,743 msg/s subscribe** in Watermill benchmarks. This is orders of magnitude beyond what alty needs (tens of events per CLI session).
+GoChannel achieves **315,776 msg/s publish** and **138,743 msg/s subscribe** in Watermill benchmarks. This is orders of magnitude beyond what alto needs (tens of events per CLI session).
 
 Source: [Watermill Benchmarks](https://watermill.io/)
 
@@ -542,7 +542,7 @@ Source: [Watermill Middleware Docs](https://watermill.io/docs/middlewares/)
 
 ### Available Middleware
 
-| Middleware | Purpose | alty Relevance |
+| Middleware | Purpose | alto Relevance |
 |-----------|---------|----------------|
 | **Recoverer** | Captures panics, converts to errors with stack trace | HIGH -- always use |
 | **CorrelationID** | Propagates correlation ID across messages | HIGH -- traces bootstrap session |
@@ -559,7 +559,7 @@ Source: [Watermill Middleware Docs](https://watermill.io/docs/middlewares/)
 
 Source: [Watermill Middleware Docs](https://watermill.io/docs/middlewares/)
 
-### Recommended Middleware Stack for alty
+### Recommended Middleware Stack for alto
 
 ```go
 router.AddMiddleware(
@@ -620,9 +620,9 @@ ThreeDotsLabs' core principle for DDD in Go:
 
 Source: [Combining DDD, CQRS, and Clean Architecture](https://threedots.tech/post/ddd-cqrs-clean-architecture-combined/)
 
-### Domain Event Design for alty
+### Domain Event Design for alto
 
-Based on alty's DDD model (from `docs/DDD.md`), here are the domain events mapped to Watermill:
+Based on alto's DDD model (from `docs/DDD.md`), here are the domain events mapped to Watermill:
 
 #### Bootstrap Context Events
 
@@ -632,7 +632,7 @@ package events
 
 import "time"
 
-// BootstrapStarted is published when a user runs `alty init`
+// BootstrapStarted is published when a user runs `alto init`
 type BootstrapStarted struct {
     SessionID string    `json:"session_id"`
     ProjectDir string   `json:"project_dir"`
@@ -755,7 +755,7 @@ type ToolConfigsGenerated struct {
 }
 ```
 
-### Command Design for alty
+### Command Design for alto
 
 ```go
 // commands/bootstrap.go
@@ -890,7 +890,7 @@ func RegisterBootstrapHandlers(
 }
 ```
 
-This maps directly to alty's DDD Policy pattern: "Whenever [event], then [command]."
+This maps directly to alto's DDD Policy pattern: "Whenever [event], then [command]."
 
 ---
 
@@ -984,7 +984,7 @@ Source: [Watermill Benchmarks](https://watermill.io/),
 
 ### Alternative: SQLite Backend (v1.5+)
 
-Watermill 1.5 introduced SQLite as a pub/sub backend. This is interesting for alty because:
+Watermill 1.5 introduced SQLite as a pub/sub backend. This is interesting for alto because:
 
 - **Single binary** -- no external processes (like GoChannel)
 - **Persistent** -- survives process restarts (unlike GoChannel)
@@ -1023,7 +1023,7 @@ Phase 3 (Scale):        External NATS (if ever needed -- unlikely for CLI tool)
 
 ## 7. Watermill 1.5 Release Notes
 
-Released as v1.5.1 on September 2, 2024. Key changes relevant to alty:
+Released as v1.5.1 on September 2, 2024. Key changes relevant to alto:
 
 ### New Features
 
@@ -1119,7 +1119,7 @@ ThreeDotsLabs defines durable execution as having three requirements:
 2. **Idempotency** -- handlers can safely process the same event multiple times
 3. **Atomicity** -- all state changes in a handler succeed or fail together
 
-For alty, this matters when generating artifacts (PRD, DDD docs, tickets). If the CLI crashes mid-pipeline, idempotent handlers can safely re-run without corrupting output.
+For alto, this matters when generating artifacts (PRD, DDD docs, tickets). If the CLI crashes mid-pipeline, idempotent handlers can safely re-run without corrupting output.
 
 Source: [Durable Execution with SQLite](https://threedots.tech/post/sqlite-durable-execution/)
 
@@ -1134,7 +1134,7 @@ However, Watermill can be used as the **transport layer** for an event sourcing 
 - Projections built via Watermill event handlers
 - Sagas orchestrated via command/event patterns
 
-For alty, event sourcing is not needed. The CQRS component (commands + events without event store) is sufficient.
+For alto, event sourcing is not needed. The CQRS component (commands + events without event store) is sufficient.
 
 Source: [Watermill README](https://github.com/ThreeDotsLabs/watermill),
 [eventhorizon comparison](https://github.com/looplab/eventhorizon) (provides full ES, Watermill does not)
@@ -1154,22 +1154,22 @@ Source: [pkg.go.dev cqrs package](https://pkg.go.dev/github.com/ThreeDotsLabs/wa
 
 ---
 
-## Summary: Watermill Integration Strategy for alty
+## Summary: Watermill Integration Strategy for alto
 
 ### Architecture Mapping
 
 ```
-alty Domain Layer (Go)
+alto Domain Layer (Go)
     |
     +-- domain/events/          Go structs (PRDGenerated, DiscoveryCompleted, etc.)
     +-- domain/commands/        Go structs (GeneratePRD, StartBootstrap, etc.)
     |
-alty Application Layer
+alto Application Layer
     |
     +-- application/ports/      EventPublisher, CommandSender interfaces (Protocols)
     +-- application/handlers/   Command handlers + event handlers (policies)
     |
-alty Infrastructure Layer
+alto Infrastructure Layer
     |
     +-- infrastructure/messaging/
         +-- watermill_adapter.go   Implements ports using Watermill

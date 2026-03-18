@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/discovery/infrastructure"
+	"github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/discovery/infrastructure"
 )
 
 func newAnsweringSession(t *testing.T) *domain.DiscoverySession {

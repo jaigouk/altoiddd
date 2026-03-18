@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	discoveryinfra "github.com/alty-cli/alty/internal/discovery/infrastructure"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	discoveryinfra "github.com/alto-cli/alto/internal/discovery/infrastructure"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
 )
 
 // Compile-time interface check.

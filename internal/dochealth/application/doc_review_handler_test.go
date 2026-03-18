@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/dochealth/application"
-	"github.com/alty-cli/alty/internal/dochealth/domain"
+	"github.com/alto-cli/alto/internal/dochealth/application"
+	"github.com/alto-cli/alto/internal/dochealth/domain"
 )
 
 // ---------------------------------------------------------------------------

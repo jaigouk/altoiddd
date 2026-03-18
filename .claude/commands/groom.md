@@ -15,7 +15,7 @@ The grooming checklist in CLAUDE.md has 8 steps. Steps 1-7 are mechanical checks
 ## Usage
 
 ```
-/groom alty-0m9.2           # Deep-groom one ticket
+/groom alto-0m9.2           # Deep-groom one ticket
 ```
 
 Always groom ONE ticket at a time. Never batch-groom.
@@ -56,7 +56,7 @@ Verify (can be done from the ticket description alone):
 Run automated verification of any quantitative claims in the ticket:
 
 ```bash
-alty ticket-verify <ticket-id>
+alto ticket-verify <ticket-id>
 ```
 
 This detects claims like "**14 findings**" and verifies them against actual command output.

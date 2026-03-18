@@ -1,4 +1,4 @@
-# CI workflow for alty (Go)
+# CI workflow for alto (Go)
 name: CI
 
 on:

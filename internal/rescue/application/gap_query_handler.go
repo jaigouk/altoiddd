@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // StackProfileDetector detects the stack profile for a project directory.
@@ -70,7 +70,7 @@ func (r GapReport) FormatReport() string {
 	}
 
 	if r.HasRequired {
-		sb.WriteString("\nRequired gaps found. Run 'alty init --existing' to fix.\n")
+		sb.WriteString("\nRequired gaps found. Run 'alto init --existing' to fix.\n")
 	}
 
 	return sb.String()

@@ -3,7 +3,7 @@ last_reviewed: 2026-03-01
 owner: architecture
 status: complete
 type: spike
-ticket: alty-k7m.29
+ticket: alto-k7m.29
 ---
 
 # MCP Multi-Turn Sessions: Guided DDD Flow over MCP
@@ -23,7 +23,7 @@ The guided DDD discovery flow is a 10-question, multi-turn, stateful conversatio
 - 5 invariants enforced by the DiscoverySession aggregate
 
 MCP tools are request/response (stateless). Each tool call is independent — there is
-no built-in session concept in the MCP protocol. How should alty bridge this gap?
+no built-in session concept in the MCP protocol. How should alto bridge this gap?
 
 ## 2. Current Architecture
 
@@ -152,8 +152,8 @@ management, no multi-turn session concept. **Not applicable.**
 `sampling/createMessage`. Supports multi-turn message arrays. However:
 - Designed for AI reasoning, not application state management
 - "Not yet supported in the Claude Desktop client" (per MCP docs)
-- Would require alty's server to request LLM completions — wrong abstraction
-  (alty needs to manage question flow, not generate AI completions)
+- Would require alto's server to request LLM completions — wrong abstraction
+  (alto needs to manage question flow, not generate AI completions)
 
 | Criterion | Rating | Notes |
 |-----------|--------|-------|
@@ -492,7 +492,7 @@ Replace single `guide_ddd` tool with 6 tools per Section 5.
 - MCP Prompts: https://modelcontextprotocol.info/docs/concepts/prompts/
 - MCP Features Guide: https://workos.com/blog/mcp-features-guide
 - FastMCP GitHub: https://github.com/jlowin/fastmcp
-- alty MCP server: `src/infrastructure/mcp/server.py`
+- alto MCP server: `src/infrastructure/mcp/server.py`
 - DiscoverySession: `src/domain/models/discovery_session.py`
 - DiscoveryHandler: `src/application/commands/discovery_handler.py`
 - CLI/MCP design spike (k7m.4): `docs/research/20260222_cli_mcp_design.md`

@@ -4,7 +4,7 @@ package application
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/docimport/domain"
+	"github.com/alto-cli/alto/internal/docimport/domain"
 )
 
 // DocImporter is the port interface for importing domain models from existing documentation.

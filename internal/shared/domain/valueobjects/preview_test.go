@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ---------------------------------------------------------------------------
@@ -28,17 +28,17 @@ func TestFileActionSkipForExistingFile(t *testing.T) {
 	assert.Equal(t, "already exists", action.Reason())
 }
 
-func TestFileActionConflictRenameUsesAltySuffix(t *testing.T) {
+func TestFileActionConflictRenameUsesAltoSuffix(t *testing.T) {
 	t.Parallel()
 	action := vo.NewFileAction(
 		".claude/CLAUDE.md",
 		vo.FileActionConflictRename,
 		"existing file conflicts with template",
-		".claude/CLAUDE_alty.md",
+		".claude/CLAUDE_alto.md",
 	)
 	assert.Equal(t, vo.FileActionConflictRename, action.ActionType())
-	assert.Equal(t, ".claude/CLAUDE_alty.md", action.RenamedPath())
-	assert.Contains(t, action.RenamedPath(), "_alty")
+	assert.Equal(t, ".claude/CLAUDE_alto.md", action.RenamedPath())
+	assert.Contains(t, action.RenamedPath(), "_alto")
 }
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-module github.com/alty-cli/alty
+module github.com/alto-cli/alto
 
 go 1.26
 

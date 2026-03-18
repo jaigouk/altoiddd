@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	fitnessdomain "github.com/alto-cli/alto/internal/fitness/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // ---------------------------------------------------------------------------
-// Classification Flow Integration Tests (alty-cli-r3i.4)
+// Classification Flow Integration Tests (alto-cli-r3i.4)
 //
 // Verifies that subdomain classification flows through to:
 // 1. Fitness function contract strictness

@@ -1,7 +1,7 @@
 # Research: Go Rewrite Evaluation
 
 **Date:** 2026-03-06
-**Spike Ticket:** alty-4fr
+**Spike Ticket:** alto-4fr
 **Status:** Final
 
 ## Summary
@@ -55,11 +55,11 @@ Domain layer has **ZERO async code**. Application handlers are sync orchestrator
 Build script (single Makefile target):
 ```makefile
 release:
-	CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o dist/alty-linux-amd64
-	CGO_ENABLED=0 GOOS=linux   GOARCH=arm64 go build -ldflags="-s -w" -o dist/alty-linux-arm64
-	CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build -ldflags="-s -w" -o dist/alty-darwin-amd64
-	CGO_ENABLED=0 GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o dist/alty-darwin-arm64
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/alty-windows-amd64.exe
+	CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o dist/alto-linux-amd64
+	CGO_ENABLED=0 GOOS=linux   GOARCH=arm64 go build -ldflags="-s -w" -o dist/alto-linux-arm64
+	CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build -ldflags="-s -w" -o dist/alto-darwin-amd64
+	CGO_ENABLED=0 GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o dist/alto-darwin-arm64
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/alto-windows-amd64.exe
 ```
 
 ### 3. Migration gap analysis
@@ -97,7 +97,7 @@ release:
 | Linting | ruff + mypy | **Go compiler + golangci-lint** | Superior | Compiler does 80% for free |
 | RLM pattern | Custom Python (iterative search+reason) | **Native Go** | High | No code-exec sandbox needed; goroutines can parallelize |
 
-**Tool-agnostic by design:** alty is NOT locked to Claude Code. It generates configs for multiple AI coding tools — all use JSON-based MCP config:
+**Tool-agnostic by design:** alto is NOT locked to Claude Code. It generates configs for multiple AI coding tools — all use JSON-based MCP config:
 
 | Tool | Written in | Config | MCP Support |
 |------|-----------|--------|-------------|
@@ -167,11 +167,11 @@ See full details: [docs/research/20260306_2_go_ddd_event_systems_messaging.md](2
 ### Package Layout
 
 ```
-alty/
+alto/
 ├── cmd/
-│   ├── alty/                          # CLI binary entry point
+│   ├── alto/                          # CLI binary entry point
 │   │   └── main.go                    # Cobra root, DI wiring
-│   └── alty-mcp/                      # MCP server binary entry point
+│   └── alto-mcp/                      # MCP server binary entry point
 │       └── main.go                    # MCP server with Go SDK
 ├── internal/
 │   ├── domain/                        # ZERO external deps (compiler-enforced)
@@ -391,8 +391,8 @@ This preserves TDD discipline and ensures feature parity.
 4. **Zero async in domain** — 70% of the codebase translates mechanically
 5. **Watermill + GoChannel** provides DDD-native event system with NATS upgrade path
 6. **Single binary** eliminates the #1 adoption friction (Python 3.12 + uv requirement)
-7. **Tool-agnostic** — alty supports Claude Code, Cursor, Roo Code, OpenCode/Crush. All use JSON MCP configs. Go rewrite does not change this; OpenCode itself is Go-native.
-8. **Local LLM ecosystem** — Ollama (164K stars, Go-native) + sashabaranov/go-openai (universal client) gives alty local LLM support without Python dependency
+7. **Tool-agnostic** — alto supports Claude Code, Cursor, Roo Code, OpenCode/Crush. All use JSON MCP configs. Go rewrite does not change this; OpenCode itself is Go-native.
+8. **Local LLM ecosystem** — Ollama (164K stars, Go-native) + sashabaranov/go-openai (universal client) gives alto local LLM support without Python dependency
 
 **Approach:** Domain-first, test-driven, layer-by-layer migration over 6-8 weeks.
 

@@ -58,7 +58,7 @@ echo ""
 
 # Build test binary
 echo "Building test binary..."
-go build -o /tmp/alty-stress ./cmd/alty
+go build -o /tmp/alto-stress ./cmd/alto
 
 # Create temp directory for stress tests
 TEMP_DIR=$(mktemp -d)
@@ -69,7 +69,7 @@ echo ""
 # Test 1: Large number of tools (100 tools)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "Test 1: Scanning 100 tools"
-TOOLS_DIR="$TEMP_DIR/many-tools/.alty/knowledge/tools"
+TOOLS_DIR="$TEMP_DIR/many-tools/.alto/knowledge/tools"
 mkdir -p "$TOOLS_DIR"
 
 for i in $(seq 1 100); do
@@ -84,14 +84,14 @@ last_verified = "2024-01-01"
 EOF
 done
 
-check_time "Scan 100 tools with stale entries" 2.0 /tmp/alty-stress kb drift
+check_time "Scan 100 tools with stale entries" 2.0 /tmp/alto-stress kb drift
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 2: Many versions per tool (50 versions each)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "Test 2: Scanning tool with 50 versions"
-VERSIONS_DIR="$TEMP_DIR/many-versions/.alty/knowledge/tools/mega-tool"
+VERSIONS_DIR="$TEMP_DIR/many-versions/.alto/knowledge/tools/mega-tool"
 mkdir -p "$VERSIONS_DIR"
 
 {
@@ -105,7 +105,7 @@ mkdir -p "$VERSIONS_DIR"
     done
 } > "$VERSIONS_DIR/_meta.toml"
 
-check_time "Scan tool with 50 versions" 1.0 /tmp/alty-stress kb drift
+check_time "Scan tool with 50 versions" 1.0 /tmp/alto-stress kb drift
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ echo "Test 3: Empty knowledge base (fast path)"
 EMPTY_DIR="$TEMP_DIR/empty"
 mkdir -p "$EMPTY_DIR"
 
-check_time "Empty knowledge base returns quickly" 0.5 /tmp/alty-stress kb drift
+check_time "Empty knowledge base returns quickly" 0.5 /tmp/alto-stress kb drift
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ echo ""
 # ─────────────────────────────────────────────────────────────────────────────
 echo "Test 6: Repeated runs (10x)"
 for i in $(seq 1 10); do
-    /tmp/alty-stress kb drift >/dev/null 2>&1
+    /tmp/alto-stress kb drift >/dev/null 2>&1
 done
 echo -e "  ${GREEN}[OK]${NC} 10 consecutive runs completed"
 echo ""
@@ -149,7 +149,7 @@ echo ""
 # ─────────────────────────────────────────────────────────────────────────────
 # Cleanup
 # ─────────────────────────────────────────────────────────────────────────────
-rm -f /tmp/alty-stress
+rm -f /tmp/alto-stress
 
 echo "═══════════════════════════════════════════════════════════════"
 if [[ $ERRORS -eq 0 ]]; then

@@ -2,7 +2,7 @@
 last_reviewed: 2026-02-22
 owner: researcher
 status: complete
-spike: alty-k7m.2
+spike: alto-k7m.2
 ---
 
 # Guided DDD Question Framework — Consolidated Research Report
@@ -224,7 +224,7 @@ subdomains:
 > 11. Both parties leave Reviews
 
 **Q4:** "What's the most important thing that can go wrong?"
-> Sitter cancels last-minute. Owner needs emergency rebooking. Payment must be refunded from escrow. Sitter takes a reliability penalty.
+> Sitter cancels last-minute. Owner needs emergency rebooking. Payment must be refunded from escrow. Sitter takes a reliability penalto.
 
 **Q5:** "Other important workflows?"
 > Sitter verification (background check, identity), Dispute resolution (owner claims sitter didn't show up), Sitter onboarding (set up profile, availability, rates).
@@ -236,7 +236,7 @@ subdomains:
 **Q7 (policies):**
 - Whenever Booking Confirmed → Escrow Payment
 - Whenever Sitting Completed → Release Payment (after 24h grace period)
-- Whenever Sitter Cancels within 48h → Reliability Penalty applied
+- Whenever Sitter Cancels within 48h → Reliability Penalto applied
 - Whenever 3+ Dispute Resolved against Sitter → Sitter Suspended
 
 **Q8 (read models):**
@@ -264,7 +264,7 @@ subdomains:
 
 ### Generated Artifacts (automated from answers)
 
-**Ubiquitous Language:** Pet Owner, Pet Sitter, Pet Profile, Sitter Listing, Booking Request, Booking Confirmed, Escrow, Sitting Completed, Review, Reliability Penalty, Dispute, Sitter Verified.
+**Ubiquitous Language:** Pet Owner, Pet Sitter, Pet Profile, Sitter Listing, Booking Request, Booking Confirmed, Escrow, Sitting Completed, Review, Reliability Penalto, Dispute, Sitter Verified.
 
 **Bounded Contexts:** Booking (Core), Trust (Core), Payments (Supporting), Identity (Generic).
 

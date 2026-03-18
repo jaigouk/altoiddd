@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // TicketReader is a handler-local interface for reading ticket data.

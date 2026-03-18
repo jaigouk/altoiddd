@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
-	mcptools "github.com/alty-cli/alty/internal/mcp"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
+	"github.com/alto-cli/alto/internal/composition"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
+	mcptools "github.com/alto-cli/alto/internal/mcp"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
 )
 
 // --- Test stubs ---
@@ -125,7 +125,7 @@ func TestKnowledgeDDDResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/ddd/aggregates",
+		URI: "alto://knowledge/ddd/aggregates",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -139,7 +139,7 @@ func TestKnowledgeDDDResource_NotFound(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	_, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/ddd/nonexistent",
+		URI: "alto://knowledge/ddd/nonexistent",
 	})
 	require.Error(t, err)
 }
@@ -154,7 +154,7 @@ func TestKnowledgeToolsResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/tools/claude-code/setup",
+		URI: "alto://knowledge/tools/claude-code/setup",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -171,7 +171,7 @@ func TestKnowledgeConventionsResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/conventions/testing",
+		URI: "alto://knowledge/conventions/testing",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -188,7 +188,7 @@ func TestKnowledgeCrossToolResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/cross-tool/migration",
+		URI: "alto://knowledge/cross-tool/migration",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -215,7 +215,7 @@ func TestProjectDomainModelResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://project/myproject/domain-model",
+		URI: "alto://project/myproject/domain-model",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -237,7 +237,7 @@ func TestProjectDomainModelResource_FileNotFound(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	_, err = session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://project/emptyproject/domain-model",
+		URI: "alto://project/emptyproject/domain-model",
 	})
 	require.Error(t, err)
 }
@@ -258,7 +258,7 @@ func TestProjectArchitectureResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://project/myproject/architecture",
+		URI: "alto://project/myproject/architecture",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -281,7 +281,7 @@ func TestProjectPRDResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://project/myproject/prd",
+		URI: "alto://project/myproject/prd",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -300,7 +300,7 @@ func TestProjectResource_PathTraversal(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	_, err = session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://project/../../../etc/domain-model",
+		URI: "alto://project/../../../etc/domain-model",
 	})
 	require.Error(t, err)
 }
@@ -318,7 +318,7 @@ func TestTicketsReadyResource_HappyPath(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://tickets/ready",
+		URI: "alto://tickets/ready",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -332,7 +332,7 @@ func TestTicketsReadyResource_NoTickets(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://tickets/ready",
+		URI: "alto://tickets/ready",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -349,7 +349,7 @@ func TestTicketsByIDResource_ValidID_PlaceholderError(t *testing.T) {
 
 	// Valid ID format, but handler returns placeholder error (bd binary not available)
 	_, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://tickets/k7m.12",
+		URI: "alto://tickets/k7m.12",
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "requires bd binary")
@@ -361,7 +361,7 @@ func TestTicketsByIDResource_InvalidID(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	_, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://tickets/'; cat /etc/passwd",
+		URI: "alto://tickets/'; cat /etc/passwd",
 	})
 	require.Error(t, err)
 }
@@ -380,7 +380,7 @@ func TestPersonasResource_HappyPath(t *testing.T) {
 	// Use the first persona's type (URL-safe slug, e.g. "solo_developer")
 	pType := string(personas[0].PersonaType())
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: fmt.Sprintf("alty://personas/%s", pType),
+		URI: fmt.Sprintf("alto://personas/%s", pType),
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -393,7 +393,7 @@ func TestPersonasResource_NotFound(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	_, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://personas/nonexistent",
+		URI: "alto://personas/nonexistent",
 	})
 	require.Error(t, err)
 }
@@ -415,11 +415,11 @@ func TestListResourceTemplates(t *testing.T) {
 	for i, rt := range result.ResourceTemplates {
 		uris[i] = rt.URITemplate
 	}
-	assert.Contains(t, uris, "alty://knowledge/ddd/{topic}")
-	assert.Contains(t, uris, "alty://knowledge/tools/{tool}/{subtopic}")
-	assert.Contains(t, uris, "alty://project/{dir}/domain-model")
-	assert.Contains(t, uris, "alty://tickets/{id}")
-	assert.Contains(t, uris, "alty://personas/{type}")
+	assert.Contains(t, uris, "alto://knowledge/ddd/{topic}")
+	assert.Contains(t, uris, "alto://knowledge/tools/{tool}/{subtopic}")
+	assert.Contains(t, uris, "alto://project/{dir}/domain-model")
+	assert.Contains(t, uris, "alto://tickets/{id}")
+	assert.Contains(t, uris, "alto://personas/{type}")
 }
 
 func TestListResources(t *testing.T) {
@@ -429,9 +429,9 @@ func TestListResources(t *testing.T) {
 
 	result, err := session.ListResources(context.Background(), nil)
 	require.NoError(t, err)
-	// 1 static: alty://tickets/ready
+	// 1 static: alto://tickets/ready
 	assert.Len(t, result.Resources, 1)
-	assert.Equal(t, "alty://tickets/ready", result.Resources[0].URI)
+	assert.Equal(t, "alto://tickets/ready", result.Resources[0].URI)
 }
 
 // --- Edge case tests ---
@@ -443,7 +443,7 @@ func TestKnowledgeResource_EmptyTopic(t *testing.T) {
 
 	// URI with empty topic segment — should fail SafeComponent
 	_, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/ddd/",
+		URI: "alto://knowledge/ddd/",
 	})
 	require.Error(t, err)
 }
@@ -456,7 +456,7 @@ func TestKnowledgeToolsResource_ValidHyphenatedName(t *testing.T) {
 	session := setupResourceServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: "alty://knowledge/tools/claude-code/overview",
+		URI: "alto://knowledge/tools/claude-code/overview",
 	})
 	require.NoError(t, err)
 	assert.Contains(t, result.Contents[0].Text, "Claude Code overview")
@@ -474,7 +474,7 @@ func TestPersonasResource_CaseInsensitive(t *testing.T) {
 	// Try uppercase version — should match case-insensitively
 	upperType := strings.ToUpper(pType)
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: fmt.Sprintf("alty://personas/%s", upperType),
+		URI: fmt.Sprintf("alto://personas/%s", upperType),
 	})
 	require.NoError(t, err)
 	assert.Contains(t, result.Contents[0].Text, "Name: "+personas[0].Name())
@@ -497,7 +497,7 @@ func TestSessionStatusResource_ReturnsAvailableActions(t *testing.T) {
 	session := setupResourceServerWithCoordinator(t, app, coord)
 
 	result, err := session.ReadResource(context.Background(), &mcp.ReadResourceParams{
-		URI: fmt.Sprintf("alty://session/%s/status", sessionID),
+		URI: fmt.Sprintf("alto://session/%s/status", sessionID),
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)

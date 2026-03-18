@@ -1,6 +1,6 @@
 ---
 title: New Project
-description: Full walkthrough of bootstrapping a new project with alty — from README to tickets
+description: Full walkthrough of bootstrapping a new project with alto — from README to tickets
 sidebar:
   order: 3
 ---
@@ -28,15 +28,15 @@ Freelancers see a dashboard with revenue summaries and outstanding amounts.
 Supports multiple currencies with automatic exchange rate lookup.
 ```
 
-## Step 2: Preview with `alty init`
+## Step 2: Preview with `alto init`
 
-Run `alty init` to see what alty will create:
+Run `alto init` to see what alto will create:
 
 ```bash
-alty init
+alto init
 ```
 
-alty shows a preview of every file it plans to create or install. Nothing is written until you confirm:
+alto shows a preview of every file it plans to create or install. Nothing is written until you confirm:
 
 ```
 Detecting tools...
@@ -47,8 +47,8 @@ Global settings scan:
   OK — no conflicts detected
 
 Project files:
-  CREATE  .alty/config.toml
-  CREATE  .alty/knowledge/ddd/...          (12 files)
+  CREATE  .alto/config.toml
+  CREATE  .alto/knowledge/ddd/...          (12 files)
   CREATE  .claude/CLAUDE.md
   CREATE  .claude/agents/developer.md
   ...
@@ -56,21 +56,21 @@ Project files:
 Proceed? [y/N]
 ```
 
-If alty detects conflicts between your global AI tool settings and what it wants to set locally, it shows each conflict and lets you choose a resolution. See [AI Tool Integration](/guides/ai-tool-integration) for details.
+If alto detects conflicts between your global AI tool settings and what it wants to set locally, it shows each conflict and lets you choose a resolution. See [AI Tool Integration](/guides/ai-tool-integration) for details.
 
 Use `--dry-run` to see the preview without any confirmation prompt:
 
 ```bash
-alty init --dry-run
+alto init --dry-run
 ```
 
 ## Step 3: Guided discovery
 
-After you confirm the preview, alty starts the guided DDD discovery flow. This is the same flow you can run independently with `alty guide`.
+After you confirm the preview, alto starts the guided DDD discovery flow. This is the same flow you can run independently with `alto guide`.
 
 ### Persona detection
 
-alty first asks which role best describes you:
+alto first asks which role best describes you:
 
 - **Solo Developer** — building a project with AI assistance
 - **Team Lead** — setting up conventions for a team
@@ -78,11 +78,11 @@ alty first asks which role best describes you:
 - **Product Owner** — defining what to build, not how
 - **Domain Expert** — describing a business problem
 
-Your choice determines the **register** — the language level alty uses in its questions. Developers get technical DDD terminology. Product owners and domain experts get plain business language. The same questions extract the same domain knowledge either way.
+Your choice determines the **register** — the language level alto uses in its questions. Developers get technical DDD terminology. Product owners and domain experts get plain business language. The same questions extract the same domain knowledge either way.
 
 ### The 10 questions
 
-alty asks 10 questions in 5 phases:
+alto asks 10 questions in 5 phases:
 
 | Phase | Questions | What it captures |
 |-------|-----------|-----------------|
@@ -92,19 +92,19 @@ alty asks 10 questions in 5 phases:
 | Events | Q7-Q8 | What happens in the domain, business rules |
 | Boundaries | Q9-Q10 | Where the model splits, what terms are ambiguous |
 
-After every 3-4 questions, alty plays back its understanding for you to confirm or correct. This playback loop prevents misunderstandings from compounding.
+After every 3-4 questions, alto plays back its understanding for you to confirm or correct. This playback loop prevents misunderstandings from compounding.
 
-You can skip any question with an explicit acknowledgment, but alty requires at least 5 key questions (Q1, Q3, Q4, Q9, Q10) for a viable domain model.
+You can skip any question with an explicit acknowledgment, but alto requires at least 5 key questions (Q1, Q3, Q4, Q9, Q10) for a viable domain model.
 
 Use `--no-tui` for plain stdin/stdout mode (useful for screen readers or scripted input):
 
 ```bash
-alty guide --no-tui
+alto guide --no-tui
 ```
 
 ## Step 4: Artifact generation
 
-Once discovery completes, alty generates artifacts in a pipeline:
+Once discovery completes, alto generates artifacts in a pipeline:
 
 ```
 Discovery answers
@@ -141,7 +141,7 @@ With your project seeded, hand it to your AI coding tool. The generated agent pe
 
 ```bash
 # Check that quality gates are configured
-alty check
+alto check
 
 # See what tickets are ready for implementation
 bd ready
@@ -149,6 +149,6 @@ bd ready
 
 ## Tips
 
-- Answer questions in your own language. alty builds the ubiquitous language from your words, not from developer jargon.
-- The complexity budget matters. Not every subdomain needs full DDD treatment — let alty classify subdomains so you invest effort where it counts.
+- Answer questions in your own language. alto builds the ubiquitous language from your words, not from developer jargon.
+- The complexity budget matters. Not every subdomain needs full DDD treatment — let alto classify subdomains so you invest effort where it counts.
 - Review the generated ubiquitous language glossary in `docs/DDD.md`. If a term doesn't match how you talk about the domain, correct it now. Code will use these names exactly.

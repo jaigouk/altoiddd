@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/llm"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
 )
 
 // Compile-time interface check.

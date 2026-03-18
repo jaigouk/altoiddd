@@ -13,22 +13,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	challengeapp "github.com/alty-cli/alty/internal/challenge/application"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/composition"
-	discoveryapp "github.com/alty-cli/alty/internal/discovery/application"
-	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
-	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
-	fitnessapp "github.com/alty-cli/alty/internal/fitness/application"
-	knowledgeapp "github.com/alty-cli/alty/internal/knowledge/application"
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
-	researchapp "github.com/alty-cli/alty/internal/research/application"
-	researchdomain "github.com/alty-cli/alty/internal/research/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	ttapp "github.com/alty-cli/alty/internal/tooltranslation/application"
+	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/composition"
+	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
+	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
+	fitnessapp "github.com/alto-cli/alto/internal/fitness/application"
+	knowledgeapp "github.com/alto-cli/alto/internal/knowledge/application"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
+	researchapp "github.com/alto-cli/alto/internal/research/application"
+	researchdomain "github.com/alto-cli/alto/internal/research/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
 )
 
 // =============================================================================
@@ -152,13 +152,13 @@ func (s *integrationChallenger) GenerateChallenges(_ context.Context, _ *ddd.Dom
 // Setup Helpers
 // =============================================================================
 
-// echoInput is the typed input for the echo tool (mirrors cmd/alty-mcp).
+// echoInput is the typed input for the echo tool (mirrors cmd/alto-mcp).
 type echoInput struct {
 	Message string `json:"message" jsonschema:"the message to echo back"`
 }
 
 // setupIntegrationServer creates a fully-wired MCP server with all tools,
-// resources, and middleware — same wiring as newServer() in cmd/alty-mcp/main.go
+// resources, and middleware — same wiring as newServer() in cmd/alto-mcp/main.go
 // but using exported registration functions.
 func setupIntegrationServer(t *testing.T, app *composition.App) *gomcp.ClientSession {
 	t.Helper()
@@ -646,7 +646,7 @@ func TestIntegration_KnowledgeResources(t *testing.T) {
 
 	// Read a knowledge resource via template URI.
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/ddd/bounded-contexts",
+		URI: "alto://knowledge/ddd/bounded-contexts",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -662,7 +662,7 @@ func TestIntegration_ProjectDocResources(t *testing.T) {
 	// because the dir isn't in allowed roots. This verifies the security pipeline
 	// runs without panic and returns a proper error.
 	_, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://project/some-project/docs/PRD.md",
+		URI: "alto://project/some-project/docs/PRD.md",
 	})
 	// Expected: resource handler returns error since dir isn't in allowed roots.
 	require.Error(t, err)
@@ -675,7 +675,7 @@ func TestIntegration_TicketResources(t *testing.T) {
 
 	// Static ticket resource.
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://tickets/ready",
+		URI: "alto://tickets/ready",
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Contents, 1)
@@ -708,7 +708,7 @@ func TestIntegration_ResourceNotFound(t *testing.T) {
 
 	// Try to read a nonexistent knowledge entry.
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/nonexistent/topic",
+		URI: "alto://knowledge/nonexistent/topic",
 	})
 	// Resource not found returns an error (either protocol error or content error).
 	if err != nil {
@@ -768,7 +768,7 @@ func TestIntegration_NonExistentResource(t *testing.T) {
 	session := setupIntegrationServer(t, app)
 
 	_, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://nonexistent/resource/path",
+		URI: "alto://nonexistent/resource/path",
 	})
 	// Nonexistent resource should produce an error.
 	require.Error(t, err)
@@ -969,7 +969,7 @@ func TestIntegration_KnowledgeToolsResource(t *testing.T) {
 	session := setupIntegrationServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/tools/claude-code/setup",
+		URI: "alto://knowledge/tools/claude-code/setup",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -983,7 +983,7 @@ func TestIntegration_KnowledgeConventionsResource(t *testing.T) {
 	session := setupIntegrationServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/conventions/naming",
+		URI: "alto://knowledge/conventions/naming",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -997,7 +997,7 @@ func TestIntegration_KnowledgeCrossToolResource(t *testing.T) {
 	session := setupIntegrationServer(t, app)
 
 	result, err := session.ReadResource(context.Background(), &gomcp.ReadResourceParams{
-		URI: "alty://knowledge/cross-tool/shared-configs",
+		URI: "alto://knowledge/cross-tool/shared-configs",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)

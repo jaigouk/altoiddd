@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // DetectProfile detects the project stack from manifest files.

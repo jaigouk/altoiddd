@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // TicketPreview holds the generated ticket plan ready for user review.
@@ -52,7 +52,7 @@ func (h *TicketGenerationHandler) BuildPreview(
 	profile vo.StackProfile,
 ) (*TicketPreview, error) {
 	if model.IsEmpty() {
-		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alty guide' or 'alty import' first: %w",
+		return nil, fmt.Errorf("model is empty, nothing to generate; run 'alto guide' or 'alto import' first: %w",
 			domainerrors.ErrInvariantViolation)
 	}
 

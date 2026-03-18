@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/ticket/infrastructure"
+	"github.com/alto-cli/alto/internal/ticket/infrastructure"
 )
 
 func TestShellCommandRunner_RunAllowedCommand(t *testing.T) {

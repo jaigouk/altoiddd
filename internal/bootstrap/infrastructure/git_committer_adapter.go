@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
+	bootstrapapp "github.com/alto-cli/alto/internal/bootstrap/application"
 )
 
 // GitCommitterAdapter implements GitCommitter using the git CLI via subprocess.

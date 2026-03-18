@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get started with alty in 5 minutes — from install to your first structured project
+description: Get started with alto in 5 minutes — from install to your first structured project
 sidebar:
   order: 1
 ---
@@ -15,13 +15,13 @@ Get from zero to a fully structured project in under 5 minutes.
 ## Install
 
 ```bash
-go install github.com/alty-cli/alty/cmd/alty@latest
+go install github.com/alto-cli/alto/cmd/alto@latest
 ```
 
 Verify the installation:
 
 ```bash
-alty version
+alto version
 ```
 
 ## Create your first project
@@ -38,31 +38,31 @@ It tracks which specials sell out and suggests reorders.
 EOF
 ```
 
-Run `alty init` with the `-y` flag to skip confirmation prompts:
+Run `alto init` with the `-y` flag to skip confirmation prompts:
 
 ```bash
-alty init -y
+alto init -y
 ```
 
-alty detects your installed AI coding tools, then walks you through 10 guided DDD discovery questions. Answer each one in plain language — alty adapts its vocabulary to your expertise level.
+alto detects your installed AI coding tools, then walks you through 10 guided DDD discovery questions. Answer each one in plain language — alto adapts its vocabulary to your expertise level.
 
 ## What you get
 
-After answering the questions, alty generates:
+After answering the questions, alto generates:
 
 | Artifact | Purpose |
 |----------|---------|
 | `docs/PRD.md` | Product requirements derived from your answers |
 | `docs/DDD.md` | Domain model — bounded contexts, aggregates, ubiquitous language |
 | `docs/ARCHITECTURE.md` | Technical architecture informed by the domain model |
-| `.alty/` | Project config, knowledge base, doc maintenance registry |
+| `.alto/` | Project config, knowledge base, doc maintenance registry |
 | `.claude/agents/` | AI agent personas (developer, tech-lead, QA, etc.) |
 | `.beads/` | Dependency-ordered tickets ready for implementation |
 
 ## Next steps
 
-- Run `alty guide` to re-enter the guided discovery flow
-- Run `alty gap` to see what's missing from your project structure
-- Run `alty check` to verify quality gates pass
+- Run `alto guide` to re-enter the guided discovery flow
+- Run `alto gap` to see what's missing from your project structure
+- Run `alto check` to verify quality gates pass
 - Read the [New Project Guide](/guides/new-project) for the full walkthrough
-- Read [Concepts](/guides/concepts) to understand why alty enforces DDD before coding
+- Read [Concepts](/guides/concepts) to understand why alto enforces DDD before coding

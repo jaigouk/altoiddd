@@ -3,7 +3,7 @@ package application
 import (
 	"fmt"
 
-	"github.com/alty-cli/alty/internal/discovery/domain"
+	"github.com/alto-cli/alto/internal/discovery/domain"
 )
 
 // ToolDetector detects installed AI coding tools and scans for config conflicts.

@@ -1,12 +1,12 @@
 package valueobjects
 
-// ConflictStrategy defines how file conflicts are resolved when alty output
+// ConflictStrategy defines how file conflicts are resolved when alto output
 // would overwrite an existing user file.
 type ConflictStrategy string
 
 // Conflict strategy constants.
 const (
-	// ConflictStrategyRename renames the alty output file to avoid overwriting.
+	// ConflictStrategyRename renames the alto output file to avoid overwriting.
 	ConflictStrategyRename ConflictStrategy = "rename"
 	// ConflictStrategySkip skips writing the file entirely.
 	ConflictStrategySkip ConflictStrategy = "skip"

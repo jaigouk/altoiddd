@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/identity"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/identity"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
-// SupportedTool enumerates AI coding tools that alty can generate configurations for.
+// SupportedTool enumerates AI coding tools that alto can generate configurations for.
 type SupportedTool string
 
 // Supported tool constants.

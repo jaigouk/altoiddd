@@ -3,10 +3,10 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/rescue/application"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/rescue/application"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // Compile-time interface satisfaction checks.

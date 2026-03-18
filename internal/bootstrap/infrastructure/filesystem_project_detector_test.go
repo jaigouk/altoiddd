@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	bootstrapapp "github.com/alty-cli/alty/internal/bootstrap/application"
+	bootstrapapp "github.com/alto-cli/alto/internal/bootstrap/application"
 )
 
 // Compile-time check that FileSystemProjectDetector satisfies the port.
@@ -100,17 +100,17 @@ func TestFileSystemProjectDetector_Detect_WhenDocsFolderPresent_ExpectDocsDetect
 	assert.True(t, result.IsAmbiguous(), "docs without source should be ambiguous")
 }
 
-func TestFileSystemProjectDetector_Detect_WhenAltyConfigPresent_ExpectAltyDetected(t *testing.T) {
+func TestFileSystemProjectDetector_Detect_WhenAltoConfigPresent_ExpectAltoDetected(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alty", "config.toml"), []byte(""), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte(""), 0o644))
 
 	detector := &FileSystemProjectDetector{}
 	result, err := detector.Detect(dir)
 
 	require.NoError(t, err)
-	assert.True(t, result.HasAltyConfig())
+	assert.True(t, result.HasAltoConfig())
 }
 
 func TestFileSystemProjectDetector_Detect_WhenClaudeDirPresent_ExpectAIToolDetected(t *testing.T) {
@@ -156,8 +156,8 @@ func TestFileSystemProjectDetector_Detect_WhenFullProject_ExpectAllDetected(t *t
 	// Given: a fully set up Go project with docs and AI tools
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alty", "config.toml"), []byte(""), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte(""), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".claude"), 0o755))
 
 	detector := &FileSystemProjectDetector{}
@@ -168,7 +168,7 @@ func TestFileSystemProjectDetector_Detect_WhenFullProject_ExpectAllDetected(t *t
 	assert.Equal(t, "go", result.Language())
 	assert.Equal(t, "go.mod", result.ManifestPath())
 	assert.True(t, result.HasDocsFolder())
-	assert.True(t, result.HasAltyConfig())
+	assert.True(t, result.HasAltoConfig())
 	assert.True(t, result.HasAIToolConfig())
 	assert.True(t, result.IsExistingProject())
 	assert.False(t, result.IsAmbiguous())

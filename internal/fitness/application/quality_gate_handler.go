@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // allGates is the default set of quality gates to run.

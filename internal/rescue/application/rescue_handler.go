@@ -6,24 +6,24 @@ import (
 	"path/filepath"
 	"strings"
 
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/identity"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/identity"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
-// Required docs that any alty project should have.
+// Required docs that any alto project should have.
 var requiredDocs = []string{
 	"docs/PRD.md",
 	"docs/DDD.md",
 	"docs/ARCHITECTURE.md",
 }
 
-// Required configs that any alty project should have.
+// Required configs that any alto project should have.
 var requiredConfigs = []string{".claude/CLAUDE.md"}
 
-const branchName = "alty/init"
+const branchName = "alto/init"
 
 // RescueHandler orchestrates the rescue flow: scan -> validate -> analyze -> plan.
 type RescueHandler struct {
@@ -268,7 +268,7 @@ func IdentifyGaps(
 		}
 	}
 
-	// Check required configs (alty-universal)
+	// Check required configs (alto-universal)
 	for _, configPath := range requiredConfigs {
 		if !existingConfigs[configPath] {
 			gaps = append(gaps, rescuedomain.NewGap(
@@ -315,29 +315,29 @@ func IdentifyGaps(
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingKnowledge,
-			".alty/knowledge/",
+			".alto/knowledge/",
 			"Missing knowledge base directory",
 			rescuedomain.GapSeverityRecommended,
 		))
 	}
 
-	// Check .alty/config.toml
-	if !scan.HasAltyConfig() {
+	// Check .alto/config.toml
+	if !scan.HasAltoConfig() {
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingConfig,
-			".alty/config.toml",
-			"Missing alty project configuration",
+			".alto/config.toml",
+			"Missing alto project configuration",
 			rescuedomain.GapSeverityRecommended,
 		))
 	}
 
-	// Check .alty/maintenance/
+	// Check .alto/maintenance/
 	if !scan.HasMaintenanceDir() {
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingStructure,
-			".alty/maintenance/",
+			".alto/maintenance/",
 			"Missing doc maintenance directory",
 			rescuedomain.GapSeverityRecommended,
 		))

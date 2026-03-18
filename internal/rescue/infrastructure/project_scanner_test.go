@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
-	"github.com/alty-cli/alty/internal/rescue/infrastructure"
+	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
+	"github.com/alto-cli/alto/internal/rescue/infrastructure"
 )
 
 func TestProjectScannerImplementsPort(t *testing.T) {
@@ -163,7 +163,7 @@ func TestScanFindsInfrastructureDir(t *testing.T) {
 func TestScanFindsKnowledgeDir(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
@@ -180,30 +180,30 @@ func TestScanFindsGitDir(t *testing.T) {
 	assert.True(t, scan.HasGit())
 }
 
-func TestScanFindsAltyConfig(t *testing.T) {
+func TestScanFindsAltoConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alty", "config.toml"), []byte("[alty]"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte("[alto]"), 0o644))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
-	assert.True(t, scan.HasAltyConfig())
+	assert.True(t, scan.HasAltoConfig())
 }
 
-func TestScanNoAltyConfig(t *testing.T) {
+func TestScanNoAltoConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
-	assert.False(t, scan.HasAltyConfig())
+	assert.False(t, scan.HasAltoConfig())
 }
 
 func TestScanFindsMaintenanceDir(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty", "maintenance"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "maintenance"), 0o755))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
@@ -247,7 +247,7 @@ func TestScanFullProject(t *testing.T) {
 	}
 
 	// Special dirs
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alty", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
 	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
 
 	scanner := &infrastructure.ProjectScanner{}

@@ -1,11 +1,11 @@
-// Package domain contains shared domain types for the alty application.
+// Package domain contains shared domain types for the alto application.
 package domain
 
 // ---------------------------------------------------------------------------
 // WorkflowStep Value Object
 // ---------------------------------------------------------------------------
 
-// WorkflowStep represents a named step in the alty workflow.
+// WorkflowStep represents a named step in the alto workflow.
 // Steps transition through pending → ready → completed.
 type WorkflowStep string
 

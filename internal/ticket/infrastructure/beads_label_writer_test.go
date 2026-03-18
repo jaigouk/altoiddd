@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/ticket/application"
-	"github.com/alty-cli/alty/internal/ticket/infrastructure"
+	"github.com/alto-cli/alto/internal/ticket/application"
+	"github.com/alto-cli/alto/internal/ticket/infrastructure"
 )
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ func TestBeadsLabelWriter_AddLabel_RejectsEmptyLabel(t *testing.T) {
 	writer := infrastructure.NewBeadsLabelWriter()
 	ctx := context.Background()
 
-	err := writer.AddLabel(ctx, "alty-123", "")
+	err := writer.AddLabel(ctx, "alto-123", "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "label")
@@ -65,7 +65,7 @@ func TestBeadsLabelWriter_AddLabel_RespectsContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	err := writer.AddLabel(ctx, "alty-123", "review_needed")
+	err := writer.AddLabel(ctx, "alto-123", "review_needed")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "context")
@@ -93,7 +93,7 @@ func TestBeadsLabelWriter_RemoveLabel_RejectsEmptyLabel(t *testing.T) {
 	writer := infrastructure.NewBeadsLabelWriter()
 	ctx := context.Background()
 
-	err := writer.RemoveLabel(ctx, "alty-123", "")
+	err := writer.RemoveLabel(ctx, "alto-123", "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "label")
@@ -106,7 +106,7 @@ func TestBeadsLabelWriter_RemoveLabel_RespectsContextCancellation(t *testing.T) 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	err := writer.RemoveLabel(ctx, "alty-123", "review_needed")
+	err := writer.RemoveLabel(ctx, "alto-123", "review_needed")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "context")

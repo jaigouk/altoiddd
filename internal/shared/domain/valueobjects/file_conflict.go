@@ -3,10 +3,10 @@ package valueobjects
 import (
 	"fmt"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
-// FileConflict records that an alty output file was redirected because
+// FileConflict records that an alto output file was redirected because
 // the original path already existed on disk.
 type FileConflict struct {
 	originalPath string

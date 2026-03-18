@@ -9,17 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	bootstrapdomain "github.com/alty-cli/alty/internal/bootstrap/domain"
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	fitnessdomain "github.com/alty-cli/alty/internal/fitness/domain"
-	rescuedomain "github.com/alty-cli/alty/internal/rescue/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/events"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
-	tooltranslationdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	bootstrapdomain "github.com/alto-cli/alto/internal/bootstrap/domain"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	fitnessdomain "github.com/alto-cli/alto/internal/fitness/domain"
+	rescuedomain "github.com/alto-cli/alto/internal/rescue/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/events"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
+	tooltranslationdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -340,7 +340,7 @@ func TestCrossContextTypeCompatibility(t *testing.T) {
 		require.NoError(t, analysis.SetScan(scan))
 		require.NoError(t, analysis.Analyze(nil))
 		require.NoError(t, analysis.CreatePlan(
-			rescuedomain.NewMigrationPlan("plan-1", nil, "alty/init", false),
+			rescuedomain.NewMigrationPlan("plan-1", nil, "alto/init", false),
 		))
 		require.NoError(t, analysis.BeginExecution())
 		require.NoError(t, analysis.Complete())

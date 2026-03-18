@@ -4,8 +4,8 @@ import (
 	"context"
 	"path/filepath"
 
-	ticketapp "github.com/alty-cli/alty/internal/ticket/application"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // BeadsTicketHealthAdapter implements TicketHealth by constructing a

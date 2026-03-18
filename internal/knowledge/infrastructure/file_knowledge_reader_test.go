@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
-	"github.com/alty-cli/alty/internal/knowledge/infrastructure"
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
+	"github.com/alto-cli/alto/internal/knowledge/infrastructure"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // -- Helpers --

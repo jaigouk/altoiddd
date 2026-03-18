@@ -135,8 +135,8 @@ Source: https://platform.claude.com/docs/en/agent-sdk/python
 - The Agent SDK spawns a CLI subprocess, adding ~1-3s startup overhead per `query()` call
 - It includes the full agent loop (tool execution, permissions, etc.) even when you don't need it
 
-**For alty's use case (e.g., ChallengerPort that asks probing questions):**
-The Agent SDK is appropriate because alty needs more than simple text generation -- it needs structured output, system prompts, and potentially multi-turn conversations. But the `anthropic` SDK would also work and be lighter.
+**For alto's use case (e.g., ChallengerPort that asks probing questions):**
+The Agent SDK is appropriate because alto needs more than simple text generation -- it needs structured output, system prompts, and potentially multi-turn conversations. But the `anthropic` SDK would also work and be lighter.
 
 ### Q3: API surface -- structured responses?
 
@@ -198,7 +198,7 @@ Alternative providers supported:
 **Important policy note from Anthropic:**
 > Unless previously approved, Anthropic does not allow third party developers to offer claude.ai login or rate limits for their products, including agents built on the Claude Agent SDK. Please use the API key authentication methods described in this document instead.
 
-This means alty **cannot** piggyback on the user's Claude Code subscription. Users must have their own API key (or use Bedrock/Vertex).
+This means alto **cannot** piggyback on the user's Claude Code subscription. Users must have their own API key (or use Bedrock/Vertex).
 
 Source: https://platform.claude.com/docs/en/agent-sdk/overview
 
@@ -356,7 +356,7 @@ Key options for non-interactive use:
 | **Cost tracking**             | `ResultMessage.total_cost_usd`         | Token counts in response                |
 | **Best for**                  | Agent workflows, code tasks            | Simple LLM calls, direct API access     |
 
-### Recommendation for alty
+### Recommendation for alto
 
 **For simple LLM calls** (e.g., "challenge this domain model", "generate DDD questions"):
 Use the `anthropic` SDK directly. It is lighter, faster (no subprocess), and gives you more control.
@@ -364,9 +364,9 @@ Use the `anthropic` SDK directly. It is lighter, faster (no subprocess), and giv
 **For agent workflows** (e.g., "scan this codebase and generate a gap analysis"):
 Use the Claude Agent SDK. The built-in tools (file reading, grep, bash) and agent loop save significant implementation effort.
 
-**alty likely needs both:**
+**alto likely needs both:**
 - `anthropic` SDK for `ChallengerPort`, `QuestionGeneratorPort`, `AnalysisPort` (simple text/structured output)
-- `claude-agent-sdk` if alty wants to offer an "AI-assisted" mode that reads the user's codebase and generates artifacts
+- `claude-agent-sdk` if alto wants to offer an "AI-assisted" mode that reads the user's codebase and generates artifacts
 
 ---
 
@@ -388,7 +388,7 @@ The SDK uses the same Anthropic API pricing. The `ResultMessage` includes:
 
 ### Compared to Direct API
 
-Using the `anthropic` SDK directly avoids the subprocess overhead entirely. For alty's use case where we might make 5-10 LLM calls during a bootstrap session, the subprocess overhead adds ~10-30 seconds total vs near-instant with direct API calls.
+Using the `anthropic` SDK directly avoids the subprocess overhead entirely. For alto's use case where we might make 5-10 LLM calls during a bootstrap session, the subprocess overhead adds ~10-30 seconds total vs near-instant with direct API calls.
 
 ---
 
@@ -401,13 +401,13 @@ Using the `anthropic` SDK directly avoids the subprocess overhead entirely. For 
 | Subprocess overhead for simple calls        | Medium   | Use `anthropic` SDK for simple prompts              |
 | Requires API key (cannot use CLI auth)      | Low      | Users already need API key for any programmatic use |
 | Node.js bundled binary size                 | Low      | ~100MB disk; one-time install cost                  |
-| No sync API (async only)                    | Low      | alty already uses async patterns                    |
+| No sync API (async only)                    | Low      | alto already uses async patterns                    |
 
 ---
 
 ## 7. Recommendation
 
-### For alty's LLM integration needs, use a dual-SDK approach:
+### For alto's LLM integration needs, use a dual-SDK approach:
 
 1. **`anthropic` SDK** (direct API) for all Port implementations that need simple LLM calls:
    - `ChallengerPort` -- challenge domain models
@@ -416,7 +416,7 @@ Using the `anthropic` SDK directly avoids the subprocess overhead entirely. For 
    - Lower latency, no subprocess overhead, lighter dependency
 
 2. **`claude-agent-sdk`** (Agent SDK) for advanced agent workflows if/when needed:
-   - Codebase scanning in rescue mode (`alty init --existing`)
+   - Codebase scanning in rescue mode (`alto init --existing`)
    - AI-assisted gap analysis that needs to read files and run commands
    - Multi-step workflows where Claude needs tool access
 
@@ -427,7 +427,7 @@ Using the `anthropic` SDK directly avoids the subprocess overhead entirely. For 
 
 ### Key Finding
 
-The Claude Agent SDK is an **agent framework** (subprocess-based, with built-in tools and agent loop), not a simple LLM API client. For alty's port adapters that just need structured text generation, the direct `anthropic` SDK is the better fit. The Agent SDK is the right choice only when you need Claude to autonomously use tools (read files, run commands, etc.).
+The Claude Agent SDK is an **agent framework** (subprocess-based, with built-in tools and agent loop), not a simple LLM API client. For alto's port adapters that just need structured text generation, the direct `anthropic` SDK is the better fit. The Agent SDK is the right choice only when you need Claude to autonomously use tools (read files, run commands, etc.).
 
 ### Next Steps
 

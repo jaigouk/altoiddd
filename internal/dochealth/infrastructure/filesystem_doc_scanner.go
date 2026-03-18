@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	dochealthdomain "github.com/alty-cli/alty/internal/dochealth/domain"
+	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
 )
 
 var (

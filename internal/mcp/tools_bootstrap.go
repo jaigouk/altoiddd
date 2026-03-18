@@ -8,9 +8,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/alty-cli/alty/internal/composition"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/composition"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // --- Input structs ---
@@ -224,7 +224,7 @@ func generateArtifactsHandler(app *composition.App, store *ModelStore) func(cont
 		store.Put(input.SessionID, preview.Model, profile)
 
 		return textResult(fmt.Sprintf("Artifacts generated.\nsession_id: %s\nproject_dir: %s\n"+
-			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alty/bounded_context_map.yaml\n"+
+			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alto/bounded_context_map.yaml\n"+
 			"Domain model cached for generate_fitness, generate_tickets, generate_configs.",
 			input.SessionID, projectDir))
 	}
@@ -637,7 +637,7 @@ func generateArtifactsHandlerWithCoordinator(app *composition.App, coord *shared
 		}
 
 		return textResult(fmt.Sprintf("Artifacts generated.\nsession_id: %s\nproject_dir: %s\n"+
-			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alty/bounded_context_map.yaml\n"+
+			"Files written: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md, .alto/bounded_context_map.yaml\n"+
 			"Session context stored for generate_fitness, generate_tickets, generate_configs.",
 			input.SessionID, projectDir))
 	}

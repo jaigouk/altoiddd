@@ -1,4 +1,4 @@
-# alty.ai Website
+# alto.ai Website
 
 Static site built with [Astro](https://astro.build/) + [Starlight](https://starlight.astro.build/) + [Tailwind](https://tailwindcss.com/) + [daisyUI](https://daisyui.com/).
 

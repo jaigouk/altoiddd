@@ -1,7 +1,7 @@
 .PHONY: build test smoke lint vet fmt deadcode check ci release release-all clean
 
 # Version injection
-VERSION_PKG := github.com/alty-cli/alty/internal/composition
+VERSION_PKG := github.com/alto-cli/alto/internal/composition
 VERSION := $(shell git describe --tags --always --dirty)
 LDFLAGS := -s -w -X $(VERSION_PKG).Version=$(VERSION)
 
@@ -10,8 +10,8 @@ PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
 # Build binaries
 build:
-	go build ./cmd/alty
-	go build ./cmd/alty-mcp
+	go build ./cmd/alto
+	go build ./cmd/alto-mcp
 
 # Run all tests with race detector
 test:
@@ -19,7 +19,7 @@ test:
 
 # Run smoke tests (requires building binary first via TestMain)
 smoke:
-	go test -tags smoke -v -timeout 60s ./cmd/alty/
+	go test -tags smoke -v -timeout 60s ./cmd/alto/
 
 # Run golangci-lint v2
 lint:
@@ -44,8 +44,8 @@ check: build vet test lint deadcode
 
 # Build release binaries (current platform)
 release:
-	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/alty ./cmd/alty
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/alty-mcp ./cmd/alty-mcp
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/alto ./cmd/alto
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/alto-mcp ./cmd/alto-mcp
 
 # Build release binaries for all platforms (5 platforms × 2 binaries = 10 total)
 release-all:
@@ -54,10 +54,10 @@ release-all:
 		GOARCH=$$(echo $$platform | cut -d/ -f2); \
 		ext=""; \
 		if [ "$$GOOS" = "windows" ]; then ext=".exe"; fi; \
-		echo "Building alty-$$GOOS-$$GOARCH$$ext"; \
-		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="$(LDFLAGS)" -o bin/alty-$$GOOS-$$GOARCH$$ext ./cmd/alty; \
-		echo "Building alty-mcp-$$GOOS-$$GOARCH$$ext"; \
-		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="-s -w" -o bin/alty-mcp-$$GOOS-$$GOARCH$$ext ./cmd/alty-mcp; \
+		echo "Building alto-$$GOOS-$$GOARCH$$ext"; \
+		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="$(LDFLAGS)" -o bin/alto-$$GOOS-$$GOARCH$$ext ./cmd/alto; \
+		echo "Building alto-mcp-$$GOOS-$$GOARCH$$ext"; \
+		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="-s -w" -o bin/alto-mcp-$$GOOS-$$GOARCH$$ext ./cmd/alto-mcp; \
 	done
 
 # CI target (alias for check)

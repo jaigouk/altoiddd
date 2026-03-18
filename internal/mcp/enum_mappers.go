@@ -3,8 +3,8 @@ package mcp
 import (
 	"fmt"
 
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
-	ttdomain "github.com/alty-cli/alty/internal/tooltranslation/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 var qualityGateMap = map[string]vo.QualityGate{

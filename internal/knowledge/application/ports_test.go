@@ -3,8 +3,8 @@ package application_test
 import (
 	"context"
 
-	"github.com/alty-cli/alty/internal/knowledge/application"
-	knowledgedomain "github.com/alty-cli/alty/internal/knowledge/domain"
+	"github.com/alto-cli/alto/internal/knowledge/application"
+	knowledgedomain "github.com/alto-cli/alto/internal/knowledge/domain"
 )
 
 // Compile-time interface satisfaction checks.

@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/composition"
-	discoverydomain "github.com/alty-cli/alty/internal/discovery/domain"
-	shareddomain "github.com/alty-cli/alty/internal/shared/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/events"
-	"github.com/alty-cli/alty/internal/shared/infrastructure/eventbus"
-	ticketdomain "github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/composition"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
+	shareddomain "github.com/alto-cli/alto/internal/shared/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/events"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/eventbus"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 // ---------------------------------------------------------------------------

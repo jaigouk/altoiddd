@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strings"
 
-	importdomain "github.com/alty-cli/alty/internal/docimport/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	importdomain "github.com/alto-cli/alto/internal/docimport/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // MarkdownDocParser parses DDD.md files into a DomainModel aggregate.

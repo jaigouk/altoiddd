@@ -1,4 +1,4 @@
-// Package valueobjects provides shared value objects for the alty domain.
+// Package valueobjects provides shared value objects for the alto domain.
 package valueobjects
 
 import (

@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	dochealthapp "github.com/alty-cli/alty/internal/dochealth/application"
-	"github.com/alty-cli/alty/internal/dochealth/domain"
+	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
+	"github.com/alto-cli/alto/internal/dochealth/domain"
 )
 
 // Compile-time interface check.
@@ -31,7 +31,7 @@ func NewDocReviewAdapter(scanner *FilesystemDocScanner) *DocReviewAdapter {
 // ReviewableDocs returns docs that are due for review by scanning the registry
 // and checking frontmatter dates.
 func (a *DocReviewAdapter) ReviewableDocs(ctx context.Context, projectDir string) ([]domain.DocStatus, error) {
-	registryPath := filepath.Join(projectDir, ".alty", "maintenance", "doc-registry.toml")
+	registryPath := filepath.Join(projectDir, ".alto", "maintenance", "doc-registry.toml")
 
 	entries, err := a.scanner.LoadRegistry(registryPath)
 	if err != nil {

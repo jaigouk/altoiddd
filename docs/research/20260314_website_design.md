@@ -1,14 +1,14 @@
 # Research: Website Design System — Tailwind + daisyUI + Starlight
 
 **Date:** 2026-03-14
-**Spike Ticket:** alty-cli-qzv.3
+**Spike Ticket:** alto-cli-qzv.3
 **Status:** Final
 
 ## Summary
 
 Starlight + daisyUI v5 integration is feasible but requires careful CSS layering and theme-switcher overrides. daisyUI v5 uses a pure CSS `@plugin` syntax (no `tailwind.config.js`), which simplifies Astro integration but introduces a `data-theme` conflict with Starlight's built-in dark/light switcher. The recommended approach is to override Starlight's `ThemeProvider` and `ThemeSelect` components to bridge both systems, using CSS cascade layers (`@layer`) to ensure daisyUI styles override Starlight defaults without !important hacks.
 
-**Recommendation:** Use daisyUI v5 with a custom theme (`alty-dark` / `alty-light`), override Starlight's theme components, and adopt a restrained "developer-tool" aesthetic inspired by Linear and Warp — not the neon-glow cliché.
+**Recommendation:** Use daisyUI v5 with a custom theme (`alto-dark` / `alto-light`), override Starlight's theme components, and adopt a restrained "developer-tool" aesthetic inspired by Linear and Warp — not the neon-glow cliché.
 
 ---
 
@@ -50,7 +50,7 @@ Source: [Starlight Overrides Reference](https://starlight.astro.build/reference/
   const theme = localStorage.getItem('starlight-theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   // Map to daisyUI theme names
-  const daisyTheme = theme === 'dark' ? 'alty-dark' : 'alty-light';
+  const daisyTheme = theme === 'dark' ? 'alto-dark' : 'alto-light';
   document.documentElement.setAttribute('data-theme', daisyTheme);
 </script>
 ```
@@ -122,7 +122,7 @@ import starlight from "@astrojs/starlight";
 export default defineConfig({
   integrations: [
     starlight({
-      title: "alty",
+      title: "alto",
       customCss: ["./src/styles/global.css"],
       components: {
         ThemeProvider: "./src/components/ThemeProvider.astro",
@@ -148,7 +148,7 @@ daisyUI v5 is configured entirely in CSS via the `@plugin` directive:
 @import "@astrojs/starlight-tailwind";
 
 @plugin "daisyui" {
-  themes: alty-light --default, alty-dark --prefersdark;
+  themes: alto-light --default, alto-dark --prefersdark;
   root: ":root";
   logs: false;
 }
@@ -162,7 +162,7 @@ daisyUI v5 uses `@plugin "daisyui/theme"` for custom themes with oklch colors:
 
 ```css
 @plugin "daisyui/theme" {
-  name: "alty-dark";
+  name: "alto-dark";
   default: false;
   prefersdark: true;
   color-scheme: dark;
@@ -269,7 +269,7 @@ Inspired by Linear's restraint, Supabase's developer-native feel, and Warp's cha
 - **Warm gold accent** — breaks the cold-color monotony, adds personality
 - **Deep blue-gray base** — not pure black (avoids harsh contrast), not purple-tinted (avoids AI slop)
 
-**Light theme variant (`alty-light`):**
+**Light theme variant (`alto-light`):**
 
 | Token | oklch Value | Usage |
 |-------|-------------|-------|
@@ -419,7 +419,7 @@ Sources:
 | Centered-everything layout | Left-aligned text with asymmetric grid (like Linear) |
 | "Built with AI" aesthetic | "Built by developers" aesthetic — show the tool in action |
 
-### 6.3 The "alty Test"
+### 6.3 The "alto Test"
 
 Before shipping any design, ask: *"If I showed this to a senior developer, would they think an AI generated the landing page?"* If yes, simplify.
 
@@ -456,7 +456,7 @@ website/
 1. Set up Astro + Starlight (vanilla, no customization)
 2. Add Tailwind v4 via `@tailwindcss/vite`
 3. Add daisyUI v5 with `@plugin "daisyui"` in CSS
-4. Define `alty-dark` and `alty-light` custom themes
+4. Define `alto-dark` and `alto-light` custom themes
 5. Override `ThemeProvider` and `ThemeSelect` to bridge systems
 6. Add CSS cascade layer definitions
 7. Map daisyUI variables → Starlight variables

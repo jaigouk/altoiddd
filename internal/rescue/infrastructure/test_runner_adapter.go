@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	rescueapp "github.com/alty-cli/alty/internal/rescue/application"
+	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
 )
 
 // TestRunnerAdapter implements TestRunner using filesystem detection and subprocess execution.

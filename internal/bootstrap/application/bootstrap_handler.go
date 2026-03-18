@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // ToolDetector detects installed AI coding tools and scans for config conflicts.
@@ -30,19 +30,19 @@ type ContentProvider interface {
 	ContentFor(path string, config domain.ProjectConfig) string
 }
 
-// plannedFiles lists files alty plans to create in a new project.
+// plannedFiles lists files alto plans to create in a new project.
 var plannedFiles = []string{
 	"docs/PRD.md",
 	"docs/DDD.md",
 	"docs/ARCHITECTURE.md",
 	"AGENTS.md",
-	".alty/config.toml",
-	".alty/knowledge/_index.toml",
-	".alty/maintenance/doc-registry.toml",
+	".alto/config.toml",
+	".alto/knowledge/_index.toml",
+	".alto/maintenance/doc-registry.toml",
 }
 
 // ScaffoldCommitMessage is the commit message used when auto-committing scaffold files.
-const ScaffoldCommitMessage = "chore: initialize alty project structure"
+const ScaffoldCommitMessage = "chore: initialize alto project structure"
 
 // BootstrapHandler orchestrates the preview -> confirm -> execute bootstrap flow.
 type BootstrapHandler struct {

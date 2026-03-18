@@ -1,0 +1,46 @@
+[_meta]
+last_verified = "2026-02-22"
+verified_against = "AGENTS.md spec v1"
+changelog_url = ""
+source_urls = [
+    "https://github.com/anthropics/agent-specification",
+]
+confidence = "high"
+deprecated = false
+deprecated_since = ""
+superseded_by = ""
+next_review_date = "2026-05-22"
+schema_version = 1
+
+[standard]
+name = "AGENTS.md"
+steward = "Agentic AI Foundation (Linux Foundation)"
+format = "markdown"
+location = "project root"
+
+[tool_support]
+claude_code = { native = false, notes = "Uses CLAUDE.md instead; can co-exist" }
+cursor = { native = true, since = "2026" }
+roo_code = { native = true, since = "v3.0" }
+opencode = { native = true, fallback_to = "CLAUDE.md" }
+
+[implications]
+description = "alto should generate both AGENTS.md (for cross-tool) and tool-specific configs (for native features)"
+
+[example]
+content = """
+# AGENTS.md
+
+## Project Overview
+This project uses DDD + TDD + SOLID principles.
+
+## Architecture
+- Domain layer: src/domain/ (no external dependencies)
+- Application layer: src/application/ (ports and use cases)
+- Infrastructure layer: src/infrastructure/ (adapters)
+
+## Conventions
+- TDD: Write failing test first, then implement
+- SOLID: Single responsibility, depend on abstractions
+- Python 3.12+ with type annotations
+"""

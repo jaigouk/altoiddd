@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
 // DocHealthStatus enumerates possible document health states.

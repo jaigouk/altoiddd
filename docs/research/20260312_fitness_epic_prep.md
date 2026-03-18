@@ -1,12 +1,12 @@
 # Research: Architecture Fitness Functions Epic Prep
 
 **Date:** 2026-03-12
-**Spike Ticket:** alty-cli-cyf
+**Spike Ticket:** alto-cli-cyf
 **Status:** Final
 
 ## Summary
 
-The fitness context exists but generates **Python output** (import-linter TOML + pytestarch tests) while the project is now **Go**. DDD.md references depguard but **depguard is GPL-3.0**, which poses license risks for commercial users of alty. The epic should refactor fitness generation to produce Go-compatible output using **arch-go (MIT)** — a tool that provides both positive (`shouldOnlyDependsOn`) and negative (`shouldNotDependsOn`) dependency rules with compliance thresholds.
+The fitness context exists but generates **Python output** (import-linter TOML + pytestarch tests) while the project is now **Go**. DDD.md references depguard but **depguard is GPL-3.0**, which poses license risks for commercial users of alto. The epic should refactor fitness generation to produce Go-compatible output using **arch-go (MIT)** — a tool that provides both positive (`shouldOnlyDependsOn`) and negative (`shouldNotDependsOn`) dependency rules with compliance thresholds.
 
 ## Research Questions Answered
 
@@ -30,8 +30,8 @@ The fitness context exists but generates **Python output** (import-linter TOML +
 
 **DDD.md Story 4 (lines 106-129) specifies:**
 ```
-4. alty CLI generates depguard rules in .golangci.yml
-5. alty CLI generates architecture test files per bounded context
+4. alto CLI generates depguard rules in .golangci.yml
+5. alto CLI generates architecture test files per bounded context
 8. Tests run as part of quality gates (go vet + golangci-lint + go test -race + fitness functions)
 ```
 
@@ -47,9 +47,9 @@ depguard:
       files:
         - "**/internal/**/domain/**/*.go"
       deny:
-        - pkg: "github.com/alty-cli/alty/internal/**/application"
+        - pkg: "github.com/alto-cli/alto/internal/**/application"
           desc: "Domain layer must not import application layer"
-        - pkg: "github.com/alty-cli/alty/internal/**/infrastructure"
+        - pkg: "github.com/alto-cli/alto/internal/**/infrastructure"
           desc: "Domain layer must not import infrastructure layer"
 ```
 
@@ -57,7 +57,7 @@ These rules are correct but not auto-generated from DDD.md bounded context map.
 
 ### Q3: PRD/DDD.md/ARCHITECTURE.md freshness
 
-**alty doc-health output:**
+**alto doc-health output:**
 - PRD.md: OK
 - DDD.md: OK
 - ARCHITECTURE.md: OK
@@ -124,7 +124,7 @@ dependenciesRules:
 **Why arch-go over depguard + go-arch-lint:**
 1. **MIT license** — enterprise-friendly, no GPL contamination risk
 2. **Both rule types** — `shouldOnlyDependsOn` (positive) + `shouldNotDependsOn` (negative)
-3. **Compliance thresholds** — essential for `alty init --existing` (brownfield adoption)
+3. **Compliance thresholds** — essential for `alto init --existing` (brownfield adoption)
 4. **Single tool** — no need for two tools with different configs
 
 ### Q5: arch-go auto-generation from DDD.md?
@@ -135,7 +135,7 @@ Given DDD.md bounded contexts, generate `arch-go.yml`:
 
 ```yaml
 # Auto-generated from DDD.md bounded contexts
-# Regenerate with: alty fitness generate
+# Regenerate with: alto fitness generate
 version: 1
 threshold:
   compliance: 100  # Strict for greenfield
@@ -171,7 +171,7 @@ dependenciesRules:
         - "github.com/{project}/internal/challenge/**"  # No relationship
 ```
 
-**For brownfield projects (`alty init --existing`):**
+**For brownfield projects (`alto init --existing`):**
 ```yaml
 threshold:
   compliance: 80   # Allow gradual adoption
@@ -193,9 +193,9 @@ threshold:
 **Option D: arch-go only** (MIT)
 
 Rationale:
-1. **MIT license** — no GPL contamination risk for commercial users of alty
+1. **MIT license** — no GPL contamination risk for commercial users of alto
 2. **Both rule types** — `shouldOnlyDependsOn` (like go-arch-lint) + `shouldNotDependsOn` (like depguard)
-3. **Compliance thresholds** — essential for brownfield adoption (`alty init --existing`)
+3. **Compliance thresholds** — essential for brownfield adoption (`alto init --existing`)
 4. **Single tool** — simpler than depguard + go-arch-lint combo
 5. **Active maintenance** — v2.1.2 released Feb 2026
 6. **DDD-friendly patterns** — `**.domain.**` wildcards cover all bounded contexts
@@ -228,9 +228,9 @@ Rationale:
 - Document the GPL license rationale
 
 ### Phase 4: CLI Commands
-- `alty fitness generate [--preview]` — generates `arch-go.yml`
-- `alty fitness generate --brownfield` — generates with 80% thresholds
-- `alty check --fitness` — runs `golangci-lint run` + `arch-go`
+- `alto fitness generate [--preview]` — generates `arch-go.yml`
+- `alto fitness generate --brownfield` — generates with 80% thresholds
+- `alto check --fitness` — runs `golangci-lint run` + `arch-go`
 
 ## Follow-up Tickets
 
@@ -240,10 +240,10 @@ Rationale:
 | 2 | Implement RenderArchGoYAML in FitnessTestSuite | Task | #1 |
 | 3 | Remove depguard from .golangci.yml (GPL→MIT migration) | Task | #2 |
 | 4 | Update FitnessGenerationHandler for Go output | Task | #3 |
-| 5 | Add `alty fitness generate` CLI command | Task | #4 |
-| 6 | Update `alty check --fitness` for Go (arch-go) | Task | #5 |
+| 5 | Add `alto fitness generate` CLI command | Task | #4 |
+| 6 | Update `alto check --fitness` for Go (arch-go) | Task | #5 |
 | 7 | Create bounded_context_map.yaml schema and parser | Task | None |
-| 8 | Generate alty's own fitness configs from BC map | Task | #7, #2 |
+| 8 | Generate alto's own fitness configs from BC map | Task | #7, #2 |
 
 ## References
 
@@ -255,8 +255,8 @@ Rationale:
 ## License Decision Rationale
 
 **Why not depguard (GPL-3.0)?**
-- alty is a tool that generates configs for user projects
-- If users adopt depguard via alty's recommendations, their CI pipelines run GPL-3.0 software
+- alto is a tool that generates configs for user projects
+- If users adopt depguard via alto's recommendations, their CI pipelines run GPL-3.0 software
 - Some enterprises have blanket GPL restrictions, even for tooling
 - arch-go provides equivalent capability under MIT license
 

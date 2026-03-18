@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	sharedapp "github.com/alty-cli/alty/internal/shared/application"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
 // DDDVersionParser parses and applies version metadata to DDD.md content.

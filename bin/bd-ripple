@@ -10,8 +10,8 @@ set -euo pipefail
 #   bd-ripple <closed-ticket-id> [context summary]
 #
 # Examples:
-#   bd-ripple alty-k7m.9 "Research found 4+1 feature strategy; P0 features changed"
-#   bd-ripple alty-k7m.9   # uses close_reason as context
+#   bd-ripple alto-k7m.9 "Research found 4+1 feature strategy; P0 features changed"
+#   bd-ripple alto-k7m.9   # uses close_reason as context
 #
 # What it does:
 #   1. Reads the closed ticket's close_reason (or uses provided summary)
@@ -186,14 +186,14 @@ done
 echo ""
 echo "Done. $FLAGGED ticket(s) flagged for review."
 
-# Run claim verification on flagged tickets (Step 7 of alty-7xe)
-if command -v alty &> /dev/null; then
+# Run claim verification on flagged tickets (Step 7 of alto-7xe)
+if command -v alto &> /dev/null; then
     echo ""
     echo "=== Claim Verification ==="
     for tid in "${TO_FLAG[@]}"; do
         echo ""
         echo "Verifying claims in $tid..."
-        alty ticket-verify "$tid" 2>&1 || true
+        alto ticket-verify "$tid" 2>&1 || true
     done
 fi
 

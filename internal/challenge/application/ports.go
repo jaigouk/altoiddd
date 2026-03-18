@@ -4,8 +4,8 @@ package application
 import (
 	"context"
 
-	challengedomain "github.com/alty-cli/alty/internal/challenge/domain"
-	"github.com/alty-cli/alty/internal/shared/domain/ddd"
+	challengedomain "github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 )
 
 // Challenger generates typed challenges that probe a DomainModel for gaps:

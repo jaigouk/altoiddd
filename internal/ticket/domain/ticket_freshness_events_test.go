@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alty-cli/alty/internal/ticket/domain"
+	"github.com/alto-cli/alto/internal/ticket/domain"
 )
 
 func TestTicketFlagged(t *testing.T) {

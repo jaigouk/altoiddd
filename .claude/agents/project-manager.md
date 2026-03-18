@@ -92,8 +92,8 @@ internal/{context}/domain/        # Domain layer per bounded context
 internal/{context}/application/   # Application layer per bounded context
 internal/{context}/infrastructure/ # Infrastructure layer per bounded context
 internal/shared/domain/           # Shared kernel (errors, events, VOs, DDD types)
-cmd/alty/                         # CLI entry point (Cobra)
-cmd/alty-mcp/                     # MCP server entry point
+cmd/alto/                         # CLI entry point (Cobra)
+cmd/alto-mcp/                     # MCP server entry point
 ```
 
 ## Go Ticket Conventions

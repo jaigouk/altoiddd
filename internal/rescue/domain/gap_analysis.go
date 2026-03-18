@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	domainerrors "github.com/alty-cli/alty/internal/shared/domain/errors"
-	"github.com/alty-cli/alty/internal/shared/domain/identity"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/identity"
 )
 
 // GapType classifies a structural gap found during project analysis.
@@ -58,7 +58,7 @@ type ProjectScan struct {
 	hasKnowledgeDir   bool
 	hasAgentsMD       bool
 	hasGit            bool
-	hasAltyConfig     bool
+	hasAltoConfig     bool
 	hasMaintenanceDir bool
 }
 
@@ -66,7 +66,7 @@ type ProjectScan struct {
 func NewProjectScan(
 	projectDir string,
 	existingDocs, existingConfigs, existingStructure []string,
-	hasKnowledgeDir, hasAgentsMD, hasGit, hasAltyConfig, hasMaintenanceDir bool,
+	hasKnowledgeDir, hasAgentsMD, hasGit, hasAltoConfig, hasMaintenanceDir bool,
 ) ProjectScan {
 	ed := make([]string, len(existingDocs))
 	copy(ed, existingDocs)
@@ -82,7 +82,7 @@ func NewProjectScan(
 		hasKnowledgeDir:   hasKnowledgeDir,
 		hasAgentsMD:       hasAgentsMD,
 		hasGit:            hasGit,
-		hasAltyConfig:     hasAltyConfig,
+		hasAltoConfig:     hasAltoConfig,
 		hasMaintenanceDir: hasMaintenanceDir,
 	}
 }
@@ -120,10 +120,10 @@ func (s ProjectScan) ExistingStructure() []string {
 	return out
 }
 
-// HasAltyConfig returns whether the project has .alty/config.toml.
-func (s ProjectScan) HasAltyConfig() bool { return s.hasAltyConfig }
+// HasAltoConfig returns whether the project has .alto/config.toml.
+func (s ProjectScan) HasAltoConfig() bool { return s.hasAltoConfig }
 
-// HasMaintenanceDir returns whether the project has .alty/maintenance/.
+// HasMaintenanceDir returns whether the project has .alto/maintenance/.
 func (s ProjectScan) HasMaintenanceDir() bool { return s.hasMaintenanceDir }
 
 // Gap is a single structural gap found during project analysis.
@@ -177,7 +177,7 @@ func NewMigrationPlan(planID string, gaps []Gap, branchName string, skipAgentsMD
 	g := make([]Gap, len(gaps))
 	copy(g, gaps)
 	if branchName == "" {
-		branchName = "alty/init"
+		branchName = "alto/init"
 	}
 	return MigrationPlan{
 		planID:       planID,

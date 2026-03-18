@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/alty-cli/alty/internal/bootstrap/application"
-	"github.com/alty-cli/alty/internal/bootstrap/domain"
+	"github.com/alto-cli/alto/internal/bootstrap/application"
+	"github.com/alto-cli/alto/internal/bootstrap/domain"
 )
 
 // Compile-time check that ContentProviderAdapter satisfies ContentProvider.
@@ -19,11 +19,11 @@ type ContentProviderAdapter struct{}
 // ContentFor returns the generated content for a planned file path.
 func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectConfig) string {
 	switch path {
-	case ".alty/config.toml":
-		return AltyConfigContent(config)
-	case ".alty/knowledge/_index.toml":
+	case ".alto/config.toml":
+		return AltoConfigContent(config)
+	case ".alto/knowledge/_index.toml":
 		return KnowledgeIndexContent()
-	case ".alty/maintenance/doc-registry.toml":
+	case ".alto/maintenance/doc-registry.toml":
 		return DocRegistryContent()
 	default:
 		// Doc stubs (PRD.md, DDD.md, ARCHITECTURE.md, AGENTS.md)
@@ -32,10 +32,10 @@ func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectCo
 	}
 }
 
-// AltyConfigContent returns valid TOML for .alty/config.toml.
-func AltyConfigContent(config domain.ProjectConfig) string {
+// AltoConfigContent returns valid TOML for .alto/config.toml.
+func AltoConfigContent(config domain.ProjectConfig) string {
 	var b strings.Builder
-	b.WriteString("# alty project configuration\n\n[project]\n")
+	b.WriteString("# alto project configuration\n\n[project]\n")
 	fmt.Fprintf(&b, "name = %q\n", config.Name())
 
 	if config.Language() != "" {
@@ -71,11 +71,11 @@ func AltyConfigContent(config domain.ProjectConfig) string {
 	return b.String()
 }
 
-// KnowledgeIndexContent returns valid TOML for .alty/knowledge/_index.toml.
+// KnowledgeIndexContent returns valid TOML for .alto/knowledge/_index.toml.
 func KnowledgeIndexContent() string {
-	return `# alty knowledge base index
+	return `# alto knowledge base index
 #
-# Sections map to subdirectories under .alty/knowledge/.
+# Sections map to subdirectories under .alto/knowledge/.
 # Each section contains RLM-addressable documents.
 
 [knowledge]
@@ -95,9 +95,9 @@ description = "TDD, SOLID, quality gate references"
 `
 }
 
-// DocRegistryContent returns valid TOML for .alty/maintenance/doc-registry.toml.
+// DocRegistryContent returns valid TOML for .alto/maintenance/doc-registry.toml.
 func DocRegistryContent() string {
-	return `# alty document registry
+	return `# alto document registry
 #
 # Tracks which docs to monitor, their owners, and review cadence.
 

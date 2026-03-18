@@ -2,7 +2,7 @@
 package domain
 
 import (
-	vo "github.com/alty-cli/alty/internal/shared/domain/valueobjects"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // GeneratedEpic is an epic grouping tickets for one bounded context.
