@@ -3,7 +3,8 @@ import starlight from '@astrojs/starlight';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://alto.ai',
+  site: 'https://jaigouk.com',
+  base: '/altoiddd/',
   integrations: [
     starlight({
       title: 'alto',

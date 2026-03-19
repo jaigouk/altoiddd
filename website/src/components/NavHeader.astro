@@ -3,21 +3,22 @@
  * NavHeader — sticky top nav with logo, links, and CTA.
  * Left-aligned logo with monospace prompt character.
  */
+const base = import.meta.env.BASE_URL;
 ---
 
 <header class="nav-header">
   <div class="nav-inner">
-    <a href="/" class="nav-logo" aria-label="alto home">
+    <a href={base} class="nav-logo" aria-label="alto home">
       <span class="nav-logo-prompt">&gt;_</span>
       <span class="nav-logo-text">alto</span>
     </a>
 
     <nav class="nav-links" aria-label="Main navigation">
-      <a href="/guides/quickstart/">Quick Start</a>
-      <a href="/guides/concepts/">Concepts</a>
+      <a href={`${base}guides/quickstart/`}>Quick Start</a>
+      <a href={`${base}guides/concepts/`}>Concepts</a>
     </nav>
 
-    <a href="/guides/quickstart/" class="nav-cta">
+    <a href={`${base}guides/quickstart/`} class="nav-cta">
       Get Started
     </a>
   </div>

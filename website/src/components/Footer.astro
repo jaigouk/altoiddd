@@ -2,12 +2,13 @@
 /**
  * Footer — minimal footer with logo, nav columns, copyright.
  */
+const base = import.meta.env.BASE_URL;
 ---
 
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand">
-      <a href="/" class="footer-logo" aria-label="alto home">
+      <a href={base} class="footer-logo" aria-label="alto home">
         <span class="footer-logo-prompt">&gt;_</span>
         <span class="footer-logo-text">alto</span>
       </a>
@@ -17,15 +18,15 @@
     <div class="footer-nav">
       <div class="footer-col">
         <p class="footer-col-title">Setup</p>
-        <a href="/guides/quickstart/">Quick Start</a>
-        <a href="/guides/installation/">Installation</a>
-        <a href="/guides/new-project/">New Project</a>
+        <a href={`${base}guides/quickstart/`}>Quick Start</a>
+        <a href={`${base}guides/installation/`}>Installation</a>
+        <a href={`${base}guides/new-project/`}>New Project</a>
       </div>
       <div class="footer-col">
         <p class="footer-col-title">Reference</p>
-        <a href="/guides/concepts/">Concepts</a>
-        <a href="/guides/cli-reference/">CLI Reference</a>
-        <a href="/guides/ai-tool-integration/">AI Tools</a>
+        <a href={`${base}guides/concepts/`}>Concepts</a>
+        <a href={`${base}guides/cli-reference/`}>CLI Reference</a>
+        <a href={`${base}guides/ai-tool-integration/`}>AI Tools</a>
       </div>
     </div>
   </div>

@@ -1,6 +1,6 @@
-# alto.ai Website
+# AltoiDDD Website
 
-Static site built with [Astro](https://astro.build/) + [Starlight](https://starlight.astro.build/) + [Tailwind](https://tailwindcss.com/) + [daisyUI](https://daisyui.com/).
+Static site for [jaigouk.com/altoiddd](https://jaigouk.com/altoiddd), built with [Astro](https://astro.build/) + [Starlight](https://starlight.astro.build/) + [Tailwind](https://tailwindcss.com/) + [daisyUI](https://daisyui.com/).
 
 ## Development
 
@@ -30,14 +30,10 @@ Guide content lives in `../docs/guides/*.md` and is loaded via Astro's `glob()` 
 
 ## Deployment
 
-### Cloudflare Pages (recommended)
+### GitHub Pages (via GitHub Actions)
 
-1. Connect your git repository to Cloudflare Pages
-2. Set build configuration:
-   - Build command: `cd website && npm run build`
-   - Build output directory: `website/dist`
-   - Root directory: `/`
-3. Deploy triggers on push to main
+The site deploys automatically to `https://jaigouk.com/altoiddd` when changes are pushed to `main`.
+See `.github/workflows/website.yaml` for the workflow.
 
 ### Manual deployment
 
