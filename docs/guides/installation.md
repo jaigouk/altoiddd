@@ -37,7 +37,7 @@ Beads is optional for basic project bootstrapping but required for ticket genera
 ### From source (recommended)
 
 ```bash
-go install github.com/alto-cli/alto/cmd/alto@latest
+go install github.com/jaigouk/altoiddd/cmd/alto@latest
 ```
 
 This places the `alto` binary in your `$GOPATH/bin` (typically `~/go/bin`). Make sure that directory is in your `PATH`:
@@ -80,7 +80,7 @@ alto detects which of these are installed and generates appropriate configuratio
 ## Upgrading
 
 ```bash
-go install github.com/alto-cli/alto/cmd/alto@latest
+go install github.com/jaigouk/altoiddd/cmd/alto@latest
 ```
 
 Check the current version:

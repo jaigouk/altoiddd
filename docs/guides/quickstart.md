@@ -15,7 +15,7 @@ Get from zero to a fully structured project in under 5 minutes.
 ## Install
 
 ```bash
-go install github.com/alto-cli/alto/cmd/alto@latest
+go install github.com/jaigouk/altoiddd/cmd/alto@latest
 ```
 
 Verify the installation:
