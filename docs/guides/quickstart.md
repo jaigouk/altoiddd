@@ -9,10 +9,29 @@ Get from zero to a fully structured project in under 5 minutes.
 
 ## Prerequisites
 
-- Go 1.26 or later
 - A project idea (4-5 sentences is enough)
 
 ## Install
+
+Download the latest binary for your platform from the [releases page](https://github.com/jaigouk/altoiddd/releases):
+
+```bash
+# macOS (Apple Silicon)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-arm64
+chmod +x /usr/local/bin/alto
+
+# macOS (Intel)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-amd64
+chmod +x /usr/local/bin/alto
+
+# Linux (amd64)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-linux-amd64
+chmod +x /usr/local/bin/alto
+```
+
+On Windows, download `alto-windows-amd64.exe` from the [releases page](https://github.com/jaigouk/altoiddd/releases) and add it to your `PATH`.
+
+Or install from source if you have Go 1.26+:
 
 ```bash
 go install github.com/jaigouk/altoiddd/cmd/alto@latest

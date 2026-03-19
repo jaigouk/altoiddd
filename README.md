@@ -83,11 +83,37 @@ By default, knowledge entries are considered stale after **14 days** (2 weeks). 
 
 ## Installation
 
-### From Source (requires Go 1.25+)
+### Download a release binary (recommended)
+
+Download the latest binary for your platform from the [releases page](https://github.com/jaigouk/altoiddd/releases):
 
 ```bash
-git clone <your-repo-url>
-cd alto-cli
+# macOS (Apple Silicon)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-arm64
+chmod +x /usr/local/bin/alto
+
+# macOS (Intel)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-amd64
+chmod +x /usr/local/bin/alto
+
+# Linux (amd64)
+curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-linux-amd64
+chmod +x /usr/local/bin/alto
+```
+
+On Windows, download `alto-windows-amd64.exe` from the [releases page](https://github.com/jaigouk/altoiddd/releases) and add it to your `PATH`.
+
+### From source (requires Go 1.26+)
+
+```bash
+go install github.com/jaigouk/altoiddd/cmd/alto@latest
+```
+
+Or build from the repo:
+
+```bash
+git clone https://github.com/jaigouk/altoiddd.git
+cd altoiddd
 make release
 ./bin/alto version
 ```
@@ -96,14 +122,6 @@ This produces two binaries in `bin/`:
 
 - `alto` — CLI tool
 - `alto-mcp` — MCP server for AI tool integration
-
-### Cross-Platform Binaries
-
-```bash
-make release-all
-```
-
-Builds for 5 platforms: Linux (amd64/arm64), macOS (amd64/arm64), Windows (amd64).
 
 ## How It Works (The Simple Version)
 
@@ -187,7 +205,7 @@ Already have a codebase that's become hard to change? `alto init --existing` ana
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26+
 - golangci-lint (for linting)
 - gofumpt (for formatting)
 

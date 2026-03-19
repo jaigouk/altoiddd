@@ -4,6 +4,20 @@
  * Centered headline, subtext, two CTAs, then a terminal window.
  */
 const base = import.meta.env.BASE_URL;
+
+// Fetch latest release tag at build time
+let version = "v0.1.0";
+try {
+  const res = await fetch("https://api.github.com/repos/jaigouk/altoiddd/releases/latest", {
+    headers: { "Accept": "application/vnd.github.v3+json" },
+  });
+  if (res.ok) {
+    const data = await res.json();
+    version = data.tag_name;
+  }
+} catch {
+  // fallback to hardcoded version
+}
 ---
 
 <section class="hero">
@@ -12,6 +26,7 @@ const base = import.meta.env.BASE_URL;
     <div class="hero-badge animate-in">
       <span class="hero-badge-dot"></span>
       DDD + TDD before AI writes code
+      <a href="https://github.com/jaigouk/altoiddd/releases/latest" class="hero-version">{version}</a>
     </div>
 
     <!-- Headline -->
@@ -113,6 +128,21 @@ const base = import.meta.env.BASE_URL;
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--landing-primary);
+  }
+
+  .hero-version {
+    margin-left: 0.25rem;
+    padding: 0.0625rem 0.5rem;
+    background: color-mix(in oklch, var(--landing-primary) 20%, transparent);
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-family: var(--font-mono);
+    color: var(--landing-primary);
+    text-decoration: none;
+  }
+
+  .hero-version:hover {
+    text-decoration: underline;
   }
 
   .hero-badge-dot {

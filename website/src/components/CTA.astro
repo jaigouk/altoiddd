@@ -21,6 +21,8 @@ const base = import.meta.env.BASE_URL;
       </svg>
     </a>
     <p class="cta-install">
+      <a href="https://github.com/jaigouk/altoiddd/releases/latest" class="cta-release-link">Download from GitHub Releases</a>
+      <span class="cta-install-sep">or</span>
       <code>go install github.com/jaigouk/altoiddd/cmd/alto@latest</code>
     </p>
   </div>
@@ -94,6 +96,20 @@ const base = import.meta.env.BASE_URL;
     margin-top: 1.25rem;
     font-size: 0.8125rem;
     color: var(--landing-text-muted);
+  }
+
+  .cta-release-link {
+    color: var(--landing-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .cta-release-link:hover {
+    text-decoration: underline;
+  }
+
+  .cta-install-sep {
+    margin: 0 0.5rem;
   }
 
   .cta-install code {
