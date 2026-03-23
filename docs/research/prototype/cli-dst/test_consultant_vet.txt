@@ -1,0 +1,30 @@
+a
+2
+a
+y
+n
+y
+e
+Veterinarian
+examines
+Pet
+using
+Medical Record
+i
+Receptionist
+checks in
+Pet Owner
+using
+Appointment
+
+Vet Tech
+
+Treatment, Prescription
+n
+
+
+
+Pet Owner Brings Pet for Examination
+Pet Owner calls to book appointment
+n
+y

@@ -1,0 +1,42 @@
+a
+2
+b
+Pet Owner Brings Pet for Examination
+Pet Owner calls to book appointment
+Pet Owner
+calls Receptionist to book Appointment
+y
+checks Vet Schedule for available slots
+Receptionist
+y
+creates Appointment for Pet
+Receptionist
+y
+y
+arrives with Pet
+Pet Owner
+y
+examines Pet using Medical Record
+Veterinarian
+y
+records Diagnosis in Medical Record
+Veterinarian
+y
+y
+prescribes Treatment
+Veterinarian
+y
+generates Invoice from Treatment
+Billing System
+y
+y
+pays Invoice
+Pet Owner
+y
+done
+Appointment must not overlap for same Veterinarian
+3
+
+Each animal has exactly one Medical Record
+
+y
