@@ -1,0 +1,408 @@
+{
+  "domain": {
+    "name": "E-commerce Marketplace",
+    "actors": {
+      "Person": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 26\"><path d=\"M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z\"/></svg>",
+      "System": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 26\"><path d=\"M20,18c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2H4C2.9,4,2,4.9,2,6v10c0,1.1,0.9,2,2,2H0v2h24v-2H20z\"/></svg>"
+    },
+    "workObjects": {
+      "Document": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 26\"><path d=\"M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z\"/></svg>"
+    }
+  },
+  "dst": [
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Customer",
+      "id": "shape_0001",
+      "pickedColor": "black",
+      "x": 100,
+      "y": 200,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Seller",
+      "id": "shape_0002",
+      "pickedColor": "black",
+      "x": 900,
+      "y": 200,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:actorSystem",
+      "name": "Payment Gateway",
+      "id": "shape_0003",
+      "pickedColor": "black",
+      "x": 500,
+      "y": 50,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:actorSystem",
+      "name": "Delivery Service",
+      "id": "shape_0004",
+      "pickedColor": "black",
+      "x": 900,
+      "y": 400,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:actorSystem",
+      "name": "Platform",
+      "id": "shape_0005",
+      "pickedColor": "black",
+      "x": 500,
+      "y": 400,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Product Listing",
+      "id": "shape_0010",
+      "pickedColor": "black",
+      "x": 300,
+      "y": 100,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Shopping Cart",
+      "id": "shape_0011",
+      "pickedColor": "black",
+      "x": 300,
+      "y": 200,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Order",
+      "id": "shape_0012",
+      "pickedColor": "black",
+      "x": 500,
+      "y": 200,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Payment",
+      "id": "shape_0013",
+      "pickedColor": "black",
+      "x": 300,
+      "y": 50,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Commission",
+      "id": "shape_0014",
+      "pickedColor": "black",
+      "x": 700,
+      "y": 300,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Shipment",
+      "id": "shape_0015",
+      "pickedColor": "black",
+      "x": 700,
+      "y": 400,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:workObjectDocument",
+      "name": "Inventory",
+      "id": "shape_0016",
+      "pickedColor": "black",
+      "x": 900,
+      "y": 100,
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "browses",
+      "id": "connection_0001",
+      "pickedColor": "black",
+      "number": 1,
+      "source": "shape_0001",
+      "target": "shape_0010",
+      "waypoints": [
+        {"x": 174, "y": 231},
+        {"x": 300, "y": 131}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "adds",
+      "id": "connection_0002",
+      "pickedColor": "black",
+      "number": 2,
+      "source": "shape_0001",
+      "target": "shape_0010",
+      "waypoints": [
+        {"x": 174, "y": 231},
+        {"x": 300, "y": 131}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "to",
+      "id": "connection_0002b",
+      "pickedColor": "black",
+      "number": null,
+      "source": "shape_0010",
+      "target": "shape_0011",
+      "waypoints": [
+        {"x": 383, "y": 131},
+        {"x": 383, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "initiates checkout of",
+      "id": "connection_0003",
+      "pickedColor": "black",
+      "number": 3,
+      "source": "shape_0001",
+      "target": "shape_0011",
+      "waypoints": [
+        {"x": 174, "y": 231},
+        {"x": 300, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "submits",
+      "id": "connection_0004",
+      "pickedColor": "black",
+      "number": 4,
+      "source": "shape_0001",
+      "target": "shape_0013",
+      "waypoints": [
+        {"x": 174, "y": 231},
+        {"x": 300, "y": 81}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "via",
+      "id": "connection_0004b",
+      "pickedColor": "black",
+      "number": null,
+      "source": "shape_0013",
+      "target": "shape_0003",
+      "waypoints": [
+        {"x": 383, "y": 81},
+        {"x": 500, "y": 81}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "authorizes",
+      "id": "connection_0005",
+      "pickedColor": "black",
+      "number": 5,
+      "source": "shape_0003",
+      "target": "shape_0013",
+      "waypoints": [
+        {"x": 500, "y": 81},
+        {"x": 383, "y": 81}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "creates",
+      "id": "connection_0006",
+      "pickedColor": "black",
+      "number": 6,
+      "source": "shape_0005",
+      "target": "shape_0012",
+      "waypoints": [
+        {"x": 500, "y": 431},
+        {"x": 500, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "calculates",
+      "id": "connection_0007",
+      "pickedColor": "black",
+      "number": 7,
+      "source": "shape_0005",
+      "target": "shape_0014",
+      "waypoints": [
+        {"x": 574, "y": 431},
+        {"x": 700, "y": 331}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "notifies",
+      "id": "connection_0008",
+      "pickedColor": "black",
+      "number": 8,
+      "source": "shape_0005",
+      "target": "shape_0002",
+      "waypoints": [
+        {"x": 574, "y": 431},
+        {"x": 900, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "updates",
+      "id": "connection_0009",
+      "pickedColor": "black",
+      "number": 9,
+      "source": "shape_0002",
+      "target": "shape_0016",
+      "waypoints": [
+        {"x": 900, "y": 231},
+        {"x": 900, "y": 131}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "hands over",
+      "id": "connection_0010",
+      "pickedColor": "black",
+      "number": 10,
+      "source": "shape_0002",
+      "target": "shape_0012",
+      "waypoints": [
+        {"x": 900, "y": 231},
+        {"x": 583, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "to",
+      "id": "connection_0010b",
+      "pickedColor": "black",
+      "number": null,
+      "source": "shape_0012",
+      "target": "shape_0004",
+      "waypoints": [
+        {"x": 583, "y": 231},
+        {"x": 900, "y": 431}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "delivers",
+      "id": "connection_0011",
+      "pickedColor": "black",
+      "number": 11,
+      "source": "shape_0004",
+      "target": "shape_0015",
+      "waypoints": [
+        {"x": 900, "y": 431},
+        {"x": 783, "y": 431}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "to",
+      "id": "connection_0011b",
+      "pickedColor": "black",
+      "number": null,
+      "source": "shape_0015",
+      "target": "shape_0001",
+      "waypoints": [
+        {"x": 617, "y": 431},
+        {"x": 174, "y": 231}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "confirms receipt of",
+      "id": "connection_0012",
+      "pickedColor": "black",
+      "number": 12,
+      "source": "shape_0001",
+      "target": "shape_0015",
+      "waypoints": [
+        {"x": 174, "y": 231},
+        {"x": 617, "y": 431}
+      ],
+      "$type": "Element",
+      "di": {},
+      "$descriptor": {}
+    },
+    {
+      "info": "E-commerce Marketplace: Customer Purchases Product. Generated from alto .story.yaml for paper validation."
+    },
+    {
+      "version": "2.0.1"
+    }
+  ]
+}

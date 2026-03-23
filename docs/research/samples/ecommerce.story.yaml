@@ -1,0 +1,159 @@
+# E-commerce Marketplace: Customer Purchases Product
+# alto Domain Story Format v0.1
+#
+# A coarse-grained story capturing the primary purchase flow
+# in an online marketplace with multiple sellers.
+
+title: "Customer Purchases Product from Marketplace"
+type: coarse_grained
+time: to_be
+purity: digitalized
+trigger: "Customer searches for a product"
+
+actors:
+  - name: Customer
+    type: person
+    trust: user_stated
+  - name: Seller
+    type: person
+    trust: user_stated
+  - name: Payment Gateway
+    type: system
+    trust: ai_researched
+    source: "Stripe/PayPal integration patterns"
+  - name: Delivery Service
+    type: system
+    trust: ai_researched
+    source: "standard e-commerce fulfillment"
+  - name: Platform
+    type: system
+    trust: user_confirmed
+
+work_objects:
+  - name: Product Listing
+    type: document
+    trust: user_stated
+  - name: Shopping Cart
+    type: document
+    trust: user_stated
+  - name: Order
+    type: document
+    trust: user_stated
+  - name: Payment
+    type: document
+    trust: user_confirmed
+  - name: Commission
+    type: document
+    trust: ai_researched
+    source: "marketplace business model"
+  - name: Shipment
+    type: document
+    trust: user_confirmed
+  - name: Inventory
+    type: document
+    trust: user_stated
+
+sentences:
+  - step: 1
+    subject: Customer
+    activity: browses
+    object: Product Listing
+    trust: user_stated
+  - step: 2
+    subject: Customer
+    activity: adds
+    object: Product Listing
+    preposition: to
+    indirect_object: Shopping Cart
+    trust: user_stated
+  - step: 3
+    subject: Customer
+    activity: initiates checkout of
+    object: Shopping Cart
+    trust: user_stated
+  - step: 4
+    subject: Customer
+    activity: submits
+    object: Payment
+    preposition: via
+    indirect_object: Payment Gateway
+    trust: user_confirmed
+  - step: 5
+    subject: Payment Gateway
+    activity: authorizes
+    object: Payment
+    trust: ai_researched
+    source: "standard payment flow"
+  - step: 6
+    subject: Platform
+    activity: creates
+    object: Order
+    preposition: from
+    indirect_object: Shopping Cart
+    trust: user_confirmed
+  - step: 7
+    subject: Platform
+    activity: calculates
+    object: Commission
+    preposition: on
+    indirect_object: Order
+    trust: user_stated
+  - step: 8
+    subject: Platform
+    activity: notifies
+    object: Seller
+    preposition: about
+    indirect_object: Order
+    trust: user_confirmed
+  - step: 9
+    subject: Seller
+    activity: updates
+    object: Inventory
+    trust: user_stated
+  - step: 10
+    subject: Seller
+    activity: hands over
+    object: Order
+    preposition: to
+    indirect_object: Delivery Service
+    trust: user_confirmed
+  - step: 11
+    subject: Delivery Service
+    activity: delivers
+    object: Shipment
+    preposition: to
+    indirect_object: Customer
+    trust: user_confirmed
+  - step: 12
+    subject: Customer
+    activity: confirms receipt of
+    object: Shipment
+    trust: ai_researched
+    source: "marketplace delivery confirmation pattern"
+
+annotations:
+  - text: "Customer must be authenticated before checkout"
+    sentence: 3
+    type: constraint
+    trust: user_stated
+  - text: "Payment must be authorized before Order is created"
+    type: invariant
+    trust: user_stated
+  - text: "Commission percentage varies by product category (8-15%)"
+    sentence: 7
+    type: constraint
+    trust: user_stated
+  - text: "Inventory must not go negative"
+    type: invariant
+    trust: user_confirmed
+  - text: "Seller has 48 hours to ship after order notification"
+    sentence: 10
+    type: assumption
+    trust: ai_researched
+    source: "marketplace SLA patterns"
+
+variations:
+  - "Customer pays via PayPal instead of credit card"
+  - "Payment is declined by gateway"
+  - "Seller is out of stock after order placed"
+  - "Customer requests refund after delivery"

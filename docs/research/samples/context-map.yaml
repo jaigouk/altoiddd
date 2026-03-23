@@ -1,0 +1,112 @@
+# Bounded Context Map
+# alto Context Map Format v0.1
+#
+# Bounded context boundaries, relationships, and classifications
+# derived from domain story analysis.
+
+project: "E-commerce Marketplace"
+
+contexts:
+  - name: Catalog
+    classification: supporting
+    confidence: 0.85
+    actors:
+      - Seller
+      - Customer
+    work_objects:
+      - Product Listing
+      - Inventory
+    boundary_signals:
+      - type: different_lifecycle
+        description: "Product Listings are managed independently of Orders; Seller updates inventory without affecting active orders"
+      - type: language_difference
+        description: "'Product Listing' in Catalog becomes 'Line Item' in Ordering"
+    stories:
+      - "ecommerce/01-customer-purchases-product:1,9"
+    trust: user_stated
+
+  - name: Ordering
+    classification: core
+    confidence: 0.90
+    actors:
+      - Customer
+      - Platform
+    work_objects:
+      - Shopping Cart
+      - Order
+    boundary_signals:
+      - type: different_trigger
+        description: "Ordering is triggered by customer checkout; Catalog is triggered by browsing/search"
+      - type: one_way_flow
+        description: "Product data flows from Catalog to Ordering (snapshot at order time), never back"
+      - type: complex_rules
+        description: "Order creation involves payment authorization, inventory reservation, commission calculation"
+    stories:
+      - "ecommerce/01-customer-purchases-product:2-8"
+    trust: user_stated
+
+  - name: Payment
+    classification: generic
+    confidence: 0.80
+    actors:
+      - Customer
+      - Payment Gateway
+      - Platform
+    work_objects:
+      - Payment
+      - Commission
+    boundary_signals:
+      - type: external_system
+        description: "Payment Gateway is a third-party system (Stripe/PayPal) with its own domain language"
+      - type: different_lifecycle
+        description: "Payment settlement happens asynchronously, days after order creation"
+    stories:
+      - "ecommerce/01-customer-purchases-product:4-5,7"
+    trust: user_confirmed
+
+  - name: Fulfillment
+    classification: supporting
+    confidence: 0.75
+    actors:
+      - Seller
+      - Delivery Service
+      - Customer
+    work_objects:
+      - Shipment
+    boundary_signals:
+      - type: different_actor
+        description: "Fulfillment involves Delivery Service, which does not appear in Catalog or Ordering"
+      - type: one_way_flow
+        description: "Order details flow from Ordering to Fulfillment; shipment status flows back but through events, not direct coupling"
+    stories:
+      - "ecommerce/01-customer-purchases-product:10-12"
+    trust: user_confirmed
+
+relationships:
+  - upstream: Catalog
+    downstream: Ordering
+    type: conformist
+    shared:
+      - Product Listing
+    description: "Ordering conforms to Catalog's product model; snapshots product data at order time"
+
+  - upstream: Ordering
+    downstream: Payment
+    type: customer_supplier
+    shared:
+      - Order
+    description: "Payment serves Ordering's needs; Ordering defines what payment information is required"
+
+  - upstream: Ordering
+    downstream: Fulfillment
+    type: customer_supplier
+    shared:
+      - Order
+    description: "Fulfillment receives order details from Ordering; shipping status published as domain events"
+
+  - upstream: Payment
+    downstream: Fulfillment
+    type: published_language
+    shared:
+      - Payment
+    description: "Fulfillment checks payment status via published events before releasing shipment"

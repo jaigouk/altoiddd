@@ -1,0 +1,31 @@
+Domain Story: "alto Generates Tickets from Domain Artifacts"
+Type: coarse-grained, to-be, digitalized
+Trigger: DDD artifacts have been completed and approved by Developer
+
+Actors: Developer, alto CLI, Beads Issue Tracker
+Work Objects: DDD Artifacts, Bounded Context Map, Complexity Budget, Epic, Task, Dependency Graph, Ticket Preview
+
+1. alto CLI reads DDD Artifacts (bounded contexts, aggregates, invariants)
+2. alto CLI reads Bounded Context Map for context relationships
+3. alto CLI reads Complexity Budget for subdomain classifications
+4. alto CLI generates one Epic per bounded context
+5. alto CLI generates Tasks ordered by aggregate dependency within each Epic
+6. alto CLI applies detail level based on Complexity Budget (Core=full AC, Supporting=standard, Generic=stub)
+7. alto CLI constructs Dependency Graph from context map relationships
+8. alto CLI presents Ticket Preview to Developer
+9. Developer reviews and approves Ticket Preview
+10. alto CLI creates Epics and Tasks in Beads Issue Tracker
+11. alto CLI sets blocking relationships in Dependency Graph
+
+Annotations:
+  [4] Epic names use ubiquitous language from bounded context
+  [5] Foundation aggregates (no dependencies) are ordered first
+  [6] Core tasks include: TDD phases, SOLID mapping, edge cases, invariant enforcement
+  [8] Preview shows: epic structure, task count, dependency arrows, detail levels
+  [invariant] No tickets created without Developer approval
+  [invariant] Dependency Graph must be acyclic
+  [invariant] Every Task must belong to exactly one Epic
+
+Variations:
+  -> "Developer modifies generated tickets before approval" (separate story)
+  -> "alto generates spike tickets for uncertain areas" (separate story)

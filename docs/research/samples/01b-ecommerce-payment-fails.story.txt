@@ -1,0 +1,27 @@
+Domain Story: "Payment Fails During Checkout"
+Type: coarse-grained, to-be, pure
+Trigger: Customer attempts to pay but payment is declined
+
+Actors: Customer, Payment Provider, Platform, Seller
+Work Objects: Cart, Order, Payment, Error Notification, Retry Option
+
+1. Customer proceeds to Checkout using Cart
+2. Customer submits Payment details
+3. Payment Provider declines Payment
+4. Platform displays Error Notification to Customer
+5. Platform offers Retry Option to Customer
+6. Customer selects alternative Payment method
+7. Payment Provider processes Payment for Order
+8. Platform confirms Order to Customer
+9. Seller receives Order notification
+
+Annotations:
+  [3] Decline reasons: insufficient funds, expired card, fraud detection
+  [5] Customer may retry up to 3 times before session expires
+  [invariant] Cart contents must be reserved during payment retry window
+  [invariant] Order is NOT created until Payment succeeds
+  [invariant] Seller is NEVER notified of a failed payment attempt
+
+Variations:
+  -> "Customer abandons Cart after payment failure" (separate story)
+  -> "Fraud detection blocks Customer account" (separate story)

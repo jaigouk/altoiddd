@@ -1,0 +1,28 @@
+Domain Story: "Seller Manages Inventory and Pricing"
+Type: coarse-grained, to-be, pure
+Trigger: Seller needs to update product availability or pricing
+
+Actors: Seller, Platform, Customer
+Work Objects: Product Listing, Inventory Record, Price, Product Catalog, Notification
+
+1. Seller logs into Platform dashboard
+2. Seller reviews Inventory Record for current stock levels
+3. Seller updates Inventory Record with new stock quantities
+4. Platform updates Product Listing in Product Catalog
+5. Seller adjusts Price for Product Listing
+6. Platform recalculates Commission based on new Price
+7. Platform publishes updated Product Catalog
+8. Customer sees updated Product Listing when browsing
+
+Annotations:
+  [2] Each Seller manages only their own inventory
+  [3] Stock update is immediate; catalog refresh may be delayed
+  [5] Seller sets their own prices; Platform has no price approval
+  [6] Commission percentage is set by Platform, not Seller
+  [invariant] Seller can only modify their own Product Listings
+  [invariant] Product Listing must have Inventory Record quantity > 0 to appear in Product Catalog
+  [invariant] Commission is calculated by Platform, never by Seller
+
+Variations:
+  -> "Seller discontinues a Product" (separate story)
+  -> "Platform changes commission rates" (separate story)

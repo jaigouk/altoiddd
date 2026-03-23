@@ -1,0 +1,38 @@
+@startuml
+' Vet Clinic: Pet Owner Brings Pet for Examination
+' DomainStory-PlantUML v0.3.1 paper validation
+' Reference: github.com/johthor/DomainStory-PlantUML
+
+!include <DomainStory/domainStory>
+
+' --- Actors ---
+Person(PetOwner, "Pet Owner")
+Person(Receptionist)
+Person(Veterinarian)
+System(BillingSystem, "Billing System")
+Group(Pharmacy)
+
+' --- Work Objects ---
+Document(Appointment)
+Document(VetSchedule, "Vet Schedule")
+Document(MedicalRecord, "Medical Record")
+Document(Diagnosis)
+Document(Prescription)
+Document(Invoice)
+Info(Pet)
+
+' --- Sentences ---
+activity(1, PetOwner, calls, Receptionist)
+activity(2, Receptionist, checks, VetSchedule, for, "available slots")
+activity(3, Receptionist, creates, Appointment, for, Pet)
+activity(4, PetOwner, arrives with, Pet)
+activity(5, Receptionist, checks in, PetOwner, using, Appointment)
+activity(6, Veterinarian, examines, Pet, using, MedicalRecord)
+activity(7, Veterinarian, records, Diagnosis, in, MedicalRecord)
+activity(8, Veterinarian, writes, Prescription)
+activity(9, Pharmacy, prepares medication per, Prescription)
+activity(10, BillingSystem, generates, Invoice, for, PetOwner)
+activity(11, PetOwner, pays, Invoice)
+activity(12, Receptionist, schedules follow-up in, VetSchedule)
+
+@enduml

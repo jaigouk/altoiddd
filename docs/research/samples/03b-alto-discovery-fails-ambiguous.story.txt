@@ -1,0 +1,31 @@
+Domain Story: "Discovery Fails Due to Ambiguous Domain Description"
+Type: coarse-grained, to-be, digitalized
+Trigger: Developer provides a vague or overly broad project description
+
+Actors: Developer, alto CLI, AI Domain Researcher
+Work Objects: README, Domain Research, Clarification Question, Refined Description, Domain Stories
+
+1. Developer writes vague README ("I want to build an app for managing things")
+2. Developer runs alto init
+3. alto CLI reads README and detects insufficient domain context
+4. alto CLI asks Developer if domain research is needed
+5. Developer agrees to domain research
+6. AI Domain Researcher searches for similar domains and common patterns
+7. AI Domain Researcher presents Domain Research findings to Developer
+8. alto CLI asks Clarification Question based on research gaps
+9. Developer provides Refined Description with specific domain terms
+10. alto CLI proposes initial Domain Stories from Refined Description
+11. Developer confirms Domain Stories are accurate
+12. alto CLI proceeds with boundary detection
+
+Annotations:
+  [3] Insufficient context: fewer than 2 actors or 2 work objects inferred
+  [6] Research uses web search for industry patterns, existing software
+  [8] Clarification questions target: who are the users? what do they do? what objects do they work with?
+  [invariant] alto MUST NOT proceed to boundary detection with fewer than 2 identified actors
+  [invariant] Domain Stories require Developer confirmation before artifact generation
+  [invariant] AI research findings are tagged AI_RESEARCHED trust level until confirmed
+
+Variations:
+  -> "Developer rejects all AI research suggestions" (separate story)
+  -> "Developer provides domain they have no expertise in" (separate story)

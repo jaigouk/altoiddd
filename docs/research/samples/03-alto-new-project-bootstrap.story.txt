@@ -1,0 +1,38 @@
+Domain Story: "Developer Bootstraps New Project with alto"
+Type: coarse-grained, to-be, digitalized
+Trigger: Developer has a project idea described in 4-5 sentences
+
+Actors: Developer, alto CLI, AI Coding Tool
+Work Objects: README, Domain Stories, Bounded Context Map, PRD, DDD Artifacts, Architecture Doc, Fitness Tests, Beads Tickets, Tool Configs
+
+1. Developer writes project idea in README
+2. Developer runs alto init
+3. alto CLI reads README and auto-infers domain context
+4. alto CLI proposes initial Domain Stories from README
+5. Developer refines Domain Stories sentence by sentence
+6. alto CLI identifies Bounded Context Map from story patterns
+7. alto CLI classifies subdomains (Core/Supporting/Generic)
+8. alto CLI generates PRD from Domain Stories
+9. alto CLI generates DDD Artifacts (bounded contexts, ubiquitous language, invariants)
+10. alto CLI generates Architecture Doc informed by Bounded Context Map
+11. alto CLI generates Fitness Tests from bounded context boundaries
+12. alto CLI generates dependency-ordered Beads Tickets
+13. Developer reviews and approves generated artifacts
+14. alto CLI generates Tool Configs for Developer's AI Coding Tool
+15. Developer hands project to AI Coding Tool to build within guardrails
+
+Annotations:
+  [3] Also checks for gstack CEO plan output if available
+  [4] Consultant-proposes pattern: alto proposes, Developer refines
+  [5] Each sentence follows "Actor does Activity using Work Object" format
+  [6] Boundary signals: one-way flow, language differences, different triggers
+  [7] Core gets full DDD; Supporting gets layered; Generic gets ACL wrapper
+  [13] Preview before action is a hard constraint
+  [invariant] No artifacts generated without Developer approval
+  [invariant] Domain Stories must use ubiquitous language, not technical jargon
+  [invariant] Beads Tickets must be dependency-ordered (no orphan dependencies)
+
+Variations:
+  -> "Developer applies alto to existing project" (separate story)
+  -> "Developer uses THOROUGH mode for deep discovery" (separate story)
+  -> "Product Owner runs discovery in non-technical register" (separate story)

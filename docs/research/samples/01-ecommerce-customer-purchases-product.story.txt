@@ -1,0 +1,31 @@
+Domain Story: "Customer Purchases Product from Marketplace"
+Type: coarse-grained, to-be, pure
+Trigger: Customer wants to buy a product
+
+Actors: Customer, Seller, Payment Provider, Delivery Service, Platform
+Work Objects: Product Catalog, Cart, Order, Payment, Delivery, Commission
+
+1. Customer browses Product Catalog
+2. Customer selects Product from Seller listing
+3. Customer adds Product to Cart
+4. Customer proceeds to Checkout using Cart
+5. Customer chooses Payment method (credit card or PayPal)
+6. Payment Provider processes Payment for Order
+7. Platform calculates Commission on Order
+8. Seller receives Order notification
+9. Seller prepares Product for shipment
+10. Delivery Service picks up Product from Seller
+11. Delivery Service delivers Product to Customer
+
+Annotations:
+  [5] Payment options: credit card or PayPal
+  [7] Commission is a percentage of sale price
+  [invariant] Seller must have Product in stock before Order is confirmed
+  [invariant] Payment must succeed before Order is confirmed to Seller
+  [invariant] Each Seller manages own inventory and pricing independently
+
+Variations:
+  -> "Customer returns Product" (separate story)
+  -> "Payment fails during Checkout" (separate story)
+  -> "Seller updates Product pricing" (separate story)
+  -> "Customer disputes Order" (separate story)

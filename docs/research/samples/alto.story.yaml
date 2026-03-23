@@ -1,0 +1,169 @@
+# alto: Developer Bootstraps New Project
+# alto Domain Story Format v0.1
+#
+# A coarse-grained story capturing the primary flow of
+# a developer using alto to structure a new project before
+# handing it to an AI coding tool.
+
+title: "Developer Bootstraps New Project with alto"
+type: coarse_grained
+time: to_be
+purity: digitalized
+trigger: "Developer has a project idea and wants to start building"
+
+actors:
+  - name: Developer
+    type: person
+    trust: user_stated
+  - name: alto CLI
+    type: system
+    trust: user_stated
+  - name: AI Domain Expert
+    type: system
+    trust: user_confirmed
+  - name: AI Coding Tool
+    type: system
+    trust: user_stated
+  - name: Development Team
+    type: group
+    trust: ai_researched
+    source: "team collaboration pattern from PRD"
+
+work_objects:
+  - name: README
+    type: document
+    trust: user_stated
+  - name: Domain Story
+    type: document
+    trust: user_stated
+  - name: Glossary
+    type: document
+    trust: user_confirmed
+  - name: Context Map
+    type: document
+    trust: user_confirmed
+  - name: DDD Blueprint
+    type: folder
+    trust: user_stated
+  - name: Ticket Backlog
+    type: folder
+    trust: user_stated
+  - name: Architecture Fitness Tests
+    type: document
+    trust: user_confirmed
+  - name: Project Scaffold
+    type: folder
+    trust: user_stated
+
+sentences:
+  - step: 1
+    subject: Developer
+    activity: writes
+    object: README
+    trust: user_stated
+  - step: 2
+    subject: Developer
+    activity: runs
+    object: alto CLI
+    trust: user_stated
+  - step: 3
+    subject: alto CLI
+    activity: reads
+    object: README
+    trust: user_stated
+  - step: 4
+    subject: AI Domain Expert
+    activity: proposes
+    object: Domain Story
+    preposition: based on
+    indirect_object: README
+    trust: user_confirmed
+  - step: 5
+    subject: Developer
+    activity: refines
+    object: Domain Story
+    preposition: with
+    indirect_object: AI Domain Expert
+    trust: user_stated
+  - step: 6
+    subject: alto CLI
+    activity: extracts
+    object: Glossary
+    preposition: from
+    indirect_object: Domain Story
+    trust: user_confirmed
+  - step: 7
+    subject: alto CLI
+    activity: detects boundaries in
+    object: Domain Story
+    trust: user_confirmed
+  - step: 8
+    subject: alto CLI
+    activity: builds
+    object: Context Map
+    trust: user_confirmed
+  - step: 9
+    subject: alto CLI
+    activity: generates
+    object: DDD Blueprint
+    trust: user_stated
+  - step: 10
+    subject: alto CLI
+    activity: generates
+    object: Ticket Backlog
+    preposition: from
+    indirect_object: DDD Blueprint
+    trust: user_stated
+  - step: 11
+    subject: alto CLI
+    activity: generates
+    object: Architecture Fitness Tests
+    trust: user_confirmed
+  - step: 12
+    subject: alto CLI
+    activity: scaffolds
+    object: Project Scaffold
+    trust: user_stated
+  - step: 13
+    subject: Developer
+    activity: hands
+    object: Project Scaffold
+    preposition: to
+    indirect_object: AI Coding Tool
+    trust: user_stated
+  - step: 14
+    subject: AI Coding Tool
+    activity: builds within
+    object: Project Scaffold
+    trust: user_stated
+  - step: 15
+    subject: Development Team
+    activity: reviews tickets from
+    object: Ticket Backlog
+    trust: ai_researched
+    source: "team workflow pattern"
+
+annotations:
+  - text: "README must contain at least 4-5 sentences describing the project idea"
+    sentence: 1
+    type: constraint
+    trust: user_stated
+  - text: "Domain Story must be confirmed by Developer before blueprint generation"
+    type: invariant
+    trust: user_stated
+  - text: "Glossary terms must use ubiquitous language from the Domain Story, not synonyms"
+    type: invariant
+    trust: user_stated
+  - text: "Architecture Fitness Tests enforce layer boundaries at compile time"
+    sentence: 11
+    type: constraint
+    trust: user_confirmed
+  - text: "AI Coding Tool must not modify DDD Blueprint files"
+    type: invariant
+    trust: user_stated
+
+variations:
+  - "Developer runs alto init --existing on a messy codebase"
+  - "Developer lacks domain expertise; AI Domain Expert does deeper research"
+  - "Multiple domain stories needed for complex projects"
+  - "Developer uses MCP server instead of CLI"

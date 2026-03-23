@@ -1,0 +1,121 @@
+# Ubiquitous Language Glossary
+# alto Glossary Format v0.1
+#
+# Terms extracted from domain stories across bounded contexts.
+# Each term links back to the stories where it was discovered.
+
+terms:
+  # --- Catalog Context ---
+  - term: Product Listing
+    definition: "A seller's published offering including title, description, price, and images visible to customers on the marketplace"
+    context: Catalog
+    trust: user_stated
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases: []
+
+  - term: Inventory
+    definition: "The quantity of a specific product available for sale, managed by the seller"
+    context: Catalog
+    trust: user_stated
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases:
+      - "stock"
+
+  # --- Ordering Context ---
+  - term: Shopping Cart
+    definition: "A temporary collection of product listings selected by a customer before checkout"
+    context: Ordering
+    trust: user_stated
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    note: "Called 'Basket' in UK English -- language difference signal between markets"
+    aliases:
+      - "Basket"
+
+  - term: Order
+    definition: "A confirmed purchase created from a shopping cart after successful payment authorization"
+    context: Ordering
+    trust: user_stated
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases: []
+
+  # --- Payment Context ---
+  - term: Payment
+    definition: "A monetary transaction submitted by a customer to pay for an order"
+    context: Payment
+    trust: user_confirmed
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases:
+      - "Transaction"
+
+  - term: Commission
+    definition: "The platform's fee calculated as a percentage (8-15%) of each order's total, varying by product category"
+    context: Payment
+    trust: user_stated
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    note: "Commission percentage is a business rule, not a technical constant"
+    aliases:
+      - "Platform Fee"
+
+  # --- Fulfillment Context ---
+  - term: Shipment
+    definition: "A physical package containing ordered products, tracked from seller handoff to customer delivery"
+    context: Fulfillment
+    trust: user_confirmed
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases:
+      - "Package"
+      - "Delivery"
+
+  - term: Delivery Confirmation
+    definition: "Customer's acknowledgment that a shipment has been received, triggering commission settlement"
+    context: Fulfillment
+    trust: ai_researched
+    source: "marketplace delivery confirmation pattern"
+    stories:
+      - "ecommerce/01-customer-purchases-product"
+    aliases: []
+
+  # --- Scheduling Context (Vet Clinic) ---
+  - term: Appointment
+    definition: "A scheduled time slot for a pet to see a veterinarian"
+    context: Scheduling
+    trust: user_stated
+    stories:
+      - "vetclinic/01-pet-owner-brings-pet"
+    aliases: []
+
+  - term: Vet Schedule
+    definition: "The calendar of all appointments for all veterinarians at the clinic"
+    context: Scheduling
+    trust: user_confirmed
+    stories:
+      - "vetclinic/01-pet-owner-brings-pet"
+    aliases:
+      - "Appointment Calendar"
+
+  # --- Clinical Context (Vet Clinic) ---
+  - term: Medical Record
+    definition: "Complete health history of a pet including diagnoses, treatments, and vaccinations"
+    context: Clinical
+    trust: user_stated
+    stories:
+      - "vetclinic/01-pet-owner-brings-pet"
+    note: "In Clinical context, the animal is referred to as 'Patient'; in Scheduling context, 'Pet' -- language difference signal"
+    aliases:
+      - "Patient Chart"
+      - "Health Record"
+
+  - term: Prescription
+    definition: "A veterinarian-authorized medication order for a specific pet's treatment"
+    context: Clinical
+    trust: user_confirmed
+    stories:
+      - "vetclinic/01-pet-owner-brings-pet"
+    aliases: []

@@ -1,0 +1,31 @@
+Domain Story: "Pet Owner Brings Pet for Examination"
+Type: coarse-grained, to-be, pure
+Trigger: Pet Owner calls to book appointment
+
+Actors: Pet Owner, Receptionist, Veterinarian, Billing System
+Work Objects: Appointment, Vet Schedule, Medical Record, Diagnosis, Treatment, Invoice
+
+1. Pet Owner calls Receptionist to book Appointment
+2. Receptionist checks Vet Schedule for available slots
+3. Receptionist creates Appointment for Pet
+4. Pet Owner arrives with Pet
+5. Receptionist checks in Pet Owner using Appointment
+6. Veterinarian examines Pet using Medical Record
+7. Veterinarian records Diagnosis in Medical Record
+8. Veterinarian prescribes Treatment
+9. Billing System generates Invoice from Treatment
+10. Pet Owner pays Invoice
+
+Annotations:
+  [1] Booking can be by phone or online
+  [3] Appointment must not overlap with existing appointments for same vet
+  [6] Medical Record tracks complete history per animal
+  [invariant] Appointment must not overlap for same Veterinarian
+  [invariant] Treatment must be recorded before Invoice is generated
+  [invariant] Each animal has exactly one Medical Record (lifetime)
+
+Variations:
+  -> "Emergency walk-in (no appointment)" (separate story)
+  -> "Pet Owner cancels Appointment" (separate story)
+  -> "Veterinarian orders lab work" (separate story)
+  -> "Follow-up visit and prescription refill" (separate story)

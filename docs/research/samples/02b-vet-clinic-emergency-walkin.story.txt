@@ -1,0 +1,31 @@
+Domain Story: "Emergency Walk-In Without Appointment"
+Type: coarse-grained, to-be, pure
+Trigger: Pet Owner arrives with a pet emergency without prior appointment
+
+Actors: Pet Owner, Receptionist, Veterinarian, Vet Tech
+Work Objects: Pet, Triage Assessment, Medical Record, Emergency Treatment, Invoice
+
+1. Pet Owner arrives at clinic with Pet in distress
+2. Receptionist registers Pet Owner as walk-in
+3. Vet Tech performs Triage Assessment on Pet
+4. Vet Tech assigns urgency level to Triage Assessment
+5. Veterinarian reviews Triage Assessment
+6. Veterinarian examines Pet using Medical Record
+7. Veterinarian administers Emergency Treatment
+8. Veterinarian updates Medical Record with Emergency Treatment details
+9. Receptionist generates Invoice with emergency surcharge
+10. Pet Owner pays Invoice
+
+Annotations:
+  [2] Walk-in bypasses normal appointment booking
+  [3] Triage determines priority over scheduled appointments
+  [4] Urgency levels: critical, urgent, non-urgent
+  [7] Emergency Treatment may differ from standard prescribed Treatment
+  [9] Emergency visits have a surcharge on top of normal fees
+  [invariant] Emergency patients are triaged before examination, even if vet is available
+  [invariant] Triage Assessment must be completed before Veterinarian sees Pet
+  [invariant] Medical Record must exist or be created before any Treatment
+
+Variations:
+  -> "Emergency requires referral to specialist" (separate story)
+  -> "Pet Owner cannot pay emergency Invoice" (separate story)

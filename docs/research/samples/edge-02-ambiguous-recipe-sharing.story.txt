@@ -1,0 +1,34 @@
+Domain Story: "Cook Shares Recipe on Community Platform"
+Type: coarse-grained, to-be, pure
+Trigger: Cook wants to share a recipe with the community
+
+Actors: Cook, Community Member, Moderator
+Work Objects: Recipe, Ingredient List, Rating, Comment, Recipe Collection
+
+1. Cook creates Recipe with Ingredient List
+2. Cook publishes Recipe to platform
+3. Community Member browses Recipe Collection
+4. Community Member views Recipe
+5. Community Member rates Recipe using Rating
+6. Community Member writes Comment on Recipe
+7. Moderator reviews flagged Comment
+8. Cook updates Recipe based on Comment feedback
+
+Annotations:
+  [1] Recipe includes: title, description, ingredients, steps, photos
+  [5] Rating is 1-5 stars
+  [7] Moderation only for flagged content
+  [invariant] Cook cannot rate own Recipe
+  [invariant] Recipe must have at least one Ingredient to be published
+  [invariant] Only the original Cook can edit their Recipe
+
+Variations:
+  -> "Community Member reports inappropriate Recipe" (separate story)
+  -> "Cook creates Recipe Collection (cookbook)" (separate story)
+
+---
+NOTE: This domain is intentionally ambiguous for boundary detection.
+Reasonable boundary interpretations include:
+A) Single bounded context (simple CRUD platform)
+B) Two contexts: Recipe Management + Community/Social
+C) Three contexts: Recipe Management + Community/Social + Moderation

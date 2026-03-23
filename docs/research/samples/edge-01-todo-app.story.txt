@@ -1,0 +1,20 @@
+Domain Story: "User Manages TODO Items"
+Type: coarse-grained, to-be, pure
+Trigger: User wants to track tasks
+
+Actors: User
+Work Objects: TODO Item, TODO List
+
+1. User creates TODO Item
+2. User adds TODO Item to TODO List
+3. User marks TODO Item as complete
+4. User removes completed TODO Items from TODO List
+5. User views TODO List
+
+Annotations:
+  [1] TODO Item has: title, optional description, completion status
+  [invariant] TODO Item must have a title
+  [invariant] Completed TODO Items can be removed but not edited
+
+Variations:
+  -> "User reorders TODO List" (separate story)

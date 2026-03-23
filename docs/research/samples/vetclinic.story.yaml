@@ -1,0 +1,157 @@
+# Vet Clinic: Pet Owner Brings Pet for Examination
+# alto Domain Story Format v0.1
+#
+# A coarse-grained story capturing the primary visit flow
+# at a veterinary clinic, from booking to billing.
+
+title: "Pet Owner Brings Pet for Examination"
+type: coarse_grained
+time: to_be
+purity: pure
+trigger: "Pet Owner calls to book appointment"
+
+actors:
+  - name: Pet Owner
+    type: person
+    trust: user_stated
+  - name: Receptionist
+    type: person
+    trust: user_stated
+  - name: Veterinarian
+    type: person
+    trust: user_stated
+  - name: Billing System
+    type: system
+    trust: ai_researched
+    source: "ezyVet workflow documentation"
+  - name: Pharmacy
+    type: group
+    trust: user_confirmed
+
+work_objects:
+  - name: Appointment
+    type: document
+    trust: user_stated
+  - name: Vet Schedule
+    type: document
+    trust: user_confirmed
+  - name: Medical Record
+    type: document
+    trust: user_stated
+  - name: Diagnosis
+    type: document
+    trust: user_stated
+  - name: Prescription
+    type: document
+    trust: user_confirmed
+  - name: Invoice
+    type: document
+    trust: ai_researched
+    source: "veterinary billing standard"
+  - name: Pet
+    type: info
+    trust: user_stated
+  - name: Available Slots
+    type: data
+    trust: user_confirmed
+
+sentences:
+  - step: 1
+    subject: Pet Owner
+    activity: calls
+    object: Receptionist
+    trust: user_stated
+  - step: 2
+    subject: Receptionist
+    activity: checks
+    object: Vet Schedule
+    preposition: for
+    indirect_object: available slots
+    trust: user_confirmed
+  - step: 3
+    subject: Receptionist
+    activity: creates
+    object: Appointment
+    preposition: for
+    indirect_object: Pet
+    trust: user_stated
+  - step: 4
+    subject: Pet Owner
+    activity: arrives with
+    object: Pet
+    trust: user_stated
+  - step: 5
+    subject: Receptionist
+    activity: checks in
+    object: Pet Owner
+    preposition: using
+    indirect_object: Appointment
+    trust: user_confirmed
+  - step: 6
+    subject: Veterinarian
+    activity: examines
+    object: Pet
+    preposition: using
+    indirect_object: Medical Record
+    trust: user_stated
+  - step: 7
+    subject: Veterinarian
+    activity: records
+    object: Diagnosis
+    preposition: in
+    indirect_object: Medical Record
+    trust: user_stated
+  - step: 8
+    subject: Veterinarian
+    activity: writes
+    object: Prescription
+    trust: user_confirmed
+  - step: 9
+    subject: Pharmacy
+    activity: prepares medication per
+    object: Prescription
+    trust: user_confirmed
+  - step: 10
+    subject: Billing System
+    activity: generates
+    object: Invoice
+    preposition: for
+    indirect_object: Pet Owner
+    trust: ai_researched
+    source: "standard vet clinic billing"
+  - step: 11
+    subject: Pet Owner
+    activity: pays
+    object: Invoice
+    trust: user_stated
+  - step: 12
+    subject: Receptionist
+    activity: schedules follow-up in
+    object: Vet Schedule
+    trust: user_confirmed
+
+annotations:
+  - text: "Only during business hours (Mon-Sat 8:00-18:00)"
+    sentence: 1
+    type: constraint
+    trust: user_stated
+  - text: "Appointment must not overlap with existing appointments for same vet"
+    type: invariant
+    trust: user_stated
+  - text: "Medical Record must be reviewed before examination begins"
+    sentence: 6
+    type: constraint
+    trust: user_confirmed
+  - text: "Prescription requires veterinarian signature"
+    type: invariant
+    trust: user_stated
+  - text: "Payment must be completed before medication is dispensed"
+    type: invariant
+    trust: ai_researched
+    source: "veterinary practice management"
+
+variations:
+  - "Pet Owner books online instead of calling"
+  - "Emergency walk-in without appointment"
+  - "Follow-up visit with existing medical history"
+  - "Pet Owner cancels or reschedules appointment"

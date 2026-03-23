@@ -1,0 +1,38 @@
+@startuml
+' E-commerce: Customer Purchases Product
+' DomainStory-PlantUML v0.3.1 paper validation
+' Reference: github.com/johthor/DomainStory-PlantUML
+
+!include <DomainStory/domainStory>
+
+' --- Actors ---
+Person(Customer)
+Person(Seller)
+System(PaymentGateway, "Payment Gateway")
+System(DeliveryService, "Delivery Service")
+System(Platform)
+
+' --- Work Objects ---
+Document(ProductListing, "Product Listing")
+Document(ShoppingCart, "Shopping Cart")
+Document(Order)
+Document(Payment)
+Document(Commission)
+Document(Shipment)
+Document(Inventory)
+
+' --- Sentences ---
+activity(1, Customer, browses, ProductListing)
+activity(2, Customer, adds, ProductListing, to, ShoppingCart)
+activity(3, Customer, initiates checkout of, ShoppingCart)
+activity(4, Customer, submits, Payment, via, PaymentGateway)
+activity(5, PaymentGateway, authorizes, Payment)
+activity(6, Platform, creates, Order, from, ShoppingCart)
+activity(7, Platform, calculates, Commission, on, Order)
+activity(8, Platform, notifies, Seller, about, Order)
+activity(9, Seller, updates, Inventory)
+activity(10, Seller, hands over, Order, to, DeliveryService)
+activity(11, DeliveryService, delivers, Shipment, to, Customer)
+activity(12, Customer, confirms receipt of, Shipment)
+
+@enduml

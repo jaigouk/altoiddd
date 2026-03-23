@@ -1,0 +1,30 @@
+Domain Story: "Follow-Up Visit and Prescription Refill"
+Type: coarse-grained, to-be, pure
+Trigger: Pet Owner needs a follow-up visit or prescription refill
+
+Actors: Pet Owner, Receptionist, Veterinarian, Pharmacy
+Work Objects: Appointment, Medical Record, Prescription, Medication, Invoice
+
+1. Pet Owner calls Receptionist to schedule follow-up Appointment
+2. Receptionist checks Medical Record for previous visit details
+3. Receptionist creates follow-up Appointment linked to original visit
+4. Pet Owner arrives for Appointment
+5. Veterinarian reviews Medical Record for treatment progress
+6. Veterinarian evaluates Pet recovery
+7. Veterinarian renews Prescription
+8. Pharmacy dispenses Medication based on Prescription
+9. Receptionist generates Invoice for follow-up visit
+10. Pet Owner pays Invoice
+
+Annotations:
+  [2] Follow-ups reference the original visit's Medical Record
+  [3] Follow-up Appointment is linked to original Appointment
+  [7] Some Prescriptions can be renewed without in-person visit
+  [8] Pharmacy is internal (clinic dispensary) or external partner
+  [invariant] Prescription can only be renewed by the original treating Veterinarian or their supervisor
+  [invariant] Controlled substance Prescriptions have maximum refill limits
+  [invariant] Medical Record must show original diagnosis before follow-up Treatment
+
+Variations:
+  -> "Prescription refill without visit (phone/online)" (separate story)
+  -> "Veterinarian changes treatment plan at follow-up" (separate story)
