@@ -12,7 +12,7 @@ People with software ideas — developers, product owners, domain experts — fa
 
 ## 2. Vision
 
-Someone with an idea — a developer, product owner, or domain expert — describes it in 4-5 sentences. alto guides them through a structured conversation — asking the right DDD and Domain Storytelling questions in plain language — and progressively generates PRD, domain model, bounded contexts, architecture, and beads ticket structure. The generated project works immediately with an AI coding tool of choice, includes agent personas that understand DDD/TDD/SOLID, and has a knowledge base that keeps guidance current. Non-coders get structured handoff artifacts; developers get actionable tickets.
+Someone with an idea — a developer, product owner, or domain expert — describes it in 4-5 sentences. They may first use tools like gstack's `/plan-ceo-review` to challenge and expand the scope — rethink the problem, find the 10-star product. Then alto takes over as a domain consultant: it reads the idea, researches the domain if needed, and guides the user through Domain Storytelling — proposing concrete stories ("Actor does Activity using Work Object") for the user to refine, not asking abstract DDD questions into a void. Through this conversation, alto progressively generates PRD, domain model, bounded contexts, architecture, and beads ticket structure. The generated project works immediately with an AI coding tool of choice, includes agent personas that understand DDD/TDD/SOLID, and has a knowledge base that keeps guidance current. Non-coders get structured handoff artifacts; developers get actionable tickets.
 
 ## 3. Users & Personas
 
@@ -32,10 +32,14 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 
 **Flow:**
 1. Developer writes 4-5 sentences describing their idea in README
-2. alto asks guided DDD questions (actors, domain events, ubiquitous language)
-3. Answers are used to generate PRD, DDD artifacts, and architecture skeleton
-4. Beads epics and spikes are created for unknowns
-5. Developer starts implementation with proper tickets
+2. (Optional) Developer uses gstack `/plan-ceo-review` to challenge and expand the idea scope — rethink the problem, find the 10-star product, decide what to build vs defer
+3. alto reads the README (and any gstack CEO plan output) and auto-infers what it can about the domain
+4. alto acts as a domain consultant: proposes initial domain stories based on the idea, invites the user to refine — not a rigid questionnaire but a conversation
+5. If user lacks domain knowledge, alto offers to research the domain via web search and bootstraps an AI domain expert agent with industry knowledge
+6. Through Domain Storytelling, alto progressively builds actors, work objects, activities, and maps them to DDD concepts (aggregates, commands, entities, bounded contexts)
+7. Answers are used to generate PRD, DDD artifacts, and architecture skeleton
+8. Beads epics and spikes are created for unknowns — dependency-ordered, template-compliant
+9. Developer starts implementation with proper tickets
 
 ### Scenario 2: Apply to Existing Project
 
@@ -89,10 +93,11 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 
 **Flow:**
 1. Domain expert describes the problem in plain business language
-2. alto asks clarifying questions using the expert's own terminology
-3. Ubiquitous language glossary is built from the expert's words — not invented by developers
-4. Domain stories capture the real workflow before any code is written
-5. Output is handed to a developer or AI tool with the domain model already defined
+2. alto acts as a consultant: proposes domain stories based on the description ("So when a new employee joins, HR creates an onboarding case, assigns a buddy, and schedules orientation — does that match your workflow?")
+3. Expert corrects and refines — alto adapts the stories, never argues
+4. Ubiquitous language glossary is built from the expert's words — not invented by developers
+5. Domain stories capture the real workflow before any code is written
+6. Output is handed to a developer or AI tool with the domain model already defined
 
 ### Scenario 6: Ticket Freshness & Ripple Review
 
@@ -121,7 +126,8 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **Existing project adoption (`alto init --existing`)** — Branch-based scaffolding for existing projects: gap report, missing artifact generation, agent profile adaptation (see Scenario 2). Basic structural overlay only; smart migration is P1.
 - [ ] **Gap analysis** — Scan existing project, compare against full alto structure, report what's missing/conflicting
 - [ ] **Guided project bootstrap** — Conversational flow from README idea to full project structure
-- [ ] **DDD question framework** — Structured questions for domain stories, ubiquitous language, bounded contexts, aggregate design
+- [ ] **Conversational DDD discovery** — Replace rigid 10-question flow with a consultant-style conversational approach inspired by gstack's interaction patterns. Key design principles: (1) Agent acts as a domain consultant, not a form wizard — proposes answers and invites adjustments rather than asking blank questions; (2) One decision per interaction with context re-grounding, plain-English explanation, opinionated recommendation, and lettered options; (3) Progressive disclosure — phases activate only when relevant, auto-infer from README/codebase where possible; (4) Domain Storytelling (Hoppe & Schwentner) as the primary discovery technique — lighter than Event Storming, sentence-based ("Actor does Activity using Work Object"), maps directly to DDD concepts, one story at a time to prevent overwhelm; (5) AI domain expert agent — when users lack domain knowledge, offer web research to bootstrap domain understanding (industry practices, common workflows, typical entities) and propose initial domain stories for the user to refine. See spike alty-cli-jcf.
+- [ ] **DDD question framework** — Structured questions for domain stories, ubiquitous language, bounded contexts, aggregate design (to be redesigned per conversational discovery above)
 - [ ] **Artifact generation** — Generate PRD, DDD.md, ARCHITECTURE.md from guided answers
 - [ ] **Agent personas** — Developer, researcher, tech-lead, PM, QA, security agents with DDD awareness
 - [ ] **Beads integration** — Epic/spike/ticket templates enforcing DDD+TDD+SOLID. Every ticket created — whether manually or via `alto generate tickets` — MUST use the appropriate beads template (ticket template for tasks/features, spike template for research). Generated CLAUDE.md must enforce template compliance as step 1 of the grooming checklist. After-close protocol must require follow-up tickets to include template-formatted descriptions (never empty).
@@ -325,7 +331,9 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 |------|-----------|--------|------------|
 | Tool config formats change frequently | High | Medium | Version knowledge base (current + 3 prev) |
 | DDD questions too abstract for beginners | Medium | High | Provide concrete examples per question |
-| Guided flow feels too rigid | Medium | Medium | Allow skipping with explicit acknowledgment |
+| Guided flow feels too rigid | Medium | High | Redesign as conversational flow with Domain Storytelling (see spike alty-cli-jcf). Replace form-wizard pattern with consultant pattern inspired by gstack |
+| Users lack domain knowledge for DDD discovery | High | High | AI domain expert agent bootstraps knowledge via web research; proposes domain stories for user to refine rather than asking blank questions |
+| AI domain research produces inaccurate domain models | Medium | Medium | Knowledge Trust Hierarchy (USER_STATED > USER_CONFIRMED > AI_RESEARCHED > AI_INFERRED); always present proposals for user validation, never auto-commit |
 | MCP server adds complexity | Low | Medium | Spike first, implement only if justified |
 | depguard config too limited for generation | Medium | Medium | Spike k7m.10; fallback to architecture test generation |
 | Kiro (AWS) adds DDD support | Low | High | Ship first, establish community, local-first advantage |
@@ -338,6 +346,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 - [ ] **Spike: Knowledge base structure** — How to organize `.alto/knowledge/` with RLM addressability and version tracking?
 - [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Roo Code, OpenCode? How similar/different?
 - [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts? Includes complexity budget classification (Core/Supporting/Generic).
+- [ ] **Spike: Conversational UX + Domain Storytelling** (alty-cli-jcf) — Learn from gstack's conversational interaction patterns (consultant posture, progressive disclosure, auto-inference, one-decision-per-question). Research Domain Storytelling as primary discovery technique (lighter than Event Storming, maps to DDD). Design AI domain expert agent that bootstraps domain knowledge via web research when users have vague ideas. Evaluate gstack + alto pipeline: gstack for scope/product challenge, alto for DDD discovery and ticket generation.
 - [ ] **Spike: Fitness function generation** — How to map bounded context map to depguard rules / architecture tests? (k7m.10)
 - [ ] **Spike: Ticket pipeline** — How to auto-generate ordered beads tickets from DDD artifacts? (k7m.11)
 

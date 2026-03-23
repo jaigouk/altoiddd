@@ -84,3 +84,4 @@ website/design/
 website/.vercel/
 website/.netlify/
 .beads/dolt-monitor.pid.lock
+docs/research/prototype/cli-dst/cli-dst-prototype

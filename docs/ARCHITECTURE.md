@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-03-13
+last_reviewed: 2026-03-23
 owner: architecture
 status: draft
 ---
@@ -13,8 +13,9 @@ status: draft
 > **Spike inputs:** This document consolidates findings from 7 completed spikes:
 > CLI+MCP design (k7m.4), knowledge base structure (k7m.1), multi-tool config formats
 > (k7m.3), fitness function design (k7m.10), ticket pipeline design (k7m.11), and
-> ripple review design (k7m.12). Every design decision traces to a PRD capability
-> or spike ADR.
+> ripple review design (k7m.12). Updated 2026-03-23 with findings from 4 Domain
+> Storytelling Discovery Redesign spikes (alty-cli-a2g, alty-cli-gox, alty-cli-1i3,
+> alty-cli-6ho). Every design decision traces to a PRD capability or spike ADR.
 
 ## 1. Design Principles
 
@@ -103,7 +104,8 @@ Domain Layer  Infrastructure   .alto/
 | `vs` CLI              | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
 | `alto-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
 | 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
-| DiscoverySession      | 10-question DDD flow, persona detection, playback       | Guided Discovery     | Core           |
+| DiscoverySession      | Domain Storytelling flow, story capture, boundary detection, synthesis | Guided Discovery     | Core           |
+| DomainStory           | Story aggregate: actors, work objects, sentences, annotations (NEW) | Guided Discovery     | Core           |
 | DomainModel           | Domain stories, ubiquitous language, bounded contexts   | Domain Model         | Core           |
 | FitnessTestSuite      | Generate arch-go rules from bounded context map         | Architecture Testing | Core           |
 | TicketPlan            | Dependency-ordered ticket generation with 3-tier detail | Ticket Pipeline      | Core           |
@@ -172,17 +174,30 @@ internal/
 |   +-- infrastructure/             # Adapters
 +-- discovery/                      # Guided Discovery bounded context
 |   +-- domain/
-|   |   +-- discovery_session.go    # DiscoverySession aggregate
+|   |   +-- discovery_session.go    # DiscoverySession aggregate (updated)
 |   |   +-- discovery_values.go     # Persona, Register, TechStack VOs
-|   |   +-- question.go             # Question, QuestionPhase
-|   |   +-- discovery_events.go     # PersonaDetected, DiscoveryCompleted
+|   |   +-- domain_story.go         # DomainStory aggregate (NEW)
+|   |   +-- story_actor.go          # StoryActor VO (NEW)
+|   |   +-- work_object.go          # WorkObject VO (NEW)
+|   |   +-- story_sentence.go       # StorySentence VO (NEW)
+|   |   +-- annotation.go           # Annotation VO (NEW)
+|   |   +-- boundary_signal.go      # BoundarySignal VO (NEW)
+|   |   +-- bounded_context_sketch.go # BoundedContextSketch VO (NEW)
+|   |   +-- conversation_turn.go    # ConversationTurn VO (NEW)
+|   |   +-- conversation_narrative.go # ConversationNarrative VO (NEW)
+|   |   +-- question.go             # Question, QuestionPhase (LEGACY)
+|   |   +-- discovery_events.go     # PersonaDetected, DiscoveryCompleted, StoryCompleted, BoundariesDetected
 |   +-- application/
 |   |   +-- discovery_handler.go    # Command handlers
 |   |   +-- detection_handler.go    # Tool detection handler
-|   |   +-- ports.go                # Port interfaces
+|   |   +-- ports.go                # Port interfaces (StorytellingPrompter replaces Prompter)
 |   +-- infrastructure/
-|       +-- filesystem_tool_scanner.go  # Tool detection adapter
+|       +-- filesystem_tool_scanner.go
 |       +-- markdown_artifact_renderer.go
+|       +-- story_yaml_parser.go        # .story.yaml parser/serializer (NEW)
+|       +-- glossary_yaml_parser.go     # glossary.yaml parser/serializer (NEW)
+|       +-- context_map_yaml_parser.go  # context-map.yaml parser/serializer (NEW)
+|       +-- huh_storytelling_prompter.go # StorytellingPrompter adapter (NEW, replaces huh_prompter.go)
 +-- challenge/                      # DDD Challenge bounded context
 |   +-- domain/
 |   +-- application/
@@ -239,6 +254,9 @@ internal/
 |   |   +-- events/                 # Base event types
 |   |   +-- identity/               # ID value objects
 |   |   +-- valueobjects/           # Common VOs
+|   |   |   +-- domain_values.go
+|   |   |   +-- trust_level.go          # TrustLevel enum (NEW -- consolidated from DST spikes)
+|   |   |   +-- ubiquitous_language_entry.go # UbiquitousLanguageEntry VO (NEW)
 |   |   +-- ddd/                    # DDD base types
 |   +-- application/                # Shared ports (FileWriter)
 |   +-- infrastructure/
@@ -306,8 +324,8 @@ The complete `alto init` flow crosses all bounded contexts in this order:
 ```
 1. Bootstrap      -> detect installed tools (ToolDetectionPort)
 2. Bootstrap      -> show preview, get confirmation
-3. Guided Discovery -> 10-question DDD flow (DiscoveryPort)
-   emits: DiscoveryCompleted
+3. Guided Discovery -> Domain Storytelling flow (mode selection, story capture, boundary detection)
+   emits: StoryCompleted (per story), BoundariesDetected, DiscoveryCompleted
 4. Domain Model   -> generate DDD artifacts (ArtifactGenerationPort)
    writes: docs/DDD.md + .alto/domain-model.yaml
    emits: DomainModelGenerated
@@ -332,7 +350,8 @@ Each step shows a preview and waits for user approval before proceeding.
 
 | Aggregate        | Storage                                   | Rationale                                                   |
 | ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
-| DiscoverySession | In-memory (session duration)              | Stateful conversation; persisted only when complete         |
+| DiscoverySession | In-memory during session; persisted as `.story.yaml` files when stories complete | Stateful conversation; stories saved incrementally          |
+| DomainStory      | `.alto/stories/*.story.yaml`              | YAML for machine consumption, alto text format for terminal display |
 | DomainModel      | `.alto/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
 | FitnessTestSuite | In-memory during generation               | Output written to `arch-go.yml` (107 dependency rules)      |
 | TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
@@ -414,6 +433,25 @@ domain_stories: # For PRD traceability
 
 _(Source: ticket pipeline spike section 1 schema; fitness function spike section 2 schema)_
 
+#### Companion YAML Formats (Domain Storytelling)
+
+The Domain Storytelling redesign introduces three companion formats alongside
+`domain-model.yaml`. These are produced during guided discovery (before
+`domain-model.yaml` is generated) and feed into artifact generation:
+
+| Format | Path | Producer | Consumer |
+|--------|------|----------|----------|
+| `.story.yaml` | `.alto/stories/*.story.yaml` | DiscoverySession (per story) | DomainModel artifact generation, PlantUML/Egon export |
+| `glossary.yaml` | `.alto/glossary.yaml` | DiscoverySession (accumulated) | DomainModel `terms[]` generation, ubiquitous language validation |
+| `context-map.yaml` | `.alto/context-map.yaml` | DiscoverySession (boundary detection) | DomainModel `bounded_contexts[]` and `context_map[]` generation |
+
+All three use `gopkg.in/yaml.v3` for round-trip-safe serialization. Each format
+includes a `trust` field (TrustLevel enum from shared kernel) for provenance
+tracking. See `docs/research/20260323_6_story_format_validation.md` for finalized
+schemas and downstream consumer validation.
+
+_(Source: story format validation spike sections 3-5, 11)_
+
 #### Bounded Context Map Schema (for Fitness Functions)
 
 The fitness function generator uses a subset of the same YAML with additional fields:
@@ -443,9 +481,14 @@ _(Source: fitness function spike section 2)_
 
 | Entity            | Key Attributes                                                       | Aggregate        |
 | ----------------- | -------------------------------------------------------------------- | ---------------- |
-| DiscoverySession  | persona, register, current_phase, answers, playbacks                 | DiscoverySession |
-| Question          | id, phase, technical_text, non_technical_text                        | DiscoverySession |
-| DomainStory       | name, steps (actor/action/work_object), bounded_contexts             | DomainModel      |
+| DiscoverySession  | persona, register, current_phase, stories, conversation_narrative    | DiscoverySession |
+| Question          | id, phase, technical_text, non_technical_text (LEGACY)               | DiscoverySession |
+| DomainStory       | title, type, time, purity, trigger, actors[], work_objects[], sentences[], annotations[] | DomainStory |
+| StorySentence     | step, subject, activity, object, preposition, indirect_object, trust | DomainStory      |
+| StoryActor        | name, type (person/system/group), trust, source                      | DomainStory      |
+| WorkObject        | name, type (document/data/etc.), trust, source                       | DomainStory      |
+| BoundedContextSketch | name, classification, confidence, actors[], signals[]             | DiscoverySession |
+| ConversationTurn  | consultant_action, user_response, synthesis, confirmed               | DiscoverySession |
 | BoundedContextMap | contexts, relationships                                              | DomainModel      |
 | AggregateDesign   | root, entities, value_objects, invariants, commands, events          | DomainModel      |
 | Contract          | name, type (layers/forbidden/independence/acyclic_siblings), modules | FitnessTestSuite |
@@ -1180,7 +1223,7 @@ model = "gemini-2.0-flash"
 
 | Feature | Express Mode (default) | Deep Mode (optional) |
 |---------|----------------------|---------------------|
-| 10-question discovery | Local only | Local only |
+| Domain Storytelling discovery | Local only (user-narrates) | LLM-assisted (consultant-proposes first story) |
 | AI Challenger | N/A | LLM or rule-based fallback |
 | Domain Research | N/A | Web search + LLM or empty briefing |
 | Customer Simulator | N/A | LLM or rule-based fallback |
@@ -1207,6 +1250,10 @@ Every project initialized with `alto init` gets this directory:
 .alto/
 +-- config.toml                   # Project-specific alto settings
 +-- domain-model.yaml             # Machine-readable DDD IR (generated)
++-- stories/                      # Domain story files (generated during discovery)
+|   +-- *.story.yaml              # One file per domain story
++-- glossary.yaml                 # Ubiquitous language glossary (accumulated from stories)
++-- context-map.yaml              # Bounded context map (from boundary detection)
 +-- knowledge/                    # RLM-addressable knowledge base (copied from seed)
 |   +-- _index.toml               # Master index
 |   +-- tools/                    # AI coding tool conventions (versioned TOML)
@@ -1343,6 +1390,10 @@ From `docs/PRD.md` section 6:
 | ADR-011 | Composition root at `internal/composition/adapters.go`                                         | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
 | ADR-012 | MCP server is an infrastructure adapter, not a bounded context                                 | Accepted | `docs/research/20260222_cli_mcp_design.md` section 7            |
 | ADR-013 | LLM via Go SDK behind infrastructure-internal LLMClient interface. Domain-specific ports (ChallengerPort, SimulatorPort) at app layer. Provider-swappable: Anthropic (default), Ollama, Vertex AI. Every Deep mode feature has local rule-based fallback. | Accepted | `docs/research/20260305_ai_assisted_ddd_session_design.md`; Claude Agent SDK evaluation |
+| ADR-014 | Discovery redesign: Domain Storytelling replaces 10-question flow. User-narrates MVP, consultant-proposes with LLM later (hybrid). StorytellingPrompter (8 methods) replaces Prompter (4 methods). | Accepted | `docs/research/20260323_4_cli_domain_storytelling_prototype.md` sections 3-5 |
+| ADR-015 | Story persistence: .story.yaml, glossary.yaml, context-map.yaml as companion formats to domain-model.yaml. YAML via gopkg.in/yaml.v3. Archive-not-migrate for v1 sessions. | Accepted | `docs/research/20260323_6_story_format_validation.md` sections 1-5, 11-12 |
+| ADR-016 | Boundary detection: hybrid algorithmic + LLM approach. Seven signal types with three-tier confidence scoring. Algorithmic detection sufficient for MVP; LLM refinement as Phase 2. | Accepted | `docs/research/20260323_domain_storytelling_methodology.md`; `docs/research/20260323_gstack_ux_and_domain_storytelling.md` |
+| ADR-017 | TrustLevel enum (user_stated, user_confirmed, ai_researched, ai_inferred) in shared kernel. Tracks provenance on all story elements. | Accepted | `docs/research/20260323_6_story_format_validation.md` section 3 |
 
 ## 14. Open Architecture Decisions
 
@@ -1359,9 +1410,10 @@ Decisions resolved by spikes but requiring validation during implementation:
       tests. Regeneration should preserve user-added items. Design a `# alto:generated`
       marker convention. _(fitness function spike section 9)_
 
-- [ ] **Guided DDD flow over MCP (stateful sessions)** -- The 10-question flow is stateful.
-      MCP tools are normally stateless request/response. Options: stateful server context,
-      context passing, MCP prompts. _(CLI+MCP design spike section 9, risk #5)_
+- [ ] **Guided DDD flow over MCP (stateful sessions)** -- The Domain Storytelling flow is
+      stateful (multi-story session with conversation narrative). MCP tools are normally
+      stateless request/response. Options: stateful server context, context passing, MCP
+      prompts. _(CLI+MCP design spike section 9, risk #5; DST prototype spike section 5)_
 
 - [ ] **Knowledge base maintenance burden** -- 4 tools x ~7 topics x 4 versions = ~112
       TOML files. Start with `current/` only; add historical versions only on breaking changes.
