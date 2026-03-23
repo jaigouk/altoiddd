@@ -60,6 +60,21 @@ Thumbs.db
 .claude/skills/polish/
 .claude/skills/quieter/
 .claude/skills/teach-impeccable/
+.claude/skills/gstack/
+.claude/skills/gstack-upgrade
+.claude/skills/browse
+.claude/skills/design-consultation
+.claude/skills/design-review
+.claude/skills/document-release
+.claude/skills/plan-ceo-review
+.claude/skills/plan-design-review
+.claude/skills/plan-eng-review
+.claude/skills/qa
+.claude/skills/qa-only
+.claude/skills/retro
+.claude/skills/review
+.claude/skills/setup-browser-cookies
+.claude/skills/ship
 
 # Website (Astro)
 website/node_modules/
