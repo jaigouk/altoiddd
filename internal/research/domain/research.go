@@ -8,24 +8,23 @@ import (
 	"strings"
 
 	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	"github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
-// TrustLevel classifies how much a piece of knowledge can be trusted.
+// TrustLevel is an alias for the shared kernel TrustLevel value object.
 // Lower numeric value = higher trust. Supports comparison operators via int.
-type TrustLevel int
+type TrustLevel = valueobjects.TrustLevel
 
-// Trust level constants ordered from most to least trusted.
+// Trust level constants re-exported from the shared kernel.
 const (
-	TrustUserStated    TrustLevel = 1
-	TrustUserConfirmed TrustLevel = 2
-	TrustAIResearched  TrustLevel = 3
-	TrustAIInferred    TrustLevel = 4
+	TrustUserStated    = valueobjects.UserStated
+	TrustUserConfirmed = valueobjects.UserConfirmed
+	TrustAIResearched  = valueobjects.AIResearched
+	TrustAIInferred    = valueobjects.AIInferred
 )
 
 // AllTrustLevels returns all valid TrustLevel values.
-func AllTrustLevels() []TrustLevel {
-	return []TrustLevel{TrustUserStated, TrustUserConfirmed, TrustAIResearched, TrustAIInferred}
-}
+func AllTrustLevels() []TrustLevel { return valueobjects.AllTrustLevels() }
 
 // Confidence classifies confidence level of a research finding or source.
 type Confidence string
