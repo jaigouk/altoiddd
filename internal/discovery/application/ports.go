@@ -6,6 +6,7 @@ import (
 
 	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
 	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // --- Discovery Port ---
@@ -105,6 +106,42 @@ type LLMDocReader interface {
 // Used as fallback when LLM is unavailable.
 type RegexImporter interface {
 	Import(ctx context.Context, docDir string) (*ddd.DomainModel, error)
+}
+
+// --- Story Persistence Ports ---
+
+// StoryReader reads a DomainStory from a file path.
+type StoryReader interface {
+	Read(ctx context.Context, path string) (*discoverydomain.DomainStory, error)
+}
+
+// StoryWriter writes a DomainStory to a file path.
+type StoryWriter interface {
+	Write(ctx context.Context, path string, story *discoverydomain.DomainStory) error
+}
+
+// --- Glossary Persistence Ports ---
+
+// GlossaryReader reads ubiquitous language entries from a file path.
+type GlossaryReader interface {
+	Read(ctx context.Context, path string) ([]vo.UbiquitousLanguageEntry, error)
+}
+
+// GlossaryWriter writes ubiquitous language entries to a file path.
+type GlossaryWriter interface {
+	Write(ctx context.Context, path string, entries []vo.UbiquitousLanguageEntry) error
+}
+
+// --- Context Map Persistence Ports ---
+
+// ContextMapReader reads a ContextMap from a file path.
+type ContextMapReader interface {
+	Read(ctx context.Context, path string) (*discoverydomain.ContextMap, error)
+}
+
+// ContextMapWriter writes a ContextMap to a file path.
+type ContextMapWriter interface {
+	Write(ctx context.Context, path string, cm *discoverydomain.ContextMap) error
 }
 
 // --- Tool Detection Port ---
