@@ -10,66 +10,121 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
 	"github.com/alto-cli/alto/internal/discovery/infrastructure"
 	sharedapp "github.com/alto-cli/alto/internal/shared/application"
 )
 
-// --- Fake Prompter for Testing ---
+// --- Fake StorytellingPrompter for Testing ---
 
-type fakePrompter struct {
-	personaChoice     string
-	personaErr        error
-	answers           []string // Answers for each question (empty = skip)
-	skipReasons       []string // Reasons for skipped questions
-	answerIdx         int      // Current answer index
-	skipIdx           int      // Current skip reason index
-	questionErr       error    // Error to return from AskQuestion
-	skipReasonErr     error    // Error to return from AskSkipReason
-	questionsAsked    []string // Records questions asked (for verification)
-	playbackConfirmed bool     // What to return from ConfirmPlayback
-	playbackErr       error    // Error to return from ConfirmPlayback
-	playbackSummaries []string // Records summaries shown (for verification)
+type fakeStorytellingPrompter struct {
+	// SelectMode
+	modeChoice discoverydomain.DiscoveryMode
+	modeErr    error
+
+	// AskChoice
+	choiceResponses []string // sequential responses for AskChoice calls
+	choiceIdx       int
+	choiceErr       error
+
+	// AskNarration
+	narrationResponses []string // sequential narration answers
+	narrationIdx       int
+	narrationErr       error
+
+	// ConfirmSentence
+	confirmSentenceAccepted bool
+	confirmSentenceErr      error
+
+	// DisplayStory
+	displayStoryErr    error
+	displayStoryCalled int
+
+	// SynthesisCheckpoint
+	synthesisResult bool
+	synthesisErr    error
+
+	// ProposeStory
+	proposeErr error
+
+	// AskAnnotation — returns empty to signal "done" immediately
+	annotationErr error
 }
 
-func (f *fakePrompter) SelectPersona(_ context.Context) (string, error) {
-	return f.personaChoice, f.personaErr
+func (f *fakeStorytellingPrompter) SelectMode(_ context.Context) (discoverydomain.DiscoveryMode, error) {
+	return f.modeChoice, f.modeErr
 }
 
-func (f *fakePrompter) AskQuestion(_ context.Context, question string) (string, error) {
-	f.questionsAsked = append(f.questionsAsked, question)
-	if f.questionErr != nil {
-		return "", f.questionErr
+func (f *fakeStorytellingPrompter) ProposeStory(_ context.Context, proposed *discoverydomain.DomainStory) (*discoverydomain.DomainStory, error) {
+	if f.proposeErr != nil {
+		return nil, f.proposeErr
 	}
-	if f.answerIdx >= len(f.answers) {
-		return "", nil // No more answers, return empty (skip)
-	}
-	answer := f.answers[f.answerIdx]
-	f.answerIdx++
-	return answer, nil
+	return proposed, nil
 }
 
-func (f *fakePrompter) AskSkipReason(_ context.Context) (string, error) {
-	if f.skipReasonErr != nil {
-		return "", f.skipReasonErr
+func (f *fakeStorytellingPrompter) AskNarration(_ context.Context, _ string, _ string) (string, error) {
+	if f.narrationErr != nil {
+		return "", f.narrationErr
 	}
-	if f.skipIdx >= len(f.skipReasons) {
-		return "no reason given", nil
+	if f.narrationIdx >= len(f.narrationResponses) {
+		return "", nil // empty = end narration
 	}
-	reason := f.skipReasons[f.skipIdx]
-	f.skipIdx++
-	return reason, nil
+	resp := f.narrationResponses[f.narrationIdx]
+	f.narrationIdx++
+	return resp, nil
 }
 
-func (f *fakePrompter) ConfirmPlayback(_ context.Context, summary string) (bool, error) {
-	f.playbackSummaries = append(f.playbackSummaries, summary)
-	if f.playbackErr != nil {
-		return false, f.playbackErr
+func (f *fakeStorytellingPrompter) ConfirmSentence(_ context.Context, sentence discoverydomain.StorySentence) (discoverydomain.StorySentence, bool, error) {
+	if f.confirmSentenceErr != nil {
+		return discoverydomain.StorySentence{}, false, f.confirmSentenceErr
 	}
-	return f.playbackConfirmed, nil
+	return sentence, f.confirmSentenceAccepted, nil
+}
+
+func (f *fakeStorytellingPrompter) AskChoice(_ context.Context, _ string, _ []application.Choice, _ string) (string, error) {
+	if f.choiceErr != nil {
+		return "", f.choiceErr
+	}
+	if f.choiceIdx >= len(f.choiceResponses) {
+		return "", nil
+	}
+	resp := f.choiceResponses[f.choiceIdx]
+	f.choiceIdx++
+	return resp, nil
+}
+
+func (f *fakeStorytellingPrompter) DisplayStory(_ context.Context, _ *discoverydomain.DomainStory) error {
+	f.displayStoryCalled++
+	return f.displayStoryErr
+}
+
+func (f *fakeStorytellingPrompter) SynthesisCheckpoint(_ context.Context, _ application.SynthesisSummary) (bool, error) {
+	return f.synthesisResult, f.synthesisErr
+}
+
+func (f *fakeStorytellingPrompter) AskAnnotation(_ context.Context) (string, int, error) {
+	return "", 0, f.annotationErr // empty text = done immediately
 }
 
 // Compile-time check.
-var _ application.Prompter = (*fakePrompter)(nil)
+var _ application.StorytellingPrompter = (*fakeStorytellingPrompter)(nil)
+
+// --- Fake Story Writer ---
+
+type fakeStoryWriter struct {
+	written []*discoverydomain.DomainStory
+	err     error
+}
+
+func (f *fakeStoryWriter) Write(_ context.Context, _ string, story *discoverydomain.DomainStory) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.written = append(f.written, story)
+	return nil
+}
+
+var _ application.StoryWriter = (*fakeStoryWriter)(nil)
 
 // --- Fake Event Publisher ---
 
@@ -79,36 +134,110 @@ func (f *fakePublisher) Publish(_ context.Context, _ any) error { return nil }
 
 var _ sharedapp.EventPublisher = (*fakePublisher)(nil)
 
+// --- Helper: create a minimal fakeStorytellingPrompter for a single rapid-mode story ---
+
+// newMinimalStoryPrompter creates a prompter that completes one story:
+// - Narration: trigger response, actor response, then activity/subject/object for one sentence, then empty to end
+// - Sentences are accepted
+// - Annotations: done immediately
+// - Synthesis: confirmed
+// - AskChoice responses: persona choice "1", then "no" (stop after first story... but we need 3 for rapid)
+func newRapidStoryPrompter(storyCount int) *fakeStorytellingPrompter {
+	// Each RunStory call needs narration responses:
+	// 1. trigger response (opening: MQ-O2)
+	// 2. actor response (opening: MQ-O1)
+	// 3. activity response (narration: MQ-N2) — one sentence
+	// 4. subject response (narration: MQ-N3) — for that sentence
+	// 5. object response (narration: MQ-N4) — for that sentence
+	// 6. empty (narration: MQ-N2 = end)
+	narrations := make([]string, 0, storyCount*6)
+	for i := range storyCount {
+		narrations = append(narrations,
+			"User places order", // trigger
+			"Customer",          // actor
+			"submits the form",  // activity
+			"Customer",          // subject (defaults to lastActor if empty)
+			"Order Form",        // work object
+			"",                  // end narration
+		)
+		_ = i
+	}
+
+	// AskChoice responses:
+	// 1st call = persona selection ("1" = Developer)
+	// Then after each story (except last): "yes" to continue
+	// After last story: doesn't matter, loop breaks on CheckStoryCompleteness
+	choices := []string{"1"} // persona
+	for range storyCount - 1 {
+		choices = append(choices, "yes") // continue after each non-final story
+	}
+
+	return &fakeStorytellingPrompter{
+		modeChoice:              discoverydomain.ModeRapid,
+		narrationResponses:      narrations,
+		confirmSentenceAccepted: true,
+		synthesisResult:         true,
+		choiceResponses:         choices,
+	}
+}
+
 // --- Tests ---
 
-func TestCLIDiscoveryAdapter_Run_HappyPath(t *testing.T) {
+func TestCLIDiscoveryAdapter_Run_HappyPath_RapidMode(t *testing.T) {
 	t.Parallel()
 
-	// Setup: create temp dir with README
 	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
 
-	// Create handler and adapter
+	prompter := newRapidStoryPrompter(3) // RAPID = 3 stories
+	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{personaChoice: "1"}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
 
-	// Run
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
+
+	// Verify 3 stories were written
+	assert.Len(t, writer.written, 3)
+}
+
+func TestCLIDiscoveryAdapter_Run_ModeCanceled(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+
+	prompter := &fakeStorytellingPrompter{
+		modeErr: context.Canceled,
+	}
+	writer := &fakeStoryWriter{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestCLIDiscoveryAdapter_Run_PersonaCanceled(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
 
+	prompter := &fakeStorytellingPrompter{
+		modeChoice:      discoverydomain.ModeRapid,
+		choiceErr:       context.Canceled, // Cancel on persona AskChoice
+		choiceResponses: []string{},
+	}
+	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{personaErr: context.Canceled}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	assert.ErrorIs(t, err, context.Canceled)
@@ -119,253 +248,77 @@ func TestCLIDiscoveryAdapter_Run_MissingREADME(t *testing.T) {
 
 	tmpDir := t.TempDir() // No README.md
 
+	prompter := &fakeStorytellingPrompter{}
+	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{personaChoice: "1"}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "README")
 }
 
-func TestCLIDiscoveryAdapter_Run_EmptyREADME(t *testing.T) {
+func TestCLIDiscoveryAdapter_Run_CompleteCalled(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte(""), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
 
+	prompter := newRapidStoryPrompter(3)
+	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{personaChoice: "2"}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
 
-	// Empty README is allowed - handler accepts empty string
-	err := adapter.Run(context.Background())
-	require.NoError(t, err)
-}
-
-func TestCLIDiscoveryAdapter_Run_InvalidPersonaChoice(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{personaChoice: "5"} // Invalid choice
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "persona")
-}
-
-// --- Question Loop Tests ---
-
-func TestCLIDiscoveryAdapter_Run_AllQuestionsAnswered(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	// Provide 10 answers (one per question)
-	answers := make([]string, 10)
-	for i := range answers {
-		answers[i] = "Answer " + string(rune('A'+i))
-	}
-	prompter := &fakePrompter{
-		personaChoice: "1", // Developer (technical register)
-		answers:       answers,
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
 
-	// Verify all 10 questions were asked
-	assert.Len(t, prompter.questionsAsked, 10)
+	// After Run completes, session should be in completed state.
+	// We verify indirectly: no error from Run means Complete succeeded.
+	assert.Len(t, writer.written, 3)
 }
 
-func TestCLIDiscoveryAdapter_Run_QuestionSkipped(t *testing.T) {
+func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
 
+	// 4 stories: 3 required for RAPID + 1 extra (user says "yes" to continue after 3rd, then completeness check passes)
+	// Actually after 3rd story, CheckStoryCompleteness passes → loop breaks. So 3 stories max.
+	// To get 4 stories, user needs to say "yes" before completeness check.
+	// But the contract says: after RunStory, check completeness first. If enough, break.
+	// So to test >3 stories, we'd need THOROUGH mode (5 required).
+
+	// Let's test THOROUGH with exactly 5 stories.
+	prompter := newRapidStoryPrompter(5)
+	prompter.modeChoice = discoverydomain.ModeThorough
+	// Fix choices: persona + 4 "yes" to continue
+	prompter.choiceResponses = []string{"1", "yes", "yes", "yes", "yes"}
+
+	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	// Skip Q3 (index 2) by providing empty answer
-	answers := []string{"A1", "A2", "", "A4", "A5", "A6", "A7", "A8", "A9", "A10"}
-	prompter := &fakePrompter{
-		personaChoice: "1",
-		answers:       answers,
-		skipReasons:   []string{"Not relevant to my project"},
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
 
-	// Verify all questions were asked
-	assert.Len(t, prompter.questionsAsked, 10)
+	assert.Len(t, writer.written, 5)
 }
 
-func TestCLIDiscoveryAdapter_Run_QuestionCanceled(t *testing.T) {
+// --- Unused import guard for vo ---
+
+func TestFakeStoryWriter_InterfaceCompliance(t *testing.T) {
 	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	prompter := &fakePrompter{
-		personaChoice: "1",
-		answers:       []string{"A1", "A2"}, // Answer first 2
-		questionErr:   context.Canceled,     // Then cancel on Q3
-	}
-	// Hack: set questionErr after 2 answers by using a wrapper
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	// Should get canceled error (after first 2 questions succeed, then cancel)
-	// Actually this will cancel immediately since questionErr is set
-	assert.ErrorIs(t, err, context.Canceled)
-}
-
-func TestCLIDiscoveryAdapter_Run_TechnicalRegisterUsed(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	answers := make([]string, 10)
-	for i := range answers {
-		answers[i] = "Answer"
-	}
-	prompter := &fakePrompter{
-		personaChoice: "1", // Developer = Technical register
-		answers:       answers,
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	require.NoError(t, err)
-
-	// First question should use technical text (contains "seed" or technical terms)
-	// The exact text depends on QuestionCatalog - just verify it's not empty
-	require.NotEmpty(t, prompter.questionsAsked)
-	assert.NotEmpty(t, prompter.questionsAsked[0])
-}
-
-func TestCLIDiscoveryAdapter_Run_NonTechnicalRegisterUsed(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	answers := make([]string, 10)
-	for i := range answers {
-		answers[i] = "Answer"
-	}
-	prompter := &fakePrompter{
-		personaChoice:     "2", // Product Owner = Non-technical register
-		answers:           answers,
-		playbackConfirmed: true,
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	require.NoError(t, err)
-
-	// Verify questions were asked with non-technical text
-	require.NotEmpty(t, prompter.questionsAsked)
-	assert.NotEmpty(t, prompter.questionsAsked[0])
-}
-
-// --- Playback Confirmation Tests ---
-
-func TestCLIDiscoveryAdapter_Run_PlaybackConfirmed(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	answers := make([]string, 10)
-	for i := range answers {
-		answers[i] = "Answer " + string(rune('A'+i))
-	}
-	prompter := &fakePrompter{
-		personaChoice:     "1",
-		answers:           answers,
-		playbackConfirmed: true, // Always confirm
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	require.NoError(t, err)
-
-	// Playback is triggered after Q3, Q6, Q9 = 3 times
-	assert.Len(t, prompter.playbackSummaries, 3)
-	// Each summary should contain answers
-	for _, summary := range prompter.playbackSummaries {
-		assert.NotEmpty(t, summary)
-	}
-}
-
-func TestCLIDiscoveryAdapter_Run_PlaybackSummaryContainsAnswers(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	answers := []string{"Users and admins", "Create orders", "Order placed event", "A4", "A5", "A6", "A7", "A8", "A9", "A10"}
-	prompter := &fakePrompter{
-		personaChoice:     "1",
-		answers:           answers,
-		playbackConfirmed: true,
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	require.NoError(t, err)
-
-	// First playback (after Q3) should contain first 3 answers
-	require.NotEmpty(t, prompter.playbackSummaries)
-	firstSummary := prompter.playbackSummaries[0]
-	assert.Contains(t, firstSummary, "Users and admins")
-	assert.Contains(t, firstSummary, "Create orders")
-	assert.Contains(t, firstSummary, "Order placed event")
-}
-
-func TestCLIDiscoveryAdapter_Run_PlaybackCanceled(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	readmePath := filepath.Join(tmpDir, "README.md")
-	require.NoError(t, os.WriteFile(readmePath, []byte("My project idea"), 0o644))
-
-	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	answers := make([]string, 10)
-	for i := range answers {
-		answers[i] = "Answer"
-	}
-	prompter := &fakePrompter{
-		personaChoice: "1",
-		answers:       answers,
-		playbackErr:   context.Canceled, // Cancel during playback
-	}
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, prompter, tmpDir)
-
-	err := adapter.Run(context.Background())
-	assert.ErrorIs(t, err, context.Canceled)
+	// vo is used by newRapidStoryPrompter indirectly via domain constructors.
+	// This test verifies the fakes satisfy their interfaces.
+	var p application.StorytellingPrompter = &fakeStorytellingPrompter{}
+	assert.NotNil(t, p)
+	var w application.StoryWriter = &fakeStoryWriter{}
+	assert.NotNil(t, w)
 }

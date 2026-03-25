@@ -6,33 +6,44 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/alto-cli/alto/internal/discovery/application"
 	"github.com/alto-cli/alto/internal/discovery/domain"
 )
 
-// CLIDiscoveryAdapter orchestrates the CLI-based discovery flow.
+// CLIDiscoveryAdapter orchestrates the CLI-based storytelling discovery flow.
 type CLIDiscoveryAdapter struct {
-	handler    *application.DiscoveryHandler
-	prompter   application.Prompter
-	projectDir string
+	handler             *application.DiscoveryHandler
+	storytellingHandler *application.StorytellingHandler
+	prompter            application.StorytellingPrompter
+	projectDir          string
 }
 
 // NewCLIDiscoveryAdapter creates a new CLIDiscoveryAdapter.
 func NewCLIDiscoveryAdapter(
 	handler *application.DiscoveryHandler,
-	prompter application.Prompter,
+	storytellingHandler *application.StorytellingHandler,
+	prompter application.StorytellingPrompter,
 	projectDir string,
 ) *CLIDiscoveryAdapter {
 	return &CLIDiscoveryAdapter{
-		handler:    handler,
-		prompter:   prompter,
-		projectDir: projectDir,
+		handler:             handler,
+		storytellingHandler: storytellingHandler,
+		prompter:            prompter,
+		projectDir:          projectDir,
 	}
 }
 
-// Run executes the discovery flow: read README, start session, select persona.
+// personaChoices are the persona options presented to the user.
+var personaChoices = []application.Choice{
+	{Key: "1", Label: "Developer", Description: "I write code"},
+	{Key: "2", Label: "Product Owner", Description: "I define requirements"},
+	{Key: "3", Label: "Domain Expert", Description: "I know the business"},
+	{Key: "4", Label: "Mixed Team", Description: "Multiple roles"},
+}
+
+// Run executes the storytelling discovery flow:
+// read README, start session, select mode, select persona, run story loop, complete.
 func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 	// Step 1: Read README
 	readmePath := filepath.Join(a.projectDir, "README.md")
@@ -47,8 +58,21 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		return fmt.Errorf("starting session: %w", err)
 	}
 
-	// Step 3: Persona selection
-	choice, err := a.prompter.SelectPersona(ctx)
+	// Step 3: Select mode (MUST be before DetectPersona — SetMode requires StatusCreated)
+	mode, err := a.prompter.SelectMode(ctx)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return context.Canceled
+		}
+		return fmt.Errorf("selecting mode: %w", err)
+	}
+
+	if setModeErr := session.SetMode(mode); setModeErr != nil {
+		return fmt.Errorf("setting mode: %w", setModeErr)
+	}
+
+	// Step 4: Select persona
+	choice, err := a.prompter.AskChoice(ctx, "Who are you?", personaChoices, "1")
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return context.Canceled
@@ -56,104 +80,55 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		return fmt.Errorf("selecting persona: %w", err)
 	}
 
-	// Step 4: Detect persona in domain
 	session, err = a.handler.DetectPersona(session.SessionID(), choice)
 	if err != nil {
 		return fmt.Errorf("detecting persona: %w", err)
 	}
 
-	// Step 5: Question loop
-	sessionID := session.SessionID()
-	register, hasRegister := session.Register()
-	if !hasRegister {
-		return fmt.Errorf("session has no register after persona detection")
+	// Step 5: Create storytelling flow
+	flow, err := domain.NewStorytellingFlow(mode)
+	if err != nil {
+		return fmt.Errorf("creating storytelling flow: %w", err)
 	}
 
-	questions := domain.QuestionCatalog()
-	for i, question := range questions {
-		// Select text based on register
-		var text string
-		if register == domain.RegisterTechnical {
-			text = question.TechnicalText()
-		} else {
-			text = question.NonTechnicalText()
-		}
-
-		// Display progress and ask question
-		fmt.Printf("Q%d/%d\n", i+1, len(questions))
-		answer, err := a.prompter.AskQuestion(ctx, text)
+	// Step 6: Story loop
+	for storyIndex := 1; ; storyIndex++ {
+		_, _, err := a.storytellingHandler.RunStory(ctx, session, storyIndex, flow)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return context.Canceled
 			}
-			return fmt.Errorf("asking question %s: %w", question.ID(), err)
+			return fmt.Errorf("running story %d: %w", storyIndex, err)
 		}
 
-		// Handle answer or skip
-		if answer == "" {
-			// Skip: ask for reason
-			reason, skipErr := a.prompter.AskSkipReason(ctx)
-			if skipErr != nil {
-				if errors.Is(skipErr, context.Canceled) {
-					return context.Canceled
-				}
-				return fmt.Errorf("asking skip reason: %w", skipErr)
-			}
-			session, err = a.handler.SkipQuestion(sessionID, question.ID(), reason) //nolint:contextcheck // Discovery interface deliberately omits context
-			if err != nil {
-				return fmt.Errorf("skipping question %s: %w", question.ID(), err)
-			}
-		} else {
-			// Answer the question
-			session, err = a.handler.AnswerQuestion(sessionID, question.ID(), answer) //nolint:contextcheck // Discovery interface deliberately omits context
-			if err != nil {
-				return fmt.Errorf("answering question %s: %w", question.ID(), err)
-			}
+		// Check if we have enough stories
+		if flow.CheckStoryCompleteness(session.StoryCount()) == nil {
+			break
 		}
 
-		// Check for playback pending (triggered every 3 questions)
-		if session.Status() == domain.StatusPlaybackPending {
-			summary := a.buildPlaybackSummary(session, register)
-			confirmed, playbackErr := a.prompter.ConfirmPlayback(ctx, summary)
-			if playbackErr != nil {
-				if errors.Is(playbackErr, context.Canceled) {
-					return context.Canceled
-				}
-				return fmt.Errorf("playback confirmation: %w", playbackErr)
-			}
-			_, err = a.handler.ConfirmPlayback(sessionID, confirmed)
-			if err != nil {
-				return fmt.Errorf("confirming playback: %w", err)
-			}
+		// Ask if user wants to continue
+		continueChoices := []application.Choice{
+			{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
+			{Key: "no", Label: "No", Description: "Finish discovery"},
 		}
+
+		continueChoice, err := a.prompter.AskChoice(ctx, "Would you like to tell another story?", continueChoices, "yes")
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return context.Canceled
+			}
+			return fmt.Errorf("asking continue: %w", err)
+		}
+
+		if continueChoice == "no" {
+			break
+		}
+	}
+
+	// Step 7: Complete session
+	if _, err := a.handler.Complete(session.SessionID()); err != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+		return fmt.Errorf("completing session: %w", err)
 	}
 
 	return nil
-}
-
-// buildPlaybackSummary builds a text summary of answers for playback confirmation.
-func (a *CLIDiscoveryAdapter) buildPlaybackSummary(session *domain.DiscoverySession, register domain.DiscoveryRegister) string {
-	answers := session.Answers()
-	if len(answers) == 0 {
-		return "No answers recorded yet."
-	}
-
-	qByID := domain.QuestionByID()
-	var sb strings.Builder
-
-	for _, ans := range answers {
-		q, ok := qByID[ans.QuestionID()]
-		if !ok {
-			continue
-		}
-		var qText string
-		if register == domain.RegisterTechnical {
-			qText = q.TechnicalText()
-		} else {
-			qText = q.NonTechnicalText()
-		}
-		fmt.Fprintf(&sb, "Q: %s\nA: %s\n\n", qText, ans.ResponseText())
-	}
-
-	return strings.TrimSpace(sb.String())
 }

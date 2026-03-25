@@ -80,15 +80,25 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	fmt.Printf("Detected %d tool(s)\n", len(result.DetectedTools()))
 
 	// Step 2: Select prompter based on flag or env var
-	var prompter application.Prompter
+	var prompter application.StorytellingPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
-		prompter = infrastructure.NewStdinPrompter(os.Stdin, os.Stdout)
+		fmt.Fprintln(os.Stderr, "warning: --no-tui not yet supported for storytelling; using TUI")
+		prompter = infrastructure.NewHuhStorytellingPrompter()
 	} else {
-		prompter = infrastructure.NewHuhPrompter()
+		prompter = infrastructure.NewHuhStorytellingPrompter()
 	}
 
-	// Step 3: Discovery (interactive)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(app.DiscoveryHandler, prompter, ".")
+	// Step 3: Create StorytellingHandler
+	storyWriter := &infrastructure.StoryYAMLParser{}
+	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter)
+
+	// Step 4: Discovery (interactive storytelling)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(
+		app.DiscoveryHandler,
+		storytellingHandler,
+		prompter,
+		".",
+	)
 
 	if err := adapter.Run(ctx); err != nil {
 		return fmt.Errorf("discovery: %w", err)
@@ -108,6 +118,8 @@ func runGuideAgent(ctx context.Context, app *composition.App) error {
 }
 
 func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) error {
+	fmt.Fprintln(os.Stderr, "warning: --continue uses the legacy discovery flow; storytelling resume is Phase 6")
+
 	// Step 1: Check session exists via repository
 	sessionRepo := infrastructure.NewFileSystemSessionRepository(".alto")
 	exists, err := sessionRepo.Exists(ctx, "")
