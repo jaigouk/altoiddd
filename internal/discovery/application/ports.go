@@ -144,6 +144,55 @@ type ContextMapWriter interface {
 	Write(ctx context.Context, path string, cm *discoverydomain.ContextMap) error
 }
 
+// --- Storytelling Prompter Port ---
+
+// StorytellingPrompter handles interactive CLI prompts for the Domain Storytelling
+// discovery flow. Coexists with the legacy Prompter interface.
+type StorytellingPrompter interface {
+	// SelectMode prompts the user to choose between RAPID and THOROUGH discovery modes.
+	SelectMode(ctx context.Context) (discoverydomain.DiscoveryMode, error)
+
+	// ProposeStory presents a consultant-proposed story for user review and refinement.
+	ProposeStory(ctx context.Context, proposed *discoverydomain.DomainStory) (*discoverydomain.DomainStory, error)
+
+	// AskNarration asks a moderator question and returns the user's narration response.
+	AskNarration(ctx context.Context, question string, context string) (string, error)
+
+	// ConfirmSentence presents a structured sentence for confirmation.
+	// Returns the (possibly edited) sentence, whether it was accepted, and any error.
+	ConfirmSentence(ctx context.Context, sentence discoverydomain.StorySentence) (discoverydomain.StorySentence, bool, error)
+
+	// AskChoice presents lettered options with an optional recommendation.
+	// Returns the selected option key.
+	AskChoice(ctx context.Context, prompt string, options []Choice, recommended string) (string, error)
+
+	// DisplayStory renders a complete domain story for read-only display.
+	DisplayStory(ctx context.Context, story *discoverydomain.DomainStory) error
+
+	// SynthesisCheckpoint presents a synthesis summary for user confirmation.
+	SynthesisCheckpoint(ctx context.Context, synthesis SynthesisSummary) (bool, error)
+
+	// AskAnnotation prompts for a business rule annotation.
+	// Returns (annotation text, sentence number, error). Empty text = done. Sentence 0 = story-wide.
+	AskAnnotation(ctx context.Context) (string, int, error)
+}
+
+// Choice represents a selectable option in an AskChoice prompt.
+type Choice struct {
+	Key         string
+	Label       string
+	Description string
+}
+
+// SynthesisSummary contains the data shown during a synthesis checkpoint.
+type SynthesisSummary struct {
+	StoriesSoFar    []*discoverydomain.DomainStory
+	ActorInventory  []discoverydomain.StoryActor
+	ObjectInventory []discoverydomain.WorkObject
+	BoundarySignals []discoverydomain.BoundarySignal
+	GlossaryTerms   []string
+}
+
 // --- Tool Detection Port ---
 
 // ToolDetection detects installed AI coding tools and scans for configuration conflicts.

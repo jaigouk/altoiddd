@@ -53,6 +53,7 @@ type DiscoverySession struct {
 	sessionID                string
 	readmeContent            string
 	status                   DiscoveryStatus
+	storyRefs                []string // paths to completed .story.yaml files
 	events                   []DiscoveryCompletedEvent
 	classificationEvents     []BoundedContextClassifiedEvent
 	playbackConfirmations    []Playback
@@ -66,6 +67,16 @@ func (s *DiscoverySession) activeFlow() DiscoveryFlow {
 		return &FixedQuestionFlow{}
 	}
 	return s.flow
+}
+
+// activeStorytellingFlow returns the session's StorytellingFlow, or nil if
+// the session is not using a storytelling flow.
+func (s *DiscoverySession) activeStorytellingFlow() *StorytellingFlow {
+	sf, ok := s.activeFlow().(*StorytellingFlow)
+	if !ok {
+		return nil
+	}
+	return sf
 }
 
 // NewDiscoverySession creates a new session in CREATED state.
@@ -154,6 +165,18 @@ func (s *DiscoverySession) ClassificationEvents() []BoundedContextClassifiedEven
 	return out
 }
 
+// StoryRefs returns a defensive copy of story file paths.
+func (s *DiscoverySession) StoryRefs() []string {
+	out := make([]string, len(s.storyRefs))
+	copy(out, s.storyRefs)
+	return out
+}
+
+// StoryCount returns the number of completed stories.
+func (s *DiscoverySession) StoryCount() int {
+	return len(s.storyRefs)
+}
+
 // CurrentPhase returns the current discovery phase based on answered/skipped questions.
 func (s *DiscoverySession) CurrentPhase() QuestionPhase {
 	if len(s.answers) == 0 && len(s.skipped) == 0 {
@@ -201,6 +224,23 @@ func (s *DiscoverySession) CurrentPhase() QuestionPhase {
 }
 
 // -- Commands --
+
+// AddStoryRef records a completed story's file path.
+// Allowed in StatusPersonaDetected or StatusAnswering.
+// Transitions to StatusAnswering if in StatusPersonaDetected.
+func (s *DiscoverySession) AddStoryRef(storyPath string) error {
+	if strings.TrimSpace(storyPath) == "" {
+		return fmt.Errorf("story path cannot be empty: %w", domainerrors.ErrInvariantViolation)
+	}
+	if s.status != StatusPersonaDetected && s.status != StatusAnswering {
+		return fmt.Errorf("cannot add story ref in %s state: %w", s.status, domainerrors.ErrInvariantViolation)
+	}
+	s.storyRefs = append(s.storyRefs, storyPath)
+	if s.status == StatusPersonaDetected {
+		s.status = StatusAnswering
+	}
+	return nil
+}
 
 // SetTechStack sets the tech stack for this session.
 func (s *DiscoverySession) SetTechStack(ts *vo.TechStack) error {
@@ -339,18 +379,27 @@ func (s *DiscoverySession) ConfirmPlayback(confirmed bool, corrections string) e
 
 // Complete completes the discovery session.
 func (s *DiscoverySession) Complete() error {
-	if s.status != StatusAnswering {
-		return fmt.Errorf("can only complete from ANSWERING state, currently %s: %w",
+	if s.status != StatusAnswering && s.status != StatusPersonaDetected {
+		return fmt.Errorf("can only complete from ANSWERING or PERSONA_DETECTED state, currently %s: %w",
 			s.status, domainerrors.ErrInvariantViolation)
 	}
 
-	// Delegate completeness check to flow strategy
-	skippedBool := make(map[string]bool, len(s.skipped))
-	for id := range s.skipped {
-		skippedBool[id] = true
+	// Check story completeness for storytelling sessions
+	if sf := s.activeStorytellingFlow(); sf != nil {
+		if err := sf.CheckStoryCompleteness(s.StoryCount()); err != nil {
+			return fmt.Errorf("checking story completeness: %w", err)
+		}
 	}
-	if err := s.activeFlow().CheckCompleteness(s.answers, skippedBool); err != nil {
-		return fmt.Errorf("checking completeness: %w", err)
+
+	// Delegate completeness check to flow strategy (only when answers exist)
+	if s.status == StatusAnswering {
+		skippedBool := make(map[string]bool, len(s.skipped))
+		for id := range s.skipped {
+			skippedBool[id] = true
+		}
+		if err := s.activeFlow().CheckCompleteness(s.answers, skippedBool); err != nil {
+			return fmt.Errorf("checking completeness: %w", err)
+		}
 	}
 
 	if s.Mode() == ModeDeep {
@@ -532,6 +581,7 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		"round":                       roundVal,
 		"tech_stack":                  techStackVal,
 		"context_classifications":     classifications,
+		"story_refs":                  s.storyRefs,
 	}
 }
 
@@ -774,6 +824,27 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		}
 	}
 
+	// Parse story refs (backward compatible — absent = empty)
+	var storyRefs []string
+	if srVal, exists := data["story_refs"]; exists && srVal != nil {
+		switch raw := srVal.(type) {
+		case []interface{}:
+			storyRefs = make([]string, len(raw))
+			for i, item := range raw {
+				s, ok := item.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid story ref at index %d", i)
+				}
+				storyRefs[i] = s
+			}
+		case []string:
+			storyRefs = make([]string, len(raw))
+			copy(storyRefs, raw)
+		default:
+			return nil, fmt.Errorf("story_refs must be a list of strings")
+		}
+	}
+
 	return &DiscoverySession{
 		sessionID:                toString(data["session_id"]),
 		readmeContent:            toString(data["readme_content"]),
@@ -789,15 +860,33 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		round:                    round,
 		flow:                     flow,
 		contextClassifications:   contextClassifications,
+		storyRefs:                storyRefs,
 	}, nil
 }
 
 // flowFromMode returns the appropriate DiscoveryFlow for a given mode.
-// Returns FixedQuestionFlow for express/deep/nil, ConversationalFlow for conversational.
+// Returns FixedQuestionFlow for express/deep/nil, ConversationalFlow for conversational,
+// StorytellingFlow for rapid/thorough.
 func flowFromMode(mode *DiscoveryMode) DiscoveryFlow {
-	if mode != nil && *mode == ModeConversational {
-		return NewConversationalFlow(defaultConversationalPlaybackInterval)
+	if mode == nil {
+		return NewFixedQuestionFlow()
 	}
+
+	switch *mode {
+	case ModeConversational:
+		return NewConversationalFlow(defaultConversationalPlaybackInterval)
+	case ModeRapid, ModeThorough:
+		flow, err := NewStorytellingFlow(*mode)
+		if err != nil {
+			// Should never happen — mode is already validated.
+			return NewFixedQuestionFlow()
+		}
+
+		return flow
+	case ModeExpress, ModeDeep:
+		return NewFixedQuestionFlow()
+	}
+
 	return NewFixedQuestionFlow()
 }
 

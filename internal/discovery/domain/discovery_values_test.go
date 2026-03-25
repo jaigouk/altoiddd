@@ -102,11 +102,13 @@ func TestDiscoveryModeValues(t *testing.T) {
 	assert.Equal(t, "express", string(ModeExpress))
 	assert.Equal(t, "deep", string(ModeDeep))
 	assert.Equal(t, "conversational", string(ModeConversational))
+	assert.Equal(t, "rapid", string(ModeRapid))
+	assert.Equal(t, "thorough", string(ModeThorough))
 }
 
-func TestDiscoveryModeHasThreeMembers(t *testing.T) {
+func TestDiscoveryModeHasFiveMembers(t *testing.T) {
 	t.Parallel()
-	assert.Len(t, AllDiscoveryModes(), 3)
+	assert.Len(t, AllDiscoveryModes(), 5)
 }
 
 // -- DiscoveryRound enum tests --
@@ -230,15 +232,37 @@ func TestParseDiscoveryRegisterInvalid(t *testing.T) {
 
 func TestParseDiscoveryModeValid(t *testing.T) {
 	t.Parallel()
-	m, err := ParseDiscoveryMode("deep")
-	require.NoError(t, err)
-	assert.Equal(t, ModeDeep, m)
+	tests := []struct {
+		input    string
+		expected DiscoveryMode
+	}{
+		{"express", ModeExpress},
+		{"deep", ModeDeep},
+		{"conversational", ModeConversational},
+		{"rapid", ModeRapid},
+		{"thorough", ModeThorough},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
+			m, err := ParseDiscoveryMode(tt.input)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, m)
+		})
+	}
 }
 
 func TestParseDiscoveryModeInvalid(t *testing.T) {
 	t.Parallel()
 	_, err := ParseDiscoveryMode("turbo")
 	require.Error(t, err)
+}
+
+func TestAllDiscoveryModes_IncludesRapidAndThorough(t *testing.T) {
+	t.Parallel()
+	modes := AllDiscoveryModes()
+	assert.Contains(t, modes, ModeRapid)
+	assert.Contains(t, modes, ModeThorough)
 }
 
 // -- ParseDiscoveryRound tests --

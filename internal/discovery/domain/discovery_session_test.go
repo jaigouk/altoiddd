@@ -1165,6 +1165,198 @@ func TestDeepRound1CannotCompleteTwice(t *testing.T) {
 	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
 }
 
+// -- Story Refs --
+
+func TestDiscoverySession_AddStoryRef_FromPersonaDetected_TransitionsToAnswering(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	require.Equal(t, StatusPersonaDetected, session.Status())
+	err := session.AddStoryRef(".alto/stories/01-story.story.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, StatusAnswering, session.Status())
+	assert.Equal(t, 1, session.StoryCount())
+}
+
+func TestDiscoverySession_AddStoryRef_FromAnswering_StaysAnswering(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	_ = session.AddStoryRef("story1.yaml")
+	require.Equal(t, StatusAnswering, session.Status())
+	err := session.AddStoryRef("story2.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, StatusAnswering, session.Status())
+	assert.Equal(t, 2, session.StoryCount())
+}
+
+func TestDiscoverySession_AddStoryRef_EmptyPath_ReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	err := session.AddStoryRef("")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_AddStoryRef_WhitespacePath_ReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	err := session.AddStoryRef("   ")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_AddStoryRef_FromCreated_ReturnsError(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	err := session.AddStoryRef("story.yaml")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_AddStoryRef_FromCompleted_ReturnsError(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	answerAllQuestions(session)
+	_ = session.Complete()
+	err := session.AddStoryRef("story.yaml")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_StoryRefs_DefensiveCopy(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	_ = session.AddStoryRef("story1.yaml")
+	refs := session.StoryRefs()
+	refs[0] = "mutated"
+	assert.Equal(t, "story1.yaml", session.StoryRefs()[0])
+}
+
+func TestDiscoverySession_StoryCount_ZeroInitially(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	assert.Equal(t, 0, session.StoryCount())
+}
+
+func TestDiscoverySession_StoryCount_AfterAdd(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	_ = session.AddStoryRef("s1.yaml")
+	_ = session.AddStoryRef("s2.yaml")
+	_ = session.AddStoryRef("s3.yaml")
+	assert.Equal(t, 3, session.StoryCount())
+}
+
+func TestDiscoverySession_Complete_FromPersonaDetected_Succeeds(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	// No answers, no stories — edge case: user chose to complete immediately
+	err := session.Complete()
+	require.NoError(t, err)
+	assert.Equal(t, StatusCompleted, session.Status())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_WithStoryRefs(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	_ = session.AddStoryRef("stories/s1.yaml")
+	_ = session.AddStoryRef("stories/s2.yaml")
+	snap := session.ToSnapshot()
+	restored, err := FromSnapshot(snap)
+	require.NoError(t, err)
+	assert.Equal(t, session.StoryRefs(), restored.StoryRefs())
+	assert.Equal(t, 2, restored.StoryCount())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_WithoutStoryRefs(t *testing.T) {
+	t.Parallel()
+	// Simulate old snapshot without story_refs key
+	session := sessionWithPersona("1")
+	snap := session.ToSnapshot()
+	delete(snap, "story_refs") // simulate old format
+	restored, err := FromSnapshot(snap)
+	require.NoError(t, err)
+	assert.Empty(t, restored.StoryRefs())
+	assert.Equal(t, 0, restored.StoryCount())
+}
+
+func TestDiscoverySession_AddStoryRef_DuplicatePaths_Allowed(t *testing.T) {
+	t.Parallel()
+	session := sessionWithPersona("1")
+	_ = session.AddStoryRef("same.yaml")
+	err := session.AddStoryRef("same.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, 2, session.StoryCount())
+}
+
+// -- Storytelling Flow Session Integration --
+
+func TestDiscoverySession_SetMode_Rapid_ActiveStorytellingFlowNotNil(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	// Verify the flow is StorytellingFlow by checking PlaybackInterval (1 for storytelling)
+	assert.Equal(t, 1, session.activeFlow().PlaybackInterval())
+}
+
+func TestDiscoverySession_SetMode_Express_ActiveStorytellingFlowNil(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeExpress))
+	// FixedQuestionFlow has PlaybackInterval 3
+	assert.Equal(t, 3, session.activeFlow().PlaybackInterval())
+}
+
+func TestDiscoverySession_Complete_Storytelling_InsufficientStories_Error(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	// Add only 2 stories (rapid requires 3)
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+	require.NoError(t, session.AddStoryRef("s2.yaml"))
+	err := session.Complete()
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_Complete_Storytelling_SufficientStories_Succeeds(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	// Add 3 stories (rapid requires 3)
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+	require.NoError(t, session.AddStoryRef("s2.yaml"))
+	require.NoError(t, session.AddStoryRef("s3.yaml"))
+	err := session.Complete()
+	require.NoError(t, err)
+	assert.Equal(t, StatusCompleted, session.Status())
+}
+
+func TestDiscoverySession_FromSnapshot_RapidMode_FlowDispatch(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	snap := session.ToSnapshot()
+	restored, err := FromSnapshot(snap)
+	require.NoError(t, err)
+	// Verify restored session uses StorytellingFlow (PlaybackInterval 1)
+	assert.Equal(t, 1, restored.activeFlow().PlaybackInterval())
+	assert.Equal(t, ModeRapid, restored.Mode())
+}
+
+func TestDiscoverySession_FromSnapshot_ThoroughMode_FlowDispatch(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeThorough))
+	require.NoError(t, session.DetectPersona("1"))
+	snap := session.ToSnapshot()
+	restored, err := FromSnapshot(snap)
+	require.NoError(t, err)
+	assert.Equal(t, 1, restored.activeFlow().PlaybackInterval())
+	assert.Equal(t, ModeThorough, restored.Mode())
+}
+
 func TestDiscoveryCompletedEventCarriesTechStack(t *testing.T) {
 	t.Parallel()
 	session := sessionWithPersona("1")

@@ -217,6 +217,9 @@ status: draft
 | BoundedContextSketch | A proposed bounded context boundary derived from story analysis, with confidence score and supporting BoundarySignals. Presented to user as "proposed" not "definitive" *(added 2026-03-23)* | Domain Model |
 | DomainResearchResult | Structured output from AI domain research: actors, entities, workflows, failure modes, regulatory info, with trust levels and source URLs. Phase 4 feature *(added 2026-03-23)* | Guided Discovery |
 | QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor triggers fallback to user-narrated mode *(added 2026-03-23)* | Guided Discovery |
+| ModeratorQuestion | A dual-register question asked by the moderator during story narration, tagged with NarrationPhase and ModeratorElicits *(added 2026-03-25)* | Guided Discovery |
+| ModeratorElicits | What domain element a moderator question draws out: actor, sentence, annotation, done *(added 2026-03-25)* | Guided Discovery |
+| NarrationPhase | The progression of moderator questions within a single story narration cycle: opening, narration, deepening, closing *(added 2026-03-25)* | Guided Discovery |
 | UbiquitousLanguageEntry | A single term in the glossary with definition, bounded context, trust level, story references, optional aliases, and notes. Persisted in glossary.yaml *(added 2026-03-23)* | Domain Model |
 | Bounded Context | An explicit boundary around a domain model where terms have specific, unambiguous meanings | Domain Model |
 | Aggregate | A cluster of domain objects treated as a single unit for data changes, with one aggregate root | Domain Model |
