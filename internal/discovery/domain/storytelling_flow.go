@@ -12,6 +12,12 @@ const (
 	thoroughRequiredStories = 5
 )
 
+// Checkpoint constants — DDD.md invariants 6 and 8.
+const (
+	midStoryCheckpointEvery  = 3 // DDD.md invariant 6
+	boundaryDetectionMinimum = 2 // DDD.md invariant 8
+)
+
 // StorytellingFlow implements DiscoveryFlow for RAPID and THOROUGH
 // story-driven discovery modes.
 type StorytellingFlow struct {
@@ -78,6 +84,31 @@ func (f *StorytellingFlow) CheckStoryCompleteness(completedStoryCount int) error
 	}
 
 	return nil
+}
+
+// IsSynthesisCheckpointDue returns true when completedStoryCount >= 1.
+func (f *StorytellingFlow) IsSynthesisCheckpointDue(completedStoryCount int) bool {
+	return completedStoryCount >= 1
+}
+
+// IsMidStoryCheckpointDue returns true when sentencesSinceLastCheckpoint >= 3.
+func (f *StorytellingFlow) IsMidStoryCheckpointDue(sentencesSinceLastCheckpoint int) bool {
+	return sentencesSinceLastCheckpoint >= midStoryCheckpointEvery
+}
+
+// CanRunBoundaryDetection returns true when completedStoryCount >= 2.
+func (f *StorytellingFlow) CanRunBoundaryDetection(completedStoryCount int) bool {
+	return completedStoryCount >= boundaryDetectionMinimum
+}
+
+// ShouldSuggestBranchingSplit delegates to story.HasBranching().
+// Returns false for nil story (defensive, no panic).
+func (f *StorytellingFlow) ShouldSuggestBranchingSplit(story *DomainStory) bool {
+	if story == nil {
+		return false
+	}
+
+	return story.HasBranching()
 }
 
 // Mode returns the active discovery mode.

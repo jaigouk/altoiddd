@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // -- Compile-time interface check --
@@ -174,6 +175,146 @@ func TestStorytellingFlow_CheckStoryCompleteness_ZeroStories_Error(t *testing.T)
 	require.NoError(t, err)
 	err = flow.CheckStoryCompleteness(0)
 	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+// -- IsSynthesisCheckpointDue --
+
+func TestStorytellingFlow_IsSynthesisCheckpointDue_0_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.IsSynthesisCheckpointDue(0))
+}
+
+func TestStorytellingFlow_IsSynthesisCheckpointDue_1_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.True(t, flow.IsSynthesisCheckpointDue(1))
+}
+
+func TestStorytellingFlow_IsSynthesisCheckpointDue_3_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeThorough)
+	require.NoError(t, err)
+	assert.True(t, flow.IsSynthesisCheckpointDue(3))
+}
+
+// -- IsMidStoryCheckpointDue --
+
+func TestStorytellingFlow_IsMidStoryCheckpointDue_2_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.IsMidStoryCheckpointDue(2))
+}
+
+func TestStorytellingFlow_IsMidStoryCheckpointDue_3_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.True(t, flow.IsMidStoryCheckpointDue(3))
+}
+
+func TestStorytellingFlow_IsMidStoryCheckpointDue_4_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeThorough)
+	require.NoError(t, err)
+	assert.True(t, flow.IsMidStoryCheckpointDue(4))
+}
+
+func TestStorytellingFlow_IsMidStoryCheckpointDue_0_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.IsMidStoryCheckpointDue(0))
+}
+
+// -- CanRunBoundaryDetection --
+
+func TestStorytellingFlow_CanRunBoundaryDetection_0_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.CanRunBoundaryDetection(0))
+}
+
+func TestStorytellingFlow_CanRunBoundaryDetection_1_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.CanRunBoundaryDetection(1))
+}
+
+func TestStorytellingFlow_CanRunBoundaryDetection_2_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.True(t, flow.CanRunBoundaryDetection(2))
+}
+
+func TestStorytellingFlow_CanRunBoundaryDetection_5_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeThorough)
+	require.NoError(t, err)
+	assert.True(t, flow.CanRunBoundaryDetection(5))
+}
+
+// -- ShouldSuggestBranchingSplit --
+
+func TestStorytellingFlow_ShouldSuggestBranchingSplit_WithBranching_True(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+
+	story, err := NewDomainStory("Order Flow", StoryTypeCoarseGrained, TimeTypeAsIs, PurityTypePure, "Customer places order")
+	require.NoError(t, err)
+
+	actor, err := NewStoryActor("Customer", ActorTypePerson, vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddActor(actor))
+
+	wo, err := NewWorkObject("Order", WorkObjectTypeDocument, vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddWorkObject(wo))
+
+	// Activity contains branching keyword "sometimes"
+	sentence, err := NewStorySentence(1, "Customer", "sometimes creates", "Order", vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddSentence(sentence))
+
+	assert.True(t, flow.ShouldSuggestBranchingSplit(story))
+}
+
+func TestStorytellingFlow_ShouldSuggestBranchingSplit_NoBranching_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+
+	story, err := NewDomainStory("Order Flow", StoryTypeCoarseGrained, TimeTypeAsIs, PurityTypePure, "Customer places order")
+	require.NoError(t, err)
+
+	actor, err := NewStoryActor("Customer", ActorTypePerson, vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddActor(actor))
+
+	wo, err := NewWorkObject("Order", WorkObjectTypeDocument, vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddWorkObject(wo))
+
+	// Activity does NOT contain branching keywords
+	sentence, err := NewStorySentence(1, "Customer", "creates", "Order", vo.UserStated, "")
+	require.NoError(t, err)
+	require.NoError(t, story.AddSentence(sentence))
+
+	assert.False(t, flow.ShouldSuggestBranchingSplit(story))
+}
+
+func TestStorytellingFlow_ShouldSuggestBranchingSplit_NilStory_False(t *testing.T) {
+	t.Parallel()
+	flow, err := NewStorytellingFlow(ModeRapid)
+	require.NoError(t, err)
+	assert.False(t, flow.ShouldSuggestBranchingSplit(nil))
 }
 
 // -- Mode --
