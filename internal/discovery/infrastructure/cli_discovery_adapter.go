@@ -125,6 +125,11 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		}
 	}
 
+	// Step 6.5: Confirm boundaries (required by Invariant 9 for storytelling sessions)
+	if err := session.ConfirmBoundaries(nil); err != nil {
+		return fmt.Errorf("confirming boundaries: %w", err)
+	}
+
 	// Step 7: Complete session
 	if _, err := a.handler.Complete(session.SessionID()); err != nil { //nolint:contextcheck // Discovery interface deliberately omits context
 		return fmt.Errorf("completing session: %w", err)

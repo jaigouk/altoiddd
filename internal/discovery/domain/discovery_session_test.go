@@ -1327,6 +1327,7 @@ func TestDiscoverySession_Complete_Storytelling_SufficientStories_Succeeds(t *te
 	require.NoError(t, session.AddStoryRef("s1.yaml"))
 	require.NoError(t, session.AddStoryRef("s2.yaml"))
 	require.NoError(t, session.AddStoryRef("s3.yaml"))
+	require.NoError(t, session.ConfirmBoundaries(nil))
 	err := session.Complete()
 	require.NoError(t, err)
 	assert.Equal(t, StatusCompleted, session.Status())
@@ -1355,6 +1356,168 @@ func TestDiscoverySession_FromSnapshot_ThoroughMode_FlowDispatch(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, restored.activeFlow().PlaybackInterval())
 	assert.Equal(t, ModeThorough, restored.Mode())
+}
+
+// -- Boundary Confirmation --
+
+func TestDiscoverySession_ConfirmBoundaries_HappyPath(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+	require.Equal(t, StatusAnswering, session.Status())
+
+	sketch1, err := NewBoundedContextSketch("Ordering", vo.SubdomainCore, 0.8, nil, nil, nil, nil, vo.UserStated)
+	require.NoError(t, err)
+	sketch2, err := NewBoundedContextSketch("Shipping", vo.SubdomainSupporting, 0.6, nil, nil, nil, nil, vo.UserStated)
+	require.NoError(t, err)
+
+	err = session.ConfirmBoundaries([]BoundedContextSketch{sketch1, sketch2})
+	require.NoError(t, err)
+	assert.True(t, session.BoundariesConfirmed())
+	assert.Len(t, session.ConfirmedSketches(), 2)
+	assert.Equal(t, "Ordering", session.ConfirmedSketches()[0].Name())
+	assert.Equal(t, "Shipping", session.ConfirmedSketches()[1].Name())
+}
+
+func TestDiscoverySession_ConfirmBoundaries_WrongState(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		session *DiscoverySession
+	}{
+		{"created", NewDiscoverySession("idea")},
+		{"persona_detected", sessionWithPersona("1")},
+		{"completed", func() *DiscoverySession {
+			s := sessionWithPersona("1")
+			answerAllQuestions(s)
+			_ = s.Complete()
+			return s
+		}()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.session.ConfirmBoundaries(nil)
+			require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+		})
+	}
+}
+
+func TestDiscoverySession_ConfirmBoundaries_EmptySlice_Succeeds(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	err := session.ConfirmBoundaries([]BoundedContextSketch{})
+	require.NoError(t, err)
+	assert.True(t, session.BoundariesConfirmed())
+	assert.Empty(t, session.ConfirmedSketches())
+}
+
+func TestDiscoverySession_ConfirmBoundaries_NilSlice_Succeeds(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	err := session.ConfirmBoundaries(nil)
+	require.NoError(t, err)
+	assert.True(t, session.BoundariesConfirmed())
+	assert.Empty(t, session.ConfirmedSketches())
+}
+
+func TestDiscoverySession_ConfirmedSketches_DefensiveCopy(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sketch, err := NewBoundedContextSketch("Ordering", vo.SubdomainCore, 0.8, nil, nil, nil, nil, vo.UserStated)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	// Mutate the returned slice — original must be unaffected
+	returned := session.ConfirmedSketches()
+	returned[0] = BoundedContextSketch{} // zero value
+	assert.Equal(t, "Ordering", session.ConfirmedSketches()[0].Name())
+}
+
+func TestDiscoverySession_BoundariesConfirmed_FalseInitially(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	assert.False(t, session.BoundariesConfirmed())
+}
+
+func TestDiscoverySession_Complete_RequiresBoundariesForStorytelling(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	// Add 3 stories (rapid requires 3) — CanRunBoundaryDetection(3) == true
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+	require.NoError(t, session.AddStoryRef("s2.yaml"))
+	require.NoError(t, session.AddStoryRef("s3.yaml"))
+	// Do NOT call ConfirmBoundaries
+	err := session.Complete()
+	require.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+	assert.Contains(t, err.Error(), "boundary confirmation required")
+}
+
+func TestDiscoverySession_Complete_LegacySession_NoBoundaryRequirement(t *testing.T) {
+	t.Parallel()
+	// Express mode (FixedQuestionFlow) — no boundary confirmation needed
+	session := sessionWithPersona("1")
+	answerAllQuestions(session)
+	err := session.Complete()
+	require.NoError(t, err)
+	assert.Equal(t, StatusCompleted, session.Status())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_WithConfirmedSketches(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sketch1, err := NewBoundedContextSketch("Ordering", vo.SubdomainCore, 0.8, nil, nil, nil, nil, vo.UserStated)
+	require.NoError(t, err)
+	sketch2, err := NewBoundedContextSketch("Shipping", vo.SubdomainSupporting, 0.6, nil, nil, nil, nil, vo.UserStated)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch1, sketch2}))
+
+	snap := session.ToSnapshot()
+	// Verify via JSON round-trip (simulates persistence)
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	assert.True(t, restored.BoundariesConfirmed())
+	assert.Len(t, restored.ConfirmedSketches(), 2)
+	assert.Equal(t, "Ordering", restored.ConfirmedSketches()[0].Name())
+	assert.Equal(t, "Shipping", restored.ConfirmedSketches()[1].Name())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_WithoutConfirmedSketches(t *testing.T) {
+	t.Parallel()
+	// Simulate old snapshot without confirmed_sketches/boundaries_confirmed keys
+	session := sessionWithPersona("1")
+	snap := session.ToSnapshot()
+	delete(snap, "confirmed_sketches")
+	delete(snap, "boundaries_confirmed")
+	restored, err := FromSnapshot(snap)
+	require.NoError(t, err)
+	assert.False(t, restored.BoundariesConfirmed())
+	assert.Empty(t, restored.ConfirmedSketches())
 }
 
 func TestDiscoveryCompletedEventCarriesTechStack(t *testing.T) {

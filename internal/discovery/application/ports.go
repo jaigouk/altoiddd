@@ -211,3 +211,17 @@ type ToolDetection interface {
 type BoundaryDetector interface {
 	DetectBoundaries(ctx context.Context, stories []*discoverydomain.DomainStory, mode discoverydomain.DiscoveryMode) ([]discoverydomain.BoundedContextSketch, error)
 }
+
+// --- Boundary Prompter Port ---
+
+// BoundaryPrompter handles CLI interaction for boundary detection results.
+// Separate from StorytellingPrompter per ISP (not all callers need boundary UI).
+type BoundaryPrompter interface {
+	// DisplayBoundaryProposals presents sketches for per-sketch accept/reject.
+	// Returns names of accepted sketches.
+	DisplayBoundaryProposals(ctx context.Context, proposals []discoverydomain.BoundedContextSketch) ([]string, error)
+
+	// AskMissingContext asks if the user sees a missing area.
+	// Returns non-empty string if yes, empty if no.
+	AskMissingContext(ctx context.Context) (string, error)
+}

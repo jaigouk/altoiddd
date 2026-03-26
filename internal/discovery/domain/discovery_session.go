@@ -59,6 +59,8 @@ type DiscoverySession struct {
 	playbackConfirmations    []Playback
 	answers                  []Answer
 	answersSinceLastPlayback int
+	confirmedSketches        []BoundedContextSketch
+	boundariesConfirmed      bool
 }
 
 // activeFlow returns the session's flow strategy, defaulting to FixedQuestionFlow.
@@ -177,6 +179,18 @@ func (s *DiscoverySession) StoryCount() int {
 	return len(s.storyRefs)
 }
 
+// ConfirmedSketches returns a defensive copy of confirmed boundary sketches.
+func (s *DiscoverySession) ConfirmedSketches() []BoundedContextSketch {
+	out := make([]BoundedContextSketch, len(s.confirmedSketches))
+	copy(out, s.confirmedSketches)
+	return out
+}
+
+// BoundariesConfirmed returns whether boundaries have been confirmed.
+func (s *DiscoverySession) BoundariesConfirmed() bool {
+	return s.boundariesConfirmed
+}
+
 // CurrentPhase returns the current discovery phase based on answered/skipped questions.
 func (s *DiscoverySession) CurrentPhase() QuestionPhase {
 	if len(s.answers) == 0 && len(s.skipped) == 0 {
@@ -239,6 +253,20 @@ func (s *DiscoverySession) AddStoryRef(storyPath string) error {
 	if s.status == StatusPersonaDetected {
 		s.status = StatusAnswering
 	}
+	return nil
+}
+
+// ConfirmBoundaries stores user-confirmed boundary sketches.
+// Allowed in StatusAnswering only. Sets boundariesConfirmed flag.
+// Empty/nil slice is valid (user confirms no boundaries — single-context domain).
+func (s *DiscoverySession) ConfirmBoundaries(sketches []BoundedContextSketch) error {
+	if s.status != StatusAnswering {
+		return fmt.Errorf("can only confirm boundaries in ANSWERING state, currently %s: %w",
+			s.status, domainerrors.ErrInvariantViolation)
+	}
+	s.confirmedSketches = make([]BoundedContextSketch, len(sketches))
+	copy(s.confirmedSketches, sketches)
+	s.boundariesConfirmed = true
 	return nil
 }
 
@@ -388,6 +416,14 @@ func (s *DiscoverySession) Complete() error {
 	if sf := s.activeStorytellingFlow(); sf != nil {
 		if err := sf.CheckStoryCompleteness(s.StoryCount()); err != nil {
 			return fmt.Errorf("checking story completeness: %w", err)
+		}
+	}
+
+	// Check boundary confirmation for storytelling sessions (DDD.md Invariant 9)
+	if sf := s.activeStorytellingFlow(); sf != nil {
+		if sf.CanRunBoundaryDetection(s.StoryCount()) && !s.boundariesConfirmed {
+			return fmt.Errorf("boundary confirmation required for storytelling sessions with %d stories: %w",
+				s.StoryCount(), domainerrors.ErrInvariantViolation)
 		}
 	}
 
@@ -567,6 +603,12 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		}
 	}
 
+	// Serialize confirmed sketch names
+	confirmedSketchNames := make([]string, len(s.confirmedSketches))
+	for i, sk := range s.confirmedSketches {
+		confirmedSketchNames[i] = sk.Name()
+	}
+
 	return map[string]interface{}{
 		"session_id":                  s.sessionID,
 		"readme_content":              s.readmeContent,
@@ -582,6 +624,8 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		"tech_stack":                  techStackVal,
 		"context_classifications":     classifications,
 		"story_refs":                  s.storyRefs,
+		"confirmed_sketches":          confirmedSketchNames,
+		"boundaries_confirmed":        s.boundariesConfirmed,
 	}
 }
 
@@ -845,6 +889,51 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		}
 	}
 
+	// Parse confirmed sketches (backward compatible — absent = empty)
+	var confirmedSketches []BoundedContextSketch
+	if csVal, exists := data["confirmed_sketches"]; exists && csVal != nil {
+		switch raw := csVal.(type) {
+		case []interface{}:
+			confirmedSketches = make([]BoundedContextSketch, 0, len(raw))
+			for _, item := range raw {
+				nameStr, ok := item.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid confirmed sketch name")
+				}
+				sketch, err := NewBoundedContextSketch(
+					nameStr, vo.SubdomainGeneric, 0, nil, nil, nil, nil, vo.AIInferred,
+				)
+				if err != nil {
+					return nil, fmt.Errorf("reconstructing confirmed sketch %q: %w", nameStr, err)
+				}
+				confirmedSketches = append(confirmedSketches, sketch)
+			}
+		case []string:
+			confirmedSketches = make([]BoundedContextSketch, 0, len(raw))
+			for _, nameStr := range raw {
+				sketch, err := NewBoundedContextSketch(
+					nameStr, vo.SubdomainGeneric, 0, nil, nil, nil, nil, vo.AIInferred,
+				)
+				if err != nil {
+					return nil, fmt.Errorf("reconstructing confirmed sketch %q: %w", nameStr, err)
+				}
+				confirmedSketches = append(confirmedSketches, sketch)
+			}
+		default:
+			return nil, fmt.Errorf("confirmed_sketches must be a list")
+		}
+	}
+
+	// Parse boundaries_confirmed (backward compatible — absent = false)
+	var boundariesConfirmed bool
+	if bcVal, exists := data["boundaries_confirmed"]; exists && bcVal != nil {
+		bc, ok := bcVal.(bool)
+		if !ok {
+			return nil, fmt.Errorf("boundaries_confirmed must be a boolean")
+		}
+		boundariesConfirmed = bc
+	}
+
 	return &DiscoverySession{
 		sessionID:                toString(data["session_id"]),
 		readmeContent:            toString(data["readme_content"]),
@@ -861,6 +950,8 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 		flow:                     flow,
 		contextClassifications:   contextClassifications,
 		storyRefs:                storyRefs,
+		confirmedSketches:        confirmedSketches,
+		boundariesConfirmed:      boundariesConfirmed,
 	}, nil
 }
 
