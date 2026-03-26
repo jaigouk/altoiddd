@@ -13,6 +13,7 @@ import (
 	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
 	"github.com/alto-cli/alto/internal/discovery/infrastructure"
 	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // --- Fake StorytellingPrompter for Testing ---
@@ -188,13 +189,16 @@ func TestCLIDiscoveryAdapter_Run_HappyPath_RapidMode(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
 
 	prompter := newRapidStoryPrompter(3) // RAPID = 3 stories
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
@@ -215,8 +219,10 @@ func TestCLIDiscoveryAdapter_Run_ModeCanceled(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	assert.ErrorIs(t, err, context.Canceled)
@@ -236,8 +242,10 @@ func TestCLIDiscoveryAdapter_Run_PersonaCanceled(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	assert.ErrorIs(t, err, context.Canceled)
@@ -252,8 +260,10 @@ func TestCLIDiscoveryAdapter_Run_MissingREADME(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.Error(t, err)
@@ -265,13 +275,16 @@ func TestCLIDiscoveryAdapter_Run_CompleteCalled(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
@@ -286,12 +299,7 @@ func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-
-	// 4 stories: 3 required for RAPID + 1 extra (user says "yes" to continue after 3rd, then completeness check passes)
-	// Actually after 3rd story, CheckStoryCompleteness passes → loop breaks. So 3 stories max.
-	// To get 4 stories, user needs to say "yes" before completeness check.
-	// But the contract says: after RunStory, check completeness first. If enough, break.
-	// So to test >3 stories, we'd need THOROUGH mode (5 required).
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
 
 	// Let's test THOROUGH with exactly 5 stories.
 	prompter := newRapidStoryPrompter(5)
@@ -302,8 +310,10 @@ func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	detector, bPrompter, cmWriter := newBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	err := adapter.Run(context.Background())
 	require.NoError(t, err)
@@ -311,14 +321,231 @@ func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 	assert.Len(t, writer.written, 5)
 }
 
-// --- Unused import guard for vo ---
+// --- Boundary Detection Tests ---
+
+func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithContextMapWritten(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+
+	prompter := newRapidStoryPrompter(3)
+	writer := &fakeStoryWriter{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	// Detector returns 2 sketches, prompter accepts both, no missing context
+	detector := &fakeBoundaryDetector{
+		sketches: makeTestSketches(t, "Orders", "Shipping"),
+	}
+	bPrompter := &fakeBoundaryPrompter{
+		acceptedNames: []string{"Orders", "Shipping"},
+	}
+	cmWriter := &fakeContextMapWriter{}
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	require.NoError(t, err)
+
+	// Context map written
+	require.NotNil(t, cmWriter.writtenMap)
+	assert.Len(t, cmWriter.writtenMap.Contexts(), 2)
+	assert.Contains(t, cmWriter.writtenPath, "context-map.yaml")
+}
+
+func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithMissingContext(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+
+	prompter := newRapidStoryPrompter(3)
+	writer := &fakeStoryWriter{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	detector := &fakeBoundaryDetector{
+		sketches: makeTestSketches(t, "Orders"),
+	}
+	bPrompter := &fakeBoundaryPrompter{
+		acceptedNames: []string{"Orders"},
+		missingName:   "Payments", // user adds a missing context
+	}
+	cmWriter := &fakeContextMapWriter{}
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	require.NoError(t, err)
+
+	// Context map should have 2 contexts: 1 detected + 1 user-stated
+	require.NotNil(t, cmWriter.writtenMap)
+	assert.Len(t, cmWriter.writtenMap.Contexts(), 2)
+}
+
+func TestCLIDiscoveryAdapter_Run_BoundaryDetection_UserRejectsAll(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+
+	prompter := newRapidStoryPrompter(3)
+	writer := &fakeStoryWriter{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	detector := &fakeBoundaryDetector{
+		sketches: makeTestSketches(t, "Orders"),
+	}
+	bPrompter := &fakeBoundaryPrompter{
+		acceptedNames: []string{}, // reject all
+	}
+	cmWriter := &fakeContextMapWriter{}
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	require.NoError(t, err)
+
+	// Empty context map is valid (single-context domain)
+	require.NotNil(t, cmWriter.writtenMap)
+	assert.Empty(t, cmWriter.writtenMap.Contexts())
+}
+
+func TestCLIDiscoveryAdapter_Run_BoundaryDetection_CancelDuringDisplay(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
+
+	prompter := newRapidStoryPrompter(3)
+	writer := &fakeStoryWriter{}
+	handler := application.NewDiscoveryHandler(&fakePublisher{})
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+
+	detector := &fakeBoundaryDetector{
+		sketches: makeTestSketches(t, "Orders"),
+	}
+	bPrompter := &fakeBoundaryPrompter{
+		displayErr: context.Canceled,
+	}
+	cmWriter := &fakeContextMapWriter{}
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
+
+	err := adapter.Run(context.Background())
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+// --- Test Helpers ---
+
+func makeTestSketches(t *testing.T, names ...string) []discoverydomain.BoundedContextSketch {
+	t.Helper()
+
+	sketches := make([]discoverydomain.BoundedContextSketch, 0, len(names))
+	for _, name := range names {
+		sketch, err := discoverydomain.NewBoundedContextSketch(
+			name, vo.SubdomainCore, 0.75,
+			[]string{"User"}, nil, nil, nil, vo.AIInferred,
+		)
+		require.NoError(t, err)
+		sketches = append(sketches, sketch)
+	}
+
+	return sketches
+}
+
+// --- Fake BoundaryDetector ---
+
+type fakeBoundaryDetector struct {
+	sketches []discoverydomain.BoundedContextSketch
+	err      error
+}
+
+func (f *fakeBoundaryDetector) DetectBoundaries(_ context.Context, _ []*discoverydomain.DomainStory, _ discoverydomain.DiscoveryMode) ([]discoverydomain.BoundedContextSketch, error) {
+	return f.sketches, f.err
+}
+
+var _ application.BoundaryDetector = (*fakeBoundaryDetector)(nil)
+
+// --- Fake BoundaryPrompter ---
+
+type fakeBoundaryPrompter struct {
+	// DisplayBoundaryProposals
+	acceptedNames []string
+	displayErr    error
+
+	// AskMissingContext
+	missingName string
+	missingErr  error
+}
+
+func (f *fakeBoundaryPrompter) DisplayBoundaryProposals(_ context.Context, proposals []discoverydomain.BoundedContextSketch) ([]string, error) {
+	if f.displayErr != nil {
+		return nil, f.displayErr
+	}
+	if f.acceptedNames != nil {
+		return f.acceptedNames, nil
+	}
+	// Default: accept all proposals
+	names := make([]string, len(proposals))
+	for i, p := range proposals {
+		names[i] = p.Name()
+	}
+	return names, nil
+}
+
+func (f *fakeBoundaryPrompter) AskMissingContext(_ context.Context) (string, error) {
+	return f.missingName, f.missingErr
+}
+
+var _ application.BoundaryPrompter = (*fakeBoundaryPrompter)(nil)
+
+// --- Fake ContextMapWriter ---
+
+type fakeContextMapWriter struct {
+	writtenPath string
+	writtenMap  *discoverydomain.ContextMap
+	err         error
+}
+
+func (f *fakeContextMapWriter) Write(_ context.Context, path string, cm *discoverydomain.ContextMap) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.writtenPath = path
+	f.writtenMap = cm
+	return nil
+}
+
+var _ application.ContextMapWriter = (*fakeContextMapWriter)(nil)
+
+// --- Helper: create standard boundary detection fakes ---
+
+func newBoundaryFakes() (*fakeBoundaryDetector, *fakeBoundaryPrompter, *fakeContextMapWriter) {
+	return &fakeBoundaryDetector{}, &fakeBoundaryPrompter{}, &fakeContextMapWriter{}
+}
+
+// --- Interface compliance checks ---
 
 func TestFakeStoryWriter_InterfaceCompliance(t *testing.T) {
 	t.Parallel()
-	// vo is used by newRapidStoryPrompter indirectly via domain constructors.
-	// This test verifies the fakes satisfy their interfaces.
 	var p application.StorytellingPrompter = &fakeStorytellingPrompter{}
 	assert.NotNil(t, p)
 	var w application.StoryWriter = &fakeStoryWriter{}
 	assert.NotNil(t, w)
+	var bd application.BoundaryDetector = &fakeBoundaryDetector{}
+	assert.NotNil(t, bd)
+	var bp application.BoundaryPrompter = &fakeBoundaryPrompter{}
+	assert.NotNil(t, bp)
+	var cmw application.ContextMapWriter = &fakeContextMapWriter{}
+	assert.NotNil(t, cmw)
 }

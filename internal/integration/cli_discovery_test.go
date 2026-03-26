@@ -141,6 +141,69 @@ func (f *fakePublisher) Publish(_ context.Context, _ any) error { return nil }
 var _ sharedapp.EventPublisher = (*fakePublisher)(nil)
 
 // ---------------------------------------------------------------------------
+// Fake Boundary Detection Collaborators
+// ---------------------------------------------------------------------------
+
+type fakeBoundaryDetector struct {
+	sketches []discoverydomain.BoundedContextSketch
+	err      error
+}
+
+func (f *fakeBoundaryDetector) DetectBoundaries(_ context.Context, _ []*discoverydomain.DomainStory, _ discoverydomain.DiscoveryMode) ([]discoverydomain.BoundedContextSketch, error) {
+	return f.sketches, f.err
+}
+
+var _ application.BoundaryDetector = (*fakeBoundaryDetector)(nil)
+
+type fakeBoundaryPrompter struct {
+	acceptedNames []string
+	displayErr    error
+	missingName   string
+	missingErr    error
+}
+
+func (f *fakeBoundaryPrompter) DisplayBoundaryProposals(_ context.Context, proposals []discoverydomain.BoundedContextSketch) ([]string, error) {
+	if f.displayErr != nil {
+		return nil, f.displayErr
+	}
+	if f.acceptedNames != nil {
+		return f.acceptedNames, nil
+	}
+	names := make([]string, len(proposals))
+	for i, p := range proposals {
+		names[i] = p.Name()
+	}
+	return names, nil
+}
+
+func (f *fakeBoundaryPrompter) AskMissingContext(_ context.Context) (string, error) {
+	return f.missingName, f.missingErr
+}
+
+var _ application.BoundaryPrompter = (*fakeBoundaryPrompter)(nil)
+
+type fakeContextMapWriter struct {
+	writtenPath string
+	writtenMap  *discoverydomain.ContextMap
+	err         error
+}
+
+func (f *fakeContextMapWriter) Write(_ context.Context, path string, cm *discoverydomain.ContextMap) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.writtenPath = path
+	f.writtenMap = cm
+	return nil
+}
+
+var _ application.ContextMapWriter = (*fakeContextMapWriter)(nil)
+
+func newIntegrationBoundaryFakes() (*fakeBoundaryDetector, *fakeBoundaryPrompter, *fakeContextMapWriter) {
+	return &fakeBoundaryDetector{}, &fakeBoundaryPrompter{}, &fakeContextMapWriter{}
+}
+
+// ---------------------------------------------------------------------------
 // Helper: build a prompter for N rapid-mode stories
 // ---------------------------------------------------------------------------
 
@@ -199,7 +262,10 @@ func TestCLIDiscovery_HappyPath_StorytellingFlow(t *testing.T) {
 	// And: fully wired handler + storytelling handler + adapter
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())
@@ -230,7 +296,9 @@ func TestCLIDiscovery_ModeCancellation_PropagatesError(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())
@@ -256,7 +324,9 @@ func TestCLIDiscovery_PersonaCancellation_PropagatesError(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())
@@ -283,7 +353,9 @@ func TestCLIDiscovery_StoryCancellation_PropagatesError(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())
@@ -308,7 +380,10 @@ func TestCLIDiscovery_MultipleStories(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())
@@ -332,7 +407,9 @@ func TestCLIDiscovery_MissingREADME(t *testing.T) {
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
-	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, prompter, tmpDir)
+	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
+	bdHandler := application.NewBoundaryDetectionHandler(detector)
+	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
 	err := adapter.Run(context.Background())

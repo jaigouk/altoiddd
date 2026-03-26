@@ -92,10 +92,18 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	storyWriter := &infrastructure.StoryYAMLParser{}
 	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter)
 
+	// Step 3.5: Create boundary detection dependencies
+	boundaryPrompter := infrastructure.NewHuhBoundaryPrompter()
+	boundaryDetectionHandler := application.NewBoundaryDetectionHandler(app.BoundaryDetector)
+	contextMapWriter := &infrastructure.ContextMapYAMLParser{}
+
 	// Step 4: Discovery (interactive storytelling)
 	adapter := infrastructure.NewCLIDiscoveryAdapter(
 		app.DiscoveryHandler,
 		storytellingHandler,
+		boundaryDetectionHandler,
+		boundaryPrompter,
+		contextMapWriter,
 		prompter,
 		".",
 	)

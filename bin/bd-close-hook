@@ -9,6 +9,13 @@
 
 set -uo pipefail
 
+# Fast exit: skip the expensive JSON parse if input doesn't contain "bd close".
+# CLAUDE_TOOL_INPUT is JSON like {"command":"bd close ..."} — string match is safe.
+case "${CLAUDE_TOOL_INPUT:-}" in
+    *'"bd close'*|*"bd close"*) ;; # might be bd close — parse to confirm
+    *) exit 0 ;; # definitely not bd close — skip
+esac
+
 # Extract the command from tool input JSON.
 COMMAND=$(echo "$CLAUDE_TOOL_INPUT" | python3 -c "
 import sys, json

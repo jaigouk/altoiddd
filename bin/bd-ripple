@@ -186,6 +186,58 @@ done
 echo ""
 echo "Done. $FLAGGED ticket(s) flagged for review."
 
+# --- Template Compliance Check ---
+# Verify flagged tickets follow the beads ticket template (required sections).
+# Required sections from docs/beads_templates/beads-ticket-template.md.
+
+REQUIRED_SECTIONS=(
+    "## Goal"
+    "## Acceptance Criteria"
+    "## Design"
+    "## TDD Workflow"
+)
+
+TEMPLATE_ISSUES=0
+echo ""
+echo "=== Template Compliance Check ==="
+
+for tid in "${TO_FLAG[@]}"; do
+    DESC=$(bd show "$tid" --json 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data[0].get('description', ''))
+except:
+    pass
+" 2>/dev/null || true)
+
+    if [[ -z "$DESC" ]]; then
+        echo "  ⚠ $tid — could not read description"
+        TEMPLATE_ISSUES=$((TEMPLATE_ISSUES + 1))
+        continue
+    fi
+
+    MISSING=()
+    for section in "${REQUIRED_SECTIONS[@]}"; do
+        if ! echo "$DESC" | grep -qi "$(echo "$section" | sed 's/^## //')"; then
+            MISSING+=("$section")
+        fi
+    done
+
+    if [[ ${#MISSING[@]} -gt 0 ]]; then
+        echo "  ⚠ $tid — missing sections: ${MISSING[*]}"
+        TEMPLATE_ISSUES=$((TEMPLATE_ISSUES + 1))
+    else
+        echo "  ✓ $tid — template compliant"
+    fi
+done
+
+if [[ $TEMPLATE_ISSUES -gt 0 ]]; then
+    echo ""
+    echo "  $TEMPLATE_ISSUES ticket(s) have template gaps. Groom before claiming."
+    echo "  Template: docs/beads_templates/beads-ticket-template.md"
+fi
+
 # Run claim verification on flagged tickets (Step 7 of alto-7xe)
 if command -v alto &> /dev/null; then
     echo ""

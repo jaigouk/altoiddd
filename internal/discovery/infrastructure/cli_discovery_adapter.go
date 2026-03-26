@@ -9,28 +9,38 @@ import (
 
 	"github.com/alto-cli/alto/internal/discovery/application"
 	"github.com/alto-cli/alto/internal/discovery/domain"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 // CLIDiscoveryAdapter orchestrates the CLI-based storytelling discovery flow.
 type CLIDiscoveryAdapter struct {
-	handler             *application.DiscoveryHandler
-	storytellingHandler *application.StorytellingHandler
-	prompter            application.StorytellingPrompter
-	projectDir          string
+	handler                  *application.DiscoveryHandler
+	storytellingHandler      *application.StorytellingHandler
+	boundaryDetectionHandler *application.BoundaryDetectionHandler
+	boundaryPrompter         application.BoundaryPrompter
+	contextMapWriter         application.ContextMapWriter
+	prompter                 application.StorytellingPrompter
+	projectDir               string
 }
 
 // NewCLIDiscoveryAdapter creates a new CLIDiscoveryAdapter.
 func NewCLIDiscoveryAdapter(
 	handler *application.DiscoveryHandler,
 	storytellingHandler *application.StorytellingHandler,
+	boundaryDetectionHandler *application.BoundaryDetectionHandler,
+	boundaryPrompter application.BoundaryPrompter,
+	contextMapWriter application.ContextMapWriter,
 	prompter application.StorytellingPrompter,
 	projectDir string,
 ) *CLIDiscoveryAdapter {
 	return &CLIDiscoveryAdapter{
-		handler:             handler,
-		storytellingHandler: storytellingHandler,
-		prompter:            prompter,
-		projectDir:          projectDir,
+		handler:                  handler,
+		storytellingHandler:      storytellingHandler,
+		boundaryDetectionHandler: boundaryDetectionHandler,
+		boundaryPrompter:         boundaryPrompter,
+		contextMapWriter:         contextMapWriter,
+		prompter:                 prompter,
+		projectDir:               projectDir,
 	}
 }
 
@@ -91,15 +101,20 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		return fmt.Errorf("creating storytelling flow: %w", err)
 	}
 
-	// Step 6: Story loop
+	// Step 6: Story loop — accumulate stories for boundary detection
+	var accumulatedStories []*domain.DomainStory
+
 	for storyIndex := 1; ; storyIndex++ {
-		_, _, err := a.storytellingHandler.RunStory(ctx, session, storyIndex, flow)
+		story, _, err := a.storytellingHandler.RunStory(ctx, session, storyIndex, flow)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return context.Canceled
 			}
+
 			return fmt.Errorf("running story %d: %w", storyIndex, err)
 		}
+
+		accumulatedStories = append(accumulatedStories, story)
 
 		// Check if we have enough stories
 		if flow.CheckStoryCompleteness(session.StoryCount()) == nil {
@@ -117,6 +132,7 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 			if errors.Is(err, context.Canceled) {
 				return context.Canceled
 			}
+
 			return fmt.Errorf("asking continue: %w", err)
 		}
 
@@ -125,9 +141,16 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		}
 	}
 
-	// Step 6.5: Confirm boundaries (required by Invariant 9 for storytelling sessions)
-	if err := session.ConfirmBoundaries(nil); err != nil {
-		return fmt.Errorf("confirming boundaries: %w", err)
+	// Step 6.5: Boundary detection + confirmation (Invariant 9)
+	if flow.CanRunBoundaryDetection(session.StoryCount()) {
+		if err := a.runBoundaryDetection(ctx, session, accumulatedStories, mode); err != nil {
+			return err
+		}
+	} else {
+		// Single-context domain — fewer than minimum stories for boundary detection
+		if err := session.ConfirmBoundaries(nil); err != nil {
+			return fmt.Errorf("confirming boundaries: %w", err)
+		}
 	}
 
 	// Step 7: Complete session
@@ -136,4 +159,111 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// runBoundaryDetection detects, displays, and confirms boundary sketches,
+// then persists the context map to .alto/context-map.yaml.
+func (a *CLIDiscoveryAdapter) runBoundaryDetection(
+	ctx context.Context,
+	session *domain.DiscoverySession,
+	stories []*domain.DomainStory,
+	mode domain.DiscoveryMode,
+) error {
+	// 1. Detect boundaries
+	sketches, err := a.boundaryDetectionHandler.Detect(ctx, stories, mode)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return context.Canceled
+		}
+
+		return fmt.Errorf("detecting boundaries: %w", err)
+	}
+
+	// 2. Display proposals for user review
+	acceptedNames, err := a.boundaryPrompter.DisplayBoundaryProposals(ctx, sketches)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return context.Canceled
+		}
+
+		return fmt.Errorf("displaying boundary proposals: %w", err)
+	}
+
+	// 3. Ask for missing context
+	missingName, err := a.boundaryPrompter.AskMissingContext(ctx)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return context.Canceled
+		}
+
+		return fmt.Errorf("asking missing context: %w", err)
+	}
+
+	// 4. Build confirmed sketch list
+	acceptedSet := make(map[string]struct{}, len(acceptedNames))
+	for _, name := range acceptedNames {
+		acceptedSet[name] = struct{}{}
+	}
+
+	var confirmedSketches []domain.BoundedContextSketch
+
+	for _, sketch := range sketches {
+		if _, ok := acceptedSet[sketch.Name()]; ok {
+			confirmedSketches = append(confirmedSketches, sketch)
+		}
+	}
+
+	// 5. Add user-stated stub if missing context provided
+	if missingName != "" {
+		stub, stubErr := domain.NewBoundedContextSketch(
+			missingName, vo.SubdomainGeneric, 0.50,
+			nil, nil, nil, nil, vo.UserStated,
+		)
+		if stubErr != nil {
+			return fmt.Errorf("creating missing context sketch: %w", stubErr)
+		}
+
+		confirmedSketches = append(confirmedSketches, stub)
+	}
+
+	// 6. Confirm boundaries on session
+	if confirmErr := session.ConfirmBoundaries(confirmedSketches); confirmErr != nil {
+		return fmt.Errorf("confirming boundaries: %w", confirmErr)
+	}
+
+	// 7. Resolve project name from projectDir
+	projectName, err := a.resolveProjectName()
+	if err != nil {
+		return fmt.Errorf("resolving project name: %w", err)
+	}
+
+	// 8. Build and write context map
+	cm, err := domain.NewContextMap(projectName, confirmedSketches, nil)
+	if err != nil {
+		return fmt.Errorf("creating context map: %w", err)
+	}
+
+	contextMapPath := filepath.Join(a.projectDir, ".alto", "context-map.yaml")
+
+	if err := a.contextMapWriter.Write(ctx, contextMapPath, cm); err != nil {
+		return fmt.Errorf("writing context map: %w", err)
+	}
+
+	return nil
+}
+
+// resolveProjectName returns the project directory name.
+// If projectDir is ".", it resolves to the actual directory name via os.Getwd.
+func (a *CLIDiscoveryAdapter) resolveProjectName() (string, error) {
+	dir := a.projectDir
+	if dir == "." {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("getting working directory: %w", err)
+		}
+
+		dir = wd
+	}
+
+	return filepath.Base(dir), nil
 }
