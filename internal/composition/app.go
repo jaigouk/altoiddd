@@ -58,6 +58,7 @@ type App struct {
 	DiscoveryHandler          *discoveryapp.DiscoveryHandler
 	ArtifactGenerationHandler *discoveryapp.ArtifactGenerationHandler
 	DocInferenceHandler       *discoveryapp.DocInferenceHandler
+	BoundaryDetector          discoveryapp.BoundaryDetector
 
 	// --- Fitness ---
 	FitnessGenerationHandler *fitnessapp.FitnessGenerationHandler
@@ -183,6 +184,14 @@ func NewApp() (*App, error) {
 	}
 	llmClient := llm.Factory{}.Create(llmConfig)
 
+	// --- Boundary detection (hybrid: algorithmic + LLM) ---
+	algorithmicDetector := discoveryinfra.NewAlgorithmicDetector()
+	var llmBoundaryDetector *discoveryinfra.LLMBoundaryDetector
+	if llmClient != nil {
+		llmBoundaryDetector = discoveryinfra.NewLLMBoundaryDetector(llmClient)
+	}
+	hybridDetector := discoveryinfra.NewHybridBoundaryDetector(algorithmicDetector, llmBoundaryDetector)
+
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
@@ -235,6 +244,7 @@ func NewApp() (*App, error) {
 		DiscoveryHandler:          discoveryHandler,
 		ArtifactGenerationHandler: artifactGenerationHandler,
 		DocInferenceHandler:       docInferenceHandler,
+		BoundaryDetector:          hybridDetector,
 		FitnessGenerationHandler:  fitnessGenerationHandler,
 		QualityGateHandler:        qualityGateHandler,
 		TicketGenerationHandler:   ticketGenerationHandler,

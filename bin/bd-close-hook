@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# bd-close-hook — Claude Code PostToolUse hook for auto-ripple after bd close.
+#
+# Runs as a PostToolUse hook on Bash commands. Detects "bd close" commands
+# and auto-runs bin/bd-ripple for each closed ticket ID.
+#
+# Environment (provided by Claude Code):
+#   CLAUDE_TOOL_INPUT — JSON string with {"command": "..."} for Bash tool
+
+set -uo pipefail
+
+# Extract the command from tool input JSON.
+COMMAND=$(echo "$CLAUDE_TOOL_INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('command', ''))
+except:
+    pass
+" 2>/dev/null)
+
+# Only act on "bd close" commands.
+if [[ ! "$COMMAND" =~ ^bd[[:space:]]+close[[:space:]] ]]; then
+    exit 0
+fi
+
+# Extract ticket IDs (everything after "bd close" that looks like an ID, before flags).
+IDS=()
+for word in $COMMAND; do
+    case "$word" in
+        bd|close) continue ;;
+        --*) break ;;  # stop at flags like --reason
+        *) IDS+=("$word") ;;
+    esac
+done
+
+if [[ ${#IDS[@]} -eq 0 ]]; then
+    exit 0
+fi
+
+# Find the project root (where bin/bd-ripple lives).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+RIPPLE="$PROJECT_ROOT/bin/bd-ripple"
+
+if [[ ! -x "$RIPPLE" ]]; then
+    exit 0
+fi
+
+# Run ripple for each closed ticket (small delay to let bd close finish writing).
+sleep 1
+for id in "${IDS[@]}"; do
+    "$RIPPLE" "$id" 2>/dev/null || true
+done
