@@ -203,3 +203,11 @@ type ToolDetection interface {
 	// ScanConflicts scans for global settings conflicts between detected tools.
 	ScanConflicts(ctx context.Context, projectDir string) ([]discoverydomain.SettingsConflict, error)
 }
+
+// --- Boundary Detection Port ---
+
+// BoundaryDetector detects bounded context boundaries from domain stories.
+// Mode is accepted for future use by HybridBoundaryDetector (P3-3).
+type BoundaryDetector interface {
+	DetectBoundaries(ctx context.Context, stories []*discoverydomain.DomainStory, mode discoverydomain.DiscoveryMode) ([]discoverydomain.BoundedContextSketch, error)
+}
