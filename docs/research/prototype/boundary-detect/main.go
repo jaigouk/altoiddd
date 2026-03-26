@@ -57,9 +57,9 @@ type BoundedContextCandidate struct {
 func parseStory(path string) (*Story, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening story file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	story := &Story{Filename: filepath.Base(path)}
 	scanner := bufio.NewScanner(f)
@@ -95,12 +95,15 @@ func parseStory(path string) (*Story, error) {
 			continue
 		}
 	}
-	return story, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scanning story file: %w", err)
+	}
+	return story, nil
 }
 
 func parseSentence(numStr, text string) Sentence {
 	num := 0
-	fmt.Sscanf(numStr, "%d", &num)
+	_, _ = fmt.Sscanf(numStr, "%d", &num)
 
 	// Simple heuristic: first word is subject, second is verb, rest is object-ish
 	parts := strings.Fields(text)
@@ -320,7 +323,7 @@ func normalizeObjectName(obj string) string {
 	}
 	// Title case the result back
 	if obj != "" {
-		return strings.Title(obj)
+		return strings.ToUpper(obj[:1]) + obj[1:]
 	}
 	return ""
 }
@@ -408,9 +411,9 @@ func detectDifferentTriggers(stories []*Story) []BoundarySignal {
 	// This is hard to automate purely from text. We use heuristic keyword matching.
 	type triggerClass int
 	const (
-		triggerEvent   triggerClass = iota // "arrives", "calls", "submits", user-initiated
-		triggerTime                        // "scheduled", "daily", "weekly", time-words
-		triggerSystem                      // "generates", "calculates", system-initiated
+		triggerEvent  triggerClass = iota // "arrives", "calls", "submits", user-initiated
+		triggerTime                       // "scheduled", "daily", "weekly", time-words
+		triggerSystem                     // "generates", "calculates", system-initiated
 		triggerUnknown
 	)
 
@@ -607,7 +610,7 @@ func clusterContexts(stories []*Story, signals []BoundarySignal) []BoundedContex
 			score += sig.Confidence
 		}
 		if len(relevantSignals) > 0 {
-			score = score / float64(len(relevantSignals))
+			score /= float64(len(relevantSignals))
 		}
 
 		sort.Strings(cluster)

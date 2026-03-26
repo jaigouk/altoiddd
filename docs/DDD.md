@@ -213,7 +213,7 @@ status: draft
 | StorySentence | A single numbered step in a domain story: "[Actor] [activity] [WorkObject]" with optional preposition and indirect object, each with TrustLevel *(added 2026-03-23)* | Domain Model |
 | Annotation | A business rule annotation on a story or sentence (constraint, invariant, or assumption) with TrustLevel *(added 2026-03-23)* | Domain Model |
 | TrustLevel | Provenance indicator for domain knowledge: UserStated > UserConfirmed > AIResearched > AIInferred. Propagates to all generated artifacts *(added 2026-03-23)* | Shared Kernel |
-| BoundarySignal | An indicator that two parts of a domain belong to different bounded contexts: one-way flow, language differences, different triggers, organizational boundaries, same-object-different-context *(added 2026-03-23)* | Domain Model |
+| BoundarySignal | An indicator that two parts of a domain belong to different bounded contexts. Signal types: `same_object_diff_context` (spike-validated P=0.85) — same work object in different stories with different responsibilities; `one_way_flow` (spike-validated P=0.70); `org_boundary` (spike-validated P=0.67) — actors never co-appear across stories, suggesting organizational boundaries; `different_trigger` (LLM-enhanced); `language_difference` (LLM-only); `different_lifecycle`, `external_system`, `different_actor`, `complex_rules` (methodology-derived, Hofer & Schwentner) *(updated 2026-03-26 — added same_object_diff_context, org_boundary; documented spike precision)* | Domain Model |
 | BoundedContextSketch | A proposed bounded context boundary derived from story analysis, with confidence score and supporting BoundarySignals. Presented to user as "proposed" not "definitive" *(added 2026-03-23)* | Domain Model |
 | DomainResearchResult | Structured output from AI domain research: actors, entities, workflows, failure modes, regulatory info, with trust levels and source URLs. Phase 4 feature *(added 2026-03-23)* | Guided Discovery |
 | QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor triggers fallback to user-narrated mode *(added 2026-03-23)* | Guided Discovery |
@@ -475,7 +475,7 @@ subdomains:
 - `StorySentence` (Value Object) — "[Actor] [activity] [WorkObject]" with optional preposition/indirect object and TrustLevel
 - `Annotation` (Value Object) — business rule on a story or sentence (constraint, invariant, assumption) with TrustLevel
 - `TrustLevel` (Value Object — shared kernel) — provenance: UserStated > UserConfirmed > AIResearched > AIInferred
-- `BoundarySignal` (Value Object) — indicator of bounded context boundary (one-way flow, language differences, different triggers, org boundaries, same-object-different-context)
+- `BoundarySignal` (Value Object) — indicator of bounded context boundary. 9 signal types: same_object_diff_context (P=0.85), one_way_flow (P=0.70), org_boundary (P=0.67), different_trigger (LLM-enhanced), language_difference (LLM-only), different_lifecycle, external_system, different_actor, complex_rules (methodology-derived)
 - `BoundedContextSketch` (Value Object) — proposed boundary with confidence score and supporting signals
 - `ConversationTurn` (Value Object) — single exchange: moderator question + user response + optional synthesis
 - `ConversationNarrative` (Value Object) — complete ordered sequence of ConversationTurns with synthesis checkpoints

@@ -26,6 +26,8 @@ func TestNewSignalType_Valid(t *testing.T) {
 		{"external_system", "external_system", domain.SignalTypeExternalSystem},
 		{"different_actor", "different_actor", domain.SignalTypeDifferentActor},
 		{"complex_rules", "complex_rules", domain.SignalTypeComplexRules},
+		{"same_object_diff_context", "same_object_diff_context", domain.SignalTypeSameObjectDiffContext},
+		{"org_boundary", "org_boundary", domain.SignalTypeOrgBoundary},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,6 +65,8 @@ func TestSignalType_String(t *testing.T) {
 		{"external_system", domain.SignalTypeExternalSystem, "external_system"},
 		{"different_actor", domain.SignalTypeDifferentActor, "different_actor"},
 		{"complex_rules", domain.SignalTypeComplexRules, "complex_rules"},
+		{"same_object_diff_context", domain.SignalTypeSameObjectDiffContext, "same_object_diff_context"},
+		{"org_boundary", domain.SignalTypeOrgBoundary, "org_boundary"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -112,7 +116,7 @@ func TestSignalType_UnmarshalText_Empty(t *testing.T) {
 func TestAllSignalTypes(t *testing.T) {
 	t.Parallel()
 	got := domain.AllSignalTypes()
-	assert.Len(t, got, 7)
+	assert.Len(t, got, 9)
 	assert.Contains(t, got, domain.SignalTypeDifferentTrigger)
 	assert.Contains(t, got, domain.SignalTypeOneWayFlow)
 	assert.Contains(t, got, domain.SignalTypeLanguageDifference)
@@ -120,6 +124,8 @@ func TestAllSignalTypes(t *testing.T) {
 	assert.Contains(t, got, domain.SignalTypeExternalSystem)
 	assert.Contains(t, got, domain.SignalTypeDifferentActor)
 	assert.Contains(t, got, domain.SignalTypeComplexRules)
+	assert.Contains(t, got, domain.SignalTypeSameObjectDiffContext)
+	assert.Contains(t, got, domain.SignalTypeOrgBoundary)
 }
 
 // -- BoundarySignal tests --

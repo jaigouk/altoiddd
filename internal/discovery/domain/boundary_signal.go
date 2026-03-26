@@ -11,24 +11,38 @@ import (
 type SignalType string
 
 // SignalType constants.
+//
+// Spike-validated signals (20260323_5_boundary_detection_heuristics_validation.md Section 9):
+//   - same_object_diff_context: spike-validated, P=0.85
+//   - one_way_flow: spike-validated, P=0.70
+//   - org_boundary: spike-validated, P=0.67
+//   - different_trigger: LLM-enhanced (spike Section 9)
+//   - language_difference: LLM-only (spike Section 9)
+//
+// Methodology-derived signals (Hofer & Schwentner):
+//   - different_lifecycle, external_system, different_actor, complex_rules
 const (
-	SignalTypeDifferentTrigger   SignalType = "different_trigger"
-	SignalTypeOneWayFlow         SignalType = "one_way_flow"
-	SignalTypeLanguageDifference SignalType = "language_difference"
-	SignalTypeDifferentLifecycle SignalType = "different_lifecycle"
-	SignalTypeExternalSystem     SignalType = "external_system"
-	SignalTypeDifferentActor     SignalType = "different_actor"
-	SignalTypeComplexRules       SignalType = "complex_rules"
+	SignalTypeDifferentTrigger      SignalType = "different_trigger"
+	SignalTypeOneWayFlow            SignalType = "one_way_flow"
+	SignalTypeLanguageDifference    SignalType = "language_difference"
+	SignalTypeDifferentLifecycle    SignalType = "different_lifecycle"
+	SignalTypeExternalSystem        SignalType = "external_system"
+	SignalTypeDifferentActor        SignalType = "different_actor"
+	SignalTypeComplexRules          SignalType = "complex_rules"
+	SignalTypeSameObjectDiffContext SignalType = "same_object_diff_context"
+	SignalTypeOrgBoundary           SignalType = "org_boundary"
 )
 
 var validSignalTypes = map[SignalType]struct{}{
-	SignalTypeDifferentTrigger:   {},
-	SignalTypeOneWayFlow:         {},
-	SignalTypeLanguageDifference: {},
-	SignalTypeDifferentLifecycle: {},
-	SignalTypeExternalSystem:     {},
-	SignalTypeDifferentActor:     {},
-	SignalTypeComplexRules:       {},
+	SignalTypeDifferentTrigger:      {},
+	SignalTypeOneWayFlow:            {},
+	SignalTypeLanguageDifference:    {},
+	SignalTypeDifferentLifecycle:    {},
+	SignalTypeExternalSystem:        {},
+	SignalTypeDifferentActor:        {},
+	SignalTypeComplexRules:          {},
+	SignalTypeSameObjectDiffContext: {},
+	SignalTypeOrgBoundary:           {},
 }
 
 // NewSignalType creates a SignalType from a string, returning an error if invalid.
@@ -51,6 +65,8 @@ func AllSignalTypes() []SignalType {
 		SignalTypeExternalSystem,
 		SignalTypeDifferentActor,
 		SignalTypeComplexRules,
+		SignalTypeSameObjectDiffContext,
+		SignalTypeOrgBoundary,
 	}
 }
 
