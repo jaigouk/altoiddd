@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"time"
 
 	bootstrapapp "github.com/alto-cli/alto/internal/bootstrap/application"
 	bootstrapinfra "github.com/alto-cli/alto/internal/bootstrap/infrastructure"
@@ -59,6 +61,7 @@ type App struct {
 	ArtifactGenerationHandler *discoveryapp.ArtifactGenerationHandler
 	DocInferenceHandler       *discoveryapp.DocInferenceHandler
 	BoundaryDetector          discoveryapp.BoundaryDetector
+	DomainResearcher          discoveryapp.DomainResearcher
 
 	// --- Fitness ---
 	FitnessGenerationHandler *fitnessapp.FitnessGenerationHandler
@@ -192,6 +195,9 @@ func NewApp() (*App, error) {
 	}
 	hybridDetector := discoveryinfra.NewHybridBoundaryDetector(algorithmicDetector, llmBoundaryDetector)
 
+	// --- Domain researcher (web search + LLM extraction) ---
+	domainResearcher := discoveryinfra.NewWebSearchDomainResearcher(llmClient, &http.Client{Timeout: 10 * time.Second})
+
 	// --- Wire handlers (using adapter bridges for interface mismatches) ---
 
 	toolDetector := &bootstrapToolDetectorAdapter{scanner: toolScanner}
@@ -245,6 +251,7 @@ func NewApp() (*App, error) {
 		ArtifactGenerationHandler: artifactGenerationHandler,
 		DocInferenceHandler:       docInferenceHandler,
 		BoundaryDetector:          hybridDetector,
+		DomainResearcher:          domainResearcher,
 		FitnessGenerationHandler:  fitnessGenerationHandler,
 		QualityGateHandler:        qualityGateHandler,
 		TicketGenerationHandler:   ticketGenerationHandler,
