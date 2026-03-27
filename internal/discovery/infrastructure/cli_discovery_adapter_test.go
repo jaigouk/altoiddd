@@ -194,7 +194,7 @@ func TestCLIDiscoveryAdapter_Run_HappyPath_RapidMode(t *testing.T) {
 	prompter := newRapidStoryPrompter(3) // RAPID = 3 stories
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -218,7 +218,7 @@ func TestCLIDiscoveryAdapter_Run_ModeCanceled(t *testing.T) {
 	}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -241,7 +241,7 @@ func TestCLIDiscoveryAdapter_Run_PersonaCanceled(t *testing.T) {
 	}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -259,7 +259,7 @@ func TestCLIDiscoveryAdapter_Run_MissingREADME(t *testing.T) {
 	prompter := &fakeStorytellingPrompter{}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -280,7 +280,7 @@ func TestCLIDiscoveryAdapter_Run_CompleteCalled(t *testing.T) {
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -309,7 +309,7 @@ func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 
@@ -333,7 +333,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithContextMapWritten(t *test
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 
 	// Detector returns 2 sketches, prompter accepts both, no missing context
 	detector := &fakeBoundaryDetector{
@@ -366,7 +366,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithMissingContext(t *testing
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 
 	detector := &fakeBoundaryDetector{
 		sketches: makeTestSketches(t, "Orders"),
@@ -398,7 +398,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_UserRejectsAll(t *testing.T) 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 
 	detector := &fakeBoundaryDetector{
 		sketches: makeTestSketches(t, "Orders"),
@@ -428,7 +428,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_CancelDuringDisplay(t *testin
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 
 	detector := &fakeBoundaryDetector{
 		sketches: makeTestSketches(t, "Orders"),

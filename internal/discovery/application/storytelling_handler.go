@@ -19,16 +19,19 @@ var slugifyPattern = regexp.MustCompile(`[^a-z0-9]+`)
 type StorytellingHandler struct {
 	storyWriter StoryWriter
 	prompter    StorytellingPrompter
+	transformer *ResearchToStoryTransformer
 }
 
 // NewStorytellingHandler creates a new StorytellingHandler.
 func NewStorytellingHandler(
 	storyWriter StoryWriter,
 	prompter StorytellingPrompter,
+	transformer *ResearchToStoryTransformer,
 ) *StorytellingHandler {
 	return &StorytellingHandler{
 		storyWriter: storyWriter,
 		prompter:    prompter,
+		transformer: transformer,
 	}
 }
 
@@ -313,6 +316,35 @@ func (h *StorytellingHandler) RunStory(
 	}
 
 	return story, narrative, nil
+}
+
+// ProposeResearchStories transforms a research result into stories and proposes each
+// to the user for review. Returns nil, nil when transformer is nil (no-op path).
+func (h *StorytellingHandler) ProposeResearchStories(
+	ctx context.Context,
+	result *discoverydomain.DomainResearchResult,
+) ([]*discoverydomain.DomainStory, error) {
+	if h.transformer == nil {
+		return nil, nil
+	}
+
+	stories, err := h.transformer.Transform(ctx, result)
+	if err != nil {
+		return nil, fmt.Errorf("transforming research to stories: %w", err)
+	}
+
+	refined := make([]*discoverydomain.DomainStory, 0, len(stories))
+
+	for _, story := range stories {
+		proposed, err := h.prompter.ProposeStory(ctx, story)
+		if err != nil {
+			return nil, fmt.Errorf("proposing story %q: %w", story.Title(), err)
+		}
+
+		refined = append(refined, proposed)
+	}
+
+	return refined, nil
 }
 
 // slugify converts a string to a URL-friendly slug.

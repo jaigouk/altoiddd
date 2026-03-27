@@ -261,7 +261,7 @@ func TestCLIDiscovery_HappyPath_StorytellingFlow(t *testing.T) {
 
 	// And: fully wired handler + storytelling handler + adapter
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
@@ -295,7 +295,7 @@ func TestCLIDiscovery_ModeCancellation_PropagatesError(t *testing.T) {
 	}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
@@ -323,7 +323,7 @@ func TestCLIDiscovery_PersonaCancellation_PropagatesError(t *testing.T) {
 	}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
@@ -352,7 +352,7 @@ func TestCLIDiscovery_StoryCancellation_PropagatesError(t *testing.T) {
 	}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
@@ -379,7 +379,7 @@ func TestCLIDiscovery_MultipleStories(t *testing.T) {
 	prompter.choiceResponses = []string{"1", "yes", "yes", "yes", "yes"}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
@@ -406,7 +406,7 @@ func TestCLIDiscovery_MissingREADME(t *testing.T) {
 	prompter := &fakeStorytellingPrompter{}
 	writer := &fakeStoryWriter{}
 	handler := application.NewDiscoveryHandler(&fakePublisher{})
-	storytellingHandler := application.NewStorytellingHandler(writer, prompter)
+	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)

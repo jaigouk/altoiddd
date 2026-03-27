@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -195,7 +196,7 @@ func TestStorytellingHandler_RunStory_HappyPath_OneSentence(t *testing.T) {
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -233,7 +234,7 @@ func TestStorytellingHandler_RunStory_ThreeSentences_MidStoryCheckpoint(t *testi
 		synthesisConfirmed:      []bool{true, true}, // mid-story + final
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -260,7 +261,7 @@ func TestStorytellingHandler_RunStory_BranchingDetected_VariationAdded(t *testin
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -286,7 +287,7 @@ func TestStorytellingHandler_RunStory_BranchingRejected_NothingAdded(t *testing.
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -311,7 +312,7 @@ func TestStorytellingHandler_RunStory_AnnotationCollected(t *testing.T) {
 		},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -337,7 +338,7 @@ func TestStorytellingHandler_RunStory_MultipleAnnotations(t *testing.T) {
 		},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -356,7 +357,7 @@ func TestStorytellingHandler_RunStory_NoAnnotations(t *testing.T) {
 		annotationResponses:     nil, // empty = done immediately
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -379,7 +380,7 @@ func TestStorytellingHandler_RunStory_StoryValidationFails_ErrorReturned(t *test
 		synthesisConfirmed: []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -397,7 +398,7 @@ func TestStorytellingHandler_RunStory_StoryWriterFails_ErrorReturned(t *testing.
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{writeErr: errors.New("disk full")}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -418,7 +419,7 @@ func TestStorytellingHandler_RunStory_ContextCanceled_MidNarration(t *testing.T)
 		narrationErr: ctx.Err(), // context.Canceled
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -436,7 +437,7 @@ func TestStorytellingHandler_RunStory_NarrativeHasCorrectTurnCount(t *testing.T)
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -457,7 +458,7 @@ func TestStorytellingHandler_RunStory_StoryRefAddedToSession(t *testing.T) {
 		synthesisConfirmed:      []bool{true},
 	}
 	writer := &fakeStoryWriter{}
-	handler := NewStorytellingHandler(writer, prompter)
+	handler := NewStorytellingHandler(writer, prompter, nil)
 	session := newTestSession()
 	flow := newTestFlow()
 
@@ -467,4 +468,209 @@ func TestStorytellingHandler_RunStory_StoryRefAddedToSession(t *testing.T) {
 	assert.Len(t, refs, 1)
 	assert.Contains(t, refs[0], ".alto/stories/")
 	assert.Contains(t, refs[0], fmt.Sprintf("%02d-", 1))
+}
+
+// ===========================================================================
+// Integration tests — ProposeResearchStories wiring (alty-cli-1wu.19)
+// ===========================================================================
+
+// proposeTrackingPrompter wraps fakeStorytellingPrompter and tracks ProposeStory calls.
+type proposeTrackingPrompter struct {
+	fakeStorytellingPrompter
+	proposeCallCount int
+	proposedStories  []*discoverydomain.DomainStory
+}
+
+func (p *proposeTrackingPrompter) ProposeStory(ctx context.Context, proposed *discoverydomain.DomainStory) (*discoverydomain.DomainStory, error) {
+	p.proposeCallCount++
+	p.proposedStories = append(p.proposedStories, proposed)
+
+	return proposed, nil
+}
+
+// Compile-time check.
+var _ StorytellingPrompter = (*proposeTrackingPrompter)(nil)
+
+// mustResearchResult creates a DomainResearchResult that meets quality floor.
+func mustResearchResult(t *testing.T) *discoverydomain.DomainResearchResult {
+	t.Helper()
+
+	actors := []discoverydomain.ResearchedActor{
+		mustActor(t, "Customer"),
+		mustActor(t, "Clerk"),
+		mustActor(t, "Manager"),
+	}
+	entities := []discoverydomain.ResearchedEntity{
+		mustEntity(t, "Order"),
+		mustEntity(t, "Invoice"),
+		mustEntity(t, "Receipt"),
+	}
+	steps := []discoverydomain.WorkflowStep{
+		mustStep(t, 1, "Customer", "places", "Order"),
+		mustStep(t, 2, "Clerk", "reviews", "Order"),
+		mustStep(t, 3, "Clerk", "generates", "Invoice"),
+		mustStep(t, 4, "Customer", "pays", "Invoice"),
+		mustStep(t, 5, "Clerk", "issues", "Receipt"),
+	}
+	wf, err := discoverydomain.NewResearchedWorkflow(
+		"Place Order", discoverydomain.WorkflowTypeHappyPath, steps,
+		[]string{"https://example.com/wf1"},
+	)
+	require.NoError(t, err)
+
+	meta := discoverydomain.NewSearchMetadata([]string{"q1", "q2"}, 10, 5, time.Second)
+
+	result, err := discoverydomain.NewDomainResearchResult(
+		"retail", meta, actors, entities,
+		[]discoverydomain.ResearchedWorkflow{wf},
+		nil, nil, nil,
+	)
+	require.NoError(t, err)
+
+	return &result
+}
+
+// mustBelowFloorResearchResult creates a DomainResearchResult below quality floor.
+func mustBelowFloorResearchResult(t *testing.T) *discoverydomain.DomainResearchResult {
+	t.Helper()
+
+	actors := []discoverydomain.ResearchedActor{mustActor(t, "User")}
+	entities := []discoverydomain.ResearchedEntity{mustEntity(t, "Form")}
+	steps := []discoverydomain.WorkflowStep{mustStep(t, 1, "User", "fills", "Form")}
+
+	wf, err := discoverydomain.NewResearchedWorkflow(
+		"Submit", discoverydomain.WorkflowTypeHappyPath, steps, nil,
+	)
+	require.NoError(t, err)
+
+	meta := discoverydomain.NewSearchMetadata(nil, 1, 1, time.Second)
+
+	result, err := discoverydomain.NewDomainResearchResult(
+		"test", meta, actors, entities,
+		[]discoverydomain.ResearchedWorkflow{wf},
+		nil, nil, nil,
+	)
+	require.NoError(t, err)
+
+	return &result
+}
+
+func mustActor(t *testing.T, name string) discoverydomain.ResearchedActor {
+	t.Helper()
+
+	a, err := discoverydomain.NewResearchedActor(name, "role", []string{"https://example.com"})
+	require.NoError(t, err)
+
+	return a
+}
+
+func mustEntity(t *testing.T, name string) discoverydomain.ResearchedEntity {
+	t.Helper()
+
+	e, err := discoverydomain.NewResearchedEntity(name, nil, []string{"https://example.com"})
+	require.NoError(t, err)
+
+	return e
+}
+
+func mustStep(t *testing.T, seq int, actor, activity, workObject string) discoverydomain.WorkflowStep {
+	t.Helper()
+
+	s, err := discoverydomain.NewWorkflowStep(seq, actor, activity, workObject)
+	require.NoError(t, err)
+
+	return s
+}
+
+func TestStorytellingHandler_Integration_NilTransformer_WorksAsBeforeNoChanges(t *testing.T) {
+	t.Parallel()
+
+	// Given: handler constructed with nil transformer (the no-op path).
+	prompter := &proposeTrackingPrompter{
+		fakeStorytellingPrompter: fakeStorytellingPrompter{
+			narrationResponses:      oneSentenceNarrationResponses(),
+			confirmSentenceAccepted: []bool{true},
+			synthesisConfirmed:      []bool{true},
+		},
+	}
+	writer := &fakeStoryWriter{}
+	handler := NewStorytellingHandler(writer, prompter, nil)
+	session := newTestSession()
+	flow := newTestFlow()
+
+	// When: RunStory is called (same as before the wiring change).
+	story, narrative, err := handler.RunStory(context.Background(), session, 1, flow)
+
+	// Then: everything works exactly as before.
+	require.NoError(t, err)
+	require.NotNil(t, story)
+	assert.Equal(t, "Customer places order", story.Trigger())
+	assert.Len(t, story.Sentences(), 1)
+	assert.Positive(t, narrative.TurnCount())
+	assert.Len(t, writer.writtenPaths, 1)
+
+	// ProposeStory was never called via ProposeResearchStories path.
+	assert.Equal(t, 0, prompter.proposeCallCount)
+}
+
+func TestStorytellingHandler_Integration_ProposeStoryCalledWhenTransformerReturnsStories(t *testing.T) {
+	t.Parallel()
+
+	// Given: handler with a real transformer and a quality-floor-passing research result.
+	prompter := &proposeTrackingPrompter{}
+	writer := &fakeStoryWriter{}
+	transformer := NewResearchToStoryTransformer()
+	handler := NewStorytellingHandler(writer, prompter, transformer)
+	result := mustResearchResult(t)
+
+	// When: ProposeResearchStories is called.
+	stories, err := handler.ProposeResearchStories(context.Background(), result)
+
+	// Then: ProposeStory was called for each transformed story.
+	require.NoError(t, err)
+	require.NotEmpty(t, stories)
+	assert.Equal(t, len(stories), prompter.proposeCallCount)
+	assert.Len(t, prompter.proposedStories, len(stories))
+
+	// Each proposed story should have sentences (from the workflow steps).
+	for _, story := range stories {
+		assert.NotEmpty(t, story.Sentences())
+	}
+}
+
+func TestStorytellingHandler_Integration_ProposeStoryNotCalledWhenTransformerNil(t *testing.T) {
+	t.Parallel()
+
+	// Given: handler with nil transformer.
+	prompter := &proposeTrackingPrompter{}
+	writer := &fakeStoryWriter{}
+	handler := NewStorytellingHandler(writer, prompter, nil)
+	result := mustResearchResult(t)
+
+	// When: ProposeResearchStories is called.
+	stories, err := handler.ProposeResearchStories(context.Background(), result)
+
+	// Then: nil, nil returned — ProposeStory never called.
+	require.NoError(t, err)
+	assert.Nil(t, stories)
+	assert.Equal(t, 0, prompter.proposeCallCount)
+}
+
+func TestStorytellingHandler_Integration_ProposeStoryNotCalledWhenTransformReturnsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// Given: handler with a real transformer but a below-floor research result.
+	prompter := &proposeTrackingPrompter{}
+	writer := &fakeStoryWriter{}
+	transformer := NewResearchToStoryTransformer()
+	handler := NewStorytellingHandler(writer, prompter, transformer)
+	result := mustBelowFloorResearchResult(t)
+
+	// When: ProposeResearchStories is called.
+	stories, err := handler.ProposeResearchStories(context.Background(), result)
+
+	// Then: empty result — Transform returned nil, so ProposeStory never called.
+	require.NoError(t, err)
+	assert.Empty(t, stories)
+	assert.Equal(t, 0, prompter.proposeCallCount)
 }
