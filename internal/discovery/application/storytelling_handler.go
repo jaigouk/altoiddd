@@ -173,12 +173,18 @@ func (h *StorytellingHandler) RunStory(
 		}
 
 		// Confirm sentence
+		proposedSentence := sentence
 		sentence, accepted, err := h.prompter.ConfirmSentence(ctx, sentence)
 		if err != nil {
 			return nil, narrative, fmt.Errorf("confirming sentence: %w", err)
 		}
 
 		if accepted {
+			// Propagate trust when confirming AI-researched sentences.
+			if proposedSentence.Trust() == vo.AIResearched {
+				sentence = discoverydomain.PropagateConfirmation(proposedSentence, sentence, accepted, story)
+			}
+
 			if err := story.AddSentence(sentence); err != nil {
 				return nil, narrative, fmt.Errorf("adding sentence: %w", err)
 			}

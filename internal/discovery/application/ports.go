@@ -225,3 +225,17 @@ type BoundaryPrompter interface {
 	// Returns non-empty string if yes, empty if no.
 	AskMissingContext(ctx context.Context) (string, error)
 }
+
+// --- Domain Researcher Port ---
+
+// DomainResearcher investigates a domain description using external sources
+// and returns structured knowledge for the moderator's story-proposal phase.
+// Research is optional infrastructure: callers treat (nil, nil) as "research
+// unavailable — proceed with user-narrated mode" (ADR-013 graceful degradation).
+type DomainResearcher interface {
+	// Research executes domain research for the given description and returns
+	// structured findings. Returns (nil, nil) when research infrastructure is
+	// unavailable (no credentials, network unreachable). Returns (nil, err) for
+	// unexpected failures the caller should surface.
+	Research(ctx context.Context, domainDescription string) (*discoverydomain.DomainResearchResult, error)
+}
