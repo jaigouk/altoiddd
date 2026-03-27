@@ -215,7 +215,16 @@ status: draft
 | TrustLevel | Provenance indicator for domain knowledge: UserStated > UserConfirmed > AIResearched > AIInferred. Propagates to all generated artifacts *(added 2026-03-23)* | Shared Kernel |
 | BoundarySignal | An indicator that two parts of a domain belong to different bounded contexts. Signal types: `same_object_diff_context` (spike-validated P=0.85) — same work object in different stories with different responsibilities; `one_way_flow` (spike-validated P=0.70); `org_boundary` (spike-validated P=0.67) — actors never co-appear across stories, suggesting organizational boundaries; `different_trigger` (LLM-enhanced); `language_difference` (LLM-only); `different_lifecycle`, `external_system`, `different_actor`, `complex_rules` (methodology-derived, Hofer & Schwentner) *(updated 2026-03-26 — added same_object_diff_context, org_boundary; documented spike precision)* | Domain Model |
 | BoundedContextSketch | A proposed bounded context boundary derived from story analysis, with confidence score and supporting BoundarySignals. Presented to user as "proposed" not "definitive" *(added 2026-03-23)* | Domain Model |
-| DomainResearchResult | Structured output from AI domain research: actors, entities, workflows, failure modes, regulatory info, with trust levels and source URLs. Phase 4 feature *(added 2026-03-23)* | Guided Discovery |
+| DomainResearchResult | Top-level container for all AI domain research output: actors, entities, workflows, failure modes, regulatory items, existing software, and auto-computed research quality. Phase 4 feature *(updated 2026-03-27)* | Guided Discovery |
+| WorkflowType | String enum classifying a researched workflow: happy_path, failure_case, or secondary. Uses encoding.TextMarshaler/TextUnmarshaler *(added 2026-03-27)* | Guided Discovery |
+| SearchMetadata | Query provenance for a domain research run: queries used, source counts, and search duration *(added 2026-03-27)* | Guided Discovery |
+| ResearchedActor | An actor identified from AI domain research with name, role, and source URLs. Trust level added in Phase 4.4 *(added 2026-03-27)* | Guided Discovery |
+| ResearchedEntity | An entity identified from AI domain research with name, properties, and source URLs. Trust level added in Phase 4.4 *(added 2026-03-27)* | Guided Discovery |
+| WorkflowStep | A single coarse-grained step in a researched workflow: sequence number, actor, activity, and work object *(added 2026-03-27)* | Guided Discovery |
+| ResearchedWorkflow | A typed workflow discovered by AI research, containing ordered WorkflowSteps with source URLs *(added 2026-03-27)* | Guided Discovery |
+| RegulatoryItem | A regulatory requirement identified from AI domain research with name, description, and source URLs *(added 2026-03-27)* | Guided Discovery |
+| ExistingSoftware | Known software in the domain identified from AI research with name, description, and a single source URL *(added 2026-03-27)* | Guided Discovery |
+| ResearchQuality | Computed quality assessment of AI domain research output: counts of actors, entities, workflow steps, useful sources, and whether it meets the quality floor *(added 2026-03-27)* | Guided Discovery |
 | QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor triggers fallback to user-narrated mode *(added 2026-03-23)* | Guided Discovery |
 | ModeratorQuestion | A dual-register question asked by the moderator during story narration, tagged with NarrationPhase and ModeratorElicits *(added 2026-03-25)* | Guided Discovery |
 | ModeratorElicits | What domain element a moderator question draws out: actor, sentence, annotation, done *(added 2026-03-25)* | Guided Discovery |
@@ -480,7 +489,7 @@ subdomains:
 - `ConversationTurn` (Value Object) — single exchange: moderator question + user response + optional synthesis
 - `ConversationNarrative` (Value Object) — complete ordered sequence of ConversationTurns with synthesis checkpoints
 - `StorytellingPrompter` (Port) — 8-method interface for CLI interaction (SelectMode, ProposeStory, AskNarration, ConfirmSentence, AskChoice, DisplayStory, SynthesisCheckpoint, AskAnnotation). Replaces the old 4-method Prompter
-- `DomainResearchResult` (Value Object) — structured AI research output: actors, entities, workflows, failure modes, regulatory info, with trust levels and source URLs (Phase 4)
+- `DomainResearchResult` (Value Object) — top-level container for all AI domain research output: actors, entities, workflows, failure modes, regulatory items, existing software, and auto-computed research quality (Phase 4)
 - `QualityFloor` (Value Object) — minimum thresholds for AI research to be usable (>=3 actors, >=3 entities, >=5 steps, >=5 sources)
 - `DiscoveryCompleted` (Domain Event) — emitted when all stories are confirmed and boundaries detected; carries DomainStory data
 - `StoryCompleted` (Domain Event) — emitted when user confirms a story via synthesis checkpoint
