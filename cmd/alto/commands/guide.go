@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -117,11 +118,37 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 }
 
 func runGuideAgent(ctx context.Context, app *composition.App) error {
-	renderer := infrastructure.NewJSONSessionRenderer()
-	adapter := infrastructure.NewAgentDiscoveryAdapter(app.DiscoveryHandler, renderer, os.Stdout, ".")
-	if err := adapter.Run(ctx); err != nil {
-		return fmt.Errorf("agent discovery: %w", err)
+	readme, err := os.ReadFile(filepath.Join(".", "README.md"))
+	if err != nil {
+		return fmt.Errorf("reading README.md: %w", err)
 	}
+
+	var lines []string
+	for _, line := range strings.Split(string(readme), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		lines = append(lines, line)
+	}
+
+	prompter := infrastructure.NewAgentStorytellingPrompter(domain.ModeRapid, lines)
+	storyWriter := &infrastructure.StoryYAMLParser{}
+	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, nil)
+
+	var boundaryHandler *application.BoundaryDetectionHandler
+	if app.BoundaryDetector != nil {
+		boundaryHandler = application.NewBoundaryDetectionHandler(app.BoundaryDetector)
+	}
+
+	adapter := infrastructure.NewAgentStorytellingAdapter(
+		app.DiscoveryHandler, storytellingHandler, boundaryHandler, os.Stdout, ".",
+	)
+
+	if err := adapter.Run(ctx); err != nil {
+		return fmt.Errorf("agent storytelling: %w", err)
+	}
+
 	return nil
 }
 

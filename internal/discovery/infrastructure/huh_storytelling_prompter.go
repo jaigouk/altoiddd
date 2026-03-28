@@ -116,6 +116,7 @@ func (p *HuhStorytellingPrompter) ConfirmSentence(ctx context.Context, sentence 
 				Title(sentence.FormatText()).
 				Options(
 					huh.NewOption("Accept", "accept"),
+					huh.NewOption("Edit", "edit"),
 					huh.NewOption("Reject", "reject"),
 				).
 				Value(&choice),
@@ -130,7 +131,78 @@ func (p *HuhStorytellingPrompter) ConfirmSentence(ctx context.Context, sentence 
 		return discoverydomain.StorySentence{}, false, fmt.Errorf("running confirm sentence form: %w", err)
 	}
 
-	return sentence, choice == "accept", nil
+	switch choice {
+	case "accept":
+		return sentence, true, nil
+	case "reject":
+		return sentence, false, nil
+	case "edit":
+		return p.runEditFlow(ctx, sentence)
+	default:
+		return discoverydomain.StorySentence{}, false, fmt.Errorf("unexpected choice %q: %w", choice, errors.ErrUnsupported)
+	}
+}
+
+// runEditFlow presents edit forms for sentence fields and builds an edited sentence.
+func (p *HuhStorytellingPrompter) runEditFlow(ctx context.Context, sentence discoverydomain.StorySentence) (discoverydomain.StorySentence, bool, error) {
+	editedSubject := sentence.Subject()
+	editedActivity := sentence.Activity()
+	editedObject := sentence.Object()
+
+	editForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Subject (actor)").
+				Value(&editedSubject),
+			huh.NewInput().
+				Title("Activity (verb)").
+				Value(&editedActivity),
+			huh.NewInput().
+				Title("Object (work object)").
+				Value(&editedObject),
+		),
+	)
+
+	if err := editForm.RunWithContext(ctx); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return discoverydomain.StorySentence{}, false, context.Canceled
+		}
+
+		return discoverydomain.StorySentence{}, false, fmt.Errorf("running edit form: %w", err)
+	}
+
+	var editedPreposition, editedIndirectObject string
+
+	if sentence.HasIndirectObject() {
+		editedPreposition = sentence.Preposition()
+		editedIndirectObject = sentence.IndirectObject()
+
+		prepForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Preposition").
+					Value(&editedPreposition),
+				huh.NewInput().
+					Title("Indirect object").
+					Value(&editedIndirectObject),
+			),
+		)
+
+		if err := prepForm.RunWithContext(ctx); err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				return discoverydomain.StorySentence{}, false, context.Canceled
+			}
+
+			return discoverydomain.StorySentence{}, false, fmt.Errorf("running preposition edit form: %w", err)
+		}
+	}
+
+	edited, err := buildEditedSentence(sentence, editedSubject, editedActivity, editedObject, editedPreposition, editedIndirectObject)
+	if err != nil {
+		return discoverydomain.StorySentence{}, false, fmt.Errorf("building edited sentence: %w", err)
+	}
+
+	return edited, true, nil
 }
 
 // AskChoice presents lettered options with an optional recommendation.

@@ -124,6 +124,32 @@ func (e UbiquitousLanguageEntry) WithNote(note string) UbiquitousLanguageEntry {
 	}
 }
 
+// WithTrust returns a new UbiquitousLanguageEntry with the given trust level.
+// Trust can only be upgraded (lower numeric value = higher trust).
+// If the requested trust is not higher than the current trust, the original entry is returned.
+// Source is cleared when upgrading away from AIResearched.
+func (e UbiquitousLanguageEntry) WithTrust(trust TrustLevel) UbiquitousLanguageEntry {
+	if !trust.IsHigherTrust(e.trust) {
+		return e
+	}
+
+	newSource := e.source
+	if e.trust == AIResearched {
+		newSource = ""
+	}
+
+	return UbiquitousLanguageEntry{
+		term:       e.term,
+		definition: e.definition,
+		context:    e.context,
+		trust:      trust,
+		source:     newSource,
+		aliases:    e.aliases,
+		note:       e.note,
+		stories:    e.stories,
+	}
+}
+
 // WithStories returns a new UbiquitousLanguageEntry with the given story references.
 func (e UbiquitousLanguageEntry) WithStories(stories []string) UbiquitousLanguageEntry {
 	storiesCopy := make([]string, len(stories))

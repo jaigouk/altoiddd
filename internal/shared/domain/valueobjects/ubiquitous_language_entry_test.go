@@ -280,3 +280,42 @@ func TestUbiquitousLanguageEntry_String_MultipleAliases(t *testing.T) {
 
 	assert.Equal(t, "UbiquitousLanguageEntry: Order (Purchase, Request, user_stated)", entry.String())
 }
+
+// -- WithTrust tests --
+
+func TestUbiquitousLanguageEntry_WithTrust_Upgrade(t *testing.T) {
+	t.Parallel()
+	entry, err := vo.NewUbiquitousLanguageEntry("Order", "def", "ctx", vo.AIResearched, "research-doc")
+	require.NoError(t, err)
+	assert.Equal(t, vo.AIResearched, entry.Trust())
+
+	upgraded := entry.WithTrust(vo.UserStated)
+
+	// New entry has upgraded trust.
+	assert.Equal(t, vo.UserStated, upgraded.Trust())
+	// Original is immutable — still AIResearched.
+	assert.Equal(t, vo.AIResearched, entry.Trust())
+}
+
+func TestUbiquitousLanguageEntry_WithTrust_NoDowngrade(t *testing.T) {
+	t.Parallel()
+	entry, err := vo.NewUbiquitousLanguageEntry("Order", "def", "ctx", vo.UserStated, "")
+	require.NoError(t, err)
+
+	result := entry.WithTrust(vo.AIInferred)
+
+	// Trust must NOT downgrade: UserStated(1) is higher trust than AIInferred(4).
+	assert.Equal(t, vo.UserStated, result.Trust())
+}
+
+func TestUbiquitousLanguageEntry_WithTrust_SourceCleared(t *testing.T) {
+	t.Parallel()
+	entry, err := vo.NewUbiquitousLanguageEntry("Order", "def", "ctx", vo.AIResearched, "research-doc")
+	require.NoError(t, err)
+	assert.Equal(t, "research-doc", entry.Source())
+
+	upgraded := entry.WithTrust(vo.UserStated)
+
+	// Source is cleared when upgrading from AIResearched.
+	assert.Empty(t, upgraded.Source())
+}

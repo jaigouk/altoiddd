@@ -239,3 +239,17 @@ type DomainResearcher interface {
 	// unexpected failures the caller should surface.
 	Research(ctx context.Context, domainDescription string) (*discoverydomain.DomainResearchResult, error)
 }
+
+// --- PlantUML Renderer Port ---
+
+// PlantUMLRenderer renders a DomainStory as a PlantUML DSL string.
+type PlantUMLRenderer interface {
+	Render(ctx context.Context, story *discoverydomain.DomainStory) (string, error)
+}
+
+// --- Egon Renderer Port ---
+
+// EgnRenderer renders a DomainStory as an Egon.io-compatible JSON string.
+type EgnRenderer interface {
+	Render(ctx context.Context, story *discoverydomain.DomainStory) (string, error)
+}

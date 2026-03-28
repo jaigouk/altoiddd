@@ -1531,3 +1531,754 @@ func TestDiscoveryCompletedEventCarriesTechStack(t *testing.T) {
 	assert.NotNil(t, session.Events()[0].TechStack())
 	assert.Equal(t, "python", session.Events()[0].TechStack().Language())
 }
+
+// --- Phase 5 Layer 1: Full BoundedContextSketch persistence round-trip tests ---
+
+func TestDiscoverySession_Snapshot_RoundTrip_FullSketchData(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sig1, err := NewBoundarySignal(SignalTypeDifferentTrigger, "order vs payment trigger")
+	require.NoError(t, err)
+	sketch, err := NewBoundedContextSketch(
+		"Ordering", vo.SubdomainCore, 0.85,
+		[]string{"Customer", "Admin"},
+		[]string{"Order", "LineItem"},
+		[]string{"s1.yaml"},
+		[]BoundarySignal{sig1},
+		vo.UserStated,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "Ordering", got.Name())
+	assert.Equal(t, vo.SubdomainCore, got.Classification())
+	assert.InDelta(t, 0.85, got.Confidence(), 0.001)
+	assert.Equal(t, []string{"Customer", "Admin"}, got.Actors())
+	assert.Equal(t, []string{"Order", "LineItem"}, got.WorkObjects())
+	assert.Equal(t, []string{"s1.yaml"}, got.Stories())
+	require.Len(t, got.Signals(), 1)
+	assert.Equal(t, SignalTypeDifferentTrigger, got.Signals()[0].Type())
+	assert.Equal(t, "order vs payment trigger", got.Signals()[0].Description())
+	assert.Equal(t, vo.UserStated, got.Trust())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_MultipleSignals(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sig1, err := NewBoundarySignal(SignalTypeOneWayFlow, "events flow from orders to shipping")
+	require.NoError(t, err)
+	sig2, err := NewBoundarySignal(SignalTypeOrgBoundary, "separate teams own each context")
+	require.NoError(t, err)
+	sig3, err := NewBoundarySignal(SignalTypeDifferentLifecycle, "order lifecycle differs from invoice")
+	require.NoError(t, err)
+
+	sketch, err := NewBoundedContextSketch(
+		"Shipping", vo.SubdomainSupporting, 0.72,
+		[]string{"Dispatcher"},
+		[]string{"Shipment", "Route"},
+		[]string{"s2.yaml", "s3.yaml"},
+		[]BoundarySignal{sig1, sig2, sig3},
+		vo.AIResearched,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "Shipping", got.Name())
+	assert.Equal(t, vo.SubdomainSupporting, got.Classification())
+	assert.InDelta(t, 0.72, got.Confidence(), 0.001)
+	require.Len(t, got.Signals(), 3)
+	assert.Equal(t, SignalTypeOneWayFlow, got.Signals()[0].Type())
+	assert.Equal(t, SignalTypeOrgBoundary, got.Signals()[1].Type())
+	assert.Equal(t, SignalTypeDifferentLifecycle, got.Signals()[2].Type())
+	assert.Equal(t, vo.AIResearched, got.Trust())
+}
+
+func TestDiscoverySession_FromSnapshot_V1Sketches_NameOnlyStrings(t *testing.T) {
+	t.Parallel()
+	// Build a valid snapshot manually with v1 string-only sketch format
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	// Manually set v1-format confirmed sketches (plain strings)
+	snap["confirmed_sketches"] = []interface{}{"Ordering", "Shipping"}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 2)
+
+	// v1 strings should restore with defaults
+	assert.Equal(t, "Ordering", restored.ConfirmedSketches()[0].Name())
+	assert.Equal(t, vo.SubdomainGeneric, restored.ConfirmedSketches()[0].Classification())
+	assert.InDelta(t, 0.0, restored.ConfirmedSketches()[0].Confidence(), 0.001)
+	assert.Empty(t, restored.ConfirmedSketches()[0].Actors())
+	assert.Empty(t, restored.ConfirmedSketches()[0].Signals())
+	assert.Equal(t, vo.AIInferred, restored.ConfirmedSketches()[0].Trust())
+
+	assert.Equal(t, "Shipping", restored.ConfirmedSketches()[1].Name())
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_InvalidSignalType(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	// Manually construct v2-format data with an invalid signal type
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     0.8,
+			"actors":         []interface{}{"Customer"},
+			"work_objects":   []interface{}{"Order"},
+			"stories":        []interface{}{"s1.yaml"},
+			"signals": []interface{}{
+				map[string]interface{}{
+					"type":        "bogus_signal_type",
+					"description": "should fail",
+				},
+			},
+			"trust": "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_InvalidClassification(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "bogus_classification",
+			"confidence":     0.8,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_ConfidenceOutOfRange(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     1.5, // out of range
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_MixedFormat(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	// Mix of v1 string and v2 map in the same array — should error
+	snap["confirmed_sketches"] = []interface{}{
+		"LegacyName",
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     0.8,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_EmptySketches(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	// Confirm boundaries with an empty slice
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	assert.Empty(t, restored.ConfirmedSketches())
+	assert.True(t, restored.BoundariesConfirmed())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_NilSlicesInSketch(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	// Create sketch with nil slices for actors, workObjects, stories, signals
+	sketch, err := NewBoundedContextSketch(
+		"Minimal", vo.SubdomainGeneric, 0.5,
+		nil, nil, nil, nil,
+		vo.UserConfirmed,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "Minimal", got.Name())
+	assert.Equal(t, vo.SubdomainGeneric, got.Classification())
+	assert.InDelta(t, 0.5, got.Confidence(), 0.001)
+	assert.Empty(t, got.Actors())
+	assert.Empty(t, got.WorkObjects())
+	assert.Empty(t, got.Stories())
+	assert.Empty(t, got.Signals())
+	assert.Equal(t, vo.UserConfirmed, got.Trust())
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_ConfidenceLevelPreserved(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	// HIGH confidence: >= 0.65
+	sketchHigh, err := NewBoundedContextSketch(
+		"HighConf", vo.SubdomainCore, 0.90,
+		nil, nil, nil, nil, vo.UserStated,
+	)
+	require.NoError(t, err)
+
+	// MEDIUM confidence: >= 0.45 and < 0.65, with < 2 distinct signal types
+	sketchMed, err := NewBoundedContextSketch(
+		"MedConf", vo.SubdomainSupporting, 0.50,
+		nil, nil, nil, nil, vo.AIResearched,
+	)
+	require.NoError(t, err)
+
+	// LOW confidence: < 0.45, with < 2 distinct signal types
+	sketchLow, err := NewBoundedContextSketch(
+		"LowConf", vo.SubdomainGeneric, 0.30,
+		nil, nil, nil, nil, vo.AIInferred,
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketchHigh, sketchMed, sketchLow}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 3)
+
+	assert.Equal(t, ConfidenceLevelHigh, restored.ConfirmedSketches()[0].ConfidenceLevel())
+	assert.InDelta(t, 0.90, restored.ConfirmedSketches()[0].Confidence(), 0.001)
+
+	assert.Equal(t, ConfidenceLevelMedium, restored.ConfirmedSketches()[1].ConfidenceLevel())
+	assert.InDelta(t, 0.50, restored.ConfirmedSketches()[1].Confidence(), 0.001)
+
+	assert.Equal(t, ConfidenceLevelLow, restored.ConfirmedSketches()[2].ConfidenceLevel())
+	assert.InDelta(t, 0.30, restored.ConfirmedSketches()[2].Confidence(), 0.001)
+}
+
+// --- Phase 5 Layer 1: Edge case tests for BoundedContextSketch persistence ---
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_InvalidTrustLevel(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     0.8,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "bogus",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_MissingName(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	// Map without "name" key — sketchFromMap should error on empty name
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"classification": "core",
+			"confidence":     0.8,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_EmptySignalDescription(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     0.8,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals": []interface{}{
+				map[string]interface{}{
+					"type":        "different_trigger",
+					"description": "",
+				},
+			},
+			"trust": "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_ZeroConfidence(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sig, err := NewBoundarySignal(SignalTypeDifferentTrigger, "boundary signal")
+	require.NoError(t, err)
+	sketch, err := NewBoundedContextSketch(
+		"ZeroConf", vo.SubdomainGeneric, 0.0,
+		[]string{"Actor"}, []string{"Object"}, []string{"s1.yaml"},
+		[]BoundarySignal{sig}, vo.AIInferred,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "ZeroConf", got.Name())
+	assert.InDelta(t, 0.0, got.Confidence(), 0.001)
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_ConfidenceExactlyOne(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	sig, err := NewBoundarySignal(SignalTypeComplexRules, "complex rules signal")
+	require.NoError(t, err)
+	sketch, err := NewBoundedContextSketch(
+		"MaxConf", vo.SubdomainCore, 1.0,
+		[]string{"Admin"}, []string{"Policy"}, []string{"s1.yaml"},
+		[]BoundarySignal{sig}, vo.UserStated,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "MaxConf", got.Name())
+	assert.InDelta(t, 1.0, got.Confidence(), 0.001)
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_AllSignalTypes(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	allTypes := AllSignalTypes()
+	signals := make([]BoundarySignal, 0, len(allTypes))
+	for _, st := range allTypes {
+		sig, err := NewBoundarySignal(st, fmt.Sprintf("description for %s", st))
+		require.NoError(t, err)
+		signals = append(signals, sig)
+	}
+
+	sketch, err := NewBoundedContextSketch(
+		"AllSignals", vo.SubdomainCore, 0.95,
+		[]string{"Actor"}, []string{"Object"}, []string{"s1.yaml"},
+		signals, vo.UserStated,
+	)
+	require.NoError(t, err)
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+	require.Len(t, restored.ConfirmedSketches(), 1)
+
+	got := restored.ConfirmedSketches()[0]
+	require.Len(t, got.Signals(), len(allTypes))
+	for i, st := range allTypes {
+		assert.Equal(t, st, got.Signals()[i].Type())
+		assert.Equal(t, fmt.Sprintf("description for %s", st), got.Signals()[i].Description())
+	}
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_AllClassifications(t *testing.T) {
+	t.Parallel()
+
+	allClassifications := vo.AllSubdomainClassifications()
+	for _, cls := range allClassifications {
+		t.Run(string(cls), func(t *testing.T) {
+			t.Parallel()
+			session := NewDiscoverySession("idea")
+			require.NoError(t, session.SetMode(ModeRapid))
+			require.NoError(t, session.DetectPersona("1"))
+			require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+			sketch, err := NewBoundedContextSketch(
+				"TestCtx", cls, 0.5,
+				nil, nil, nil, nil, vo.UserStated,
+			)
+			require.NoError(t, err)
+			require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+			snap := session.ToSnapshot()
+			data, err := json.Marshal(snap)
+			require.NoError(t, err)
+			var parsed map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &parsed))
+
+			restored, err := FromSnapshot(parsed)
+			require.NoError(t, err)
+			require.Len(t, restored.ConfirmedSketches(), 1)
+			assert.Equal(t, cls, restored.ConfirmedSketches()[0].Classification())
+		})
+	}
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_AllTrustLevels(t *testing.T) {
+	t.Parallel()
+
+	allTrust := vo.AllTrustLevels()
+	for _, tl := range allTrust {
+		t.Run(tl.String(), func(t *testing.T) {
+			t.Parallel()
+			session := NewDiscoverySession("idea")
+			require.NoError(t, session.SetMode(ModeRapid))
+			require.NoError(t, session.DetectPersona("1"))
+			require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+			sketch, err := NewBoundedContextSketch(
+				"TrustTest", vo.SubdomainCore, 0.7,
+				nil, nil, nil, nil, tl,
+			)
+			require.NoError(t, err)
+			require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch}))
+
+			snap := session.ToSnapshot()
+			data, err := json.Marshal(snap)
+			require.NoError(t, err)
+			var parsed map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &parsed))
+
+			restored, err := FromSnapshot(parsed)
+			require.NoError(t, err)
+			require.Len(t, restored.ConfirmedSketches(), 1)
+			assert.Equal(t, tl, restored.ConfirmedSketches()[0].Trust())
+		})
+	}
+}
+
+func TestDiscoverySession_FromSnapshot_V2Sketches_NegativeConfidence(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+
+	snap := session.ToSnapshot()
+	snap["confirmed_sketches"] = []interface{}{
+		map[string]interface{}{
+			"name":           "Ordering",
+			"classification": "core",
+			"confidence":     -0.1,
+			"actors":         []interface{}{},
+			"work_objects":   []interface{}{},
+			"stories":        []interface{}{},
+			"signals":        []interface{}{},
+			"trust":          "user_stated",
+		},
+	}
+	snap["boundaries_confirmed"] = true
+
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	_, err = FromSnapshot(parsed)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainerrors.ErrInvariantViolation)
+}
+
+func TestDiscoverySession_Snapshot_RoundTrip_JSONMarshalUnmarshal(t *testing.T) {
+	t.Parallel()
+	session := NewDiscoverySession("full round-trip idea")
+	require.NoError(t, session.SetMode(ModeRapid))
+	require.NoError(t, session.DetectPersona("1"))
+	require.NoError(t, session.AddStoryRef("s1.yaml"))
+	require.NoError(t, session.AddStoryRef("s2.yaml"))
+
+	sig1, err := NewBoundarySignal(SignalTypeDifferentTrigger, "trigger diff")
+	require.NoError(t, err)
+	sig2, err := NewBoundarySignal(SignalTypeExternalSystem, "external API")
+	require.NoError(t, err)
+	sig3, err := NewBoundarySignal(SignalTypeSameObjectDiffContext, "shared object")
+	require.NoError(t, err)
+
+	sketch1, err := NewBoundedContextSketch(
+		"Payments", vo.SubdomainCore, 0.92,
+		[]string{"Customer", "PaymentGateway"},
+		[]string{"Payment", "Invoice"},
+		[]string{"s1.yaml"},
+		[]BoundarySignal{sig1, sig2},
+		vo.UserStated,
+	)
+	require.NoError(t, err)
+
+	sketch2, err := NewBoundedContextSketch(
+		"Inventory", vo.SubdomainSupporting, 0.55,
+		[]string{"WarehouseOp"},
+		[]string{"StockItem"},
+		[]string{"s2.yaml"},
+		[]BoundarySignal{sig3},
+		vo.UserConfirmed,
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, session.ConfirmBoundaries([]BoundedContextSketch{sketch1, sketch2}))
+
+	// Full round-trip: ToSnapshot -> json.Marshal -> json.Unmarshal -> FromSnapshot
+	snap := session.ToSnapshot()
+	data, err := json.Marshal(snap)
+	require.NoError(t, err)
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &parsed))
+
+	restored, err := FromSnapshot(parsed)
+	require.NoError(t, err)
+
+	// Verify session-level state
+	assert.True(t, restored.BoundariesConfirmed())
+
+	// Verify sketches
+	require.Len(t, restored.ConfirmedSketches(), 2)
+
+	p := restored.ConfirmedSketches()[0]
+	assert.Equal(t, "Payments", p.Name())
+	assert.Equal(t, vo.SubdomainCore, p.Classification())
+	assert.InDelta(t, 0.92, p.Confidence(), 0.001)
+	assert.Equal(t, []string{"Customer", "PaymentGateway"}, p.Actors())
+	assert.Equal(t, []string{"Payment", "Invoice"}, p.WorkObjects())
+	assert.Equal(t, []string{"s1.yaml"}, p.Stories())
+	require.Len(t, p.Signals(), 2)
+	assert.Equal(t, SignalTypeDifferentTrigger, p.Signals()[0].Type())
+	assert.Equal(t, SignalTypeExternalSystem, p.Signals()[1].Type())
+	assert.Equal(t, vo.UserStated, p.Trust())
+
+	inv := restored.ConfirmedSketches()[1]
+	assert.Equal(t, "Inventory", inv.Name())
+	assert.Equal(t, vo.SubdomainSupporting, inv.Classification())
+	assert.InDelta(t, 0.55, inv.Confidence(), 0.001)
+	assert.Equal(t, []string{"WarehouseOp"}, inv.Actors())
+	assert.Equal(t, []string{"StockItem"}, inv.WorkObjects())
+	require.Len(t, inv.Signals(), 1)
+	assert.Equal(t, SignalTypeSameObjectDiffContext, inv.Signals()[0].Type())
+	assert.Equal(t, vo.UserConfirmed, inv.Trust())
+}

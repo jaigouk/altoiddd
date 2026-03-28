@@ -62,6 +62,11 @@ type App struct {
 	DocInferenceHandler       *discoveryapp.DocInferenceHandler
 	BoundaryDetector          discoveryapp.BoundaryDetector
 	DomainResearcher          discoveryapp.DomainResearcher
+	GlossaryExportHandler     *discoveryapp.GlossaryExportHandler
+	ContextMapExportHandler   *discoveryapp.ContextMapExportHandler
+	PlantUMLExportHandler     *discoveryapp.PlantUMLExportHandler
+	EgnExportHandler          *discoveryapp.EgnExportHandler
+	DiscoveryReportHandler    *discoveryapp.DiscoveryReportHandler
 
 	// --- Fitness ---
 	FitnessGenerationHandler *fitnessapp.FitnessGenerationHandler
@@ -123,6 +128,9 @@ func NewApp() (*App, error) {
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
 	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer()
 	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alto")
+	storyParser := &discoveryinfra.StoryYAMLParser{}
+	glossaryParser := &discoveryinfra.GlossaryYAMLParser{}
+	contextMapParser := &discoveryinfra.ContextMapYAMLParser{}
 
 	// 4. DocHealth infrastructure
 	docScanner := dochealthinfra.NewFilesystemDocScanner()
@@ -215,6 +223,13 @@ func NewApp() (*App, error) {
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
+	glossaryExportHandler := discoveryapp.NewGlossaryExportHandler(storyParser, glossaryParser)
+	contextMapExportHandler := discoveryapp.NewContextMapExportHandler(contextMapParser)
+	plantUMLExporter := &discoveryinfra.PlantUMLExporter{}
+	plantUMLExportHandler := discoveryapp.NewPlantUMLExportHandler(storyParser, plantUMLExporter, fileWriter)
+	egnExporter := &discoveryinfra.EgnExporter{}
+	egnExportHandler := discoveryapp.NewEgnExportHandler(storyParser, egnExporter, fileWriter)
+	discoveryReportHandler := discoveryapp.NewDiscoveryReportHandler(storyParser, glossaryParser, contextMapParser, fileWriter)
 
 	// DocInference: doc reader + LLM reader + regex fallback
 	fsDocReader := discoveryinfra.NewFilesystemDocReader()
@@ -252,6 +267,11 @@ func NewApp() (*App, error) {
 		DocInferenceHandler:       docInferenceHandler,
 		BoundaryDetector:          hybridDetector,
 		DomainResearcher:          domainResearcher,
+		GlossaryExportHandler:     glossaryExportHandler,
+		ContextMapExportHandler:   contextMapExportHandler,
+		PlantUMLExportHandler:     plantUMLExportHandler,
+		EgnExportHandler:          egnExportHandler,
+		DiscoveryReportHandler:    discoveryReportHandler,
 		FitnessGenerationHandler:  fitnessGenerationHandler,
 		QualityGateHandler:        qualityGateHandler,
 		TicketGenerationHandler:   ticketGenerationHandler,

@@ -603,10 +603,10 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		}
 	}
 
-	// Serialize confirmed sketch names
-	confirmedSketchNames := make([]string, len(s.confirmedSketches))
+	// Serialize confirmed sketches (v2 — full sketch data)
+	confirmedSketchMaps := make([]interface{}, len(s.confirmedSketches))
 	for i, sk := range s.confirmedSketches {
-		confirmedSketchNames[i] = sk.Name()
+		confirmedSketchMaps[i] = sketchToMap(sk)
 	}
 
 	return map[string]interface{}{
@@ -624,7 +624,7 @@ func (s *DiscoverySession) ToSnapshot() map[string]interface{} {
 		"tech_stack":                  techStackVal,
 		"context_classifications":     classifications,
 		"story_refs":                  s.storyRefs,
-		"confirmed_sketches":          confirmedSketchNames,
+		"confirmed_sketches":          confirmedSketchMaps,
 		"boundaries_confirmed":        s.boundariesConfirmed,
 	}
 }
@@ -890,25 +890,57 @@ func FromSnapshot(data map[string]interface{}) (*DiscoverySession, error) {
 	}
 
 	// Parse confirmed sketches (backward compatible — absent = empty)
+	// v1 format: []string of names (defaults applied)
+	// v2 format: []map[string]interface{} with full sketch data
 	var confirmedSketches []BoundedContextSketch
 	if csVal, exists := data["confirmed_sketches"]; exists && csVal != nil {
 		switch raw := csVal.(type) {
 		case []interface{}:
-			confirmedSketches = make([]BoundedContextSketch, 0, len(raw))
-			for _, item := range raw {
-				nameStr, ok := item.(string)
-				if !ok {
-					return nil, fmt.Errorf("invalid confirmed sketch name")
+			if len(raw) > 0 {
+				// Detect format: all strings (v1) or all maps (v2)
+				allStrings := true
+				allMaps := true
+				for _, item := range raw {
+					if _, ok := item.(string); !ok {
+						allStrings = false
+					}
+					if _, ok := item.(map[string]interface{}); !ok {
+						allMaps = false
+					}
 				}
-				sketch, err := NewBoundedContextSketch(
-					nameStr, vo.SubdomainGeneric, 0, nil, nil, nil, nil, vo.AIInferred,
-				)
-				if err != nil {
-					return nil, fmt.Errorf("reconstructing confirmed sketch %q: %w", nameStr, err)
+
+				if !allStrings && !allMaps {
+					return nil, fmt.Errorf("confirmed sketches contain mixed types")
 				}
-				confirmedSketches = append(confirmedSketches, sketch)
+
+				confirmedSketches = make([]BoundedContextSketch, 0, len(raw))
+				if allStrings {
+					// v1 path: name-only with defaults
+					for _, item := range raw {
+						nameStr, _ := item.(string)
+						sketch, err := NewBoundedContextSketch(
+							nameStr, vo.SubdomainGeneric, 0, nil, nil, nil, nil, vo.AIInferred,
+						)
+						if err != nil {
+							return nil, fmt.Errorf("reconstructing confirmed sketch %q: %w", nameStr, err)
+						}
+						confirmedSketches = append(confirmedSketches, sketch)
+					}
+				} else {
+					// v2 path: full sketch data
+					for _, item := range raw {
+						m, _ := item.(map[string]interface{})
+						nameStr, _ := m["name"].(string)
+						sketch, err := sketchFromMap(nameStr, m)
+						if err != nil {
+							return nil, fmt.Errorf("reconstructing confirmed sketch from map: %w", err)
+						}
+						confirmedSketches = append(confirmedSketches, sketch)
+					}
+				}
 			}
 		case []string:
+			// v1 path: direct string slice
 			confirmedSketches = make([]BoundedContextSketch, 0, len(raw))
 			for _, nameStr := range raw {
 				sketch, err := NewBoundedContextSketch(
@@ -986,4 +1018,117 @@ func toString(v interface{}) string {
 		return s
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// sketchToMap serializes a BoundedContextSketch to a snapshot-compatible map.
+func sketchToMap(sk BoundedContextSketch) map[string]interface{} {
+	actors := sk.Actors()
+	if actors == nil {
+		actors = []string{}
+	}
+
+	workObjects := sk.WorkObjects()
+	if workObjects == nil {
+		workObjects = []string{}
+	}
+
+	stories := sk.Stories()
+	if stories == nil {
+		stories = []string{}
+	}
+
+	signals := sk.Signals()
+	signalMaps := make([]interface{}, len(signals))
+	for i, sig := range signals {
+		signalMaps[i] = map[string]interface{}{
+			"type":        sig.Type().String(),
+			"description": sig.Description(),
+		}
+	}
+
+	return map[string]interface{}{
+		"name":           sk.Name(),
+		"classification": string(sk.Classification()),
+		"confidence":     sk.Confidence(),
+		"actors":         actors,
+		"work_objects":   workObjects,
+		"stories":        stories,
+		"signals":        signalMaps,
+		"trust":          sk.Trust().String(),
+	}
+}
+
+// sketchFromMap deserializes a BoundedContextSketch from a snapshot map.
+func sketchFromMap(name string, data map[string]interface{}) (BoundedContextSketch, error) {
+	if strings.TrimSpace(name) == "" {
+		return BoundedContextSketch{}, fmt.Errorf("sketch name must not be empty: %w", domainerrors.ErrInvariantViolation)
+	}
+
+	// Parse classification
+	classStr, _ := data["classification"].(string)
+	classification := vo.SubdomainClassification(classStr)
+
+	// Parse confidence (JSON numbers decode as float64)
+	confidence, _ := data["confidence"].(float64)
+
+	// Parse string slices
+	actors := parseStringSlice(data["actors"])
+	workObjects := parseStringSlice(data["work_objects"])
+	stories := parseStringSlice(data["stories"])
+
+	// Parse signals
+	var signals []BoundarySignal
+	if sigVal, ok := data["signals"]; ok && sigVal != nil {
+		sigSlice, ok := sigVal.([]interface{})
+		if !ok {
+			return BoundedContextSketch{}, fmt.Errorf("signals must be a list: %w", domainerrors.ErrInvariantViolation)
+		}
+		signals = make([]BoundarySignal, 0, len(sigSlice))
+		for i, item := range sigSlice {
+			sigMap, ok := item.(map[string]interface{})
+			if !ok {
+				return BoundedContextSketch{}, fmt.Errorf("signal at index %d must be a map: %w", i, domainerrors.ErrInvariantViolation)
+			}
+			typeStr, _ := sigMap["type"].(string)
+			st, err := NewSignalType(typeStr)
+			if err != nil {
+				return BoundedContextSketch{}, fmt.Errorf("parsing signal type at index %d: %w", i, err)
+			}
+			descStr, _ := sigMap["description"].(string)
+			sig, err := NewBoundarySignal(st, descStr)
+			if err != nil {
+				return BoundedContextSketch{}, fmt.Errorf("creating signal at index %d: %w", i, err)
+			}
+			signals = append(signals, sig)
+		}
+	}
+
+	// Parse trust level
+	trustStr, _ := data["trust"].(string)
+	trust, err := vo.ParseTrustLevel(trustStr)
+	if err != nil {
+		return BoundedContextSketch{}, fmt.Errorf("parsing trust level: %w", err)
+	}
+
+	return NewBoundedContextSketch(name, classification, confidence, actors, workObjects, stories, signals, trust)
+}
+
+// parseStringSlice extracts a []string from a snapshot value that may be []interface{} or nil.
+func parseStringSlice(v interface{}) []string {
+	if v == nil {
+		return nil
+	}
+	switch raw := v.(type) {
+	case []interface{}:
+		out := make([]string, len(raw))
+		for i, item := range raw {
+			out[i], _ = item.(string)
+		}
+		return out
+	case []string:
+		out := make([]string, len(raw))
+		copy(out, raw)
+		return out
+	}
+	return nil
 }
