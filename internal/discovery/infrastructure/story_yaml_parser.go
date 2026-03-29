@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
@@ -96,6 +97,10 @@ func (p *StoryYAMLParser) Write(ctx context.Context, path string, story *domain.
 	data, err := p.Serialize(story)
 	if err != nil {
 		return fmt.Errorf("serializing story: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("creating directory for story file %q: %w", path, err)
 	}
 
 	if err := os.WriteFile(path, data, 0o644); err != nil {

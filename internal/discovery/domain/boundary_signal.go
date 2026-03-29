@@ -31,6 +31,7 @@ const (
 	SignalTypeComplexRules          SignalType = "complex_rules"
 	SignalTypeSameObjectDiffContext SignalType = "same_object_diff_context"
 	SignalTypeOrgBoundary           SignalType = "org_boundary"
+	SignalTypeWorkObjectCluster     SignalType = "work_object_cluster"
 )
 
 var validSignalTypes = map[SignalType]struct{}{
@@ -43,6 +44,7 @@ var validSignalTypes = map[SignalType]struct{}{
 	SignalTypeComplexRules:          {},
 	SignalTypeSameObjectDiffContext: {},
 	SignalTypeOrgBoundary:           {},
+	SignalTypeWorkObjectCluster:     {},
 }
 
 // NewSignalType creates a SignalType from a string, returning an error if invalid.
@@ -67,6 +69,7 @@ func AllSignalTypes() []SignalType {
 		SignalTypeComplexRules,
 		SignalTypeSameObjectDiffContext,
 		SignalTypeOrgBoundary,
+		SignalTypeWorkObjectCluster,
 	}
 }
 

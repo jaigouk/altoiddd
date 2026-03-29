@@ -28,6 +28,15 @@ func NewStdinBoundaryPrompter(r io.Reader, w io.Writer) *StdinBoundaryPrompter {
 	}
 }
 
+// NewStdinBoundaryPrompterFromScanner creates a StdinBoundaryPrompter that uses
+// an existing scanner, allowing it to share a single scanner with other prompters.
+func NewStdinBoundaryPrompterFromScanner(s *bufio.Scanner, w io.Writer) *StdinBoundaryPrompter {
+	return &StdinBoundaryPrompter{
+		scanner: s,
+		writer:  w,
+	}
+}
+
 // scanOrCancel reads the next line, returning context.Canceled on EOF.
 func (p *StdinBoundaryPrompter) scanOrCancel() (string, error) {
 	if !p.scanner.Scan() {

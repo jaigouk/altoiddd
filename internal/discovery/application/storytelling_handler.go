@@ -135,6 +135,7 @@ func (h *StorytellingHandler) RunStory(
 
 		// Ask subject (MQ-N3)
 		subjectQuestion := narrationQs[2].Text(register)
+		subjectQuestion = strings.ReplaceAll(subjectQuestion, "{last_actor}", lastActor)
 
 		subjectResp, err := h.prompter.AskNarration(ctx, subjectQuestion, "")
 		if err != nil {

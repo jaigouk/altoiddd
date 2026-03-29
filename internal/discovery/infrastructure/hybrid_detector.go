@@ -308,7 +308,8 @@ func baseConfidenceForSignalType(st domain.SignalType) float64 {
 	case domain.SignalTypeDifferentLifecycle,
 		domain.SignalTypeExternalSystem,
 		domain.SignalTypeDifferentActor,
-		domain.SignalTypeComplexRules:
+		domain.SignalTypeComplexRules,
+		domain.SignalTypeWorkObjectCluster:
 		return 0.15
 	}
 

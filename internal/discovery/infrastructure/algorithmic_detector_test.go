@@ -451,8 +451,10 @@ func TestAlgorithmicDetector_SingleContext_NoSplit(t *testing.T) {
 	sketches, err := detector.DetectBoundaries(context.Background(), []*domain.DomainStory{story1, story2}, domain.ModeRapid)
 	require.NoError(t, err)
 
-	// No boundary signals should be generated from identical stories.
-	assert.Empty(t, sketches, "identical stories should produce 0 sketches")
+	// With work-object cluster fallback, identical stories produce 1 merged sketch.
+	require.Len(t, sketches, 1)
+	assert.Equal(t, domain.ConfidenceLevelLow, sketches[0].ConfidenceLevel(),
+		"fallback sketch should be LOW confidence")
 }
 
 func TestAlgorithmicDetector_NilStoryInSlice_Error(t *testing.T) {
@@ -500,5 +502,189 @@ func TestAlgorithmicDetector_ModeIgnored(t *testing.T) {
 		assert.Equal(t, rapidSketches[i].Name(), thoroughSketches[i].Name())
 		assert.InDelta(t, rapidSketches[i].Confidence(), thoroughSketches[i].Confidence(), 0)
 		assert.Len(t, thoroughSketches[i].Signals(), len(rapidSketches[i].Signals()))
+	}
+}
+
+// --- RED Phase tests for alty-cli-m6h: WorkObjectCluster fallback ---
+//
+// These tests verify the fallback behavior when 0 primary signals are found.
+// They reference domain.SignalTypeWorkObjectCluster which does NOT exist yet.
+// Once the domain constant is added by the dev-detect agent, these tests will
+// compile but still fail (RED) until the algorithmic detector implements the
+// work-object-cluster fallback logic.
+
+func TestAlgorithmicDetector_WorkObjectCluster_FallbackWhenNoSignals(t *testing.T) {
+	t.Parallel()
+
+	// 2 stories: same actor "developer", different work objects, same verb "creates".
+	// No cross-story actor diversity, no verb divergence, no org boundary — 0 primary signals.
+	story1 := makeStoryWithActorsAndObjects(t, "Config Story",
+		[]string{"developer"},
+		[]string{"config"},
+		[]sentenceSpec{{1, "developer", "creates", "config"}},
+	)
+
+	story2 := makeStoryWithActorsAndObjects(t, "Readme Story",
+		[]string{"developer"},
+		[]string{"readme"},
+		[]sentenceSpec{{1, "developer", "creates", "readme"}},
+	)
+
+	detector := infrastructure.NewAlgorithmicDetector()
+	sketches, err := detector.DetectBoundaries(context.Background(), []*domain.DomainStory{story1, story2}, domain.ModeRapid)
+	require.NoError(t, err)
+
+	// BUG: currently returns (nil, nil) when 0 primary signals are found.
+	// After fix, fallback should produce work-object-cluster sketches.
+	require.NotEmpty(t, sketches, "fallback should produce sketches when 0 primary signals exist")
+
+	var foundWorkObjectCluster bool
+
+	for _, sketch := range sketches {
+		for _, sig := range sketch.Signals() {
+			if sig.Type() == domain.SignalTypeWorkObjectCluster {
+				foundWorkObjectCluster = true
+			}
+		}
+	}
+
+	assert.True(t, foundWorkObjectCluster, "expected at least one work_object_cluster signal from fallback")
+}
+
+func TestAlgorithmicDetector_WorkObjectCluster_SharedWOsMergeIntoOneCluster(t *testing.T) {
+	t.Parallel()
+
+	// 3 stories all sharing work object "note", same actor, same verb.
+	// The shared "note" WO should cause all three stories to merge into one cluster.
+	story1 := makeStoryWithActorsAndObjects(t, "Note Tag Story",
+		[]string{"developer"},
+		[]string{"note", "tag"},
+		[]sentenceSpec{{1, "developer", "updates", "note"}},
+	)
+
+	story2 := makeStoryWithActorsAndObjects(t, "Note Label Story",
+		[]string{"developer"},
+		[]string{"note", "label"},
+		[]sentenceSpec{{1, "developer", "updates", "note"}},
+	)
+
+	story3 := makeStoryWithActorsAndObjects(t, "Note Only Story",
+		[]string{"developer"},
+		[]string{"note"},
+		[]sentenceSpec{{1, "developer", "updates", "note"}},
+	)
+
+	detector := infrastructure.NewAlgorithmicDetector()
+	sketches, err := detector.DetectBoundaries(
+		context.Background(),
+		[]*domain.DomainStory{story1, story2, story3},
+		domain.ModeRapid,
+	)
+	require.NoError(t, err)
+
+	// All 3 stories share "note" — they should merge into exactly 1 cluster sketch.
+	assert.Len(t, sketches, 1, "shared work object 'note' should merge all stories into one cluster")
+}
+
+func TestAlgorithmicDetector_WorkObjectCluster_UniqueWOsProduceMultipleSketches(t *testing.T) {
+	t.Parallel()
+
+	// 3 stories with ZERO shared work objects, same actor, same verb.
+	// Each story forms its own independent cluster.
+	story1 := makeStoryWithActorsAndObjects(t, "Invoice Story",
+		[]string{"developer"},
+		[]string{"invoice"},
+		[]sentenceSpec{{1, "developer", "creates", "invoice"}},
+	)
+
+	story2 := makeStoryWithActorsAndObjects(t, "Report Story",
+		[]string{"developer"},
+		[]string{"report"},
+		[]sentenceSpec{{1, "developer", "creates", "report"}},
+	)
+
+	story3 := makeStoryWithActorsAndObjects(t, "Ticket Story",
+		[]string{"developer"},
+		[]string{"ticket"},
+		[]sentenceSpec{{1, "developer", "creates", "ticket"}},
+	)
+
+	detector := infrastructure.NewAlgorithmicDetector()
+	sketches, err := detector.DetectBoundaries(
+		context.Background(),
+		[]*domain.DomainStory{story1, story2, story3},
+		domain.ModeRapid,
+	)
+	require.NoError(t, err)
+
+	// No shared WOs — each story should produce its own cluster sketch.
+	assert.Len(t, sketches, 3, "3 stories with disjoint work objects should produce 3 separate cluster sketches")
+}
+
+func TestAlgorithmicDetector_WorkObjectCluster_PrimarySignalsSuppressFallback(t *testing.T) {
+	t.Parallel()
+
+	// Stories that DO produce primary signals: cross-actor diversity, different verbs.
+	// The fallback should NOT fire when primary signals exist.
+	story1 := makeStoryWithActorsAndObjects(t, "Submission Story",
+		[]string{"Alice", "Bob"},
+		[]string{"Invoice"},
+		[]sentenceSpec{
+			{1, "Alice", "creates", "Invoice"},
+			{2, "Alice", "submits", "Bob"},
+		},
+	)
+
+	story2 := makeStoryWithActorsAndObjects(t, "Review Story",
+		[]string{"Charlie"},
+		[]string{"Invoice"},
+		[]sentenceSpec{{1, "Charlie", "reviews", "Invoice"}},
+	)
+
+	detector := infrastructure.NewAlgorithmicDetector()
+	sketches, err := detector.DetectBoundaries(
+		context.Background(),
+		[]*domain.DomainStory{story1, story2},
+		domain.ModeRapid,
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, sketches)
+
+	// Primary signals (SameObjectDiffContext, OrgBoundary) should exist,
+	// but WorkObjectCluster should NOT appear — fallback is suppressed.
+	for _, sketch := range sketches {
+		for _, sig := range sketch.Signals() {
+			assert.NotEqual(t, domain.SignalTypeWorkObjectCluster, sig.Type(),
+				"work_object_cluster fallback should NOT fire when primary signals are present")
+		}
+	}
+}
+
+func TestAlgorithmicDetector_WorkObjectCluster_ConfidenceIsLow(t *testing.T) {
+	t.Parallel()
+
+	// Same setup as FallbackWhenNoSignals: 0 primary signals, fallback fires.
+	// Fallback confidence = 0.15 base, which should compute to LOW (< 0.45).
+	story1 := makeStoryWithActorsAndObjects(t, "Config Story",
+		[]string{"developer"},
+		[]string{"config"},
+		[]sentenceSpec{{1, "developer", "creates", "config"}},
+	)
+
+	story2 := makeStoryWithActorsAndObjects(t, "Readme Story",
+		[]string{"developer"},
+		[]string{"readme"},
+		[]sentenceSpec{{1, "developer", "creates", "readme"}},
+	)
+
+	detector := infrastructure.NewAlgorithmicDetector()
+	sketches, err := detector.DetectBoundaries(context.Background(), []*domain.DomainStory{story1, story2}, domain.ModeRapid)
+	require.NoError(t, err)
+	require.NotEmpty(t, sketches, "fallback should produce sketches")
+
+	// Every fallback sketch should have LOW confidence (not HIGH).
+	for _, sketch := range sketches {
+		assert.NotEqual(t, domain.ConfidenceLevelHigh, sketch.ConfidenceLevel(),
+			"work_object_cluster fallback sketches should have LOW confidence, not HIGH")
 	}
 }

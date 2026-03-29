@@ -89,7 +89,7 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, no
 	}
 
 	// Build ProjectConfig from detection result and detected tools.
-	projectName := filepath.Base(mustAbs(projectDir))
+	projectName := resolveProjectName(projectDir)
 	config := domain.NewProjectConfig(
 		projectName,
 		detection.Language(),
@@ -214,4 +214,28 @@ func mustAbs(dir string) string {
 		return dir
 	}
 	return abs
+}
+
+// resolveProjectName extracts the project name from the first # heading in
+// README.md or README. Falls back to filepath.Base of the absolute project dir.
+func resolveProjectName(projectDir string) string {
+	for _, candidate := range []string{"README.md", "README"} {
+		content, err := os.ReadFile(filepath.Join(projectDir, candidate))
+		if err != nil {
+			continue
+		}
+
+		for _, line := range strings.Split(string(content), "\n") {
+			after, ok := strings.CutPrefix(line, "# ")
+			if !ok {
+				continue
+			}
+
+			if name := strings.TrimSpace(after); name != "" {
+				return name
+			}
+		}
+	}
+
+	return filepath.Base(mustAbs(projectDir))
 }

@@ -62,7 +62,7 @@ func (d *AlgorithmicDetector) DetectBoundaries(
 	allSignals = append(allSignals, d.detectOrgBoundary(stories)...)
 
 	if len(allSignals) == 0 {
-		return nil, nil
+		return d.detectWorkObjectClusters(stories)
 	}
 
 	return d.clusterAndScore(allSignals)
@@ -409,6 +409,122 @@ func actorOverlap(a, b map[string]struct{}) float64 {
 	}
 
 	return float64(intersection) / float64(union)
+}
+
+// --- Signal Detector: Work Object Cluster (fallback) ---
+
+// detectWorkObjectClusters groups stories by shared work objects when all
+// primary heuristics produce zero signals. It uses union-find to merge
+// stories that share any work object name.
+func (d *AlgorithmicDetector) detectWorkObjectClusters(stories []*domain.DomainStory) ([]domain.BoundedContextSketch, error) {
+	n := len(stories)
+	parent := make([]int, n)
+
+	for i := range parent {
+		parent[i] = i
+	}
+
+	find := func(x int) int {
+		for parent[x] != x {
+			parent[x] = parent[parent[x]]
+			x = parent[x]
+		}
+
+		return x
+	}
+
+	union := func(a, b int) {
+		ra, rb := find(a), find(b)
+		if ra != rb {
+			parent[ra] = rb
+		}
+	}
+
+	// Build index: work object name (lowercase) -> story indices.
+	woIndex := make(map[string][]int)
+
+	for i, story := range stories {
+		for name := range buildWorkObjectNameSet(story) {
+			woIndex[name] = append(woIndex[name], i)
+		}
+	}
+
+	// Union stories that share any work object.
+	for _, indices := range woIndex {
+		for k := 1; k < len(indices); k++ {
+			union(indices[0], indices[k])
+		}
+	}
+
+	// Group stories by root.
+	groups := make(map[int][]int)
+
+	for i := range stories {
+		root := find(i)
+		groups[root] = append(groups[root], i)
+	}
+
+	// Sort roots for deterministic output.
+	roots := make([]int, 0, len(groups))
+
+	for root := range groups {
+		roots = append(roots, root)
+	}
+
+	sort.Ints(roots)
+
+	var sketches []domain.BoundedContextSketch
+
+	for _, root := range roots {
+		indices := groups[root]
+
+		actorSet := make(map[string]struct{})
+		woSet := make(map[string]struct{})
+
+		var storyTitles []string
+
+		for _, idx := range indices {
+			story := stories[idx]
+			storyTitles = append(storyTitles, story.Title())
+
+			for name := range buildActorNameSet(story) {
+				actorSet[name] = struct{}{}
+			}
+
+			for name := range buildWorkObjectNameSet(story) {
+				woSet[name] = struct{}{}
+			}
+		}
+
+		name := deriveName(actorSet, woSet)
+
+		desc := fmt.Sprintf("stories [%s] clustered by shared work objects", strings.Join(storyTitles, ", "))
+
+		signal, err := domain.NewBoundarySignal(domain.SignalTypeWorkObjectCluster, desc)
+		if err != nil {
+			return nil, fmt.Errorf("creating work object cluster signal: %w", err)
+		}
+
+		score := domain.ComputeBoundaryScore(domain.BaseConfidenceWorkObjectCluster, 1, len(storyTitles))
+		if score > 1.0 {
+			score = 1.0
+		}
+
+		actors := setToSlice(actorSet)
+		workObjects := setToSlice(woSet)
+		sort.Strings(storyTitles)
+
+		sketch, err := domain.NewBoundedContextSketch(
+			name, vo.SubdomainGeneric, score, actors, workObjects, storyTitles, []domain.BoundarySignal{signal}, vo.AIInferred,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("creating work object cluster sketch %q: %w", name, err)
+		}
+
+		sketches = append(sketches, sketch)
+	}
+
+	return sketches, nil
 }
 
 // --- Clustering and Scoring ---

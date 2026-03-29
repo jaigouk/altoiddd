@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/alto-cli/alto/internal/discovery/application"
 	"github.com/alto-cli/alto/internal/discovery/domain"
@@ -330,8 +331,8 @@ func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.Discov
 	return nil
 }
 
-// resolveProjectName returns the project directory name.
-// If projectDir is ".", it resolves to the actual directory name via os.Getwd.
+// resolveProjectName extracts the project name from the first # heading in
+// README.md or README, falling back to the directory base name.
 func (a *CLIDiscoveryAdapter) resolveProjectName() (string, error) {
 	dir := a.projectDir
 	if dir == "." {
@@ -341,6 +342,24 @@ func (a *CLIDiscoveryAdapter) resolveProjectName() (string, error) {
 		}
 
 		dir = wd
+	}
+
+	for _, candidate := range []string{"README.md", "README"} {
+		content, err := os.ReadFile(filepath.Join(dir, candidate))
+		if err != nil {
+			continue
+		}
+
+		for _, line := range strings.Split(string(content), "\n") {
+			after, ok := strings.CutPrefix(line, "# ")
+			if !ok {
+				continue
+			}
+
+			if name := strings.TrimSpace(after); name != "" {
+				return name, nil
+			}
+		}
 	}
 
 	return filepath.Base(dir), nil

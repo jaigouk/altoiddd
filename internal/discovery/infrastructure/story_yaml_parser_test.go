@@ -639,6 +639,25 @@ func TestStoryYAMLParser_Read_WhenContextCancelled_ExpectError(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
+func TestStoryYAMLParser_Write_WhenParentDirMissing_ExpectCreatesDirectory(t *testing.T) {
+	t.Parallel()
+
+	story := buildMinimalStory(t)
+	tmpDir := t.TempDir()
+	// Path with nested directories that don't exist yet.
+	path := filepath.Join(tmpDir, "nested", "deep", "test.story.yaml")
+
+	parser := &StoryYAMLParser{}
+
+	err := parser.Write(context.Background(), path, story)
+	require.NoError(t, err)
+
+	// Verify the file was created and is readable.
+	loaded, err := parser.Read(context.Background(), path)
+	require.NoError(t, err)
+	assert.Equal(t, story.Title(), loaded.Title())
+}
+
 func TestStoryYAMLParser_Write_WhenContextCancelled_ExpectError(t *testing.T) {
 	t.Parallel()
 

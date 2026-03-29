@@ -8,6 +8,7 @@ const (
 	BaseConfidenceOrgBoundary           float64 = 0.20
 	BaseConfidenceDifferentTrigger      float64 = 0.15
 	BaseConfidenceLanguageDifference    float64 = 0.15
+	BaseConfidenceWorkObjectCluster     float64 = 0.15
 
 	TypeBonusCoefficient  float64 = 0.15
 	StoryBonusCoefficient float64 = 0.10

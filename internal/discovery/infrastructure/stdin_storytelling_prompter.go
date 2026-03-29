@@ -30,6 +30,15 @@ func NewStdinStorytellingPrompter(r io.Reader, w io.Writer) *StdinStorytellingPr
 	}
 }
 
+// NewStdinStorytellingPrompterFromScanner creates a StdinStorytellingPrompter that uses
+// an existing scanner, allowing it to share a single scanner with other prompters.
+func NewStdinStorytellingPrompterFromScanner(s *bufio.Scanner, w io.Writer) *StdinStorytellingPrompter {
+	return &StdinStorytellingPrompter{
+		scanner: s,
+		writer:  w,
+	}
+}
+
 // scanOrCancel reads the next line, returning context.Canceled on EOF
 // or wrapping any scanner error.
 func (p *StdinStorytellingPrompter) scanOrCancel() (string, error) {

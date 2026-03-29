@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 // fakeStorytellingPrompter implements StorytellingPrompter with scripted responses.
 type fakeStorytellingPrompter struct {
 	narrationResponses []string
+	narrationQuestions []string
 	narrationIdx       int
 	narrationErr       error
 
@@ -52,7 +54,8 @@ func (f *fakeStorytellingPrompter) ProposeStory(_ context.Context, proposed *dis
 	return proposed, nil
 }
 
-func (f *fakeStorytellingPrompter) AskNarration(_ context.Context, _ string, _ string) (string, error) {
+func (f *fakeStorytellingPrompter) AskNarration(_ context.Context, question string, _ string) (string, error) {
+	f.narrationQuestions = append(f.narrationQuestions, question)
 	if f.narrationErr != nil {
 		return "", f.narrationErr
 	}
@@ -673,4 +676,44 @@ func TestStorytellingHandler_Integration_ProposeStoryNotCalledWhenTransformRetur
 	require.NoError(t, err)
 	assert.Empty(t, stories)
 	assert.Equal(t, 0, prompter.proposeCallCount)
+}
+
+// ===========================================================================
+// Bug fix tests — {last_actor} interpolation (alty-cli-9xm)
+// ===========================================================================
+
+func TestNarrationPhase_InterpolatesLastActor(t *testing.T) {
+	t.Parallel()
+
+	// Given: a storytelling handler with a mock prompter that records questions.
+	// The narration responses follow the one-sentence pattern where the actor is "Customer".
+	prompter := &fakeStorytellingPrompter{
+		narrationResponses:      oneSentenceNarrationResponses(),
+		confirmSentenceAccepted: []bool{true},
+		synthesisConfirmed:      []bool{true},
+	}
+	writer := &fakeStoryWriter{}
+	handler := NewStorytellingHandler(writer, prompter, nil)
+	session := newTestSession()
+	flow := newTestFlow()
+
+	// When: RunStory is called (the narration phase asks MQ-N3 "who performs this step?")
+	_, _, err := handler.RunStory(context.Background(), session, 1, flow)
+	require.NoError(t, err)
+
+	// Then: the MQ-N3 subject question should contain the actual actor name "Customer",
+	// not the literal placeholder "{last_actor}".
+	var subjectQuestions []string
+	for _, q := range prompter.narrationQuestions {
+		// MQ-N3 questions contain "Who performs" or "Who does"
+		if strings.Contains(q, "Who performs") || strings.Contains(q, "Who does") {
+			subjectQuestions = append(subjectQuestions, q)
+		}
+	}
+
+	require.NotEmpty(t, subjectQuestions, "expected at least one MQ-N3 subject question")
+	for _, q := range subjectQuestions {
+		assert.NotContains(t, q, "{last_actor}", "subject question should not contain literal {last_actor}")
+		assert.Contains(t, q, "Customer", "subject question should contain the interpolated actor name")
+	}
 }

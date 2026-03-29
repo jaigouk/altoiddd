@@ -103,8 +103,9 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	var prompter application.StorytellingPrompter
 	var boundaryPrompter application.BoundaryPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
-		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
-		boundaryPrompter = infrastructure.NewStdinBoundaryPrompter(os.Stdin, os.Stdout)
+		stdinScanner := bufio.NewScanner(os.Stdin)
+		prompter = infrastructure.NewStdinStorytellingPrompterFromScanner(stdinScanner, os.Stdout)
+		boundaryPrompter = infrastructure.NewStdinBoundaryPrompterFromScanner(stdinScanner, os.Stdout)
 	} else {
 		prompter = infrastructure.NewHuhStorytellingPrompter()
 		boundaryPrompter = infrastructure.NewHuhBoundaryPrompter()
@@ -206,8 +207,9 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 	var prompter application.StorytellingPrompter
 	var boundaryPrompter application.BoundaryPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
-		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
-		boundaryPrompter = infrastructure.NewStdinBoundaryPrompter(os.Stdin, os.Stdout)
+		stdinScanner := bufio.NewScanner(os.Stdin)
+		prompter = infrastructure.NewStdinStorytellingPrompterFromScanner(stdinScanner, os.Stdout)
+		boundaryPrompter = infrastructure.NewStdinBoundaryPrompterFromScanner(stdinScanner, os.Stdout)
 	} else {
 		prompter = infrastructure.NewHuhStorytellingPrompter()
 		boundaryPrompter = infrastructure.NewHuhBoundaryPrompter()

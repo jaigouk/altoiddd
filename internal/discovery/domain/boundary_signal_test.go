@@ -116,7 +116,7 @@ func TestSignalType_UnmarshalText_Empty(t *testing.T) {
 func TestAllSignalTypes(t *testing.T) {
 	t.Parallel()
 	got := domain.AllSignalTypes()
-	assert.Len(t, got, 9)
+	assert.Len(t, got, 10)
 	assert.Contains(t, got, domain.SignalTypeDifferentTrigger)
 	assert.Contains(t, got, domain.SignalTypeOneWayFlow)
 	assert.Contains(t, got, domain.SignalTypeLanguageDifference)
@@ -126,6 +126,7 @@ func TestAllSignalTypes(t *testing.T) {
 	assert.Contains(t, got, domain.SignalTypeComplexRules)
 	assert.Contains(t, got, domain.SignalTypeSameObjectDiffContext)
 	assert.Contains(t, got, domain.SignalTypeOrgBoundary)
+	assert.Contains(t, got, domain.SignalTypeWorkObjectCluster)
 }
 
 // -- BoundarySignal tests --

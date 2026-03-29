@@ -1,6 +1,7 @@
 package infrastructure_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -671,6 +672,63 @@ func TestProposeStoryEdit(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, "New Title", result.Title())
 	assert.Equal(t, "New Trigger", result.Trigger())
+}
+
+// --- FromScanner Tests ---
+
+func TestFromScanner_SharesScannerWithBoundary(t *testing.T) {
+	t.Parallel()
+
+	// Build input: 10 lines that will be interleaved between storytelling and boundary prompters.
+	lines := []string{
+		"1", // storytelling SelectMode
+		"line2",
+		"line3",
+		"line4",
+		"line5",
+		"line6",
+		"line7",
+		"line8",
+		"line9",
+		"line10",
+	}
+	input := strings.Join(lines, "\n") + "\n"
+	reader := strings.NewReader(input)
+	scanner := bufio.NewScanner(reader)
+	writer := &bytes.Buffer{}
+
+	storyP := infrastructure.NewStdinStorytellingPrompterFromScanner(scanner, writer)
+	boundaryP := infrastructure.NewStdinBoundaryPrompterFromScanner(scanner, writer)
+
+	// Storytelling reads line 1 (SelectMode → "1" = Rapid)
+	mode, err := storyP.SelectMode(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, discoverydomain.ModeRapid, mode)
+
+	// Storytelling reads line 2 via AskNarration
+	narration1, err := storyP.AskNarration(context.Background(), "q1", "")
+	require.NoError(t, err)
+	assert.Equal(t, "line2", narration1)
+
+	// Boundary reads line 3 via AskMissingContext
+	missing, err := boundaryP.AskMissingContext(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "line3", missing)
+
+	// Storytelling reads line 4
+	narration2, err := storyP.AskNarration(context.Background(), "q2", "")
+	require.NoError(t, err)
+	assert.Equal(t, "line4", narration2)
+
+	// Boundary reads line 5
+	missing2, err := boundaryP.AskMissingContext(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "line5", missing2)
+
+	// Both can continue reading remaining lines without data loss.
+	narration3, err := storyP.AskNarration(context.Background(), "q3", "")
+	require.NoError(t, err)
+	assert.Equal(t, "line6", narration3)
 }
 
 // --- ScannerError Tests ---
