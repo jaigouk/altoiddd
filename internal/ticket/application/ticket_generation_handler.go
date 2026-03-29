@@ -29,9 +29,12 @@ func (p *TicketPreview) Warnings() []string {
 
 // TicketGenerationHandler orchestrates ticket pipeline generation from a DomainModel.
 type TicketGenerationHandler struct {
-	fileWriter  sharedapp.FileWriter
-	beadsWriter BeadsWriter
-	publisher   sharedapp.EventPublisher
+	fileWriter    sharedapp.FileWriter
+	beadsWriter   BeadsWriter
+	publisher     sharedapp.EventPublisher
+	portScanner   PortScanner // optional, nil = skip AST checks
+	glossaryTerms []string    // optional, empty = skip glossary checks
+	portsDir      string      // directory to scan for port interfaces
 }
 
 // NewTicketGenerationHandler creates a new TicketGenerationHandler.
@@ -42,6 +45,18 @@ func NewTicketGenerationHandler(fileWriter sharedapp.FileWriter, publisher share
 // SetBeadsWriter sets the optional BeadsWriter for creating beads issues.
 func (h *TicketGenerationHandler) SetBeadsWriter(writer BeadsWriter) {
 	h.beadsWriter = writer
+}
+
+// SetPortScanner sets the optional PortScanner and ports directory for AST-based verification.
+func (h *TicketGenerationHandler) SetPortScanner(scanner PortScanner, portsDir string) {
+	h.portScanner = scanner
+	h.portsDir = portsDir
+}
+
+// SetGlossaryTerms sets the glossary terms for ubiquitous language validation.
+func (h *TicketGenerationHandler) SetGlossaryTerms(terms []string) {
+	h.glossaryTerms = make([]string, len(terms))
+	copy(h.glossaryTerms, terms)
 }
 
 // BuildPreview generates a ticket plan for preview without writing files.
@@ -71,7 +86,17 @@ func (h *TicketGenerationHandler) BuildPreview(
 		return nil, fmt.Errorf("previewing ticket plan: %w", err)
 	}
 
-	validation := ticketdomain.ValidateImplementabilityPlan(plan.Tickets())
+	var validation []ticketdomain.DesignTraceResult
+
+	switch {
+	case h.portScanner != nil:
+		scannedPorts := h.portScanner.ScanPorts(h.portsDir)
+		validation = ticketdomain.ValidateImplementabilityPlanWithScanner(plan.Tickets(), scannedPorts, h.glossaryTerms)
+	case len(h.glossaryTerms) > 0:
+		validation = ticketdomain.ValidateImplementabilityPlanWithScanner(plan.Tickets(), nil, h.glossaryTerms)
+	default:
+		validation = ticketdomain.ValidateImplementabilityPlan(plan.Tickets())
+	}
 
 	return &TicketPreview{
 		Plan:       plan,

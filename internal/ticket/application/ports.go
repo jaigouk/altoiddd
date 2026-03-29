@@ -56,3 +56,10 @@ type BeadsLabelWriter interface {
 	// RemoveLabel removes a label from a ticket.
 	RemoveLabel(ctx context.Context, ticketID, label string) error
 }
+
+// PortScanner scans Go source files for interface definitions via AST.
+// Used by ticket validation to verify port signatures against actual code.
+type PortScanner interface {
+	// ScanPorts scans a directory for Go interface definitions and returns them keyed by name.
+	ScanPorts(portsDir string) map[string]ticketdomain.ScannedPort
+}

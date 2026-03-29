@@ -239,6 +239,8 @@ func NewApp() (*App, error) {
 	fitnessGenerationHandler := fitnessapp.NewFitnessGenerationHandler(fileWriter, publisher)
 	qualityGateHandler := fitnessapp.NewQualityGateHandler(gateRunner)
 	ticketGenerationHandler := ticketapp.NewTicketGenerationHandler(fileWriter, publisher)
+	portScannerBridge := &portScannerBridge{scanner: fitnessinfra.CodebasePortScanner{}}
+	ticketGenerationHandler.SetPortScanner(portScannerBridge, "")
 	ticketHealthHandler := ticketapp.NewTicketHealthHandler(&ticketReaderAdapter{reader: ticketReader})
 	ticketVerifyHandler := ticketapp.NewTicketVerifyHandler(ticketContentReader, commandRunner)
 	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter, publisher)

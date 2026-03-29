@@ -15,6 +15,7 @@ import (
 	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
 	dochealthinfra "github.com/alto-cli/alto/internal/dochealth/infrastructure"
 	docimportapp "github.com/alto-cli/alto/internal/docimport/application"
+	fitnessinfra "github.com/alto-cli/alto/internal/fitness/infrastructure"
 	rescueapp "github.com/alto-cli/alto/internal/rescue/application"
 	"github.com/alto-cli/alto/internal/shared/domain/ddd"
 	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
@@ -209,4 +210,30 @@ func (a *regexImporterAdapter) Import(ctx context.Context, docDir string) (*ddd.
 		return nil, fmt.Errorf("regex import: %w", err)
 	}
 	return result.Model(), nil
+}
+
+// ---------------------------------------------------------------------------
+// PortScanner bridge (fitness -> ticket)
+// ---------------------------------------------------------------------------
+
+// Compile-time interface check.
+var _ ticketapp.PortScanner = (*portScannerBridge)(nil)
+
+// portScannerBridge adapts fitness CodebasePortScanner to the ticket PortScanner port.
+type portScannerBridge struct {
+	scanner fitnessinfra.CodebasePortScanner
+}
+
+// ScanPorts scans a directory for Go interfaces and returns ticket-domain ScannedPort values.
+func (b *portScannerBridge) ScanPorts(portsDir string) map[string]ticketdomain.ScannedPort {
+	fitnessResult := b.scanner.Scan(portsDir)
+	result := make(map[string]ticketdomain.ScannedPort, len(fitnessResult))
+	for name, port := range fitnessResult {
+		methods := make([]ticketdomain.ScannedMethod, 0, len(port.Methods()))
+		for _, m := range port.Methods() {
+			methods = append(methods, ticketdomain.NewScannedMethod(m.Name(), m.Parameters()))
+		}
+		result[name] = ticketdomain.NewScannedPort(port.Name(), port.FilePath(), methods)
+	}
+	return result
 }

@@ -412,3 +412,152 @@ func TestTicketGenerationHandler_WriteToBeads(t *testing.T) {
 		assert.NotEmpty(t, beadsWriter.dependencies)
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Fakes — PortScanner (1wu.2)
+// ---------------------------------------------------------------------------
+
+type fakePortScannerT struct {
+	ports map[string]ticketdomain.ScannedPort
+}
+
+func (f *fakePortScannerT) ScanPorts(_ string) map[string]ticketdomain.ScannedPort {
+	return f.ports
+}
+
+// ---------------------------------------------------------------------------
+// Tests — BuildPreview with PortScanner (1wu.2)
+// ---------------------------------------------------------------------------
+
+func TestTicketGenerationHandler_BuildPreview_WithPortScanner(t *testing.T) {
+	t.Parallel()
+
+	t.Run("scanner set uses enhanced validation", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+
+		scanner := &fakePortScannerT{
+			ports: map[string]ticketdomain.ScannedPort{
+				"OrderRepository": ticketdomain.NewScannedPort("OrderRepository", "ports.go",
+					[]ticketdomain.ScannedMethod{
+						ticketdomain.NewScannedMethod("Save", map[string]string{"ctx": "context.Context"}),
+					}),
+			},
+		}
+		handler.SetPortScanner(scanner, "/project/internal")
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.NotNil(t, preview.Validation)
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+	})
+
+	t.Run("no scanner uses basic validation", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.NotNil(t, preview.Validation)
+		// Still validates -- just uses basic text checks.
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+	})
+
+	t.Run("glossary terms used in validation", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+		handler.SetGlossaryTerms([]string{"Orders", "OrderRoot"})
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+	})
+
+	t.Run("scanner and glossary combined", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+
+		scanner := &fakePortScannerT{
+			ports: map[string]ticketdomain.ScannedPort{},
+		}
+		handler.SetPortScanner(scanner, "/project/internal")
+		handler.SetGlossaryTerms([]string{"Orders", "OrderRoot"})
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+	})
+
+	t.Run("scanner returns ports that are actually used", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+
+		scanner := &fakePortScannerT{
+			ports: map[string]ticketdomain.ScannedPort{
+				"OrdersRepository": ticketdomain.NewScannedPort("OrdersRepository", "ports.go",
+					[]ticketdomain.ScannedMethod{
+						ticketdomain.NewScannedMethod("Save", nil),
+						ticketdomain.NewScannedMethod("FindByID", nil),
+					}),
+			},
+		}
+		handler.SetPortScanner(scanner, "/project/internal")
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{
+			{"Orders", vo.SubdomainCore},
+			{"Shipping", vo.SubdomainGeneric},
+		})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		// Each ticket gets a validation result.
+		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+		// Ticket IDs in validation must match plan.
+		planIDs := make(map[string]bool)
+		for _, ticket := range preview.Plan.Tickets() {
+			planIDs[ticket.TicketID()] = true
+		}
+		for _, result := range preview.Validation {
+			assert.True(t, planIDs[result.TicketID()],
+				"validation result ticket ID %q not found in plan", result.TicketID())
+		}
+	})
+}
