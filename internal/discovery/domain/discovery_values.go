@@ -57,7 +57,7 @@ func ParseDiscoveryRegister(s string) (DiscoveryRegister, error) {
 	}
 }
 
-// QuestionPhase represents phases of the 10-question DDD discovery flow.
+// QuestionPhase represents phases of the domain storytelling discovery flow.
 type QuestionPhase string
 
 // QuestionPhase constants.

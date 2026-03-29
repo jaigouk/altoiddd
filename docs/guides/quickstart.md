@@ -63,15 +63,15 @@ Run `alto init` with the `-y` flag to skip confirmation prompts:
 alto init -y
 ```
 
-alto detects your installed AI coding tools, then walks you through 10 guided DDD discovery questions. Answer each one in plain language — alto adapts its vocabulary to your expertise level.
+alto detects your installed AI coding tools, then starts a Domain Storytelling moderator conversation to discover your domain. alto proposes concrete stories about how your system works — answer in plain language and alto adapts its vocabulary to your expertise level.
 
 ## What you get
 
-After answering the questions, alto generates:
+After the Domain Storytelling conversation completes, alto generates:
 
 | Artifact | Purpose |
 |----------|---------|
-| `docs/PRD.md` | Product requirements derived from your answers |
+| `docs/PRD.md` | Product requirements derived from your domain stories |
 | `docs/DDD.md` | Domain model — bounded contexts, aggregates, ubiquitous language |
 | `docs/ARCHITECTURE.md` | Technical architecture informed by the domain model |
 | `.alto/` | Project config, knowledge base, doc maintenance registry |

@@ -41,7 +41,7 @@ func (q Question) Produces() []string {
 	return out
 }
 
-// questionCatalog is the 10-question DDD discovery catalog (singleton).
+// questionCatalog is the legacy question-based discovery catalog (singleton).
 var questionCatalog = []Question{
 	NewQuestion("Q1", PhaseActors,
 		"Who are the actors (users, external systems) that interact with your system?",
@@ -85,7 +85,7 @@ var questionCatalog = []Question{
 		[]string{"subdomain_classification"}),
 }
 
-// QuestionCatalog returns a copy of the 10-question catalog.
+// QuestionCatalog returns a copy of the legacy question-based catalog.
 func QuestionCatalog() []Question {
 	out := make([]Question, len(questionCatalog))
 	copy(out, questionCatalog)

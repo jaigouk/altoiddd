@@ -66,7 +66,7 @@ alto init --dry-run
 
 ## Step 3: Guided discovery
 
-After you confirm the preview, alto starts the guided DDD discovery flow. This is the same flow you can run independently with `alto guide`.
+After you confirm the preview, alto starts the Domain Storytelling discovery flow. This is the same flow you can run independently with `alto guide`.
 
 ### Persona detection
 
@@ -78,23 +78,32 @@ alto first asks which role best describes you:
 - **Product Owner** — defining what to build, not how
 - **Domain Expert** — describing a business problem
 
-Your choice determines the **register** — the language level alto uses in its questions. Developers get technical DDD terminology. Product owners and domain experts get plain business language. The same questions extract the same domain knowledge either way.
+Your choice determines the **register** — the language level alto uses in its storytelling conversation. Developers get technical DDD terminology. Product owners and domain experts get plain business language. The same Domain Storytelling flow extracts the same domain knowledge either way.
 
-### The 10 questions
+### Domain Storytelling
 
-alto asks 10 questions in 5 phases:
+alto uses Domain Storytelling to discover your domain. Instead of abstract questions, alto proposes concrete stories about how your system works and invites you to refine them.
 
-| Phase | Questions | What it captures |
-|-------|-----------|-----------------|
-| Seed | Q1-Q2 | Core idea, tech stack |
-| Actors | Q3-Q4 | Who uses the system, what roles exist |
-| Story | Q5-Q6 | Key workflows, step-by-step processes |
-| Events | Q7-Q8 | What happens in the domain, business rules |
-| Boundaries | Q9-Q10 | Where the model splits, what terms are ambiguous |
+**StorytellingFlow** is selected by your DiscoveryMode:
+- **ModeRapid** — 3 domain stories (default, ~15 minutes)
+- **ModeThorough** — 5+ domain stories (~30-60 minutes, for complex domains)
 
-After every 3-4 questions, alto plays back its understanding for you to confirm or correct. This playback loop prevents misunderstandings from compounding.
+Each story progresses through four **NarrationPhases**:
 
-You can skip any question with an explicit acknowledgment, but alto requires at least 5 key questions (Q1, Q3, Q4, Q9, Q10) for a viable domain model.
+| Phase | What happens |
+|-------|-------------|
+| Opening | alto sets the scene: who is the actor, what are they trying to do |
+| Narration | alto proposes **StorySentences** in the form [Actor] [activity] [WorkObject] |
+| Deepening | alto probes for business rules, edge cases, and annotations |
+| Closing | alto synthesizes what was learned and transitions to the next story |
+
+For each proposed StorySentence, alto runs a **ConfirmSentence** loop: you can accept, reject, or edit the sentence. Mid-story synthesis checkpoints occur every 3 sentences to ensure alignment.
+
+After all sentences in a story are confirmed, alto runs **ProposeStory** — a full replay of the complete story for your final confirmation.
+
+Business rule **annotations** can be attached to any sentence (e.g., "invoice must be approved within 30 days").
+
+Boundary detection produces **BoundedContextSketch[]** with confidence scores, which alto uses to generate your bounded context map.
 
 Use `--no-tui` for plain stdin/stdout mode (useful for screen readers or scripted input):
 
@@ -107,7 +116,7 @@ alto guide --no-tui
 Once discovery completes, alto generates artifacts in a pipeline:
 
 ```
-Discovery answers
+Domain stories
   → PRD (docs/PRD.md)
   → DDD artifacts (docs/DDD.md)
   → Architecture doc (docs/ARCHITECTURE.md)
@@ -120,7 +129,7 @@ Each stage previews its output before writing. You approve or adjust at every st
 
 ### What each artifact contains
 
-**PRD** — Product requirements derived from your answers. Includes personas, scenarios, capabilities, and constraints.
+**PRD** — Product requirements derived from your domain stories. Includes personas, scenarios, capabilities, and constraints.
 
 **DDD.md** — Domain model with:
 - Domain stories (step-by-step business process narratives)
@@ -149,6 +158,6 @@ bd ready
 
 ## Tips
 
-- Answer questions in your own language. alto builds the ubiquitous language from your words, not from developer jargon.
+- Respond to stories in your own language. alto builds the ubiquitous language from your words, not from developer jargon.
 - The complexity budget matters. Not every subdomain needs full DDD treatment — let alto classify subdomains so you invest effort where it counts.
 - Review the generated ubiquitous language glossary in `docs/DDD.md`. If a term doesn't match how you talk about the domain, correct it now. Code will use these names exactly.

@@ -6,7 +6,7 @@ import (
 	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
 
-// FixedQuestionFlow implements the existing 10-question sequential flow.
+// FixedQuestionFlow implements the legacy question-based sequential flow.
 // It enforces phase ordering, playback every 3 answers, and MVP question completeness.
 type FixedQuestionFlow struct{}
 

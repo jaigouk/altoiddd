@@ -18,6 +18,7 @@ type AgentStorytellingAdapter struct {
 	handler                  *application.DiscoveryHandler
 	storytellingHandler      *application.StorytellingHandler
 	boundaryDetectionHandler *application.BoundaryDetectionHandler
+	researcher               application.DomainResearcher
 	writer                   io.Writer
 	projectDir               string
 }
@@ -27,6 +28,7 @@ func NewAgentStorytellingAdapter(
 	handler *application.DiscoveryHandler,
 	storytellingHandler *application.StorytellingHandler,
 	boundaryDetectionHandler *application.BoundaryDetectionHandler,
+	researcher application.DomainResearcher,
 	writer io.Writer,
 	projectDir string,
 ) *AgentStorytellingAdapter {
@@ -34,6 +36,7 @@ func NewAgentStorytellingAdapter(
 		handler:                  handler,
 		storytellingHandler:      storytellingHandler,
 		boundaryDetectionHandler: boundaryDetectionHandler,
+		researcher:               researcher,
 		writer:                   writer,
 		projectDir:               projectDir,
 	}
@@ -63,8 +66,7 @@ func (a *AgentStorytellingAdapter) Run(ctx context.Context) error {
 	}
 
 	// 4. Detect persona as Developer (choice "1")
-	session, err = a.handler.DetectPersona(sessionID, "1")
-	if err != nil {
+	if _, err = a.handler.DetectPersona(sessionID, "1"); err != nil {
 		return fmt.Errorf("detecting persona: %w", err)
 	}
 
@@ -74,39 +76,47 @@ func (a *AgentStorytellingAdapter) Run(ctx context.Context) error {
 		return fmt.Errorf("creating storytelling flow: %w", err)
 	}
 
-	// 6. Story loop
-	var stories []*domain.DomainStory
+	// 6. Research domain and generate stories
+	if a.researcher == nil {
+		return fmt.Errorf("agent mode requires a domain researcher")
+	}
 
-	for storyIndex := 1; ; storyIndex++ {
-		story, _, storyErr := a.storytellingHandler.RunStory(ctx, session, storyIndex, flow)
-		if storyErr != nil {
-			return fmt.Errorf("running story %d: %w", storyIndex, storyErr)
-		}
+	result, err := a.researcher.Research(ctx, string(readme))
+	if err != nil {
+		return fmt.Errorf("researching domain: %w", err)
+	}
 
-		stories = append(stories, story)
+	if result == nil {
+		return fmt.Errorf("agent mode requires LLM credentials for automated story generation. Set ANTHROPIC_API_KEY or use alto guide --no-tui for interactive mode")
+	}
 
-		// Emit story envelope
-		storyOutput := NewStoryOutput(sessionID, storyIndex, story)
+	stories, err := a.storytellingHandler.ProposeResearchStories(ctx, result)
+	if err != nil {
+		return fmt.Errorf("proposing research stories: %w", err)
+	}
 
-		storyData, marshalErr := json.Marshal(storyOutput)
+	if len(stories) == 0 {
+		return fmt.Errorf("research produced no stories for this domain; the README may lack sufficient detail")
+	}
+
+	// 7. Emit story envelopes
+	for i, story := range stories {
+		storyOutput := NewStoryOutput(sessionID, i+1, story)
+
+		data, marshalErr := json.Marshal(storyOutput)
 		if marshalErr != nil {
-			return fmt.Errorf("marshaling story %d: %w", storyIndex, marshalErr)
+			return fmt.Errorf("marshalling story output: %w", marshalErr)
 		}
 
-		if writeErr := writeEnvelope(a.writer, "story", storyData); writeErr != nil {
-			return writeErr
-		}
-
-		// Check completeness
-		if flow.CheckStoryCompleteness(session.StoryCount()) == nil {
-			break
+		if writeErr := writeEnvelope(a.writer, "story", data); writeErr != nil {
+			return fmt.Errorf("writing story envelope: %w", writeErr)
 		}
 	}
 
-	// 7. Boundary detection (if handler available and enough stories)
+	// 8. Boundary detection (if handler available and enough stories)
 	sketchCount := 0
 
-	if a.boundaryDetectionHandler != nil && flow.CanRunBoundaryDetection(session.StoryCount()) {
+	if a.boundaryDetectionHandler != nil && flow.CanRunBoundaryDetection(len(stories)) {
 		sketches, detectErr := a.boundaryDetectionHandler.Detect(ctx, stories, domain.ModeRapid)
 		if detectErr != nil {
 			return fmt.Errorf("detecting boundaries: %w", detectErr)
@@ -135,7 +145,7 @@ func (a *AgentStorytellingAdapter) Run(ctx context.Context) error {
 		}
 	}
 
-	// 8. Emit discovery_complete
+	// 9. Emit discovery_complete
 	completeOutput := DiscoveryCompleteOutput{
 		SessionID:   sessionID,
 		StoryCount:  len(stories),

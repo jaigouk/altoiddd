@@ -59,7 +59,7 @@ alto performs these steps in order:
 2. **Project scan** — analyzes your code, docs, configs, and folder structure.
 3. **Gap analysis** — compares against a fully seeded project.
 4. **Gap report** — shows what's missing, what conflicts, and what alto proposes to add.
-5. **Guided questions** — asks clarifying DDD questions about your existing domain (bounded contexts, ubiquitous language).
+5. **Domain Storytelling** — runs a storytelling moderator conversation to discover your existing domain (bounded contexts, ubiquitous language).
 6. **Artifact generation** — generates missing artifacts adapted to your domain language.
 7. **Agent adaptation** — configures AI agent personas using your domain terms.
 8. **Test gate** — runs your existing test suite. If any test fails, all changes are rolled back.

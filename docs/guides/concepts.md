@@ -151,7 +151,7 @@ The alto workflow:
 
 ```
 Idea (README)
-  → Guided discovery (10 questions)
+  → Guided discovery (Domain Storytelling)
   → Domain model (bounded contexts, aggregates, ubiquitous language)
   → Architecture (layers, fitness functions)
   → Tickets (dependency-ordered, TDD phases, complexity-budget-driven detail)

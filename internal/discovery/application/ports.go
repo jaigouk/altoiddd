@@ -11,7 +11,7 @@ import (
 
 // --- Discovery Port ---
 
-// Discovery manages the conversational flow of the 10-question DDD framework
+// Discovery manages the conversational flow of the domain storytelling discovery
 // with persona detection, register selection, and playback confirmation loops.
 // Methods omit context.Context because this runs synchronously in a CLI process.
 type Discovery interface {

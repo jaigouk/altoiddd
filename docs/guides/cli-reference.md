@@ -39,7 +39,7 @@ alto init --existing --dry-run
 
 ## `alto guide`
 
-Run the 10-question guided DDD discovery flow.
+Run the Domain Storytelling moderator conversation. alto acts as a domain consultant, proposing StorySentence structures ([Actor] [activity] [WorkObject]) for the user to confirm, reject, or edit. The conversation progresses through four NarrationPhases: opening, narration, deepening, and closing.
 
 ```bash
 alto guide [flags]
@@ -48,17 +48,30 @@ alto guide [flags]
 | Flag | Description |
 |------|-------------|
 | `--no-tui` | Disable TUI prompts, use plain stdin/stdout (accessibility, CI) |
+| `--continue` | Resume a previously interrupted storytelling session |
+| `--agent` | Output discovery session as JSONL for AI agent consumption |
+| `--ingest FILE` | Ingest answers from JSONL file (or "-" for stdin); requires `--agent` |
+| `--legacy` | Use deprecated question-based flow (prints deprecation warning) |
 
-Orchestrates persona detection, 10 guided questions with playback loops, and artifact generation.
+Orchestrates persona detection, Domain Storytelling with ConfirmSentence loops and ProposeStory replay, and artifact generation.
 
 **Examples:**
 
 ```bash
-# Interactive guided discovery
+# Interactive Domain Storytelling discovery
 alto guide
 
 # Plain text mode (screen readers, scripted input)
 alto guide --no-tui
+
+# Resume a previous session
+alto guide --continue
+
+# Agent mode (JSONL output for automation)
+alto guide --agent
+
+# Ingest pre-recorded answers
+alto guide --agent --ingest answers.jsonl
 ```
 
 ---

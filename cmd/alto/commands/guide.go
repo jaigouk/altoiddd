@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,26 +16,37 @@ import (
 	"github.com/alto-cli/alto/internal/discovery/infrastructure"
 )
 
+// Deprecation warning constants for legacy discovery flow.
+const (
+	legacyFlagWarning     = "warning: --legacy uses the deprecated question-based discovery flow; use `alto guide` for the new storytelling flow"
+	legacyContinueWarning = "warning: this session uses legacy discovery mode %q; the question-based flow is deprecated"
+)
+
 // NewGuideCmd creates the "alto guide" command.
 func NewGuideCmd(app *composition.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "guide",
-		Short: "Run the 10-question guided DDD discovery flow",
-		Long: `Run the 10-question guided DDD discovery flow.
+		Short: "Run the Domain Storytelling guided discovery flow",
+		Long: `Run the Domain Storytelling guided discovery flow.
 
-This multi-step command orchestrates:
+alto acts as a domain consultant, moderating a structured conversation:
   1. Detection of installed AI coding tools
-  2. Interactive discovery session (10 questions)
-  3. Artifact generation from discovery answers
+  2. Domain Storytelling moderator conversation (actors, activities, work objects
+     structured into stories through opening → narration → deepening → closing)
+  3. Boundary detection on accumulated stories (bounded context sketches)
+  4. Artifact generation from completed stories
 
-Use --no-tui for accessibility (screen readers) or CI/scripted input.
-Use --continue to resume a previously interrupted session.
-Use --agent to output the discovery session as JSONL for AI agent consumption.
-Use --agent --ingest <file> to ingest answers from a JSONL file (or "-" for stdin).`,
+Flags:
+  --no-tui     Disable TUI prompts, use plain stdin/stdout (accessibility, CI)
+  --continue   Resume a previously interrupted storytelling session
+  --agent      Output discovery session as JSONL for AI agent consumption
+  --ingest     Ingest answers from JSONL file (or "-" for stdin); requires --agent
+  --legacy     Use deprecated question-based flow (prints deprecation warning)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			noTUI, _ := cmd.Flags().GetBool("no-tui")
 			continueSession, _ := cmd.Flags().GetBool("continue")
 			agentMode, _ := cmd.Flags().GetBool("agent")
+			legacyMode, _ := cmd.Flags().GetBool("legacy")
 			ingestPath, _ := cmd.Flags().GetString("ingest")
 
 			if ingestPath != "" && !agentMode {
@@ -51,19 +60,29 @@ Use --agent --ingest <file> to ingest answers from a JSONL file (or "-" for stdi
 				return runGuideAgentIngest(cmd.Context(), app, ingestPath, ".alto", cmd.OutOrStdout())
 			}
 
-			return runGuide(cmd.Context(), app, noTUI, continueSession, agentMode)
+			return runGuide(cmd.Context(), app, noTUI, continueSession, agentMode, legacyMode)
 		},
 	}
 	cmd.Flags().Bool("no-tui", false, "Disable TUI prompts, use plain stdin/stdout (accessibility, CI)")
 	cmd.Flags().Bool("continue", false, "Resume a previously interrupted discovery session")
 	cmd.Flags().Bool("agent", false, "Output discovery session as JSONL for AI agent consumption")
 	cmd.Flags().String("ingest", "", "Ingest answers from JSONL file (or \"-\" for stdin); requires --agent")
+	cmd.Flags().Bool("legacy", false, "Use deprecated question-based discovery flow")
 	return cmd
 }
 
-func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSession bool, agentMode bool) error {
+func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSession bool, agentMode bool, legacyMode bool) error {
 	if agentMode && continueSession {
 		return fmt.Errorf("--agent and --continue are mutually exclusive")
+	}
+	if legacyMode && agentMode {
+		return fmt.Errorf("--legacy and --agent are mutually exclusive")
+	}
+	if legacyMode && continueSession {
+		return fmt.Errorf("--legacy and --continue are mutually exclusive")
+	}
+	if legacyMode {
+		return runLegacyFlow(ctx, app, noTUI)
 	}
 	if agentMode {
 		return runGuideAgent(ctx, app)
@@ -83,8 +102,7 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	// Step 2: Select prompter based on flag or env var
 	var prompter application.StorytellingPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
-		fmt.Fprintln(os.Stderr, "warning: --no-tui not yet supported for storytelling; using TUI")
-		prompter = infrastructure.NewHuhStorytellingPrompter()
+		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
 	} else {
 		prompter = infrastructure.NewHuhStorytellingPrompter()
 	}
@@ -118,23 +136,10 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 }
 
 func runGuideAgent(ctx context.Context, app *composition.App) error {
-	readme, err := os.ReadFile(filepath.Join(".", "README.md"))
-	if err != nil {
-		return fmt.Errorf("reading README.md: %w", err)
-	}
-
-	var lines []string
-	for _, line := range strings.Split(string(readme), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		lines = append(lines, line)
-	}
-
-	prompter := infrastructure.NewAgentStorytellingPrompter(domain.ModeRapid, lines)
+	prompter := infrastructure.NewAgentStorytellingPrompter(domain.ModeRapid, nil)
 	storyWriter := &infrastructure.StoryYAMLParser{}
-	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, nil)
+	transformer := application.NewResearchToStoryTransformer()
+	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, transformer)
 
 	var boundaryHandler *application.BoundaryDetectionHandler
 	if app.BoundaryDetector != nil {
@@ -142,7 +147,9 @@ func runGuideAgent(ctx context.Context, app *composition.App) error {
 	}
 
 	adapter := infrastructure.NewAgentStorytellingAdapter(
-		app.DiscoveryHandler, storytellingHandler, boundaryHandler, os.Stdout, ".",
+		app.DiscoveryHandler, storytellingHandler, boundaryHandler,
+		app.DomainResearcher,
+		os.Stdout, ".",
 	)
 
 	if err := adapter.Run(ctx); err != nil {
@@ -153,9 +160,7 @@ func runGuideAgent(ctx context.Context, app *composition.App) error {
 }
 
 func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) error {
-	fmt.Fprintln(os.Stderr, "warning: --continue uses the legacy discovery flow; storytelling resume is Phase 6")
-
-	// Step 1: Check session exists via repository
+	// Step 1: Check session exists
 	sessionRepo := infrastructure.NewFileSystemSessionRepository(".alto")
 	exists, err := sessionRepo.Exists(ctx, "")
 	if err != nil {
@@ -171,136 +176,73 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 		return fmt.Errorf("could not load session: %w", err)
 	}
 
-	// Step 3: Check if already completed
+	// Step 3: Guard completed
 	if session.Status() == domain.StatusCompleted {
 		return fmt.Errorf("session already complete. Start a new one with `alto guide`")
 	}
 
-	// Step 4: Register session in handler for subsequent operations
+	// Step 3.5: Warn if resuming a legacy-mode session
+	if isLegacyMode(session.Mode()) {
+		fmt.Fprintf(os.Stderr, legacyContinueWarning+"\n", session.Mode())
+	}
+
+	// Step 4: Fail fast if session is non-resumable (e.g. legacy mode without storytelling flow)
+	if _, checkpointErr := session.ComputeResumeCheckpoint(); checkpointErr != nil {
+		return fmt.Errorf("cannot resume session: %w", checkpointErr)
+	}
+
+	// Step 5: Display resume summary
+	displayStoryResumeSummary(session)
+
+	// Step 6: Register session in handler
 	session, err = app.DiscoveryHandler.LoadOrGetSession(session.SessionID()) //nolint:contextcheck // Discovery interface deliberately omits context
 	if err != nil {
 		return fmt.Errorf("loading session into handler: %w", err)
 	}
 
-	// Step 5: Display summary
-	displaySessionSummary(session)
-
-	// Step 6: Select prompter
-	var prompter application.Prompter
+	// Step 7: Wire storytelling handler + adapter (match runGuide :84-110 pattern)
+	var prompter application.StorytellingPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
-		prompter = infrastructure.NewStdinPrompter(os.Stdin, os.Stdout)
+		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
 	} else {
-		prompter = infrastructure.NewHuhPrompter()
+		prompter = infrastructure.NewHuhStorytellingPrompter()
 	}
 
-	// Step 7: Determine which questions need answering
-	questions := domain.QuestionCatalog()
-	answeredIDs := make(map[string]bool)
-	for _, a := range session.Answers() {
-		answeredIDs[a.QuestionID()] = true
+	storyWriter := &infrastructure.StoryYAMLParser{}
+	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, nil)
+
+	boundaryPrompter := infrastructure.NewHuhBoundaryPrompter()
+	boundaryDetectionHandler := application.NewBoundaryDetectionHandler(app.BoundaryDetector)
+	contextMapWriter := &infrastructure.ContextMapYAMLParser{}
+
+	adapter := infrastructure.NewCLIDiscoveryAdapter(
+		app.DiscoveryHandler,
+		storytellingHandler,
+		boundaryDetectionHandler,
+		boundaryPrompter,
+		contextMapWriter,
+		prompter,
+		".",
+	)
+
+	// Step 8: Resume
+	if err := adapter.Resume(ctx, session); err != nil {
+		return fmt.Errorf("resuming discovery: %w", err)
 	}
 
-	register, hasRegister := session.Register()
-	if !hasRegister {
-		return fmt.Errorf("session has no register — cannot continue")
-	}
-
-	sessionID := session.SessionID()
-
-	// Step 8: Unskip all skipped questions so they can be re-asked
-	for _, q := range questions {
-		if session.SkipReason(q.ID()) != "" {
-			if unskipErr := session.UnskipQuestion(q.ID()); unskipErr != nil {
-				return fmt.Errorf("unskipping question %s: %w", q.ID(), unskipErr)
-			}
-		}
-	}
-
-	// Step 9: Resume question loop from first unanswered question
-	for i, question := range questions {
-		if answeredIDs[question.ID()] {
-			continue
-		}
-
-		var text string
-		if register == domain.RegisterTechnical {
-			text = question.TechnicalText()
-		} else {
-			text = question.NonTechnicalText()
-		}
-
-		fmt.Printf("Q%d/%d\n", i+1, len(questions))
-		answer, askErr := prompter.AskQuestion(ctx, text)
-		if askErr != nil {
-			return fmt.Errorf("asking question %s: %w", question.ID(), askErr)
-		}
-
-		if answer == "" {
-			reason, skipErr := prompter.AskSkipReason(ctx)
-			if skipErr != nil {
-				return fmt.Errorf("asking skip reason: %w", skipErr)
-			}
-			session, err = app.DiscoveryHandler.SkipQuestion(sessionID, question.ID(), reason) //nolint:contextcheck // Discovery interface deliberately omits context
-			if err != nil {
-				return fmt.Errorf("skipping question %s: %w", question.ID(), err)
-			}
-		} else {
-			session, err = app.DiscoveryHandler.AnswerQuestion(sessionID, question.ID(), answer) //nolint:contextcheck // Discovery interface deliberately omits context
-			if err != nil {
-				return fmt.Errorf("answering question %s: %w", question.ID(), err)
-			}
-		}
-
-		// Check for playback pending
-		if session.Status() == domain.StatusPlaybackPending {
-			summary := buildContinuePlaybackSummary(session, register)
-			confirmed, playbackErr := prompter.ConfirmPlayback(ctx, summary)
-			if playbackErr != nil {
-				return fmt.Errorf("playback confirmation: %w", playbackErr)
-			}
-			_, err = app.DiscoveryHandler.ConfirmPlayback(sessionID, confirmed)
-			if err != nil {
-				return fmt.Errorf("confirming playback: %w", err)
-			}
-		}
-	}
-
-	fmt.Println("Discovery complete.")
+	fmt.Println("Discovery resumed and complete.")
 	return nil
 }
 
-func displaySessionSummary(session *domain.DiscoverySession) {
-	fmt.Println("Resuming discovery session...")
-
-	answers := session.Answers()
-	if len(answers) > 0 {
-		fmt.Println("Previously answered:")
-		for _, a := range answers {
-			label := a.QuestionID()
-			// Truncate long answers for display
-			response := a.ResponseText()
-			if len(response) > 60 {
-				response = response[:60] + "..."
-			}
-			fmt.Printf("  %s: %s\n", label, response)
+func displayStoryResumeSummary(session *domain.DiscoverySession) {
+	fmt.Println("Resuming storytelling session...")
+	refs := session.StoryRefs()
+	if len(refs) > 0 {
+		fmt.Printf("Previously completed %d story(ies):\n", len(refs))
+		for _, ref := range refs {
+			fmt.Printf("  %s\n", ref)
 		}
 	}
-
-	// Show skipped questions
-	questions := domain.QuestionCatalog()
-	var skippedLines []string
-	for _, q := range questions {
-		if reason := session.SkipReason(q.ID()); reason != "" {
-			skippedLines = append(skippedLines, fmt.Sprintf("  %s (reason: %s)", q.ID(), reason))
-		}
-	}
-	if len(skippedLines) > 0 {
-		fmt.Println("\nSkipped (will ask again):")
-		for _, line := range skippedLines {
-			fmt.Println(line)
-		}
-	}
-
 	fmt.Println()
 }
 
@@ -457,28 +399,91 @@ func runGuideAgentIngestFromReader(ctx context.Context, app *composition.App, r 
 	return nil
 }
 
-func buildContinuePlaybackSummary(session *domain.DiscoverySession, register domain.DiscoveryRegister) string {
-	answers := session.Answers()
-	if len(answers) == 0 {
-		return "No answers recorded yet."
+// isLegacyMode returns true for the deprecated question-based discovery modes.
+func isLegacyMode(mode domain.DiscoveryMode) bool {
+	switch mode { //nolint:exhaustive // Only legacy modes return true; all others (including future) default to false.
+	case domain.ModeExpress, domain.ModeDeep, domain.ModeConversational:
+		return true
+	default:
+		return false
+	}
+}
+
+// runLegacyFlow runs the deprecated question-based discovery flow.
+func runLegacyFlow(ctx context.Context, app *composition.App, noTUI bool) error {
+	var prompter application.Prompter
+	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
+		prompter = infrastructure.NewStdinPrompter(os.Stdin, os.Stdout)
+	} else {
+		prompter = infrastructure.NewHuhPrompter()
+	}
+	return runLegacyFlowWithDeps(ctx, app, prompter, os.Stderr)
+}
+
+// runLegacyFlowWithDeps runs the legacy flow with injected dependencies (testable).
+func runLegacyFlowWithDeps(ctx context.Context, app *composition.App, prompter application.Prompter, stderr io.Writer) error {
+	if _, err := fmt.Fprintln(stderr, legacyFlagWarning); err != nil {
+		return fmt.Errorf("writing deprecation warning: %w", err)
 	}
 
-	qByID := domain.QuestionByID()
-	var sb strings.Builder
+	session, err := app.DiscoveryHandler.StartSession("")
+	if err != nil {
+		return fmt.Errorf("starting legacy session: %w", err)
+	}
+	sessionID := session.SessionID()
 
-	for _, ans := range answers {
-		q, ok := qByID[ans.QuestionID()]
-		if !ok {
-			continue
+	// Persona selection
+	choice, err := prompter.SelectPersona(ctx)
+	if err != nil {
+		return fmt.Errorf("selecting persona: %w", err)
+	}
+	if _, personaErr := app.DiscoveryHandler.DetectPersona(sessionID, choice); personaErr != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+		return fmt.Errorf("detecting persona: %w", personaErr)
+	}
+
+	// Question loop
+	questions := domain.QuestionCatalog()
+	for _, q := range questions {
+		// Handle playback gate before next question
+		session, err = app.DiscoveryHandler.GetSession(sessionID)
+		if err != nil {
+			return fmt.Errorf("getting session: %w", err)
 		}
-		var qText string
-		if register == domain.RegisterTechnical {
-			qText = q.TechnicalText()
+		if session.Status() == domain.StatusPlaybackPending {
+			summary := fmt.Sprintf("Review your answers so far (%d answered)", len(session.Answers()))
+			confirmed, pbErr := prompter.ConfirmPlayback(ctx, summary)
+			if pbErr != nil {
+				return fmt.Errorf("confirming playback: %w", pbErr)
+			}
+			if _, pbConfirmErr := app.DiscoveryHandler.ConfirmPlayback(sessionID, confirmed); pbConfirmErr != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+				return fmt.Errorf("confirming playback: %w", pbConfirmErr)
+			}
+		}
+
+		answer, askErr := prompter.AskQuestion(ctx, q.TechnicalText())
+		if askErr != nil {
+			return fmt.Errorf("asking question %s: %w", q.ID(), askErr)
+		}
+		if answer == "" {
+			reason, skipErr := prompter.AskSkipReason(ctx)
+			if skipErr != nil {
+				return fmt.Errorf("asking skip reason for %s: %w", q.ID(), skipErr)
+			}
+			if _, skipQErr := app.DiscoveryHandler.SkipQuestion(sessionID, q.ID(), reason); skipQErr != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+				return fmt.Errorf("skipping question %s: %w", q.ID(), skipQErr)
+			}
 		} else {
-			qText = q.NonTechnicalText()
+			if _, answerErr := app.DiscoveryHandler.AnswerQuestion(sessionID, q.ID(), answer); answerErr != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+				return fmt.Errorf("answering question %s: %w", q.ID(), answerErr)
+			}
 		}
-		fmt.Fprintf(&sb, "Q: %s\nA: %s\n\n", qText, ans.ResponseText())
 	}
 
-	return strings.TrimSpace(sb.String())
+	// Complete
+	if _, completeErr := app.DiscoveryHandler.Complete(sessionID); completeErr != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+		return fmt.Errorf("completing legacy session: %w", completeErr)
+	}
+
+	fmt.Println("Legacy discovery complete.")
+	return nil
 }

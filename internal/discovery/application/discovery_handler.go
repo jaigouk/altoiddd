@@ -147,6 +147,14 @@ func (h *DiscoveryHandler) LoadOrGetSession(sessionID string) (*domain.Discovery
 	return session, nil
 }
 
+// RegisterSession adds an externally-loaded session to the handler's in-memory map.
+// Used by Resume to ensure the session is available for Complete and other operations.
+func (h *DiscoveryHandler) RegisterSession(session *domain.DiscoverySession) {
+	h.mu.Lock()
+	h.sessions[session.SessionID()] = session
+	h.mu.Unlock()
+}
+
 // GetSession retrieves an active discovery session by ID.
 func (h *DiscoveryHandler) GetSession(sessionID string) (*domain.DiscoverySession, error) {
 	h.mu.Lock()

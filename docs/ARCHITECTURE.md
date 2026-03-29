@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-03-23
+last_reviewed: 2026-03-28
 owner: architecture
 status: draft
 ---
@@ -134,7 +134,7 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 |  |  +--------------------------------------------------------------+||
 |  |  |  Commands (write operations)                                 |||
 |  |  |  Queries (read operations)                                   |||
-|  |  |  Ports (13 Go interfaces)                                     |||
+|  |  |  Ports (15 Go interfaces)                                     |||
 |  |  +--------------------------------------------------------------+||
 |  |  +--------------------------------------------------------------+||
 |  |  |                      Domain Layer                            |||

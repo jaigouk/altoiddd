@@ -40,7 +40,7 @@ var personaChoices = map[string]struct {
 	"4": {PersonaMixed, RegisterNonTechnical},
 }
 
-// DiscoverySession is the aggregate root for the 10-question DDD discovery flow.
+// DiscoverySession is the aggregate root for the domain storytelling discovery flow.
 type DiscoverySession struct {
 	register                 *DiscoveryRegister
 	skipped                  map[string]string

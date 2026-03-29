@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-03-23
+last_reviewed: 2026-03-28
 owner: architecture
 status: draft
 ---
@@ -20,7 +20,7 @@ status: draft
 
 ### Story 1: New Project Bootstrap (Primary Flow)
 
-*(Updated 2026-03-23 — Domain Storytelling redesign)*
+*(Updated 2026-03-28 — Phase 5 types: StorytellingFlow, NarrationPhase, TrustDistribution, GlossaryExtractor, ContextMap)*
 
 **Actors:** User (any persona: Solo Developer, Team Lead, AI Tool Switcher, Product Owner, Domain Expert), alto CLI (moderator), AI Coding Tool
 **Trigger:** User has a 4-5 sentence project idea
@@ -33,42 +33,60 @@ status: draft
 5. User confirms the preview
 6. alto CLI asks persona detection question ("which best describes you?")
 7. alto CLI selects register (technical for developers, non-technical for PO/Domain Expert)
-8. alto CLI asks mode selection: RAPID (3 stories, ~15 min) or THOROUGH (5+ stories, ~30 min)
-9. alto CLI begins Domain Storytelling moderator conversation:
-   - MVP (user-narrates): alto asks structured moderator questions ("Who starts the process?",
-     "What do they do first?", "What happens next?"), User narrates step by step
-   - Phase 2 (consultant-proposes, requires LLM): alto proposes a first story from README + domain
-     research, User refines sentence by sentence; subsequent stories are user-narrated
-10. For each story sentence, alto CLI structures into "[Actor] [activity] [WorkObject]" format
-11. User confirms, edits, or rejects each sentence (component-by-component editing)
-12. After every 3 sentences: alto CLI displays mid-story synthesis checkpoint for confirmation
-13. After each complete story: alto CLI replays full story for narrative-level confirmation
-14. alto CLI detects branching language ("sometimes", "or") and suggests splitting into variation stories
-15. User adds business rule annotations (constraints, invariants, assumptions) to stories
-16. After all stories: alto CLI runs boundary detection on accumulated stories
-17. alto CLI proposes bounded context sketches with confidence scores and supporting signals
-18. User confirms or adjusts proposed boundaries
-19. alto CLI generates PRD from stories, glossary, and context map
-20. alto CLI generates DDD artifacts (.story.yaml, glossary.yaml, context-map.yaml)
-21. alto CLI classifies subdomains using complexity budget (Core/Supporting/Generic)
-22. alto CLI generates architecture doc informed by DDD and classification
-23. alto CLI generates fitness function tests (arch-go) from bounded context map
-24. alto CLI generates dependency-ordered beads tickets from DDD artifacts
-25. alto CLI previews generated tickets for approval
-26. User approves generated tickets
-27. alto CLI generates tool-native configs for User's AI Coding Tool
-28. User (or their developer) hands project to AI Coding Tool — it builds within guardrails
+8. alto CLI creates a StorytellingFlow with the selected DiscoveryMode
+   (RAPID: 3 stories / THOROUGH: 5+ stories)
+9. alto CLI begins Domain Storytelling moderator conversation using NarrationPhase
+   progression (opening → narration → deepening → closing) per story:
+   - MVP (user-narrates): alto asks ModeratorQuestions matching the current
+     NarrationPhase ("Who starts the process?" in opening, "What happens next?"
+     in narration, "Any invariants?" in deepening), User narrates step by step
+   - Phase 2 (consultant-proposes, requires LLM): ResearchToStoryTransformer
+     transforms DomainResearchResult into a proposed DomainStory; alto calls
+     ProposeStory for story-level review, User refines; subsequent stories
+     are user-narrated
+10. For each story sentence, alto CLI structures into "[Actor] [activity] [WorkObject]"
+    format as a StorySentence with TrustLevel
+11. User confirms or rejects each sentence via ConfirmSentence
+    (per-sentence accept/reject with optional edits)
+12. After every 3 sentences: alto CLI displays mid-story synthesis checkpoint
+    for confirmation
+13. After each complete story: alto CLI calls ProposeStory to replay the full
+    story for narrative-level confirmation
+14. alto CLI detects branching language ("sometimes", "or") and suggests
+    splitting into variation stories
+15. User adds business rule Annotations (constraints, invariants, assumptions) to stories
+16. After all stories: alto CLI runs boundary detection on accumulated stories,
+    producing BoundedContextSketch[] with confidence scores and supporting
+    BoundarySignals
+17. User confirms or adjusts proposed boundaries
+18. alto CLI generates PRD from stories, glossary, and context map
+19. alto CLI generates DDD artifacts: GlossaryExtractor extracts
+    UbiquitousLanguageEntry[] from stories; BuildContextMap produces a
+    ContextMap with ContextRelationships; TrustDistribution summarizes
+    provenance across all elements. Persisted as .story.yaml, glossary.yaml,
+    context-map.yaml
+20. alto CLI classifies subdomains using complexity budget (Core/Supporting/Generic)
+21. alto CLI generates architecture doc informed by DDD and classification
+22. alto CLI generates fitness function tests (arch-go) from bounded context map
+23. alto CLI generates dependency-ordered beads tickets from DDD artifacts
+24. alto CLI previews generated tickets for approval
+25. User approves generated tickets
+26. alto CLI generates tool-native configs for User's AI Coding Tool
+27. User (or their developer) hands project to AI Coding Tool — it builds within guardrails
 ```
 
 **Key observations:**
-- "Preview before action" is a hard constraint — appears at steps 4, 25
-- The Domain Storytelling conversation is the heart of the process — steps 8-18 are where domain knowledge is captured
-- Two interaction patterns: user-narrates (MVP, zero external deps) and consultant-proposes (Phase 2, requires LLM)
-- Two-tier synthesis: per-sentence confirmation (lightweight) + full story replay (narrative-level)
-- Boundary detection produces proposed boundaries with confidence scores, not definitive ones
-- Generation is a pipeline: stories → DDD artifacts → architecture → fitness functions → tickets → configs
+- "Preview before action" is a hard constraint — appears at steps 4, 24
+- The Domain Storytelling conversation is the heart of the process — steps 8-17 are where domain knowledge is captured
+- StorytellingFlow controls story count and checkpoint cadence per DiscoveryMode
+- NarrationPhase (opening/narration/deepening/closing) structures each story's moderator questions
+- Two interaction patterns: user-narrates (MVP, zero external deps) and consultant-proposes (Phase 2, requires LLM + ResearchToStoryTransformer)
+- Two-tier synthesis: per-sentence via ConfirmSentence (lightweight) + full story replay via ProposeStory (narrative-level)
+- Boundary detection produces BoundedContextSketch[] with confidence scores, not definitive boundaries
+- Artifact extraction pipeline: GlossaryExtractor → glossary.yaml, BuildContextMap → context-map.yaml, TrustDistribution → provenance summary
+- Generation pipeline: stories → DDD artifacts → architecture → fitness functions → tickets → configs
 - Non-technical users (Product Owner, Domain Expert) never see DDD jargon — register adapts automatically
-- For PO/Domain Expert: steps 19-28 produce handoff artifacts for a developer to execute
+- For PO/Domain Expert: steps 18-27 produce handoff artifacts for a developer to execute
 
 ### Story 2: Existing Project Adoption (Rescue Flow)
 
@@ -204,18 +222,24 @@ status: draft
 | Guide | The Domain Storytelling moderator conversation that extracts domain knowledge through structured stories *(updated 2026-03-23)* | Guided Discovery |
 | Persona | One of 5 user types (Solo Developer, Team Lead, AI Tool Switcher, Product Owner, Domain Expert) | Guided Discovery |
 | Register | The language level used in questions — technical (DDD terms) or non-technical (plain business language) | Guided Discovery |
-| StorytellingPrompter | Port interface for the Domain Storytelling CLI interaction (8 methods: SelectMode, ProposeStory, AskNarration, ConfirmSentence, AskChoice, DisplayStory, SynthesisCheckpoint, AskAnnotation). Replaces the old 4-method Prompter *(added 2026-03-23)* | Guided Discovery |
+| StorytellingPrompter | Port interface for the Domain Storytelling CLI interaction (8 methods: SelectMode, ProposeStory, AskNarration, ConfirmSentence, AskChoice, DisplayStory, SynthesisCheckpoint, AskAnnotation). ProposeStory wired via ResearchToStoryTransformer → ProposeResearchStories. Replaces the old 4-method Prompter *(updated 2026-03-28)* | Guided Discovery |
 | ConversationTurn | A single exchange in the discovery conversation: moderator question + user response + optional synthesis *(added 2026-03-23)* | Guided Discovery |
 | ConversationNarrative | The complete ordered sequence of ConversationTurns with synthesis checkpoints *(added 2026-03-23)* | Guided Discovery |
+| ContextMap | Value object representing the relationships between BoundedContextSketches. Built by `BuildContextMap` pure function from story analysis. File: `context_map.go` *(added 2026-03-28)* | Domain Model |
+| ContextRelationship | Value object representing an upstream/downstream relationship between two bounded contexts with a RelationshipType. File: `context_relationship.go` *(added 2026-03-28)* | Domain Model |
+| DiscoveryMode | Enum controlling story count and question budget: `rapid` (3 stories, fewer questions) or `thorough` (5+ stories, comprehensive questions). Replaces legacy ModeExpress/ModeDeep/ModeConversational. File: `discovery_values.go` *(added 2026-03-28)* | Guided Discovery |
 | Domain Story | A structured Domain Storytelling narrative (aggregate) containing actors, work objects, sentences, annotations, variations, and metadata (type: coarse/fine-grained, time: as-is/to-be, purity: pure/digitalized, trigger). Persisted as .story.yaml *(updated 2026-03-23 — expanded from frozen VO to rich aggregate)* | Domain Model |
 | StoryActor | An actor in a domain story (person, system, or group) with a TrustLevel indicating provenance *(added 2026-03-23)* | Domain Model |
 | WorkObject | A thing that actors interact with in a domain story (document, folder, call, email, conversation, info) with TrustLevel *(added 2026-03-23)* | Domain Model |
 | StorySentence | A single numbered step in a domain story: "[Actor] [activity] [WorkObject]" with optional preposition and indirect object, each with TrustLevel *(added 2026-03-23)* | Domain Model |
+| StorySummary | Value object containing a DomainStory's sentence count, actor count, and TrustDistribution. Computed by `SummarizeStory` function. File: `trust_distribution.go` *(added 2026-03-28)* | Guided Discovery |
+| StorytellingFlow | Orchestrates one complete Domain Storytelling conversation cycle: mode selection → narration phases → synthesis. Contains the NarrationPhase sequence and question budget for the selected DiscoveryMode. Implements DiscoveryFlow interface. File: `storytelling_flow.go` *(added 2026-03-28)* | Guided Discovery |
 | Annotation | A business rule annotation on a story or sentence (constraint, invariant, or assumption) with TrustLevel *(added 2026-03-23)* | Domain Model |
 | TrustLevel | Provenance indicator for domain knowledge: UserStated > UserConfirmed > AIResearched > AIInferred. Propagates to all generated artifacts *(added 2026-03-23)* | Shared Kernel |
+| TrustDistribution | Value object summarizing trust level distribution across a DomainStory's elements — counts per trust level + percentages. Copy-on-write immutable. File: `trust_distribution.go` *(added 2026-03-28)* | Guided Discovery |
 | BoundarySignal | An indicator that two parts of a domain belong to different bounded contexts. Signal types: `same_object_diff_context` (spike-validated P=0.85) — same work object in different stories with different responsibilities; `one_way_flow` (spike-validated P=0.70); `org_boundary` (spike-validated P=0.67) — actors never co-appear across stories, suggesting organizational boundaries; `different_trigger` (LLM-enhanced); `language_difference` (LLM-only); `different_lifecycle`, `external_system`, `different_actor`, `complex_rules` (methodology-derived, Hofer & Schwentner) *(updated 2026-03-26 — added same_object_diff_context, org_boundary; documented spike precision)* | Domain Model |
 | BoundedContextSketch | A proposed bounded context boundary derived from story analysis, with confidence score and supporting BoundarySignals. Presented to user as "proposed" not "definitive" *(added 2026-03-23)* | Domain Model |
-| DomainResearchResult | Top-level container for all AI domain research output: actors, entities, workflows, failure modes, regulatory items, existing software, and auto-computed research quality. Phase 4 feature *(updated 2026-03-27)* | Guided Discovery |
+| DomainResearchResult | Top-level container for all AI domain research output: actors, entities, workflows, failure modes, regulatory items, existing software, and auto-computed research quality. Consumed by ResearchToStoryTransformer to generate consultant-proposed stories. Phase 4 feature *(updated 2026-03-28)* | Guided Discovery |
 | DomainResearcher | Port interface for AI domain research. Single method: Research(ctx, domainDescription) returns (*DomainResearchResult, error). (nil, nil) = research unavailable (ADR-013 graceful degradation). Application layer port in Guided Discovery *(added 2026-03-27)* | Guided Discovery |
 | WorkflowType | String enum classifying a researched workflow: happy_path, failure_case, or secondary. Uses encoding.TextMarshaler/TextUnmarshaler *(added 2026-03-27)* | Guided Discovery |
 | SearchMetadata | Query provenance for a domain research run: queries used, source counts, and search duration *(added 2026-03-27)* | Guided Discovery |
@@ -223,13 +247,17 @@ status: draft
 | ResearchedEntity | An entity identified from AI domain research with name, properties, and source URLs. Trust level added in Phase 4.4 *(added 2026-03-27)* | Guided Discovery |
 | WorkflowStep | A single coarse-grained step in a researched workflow: sequence number, actor, activity, and work object *(added 2026-03-27)* | Guided Discovery |
 | ResearchedWorkflow | A typed workflow discovered by AI research, containing ordered WorkflowSteps with source URLs *(added 2026-03-27)* | Guided Discovery |
+| ResearchToStoryTransformer | Application service that transforms DomainResearchResult into proposed DomainStories — quality floor gate, step renumbering, case-insensitive dedup, source fallback. Stateless, safe for concurrent use. File: `research_to_story_transformer.go` *(added 2026-03-28)* | Guided Discovery |
 | RegulatoryItem | A regulatory requirement identified from AI domain research with name, description, and source URLs *(added 2026-03-27)* | Guided Discovery |
 | ExistingSoftware | Known software in the domain identified from AI research with name, description, and a single source URL *(added 2026-03-27)* | Guided Discovery |
+| GlossaryExtractor | Domain service (pure function) that extracts UbiquitousLanguageEntry[] from DomainStory[] — dedup case-insensitive, higher trust wins, sorted lexicographic. File: `glossary_extractor.go` *(added 2026-03-28)* | Guided Discovery |
+| RelationshipType | Enum classifying context relationships: SharedKernel, CustomerSupplier, Conformist, AnticorruptionLayer, OpenHostService, PublishedLanguage, Partnership, SeparateWays. File: `relationship_type.go` *(added 2026-03-28)* | Domain Model |
 | ResearchQuality | Computed quality assessment of AI domain research output: counts of actors, entities, workflow steps, useful sources, and whether it meets the quality floor *(added 2026-03-27)* | Guided Discovery |
-| QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor triggers fallback to user-narrated mode *(added 2026-03-23)* | Guided Discovery |
+| QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor → nil DomainResearchResult → fallback to user-narrated mode (no consultant-proposed story) *(updated 2026-03-28)* | Guided Discovery |
 | ModeratorQuestion | A dual-register question asked by the moderator during story narration, tagged with NarrationPhase and ModeratorElicits *(added 2026-03-25)* | Guided Discovery |
 | ModeratorElicits | What domain element a moderator question draws out: actor, sentence, annotation, done *(added 2026-03-25)* | Guided Discovery |
-| NarrationPhase | The progression of moderator questions within a single story narration cycle: opening, narration, deepening, closing *(added 2026-03-25)* | Guided Discovery |
+| NarrationPhase | The progression of moderator questions within a single story narration cycle: opening, narration, deepening, closing. Intra-story progression only (opening→narration→deepening→closing). Contrast with legacy QuestionPhase which was session-level *(updated 2026-03-28)* | Guided Discovery |
+| QuestionPhase | **LEGACY:** Replaced by NarrationPhase for the storytelling path. QuestionPhase was session-level progression (seed→actors→story→events→boundaries→classification); NarrationPhase is intra-story progression (opening→narration→deepening→closing). File: `discovery_values.go` *(added 2026-03-28)* | Guided Discovery |
 | UbiquitousLanguageEntry | A single term in the glossary with definition, bounded context, trust level, story references, optional aliases, and notes. Persisted in glossary.yaml *(added 2026-03-23)* | Domain Model |
 | Bounded Context | An explicit boundary around a domain model where terms have specific, unambiguous meanings | Domain Model |
 | Aggregate | A cluster of domain objects treated as a single unit for data changes, with one aggregate root | Domain Model |
@@ -290,6 +318,7 @@ status: draft
 | Config | A alto configuration in `.alto/config.toml` (Bootstrap context) | A tool-native configuration like `.claude/CLAUDE.md` (Tool Translation context) |
 | Story | A structured Domain Storytelling narrative with actors, sentences, annotations, and metadata — NOT free-text (Domain Model context). See DomainStory in glossary | A user scenario from the PRD (Product context — not used in code) |
 | Agent | (1) An AI coding tool agent persona (Tool Translation context) | (2) A DDD actor in a domain story (Domain Model context — use "Actor" to disambiguate). (3) An AI coding tool operating in non-interactive mode (AgentMode — Guided Discovery context) |
+| Mode | DiscoveryMode — rapid/thorough story count selector (Guided Discovery context) | Mode in legacy flow — express/deep/conversational session-level question strategy (Legacy context — coexists until --legacy flag removed) |
 
 ## 3. Subdomain Classification
 
@@ -471,28 +500,40 @@ subdomains:
 
 ### Context: Guided Discovery
 
-*(Updated 2026-03-23 — Domain Storytelling redesign)*
+*(Updated 2026-03-28 — Phase 5 types added)*
 
 **Responsibility:** Owns the Domain Storytelling moderator conversation — from persona detection through story narration, boundary detection, and artifact extraction. This is the entry point for all new projects. The moderator asks structured questions (Hofer & Schwentner methodology), structures user responses into StorySentences, validates understanding via synthesis checkpoints, and detects boundary signals across accumulated stories.
 
 **Key domain objects:**
-- `DiscoverySession` (Aggregate) — tracks the state of a discovery conversation, containing DomainStory[], ConversationNarrative, BoundedContextSketch[], and mode (RAPID/THOROUGH)
+- `DiscoverySession` (Aggregate) — tracks the state of a discovery conversation, containing storyRefs []string, ConversationNarrative, BoundedContextSketch[], and mode (RAPID/THOROUGH)
 - `Persona` (Value Object) — the detected user persona (Solo Developer, Team Lead, AI Tool Switcher, Product Owner, Domain Expert)
 - `Register` (Value Object) — technical or non-technical language level (feeds into moderator question phrasing)
+- `StorytellingFlow` (Domain Service) — orchestrates one storytelling conversation cycle per DiscoveryMode; controls story count and checkpoint cadence
+- `DiscoveryMode` (Value Object) — enum: rapid (3 stories) or thorough (5+ stories). Replaces legacy express/deep/conversational
 - `DomainStory` (Aggregate) — a structured narrative with actors, work objects, sentences, annotations, variations, and metadata
 - `StoryActor` (Value Object) — an actor (person, system, group) with TrustLevel
 - `WorkObject` (Value Object) — a thing actors interact with (document, folder, call, email, conversation, info) with TrustLevel
 - `StorySentence` (Value Object) — "[Actor] [activity] [WorkObject]" with optional preposition/indirect object and TrustLevel
 - `Annotation` (Value Object) — business rule on a story or sentence (constraint, invariant, assumption) with TrustLevel
 - `TrustLevel` (Value Object — shared kernel) — provenance: UserStated > UserConfirmed > AIResearched > AIInferred
+- `TrustDistribution` (Value Object) — trust level distribution across story elements: counts per level + percentages
+- `StorySummary` (Value Object) — story statistics (sentence count, actor count) with TrustDistribution
 - `BoundarySignal` (Value Object) — indicator of bounded context boundary. 9 signal types: same_object_diff_context (P=0.85), one_way_flow (P=0.70), org_boundary (P=0.67), different_trigger (LLM-enhanced), language_difference (LLM-only), different_lifecycle, external_system, different_actor, complex_rules (methodology-derived)
 - `BoundedContextSketch` (Value Object) — proposed boundary with confidence score and supporting signals
+- `ContextMap` (Value Object) — relationships between BoundedContextSketches, built by BuildContextMap
+- `ContextRelationship` (Value Object) — upstream/downstream relationship with RelationshipType
+- `RelationshipType` (Value Object) — enum for context relationship types (SharedKernel, CustomerSupplier, Conformist, AnticorruptionLayer, OpenHostService, PublishedLanguage, Partnership, SeparateWays)
+- `GlossaryExtractor` (Domain Service) — extracts UbiquitousLanguageEntry[] from stories, dedup case-insensitive + trust-aware
 - `ConversationTurn` (Value Object) — single exchange: moderator question + user response + optional synthesis
 - `ConversationNarrative` (Value Object) — complete ordered sequence of ConversationTurns with synthesis checkpoints
 - `StorytellingPrompter` (Port) — 8-method interface for CLI interaction (SelectMode, ProposeStory, AskNarration, ConfirmSentence, AskChoice, DisplayStory, SynthesisCheckpoint, AskAnnotation). Replaces the old 4-method Prompter
+- `ResearchToStoryTransformer` (Application Service) — transforms DomainResearchResult into proposed DomainStories with quality floor gate
 - `DomainResearchResult` (Value Object) — top-level container for all AI domain research output: actors, entities, workflows, failure modes, regulatory items, existing software, and auto-computed research quality (Phase 4)
 - `DomainResearcher` (Port) — single-method interface for AI domain research; returns DomainResearchResult or (nil, nil) for graceful degradation (Phase 4)
 - `QualityFloor` (Value Object) — minimum thresholds for AI research to be usable (>=3 actors, >=3 entities, >=5 steps, >=5 sources)
+- `GlossaryExportHandler` (Application Service) — orchestrates glossary extraction and export to glossary.yaml
+- `ContextMapExportHandler` (Application Service) — orchestrates context map building and export to context-map.yaml
+- `DiscoveryReportHandler` (Application Service) — orchestrates full discovery report generation from stories, glossary, and context map
 - `DiscoveryCompleted` (Domain Event) — emitted when all stories are confirmed and boundaries detected; carries DomainStory data
 - `StoryCompleted` (Domain Event) — emitted when user confirms a story via synthesis checkpoint
 - `BoundariesDetected` (Domain Event) — emitted when boundary analysis produces context sketches
@@ -656,7 +697,7 @@ subdomains:
 
 ### Aggregate: DiscoverySession (in Guided Discovery)
 
-*(Updated 2026-03-23 — Domain Storytelling redesign)*
+*(Updated 2026-03-28 — storyRefs replaces embedded DomainStory[])*
 
 **Aggregate Root:** DiscoverySession
 
@@ -664,7 +705,7 @@ subdomains:
 - `Persona` (Value Object) — detected user persona (feeds into moderator question phrasing)
 - `Register` (Value Object) — technical or non-technical (feeds into moderator behavior)
 - `Mode` (Value Object) — RAPID (3 stories) or THOROUGH (5+ stories)
-- `DomainStory[]` (Aggregate) — accumulated domain stories from the conversation
+- `storyRefs []string` — file paths to completed .story.yaml files. DomainStory is a separate aggregate root, referenced by file path. Not embedded
 - `ConversationNarrative` (Value Object) — complete ordered sequence of conversation turns
 - `BoundedContextSketch[]` (Value Object) — proposed boundaries from story analysis
 

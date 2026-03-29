@@ -144,7 +144,7 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, no
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Bootstrap complete. Starting guided discovery...")
 
 	// 6. Launch guide flow.
-	return runGuide(cmd.Context(), app, false, false, false)
+	return runGuide(cmd.Context(), app, false, false, false, false)
 }
 
 func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool, forceBranch bool) error {

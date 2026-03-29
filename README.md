@@ -129,7 +129,7 @@ This produces two binaries in `bin/`:
 Your idea (a few sentences)
      |
      v
-alto asks questions about your business
+alto runs a Domain Storytelling conversation about your business
      |
      v
 Creates a blueprint: what belongs together, what stays separate
@@ -154,7 +154,7 @@ Your plan stays fresh — no stale context, no outdated assumptions
 
 ### 1. It Asks Before It Builds
 
-Every other tool starts writing code immediately. alto starts by understanding your business. The 20 minutes of questions saves you 20 hours of rewrites.
+Every other tool starts writing code immediately. alto starts by understanding your business through Domain Storytelling — proposing concrete stories about how your system works, then refining them with you. The 20 minutes of storytelling saves you 20 hours of rewrites.
 
 ### 2. The Guardrails Are Automatic
 

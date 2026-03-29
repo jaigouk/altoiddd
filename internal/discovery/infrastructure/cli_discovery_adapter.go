@@ -252,6 +252,84 @@ func (a *CLIDiscoveryAdapter) runBoundaryDetection(
 	return nil
 }
 
+// Resume resumes a previously interrupted storytelling session from the checkpoint.
+func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.DiscoverySession) error {
+	// 1. Register session in handler so Complete can find it
+	a.handler.RegisterSession(session)
+
+	// 2. Compute resume checkpoint
+	checkpoint, err := session.ComputeResumeCheckpoint()
+	if err != nil {
+		return fmt.Errorf("computing resume checkpoint: %w", err)
+	}
+
+	// 3. Create storytelling flow from session mode
+	flow, err := domain.NewStorytellingFlow(session.Mode())
+	if err != nil {
+		return fmt.Errorf("creating storytelling flow: %w", err)
+	}
+
+	// 4. Story loop from checkpoint — only if stories are still needed
+	var accumulatedStories []*domain.DomainStory
+
+	if flow.CheckStoryCompleteness(session.StoryCount()) != nil {
+		for storyIndex := checkpoint.StoryIndex; ; storyIndex++ {
+			story, _, err := a.storytellingHandler.RunStory(ctx, session, storyIndex, flow)
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return context.Canceled
+				}
+
+				return fmt.Errorf("running story %d: %w", storyIndex, err)
+			}
+
+			accumulatedStories = append(accumulatedStories, story)
+
+			if flow.CheckStoryCompleteness(session.StoryCount()) == nil {
+				break
+			}
+
+			continueChoices := []application.Choice{
+				{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
+				{Key: "no", Label: "No", Description: "Finish discovery"},
+			}
+
+			continueChoice, err := a.prompter.AskChoice(ctx, "Would you like to tell another story?", continueChoices, "yes")
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return context.Canceled
+				}
+
+				return fmt.Errorf("asking continue: %w", err)
+			}
+
+			if continueChoice == "no" {
+				break
+			}
+		}
+	}
+
+	// 5. Boundary detection (only if not already done)
+	if !checkpoint.BoundariesDone {
+		if flow.CanRunBoundaryDetection(session.StoryCount()) {
+			if err := a.runBoundaryDetection(ctx, session, accumulatedStories, session.Mode()); err != nil {
+				return err
+			}
+		} else {
+			if err := session.ConfirmBoundaries(nil); err != nil {
+				return fmt.Errorf("confirming boundaries: %w", err)
+			}
+		}
+	}
+
+	// 6. Complete session
+	if _, err := a.handler.Complete(session.SessionID()); err != nil { //nolint:contextcheck // Discovery interface deliberately omits context
+		return fmt.Errorf("completing session: %w", err)
+	}
+
+	return nil
+}
+
 // resolveProjectName returns the project directory name.
 // If projectDir is ".", it resolves to the actual directory name via os.Getwd.
 func (a *CLIDiscoveryAdapter) resolveProjectName() (string, error) {
