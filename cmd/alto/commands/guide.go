@@ -101,10 +101,13 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 
 	// Step 2: Select prompter based on flag or env var
 	var prompter application.StorytellingPrompter
+	var boundaryPrompter application.BoundaryPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
 		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
+		boundaryPrompter = infrastructure.NewStdinBoundaryPrompter(os.Stdin, os.Stdout)
 	} else {
 		prompter = infrastructure.NewHuhStorytellingPrompter()
+		boundaryPrompter = infrastructure.NewHuhBoundaryPrompter()
 	}
 
 	// Step 3: Create StorytellingHandler
@@ -112,7 +115,6 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, nil)
 
 	// Step 3.5: Create boundary detection dependencies
-	boundaryPrompter := infrastructure.NewHuhBoundaryPrompter()
 	boundaryDetectionHandler := application.NewBoundaryDetectionHandler(app.BoundaryDetector)
 	contextMapWriter := &infrastructure.ContextMapYAMLParser{}
 
@@ -202,16 +204,18 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 
 	// Step 7: Wire storytelling handler + adapter (match runGuide :84-110 pattern)
 	var prompter application.StorytellingPrompter
+	var boundaryPrompter application.BoundaryPrompter
 	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
 		prompter = infrastructure.NewStdinStorytellingPrompter(os.Stdin, os.Stdout)
+		boundaryPrompter = infrastructure.NewStdinBoundaryPrompter(os.Stdin, os.Stdout)
 	} else {
 		prompter = infrastructure.NewHuhStorytellingPrompter()
+		boundaryPrompter = infrastructure.NewHuhBoundaryPrompter()
 	}
 
 	storyWriter := &infrastructure.StoryYAMLParser{}
 	storytellingHandler := application.NewStorytellingHandler(storyWriter, prompter, nil)
 
-	boundaryPrompter := infrastructure.NewHuhBoundaryPrompter()
 	boundaryDetectionHandler := application.NewBoundaryDetectionHandler(app.BoundaryDetector)
 	contextMapWriter := &infrastructure.ContextMapYAMLParser{}
 
