@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -950,4 +951,133 @@ func TestArtifactGenerationHandler_BCMapContent_RoundTripsWithParser(t *testing.
 		require.True(t, found)
 		assert.Equal(t, vo.SubdomainCore, orders.Classification())
 	})
+}
+
+// ---------------------------------------------------------------------------
+// RED phase tests for alty-cli-aq1: GenerateFromStories + buildModelFromStories
+// ---------------------------------------------------------------------------
+// These tests will NOT compile until GenerateFromStories is implemented on
+// ArtifactGenerationHandler. That is the expected RED state.
+
+// fakeStoryReader implements application.StoryReader for testing.
+type fakeStoryReader struct {
+	stories map[string]*discoverydomain.DomainStory
+	err     error
+}
+
+func (f *fakeStoryReader) Read(_ context.Context, path string) (*discoverydomain.DomainStory, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+
+	story, ok := f.stories[path]
+	if !ok {
+		return nil, fmt.Errorf("story not found: %s", path)
+	}
+
+	return story, nil
+}
+
+// makeTestStory creates a minimal DomainStory with the given title, actors, and a sentence per activity.
+func makeTestStory(t *testing.T, title string, actors []string, activities []string) *discoverydomain.DomainStory {
+	t.Helper()
+
+	story, err := discoverydomain.NewDomainStory(
+		title,
+		discoverydomain.StoryTypeCoarseGrained,
+		discoverydomain.TimeTypeAsIs,
+		discoverydomain.PurityTypePure,
+		"User triggers "+title,
+	)
+	require.NoError(t, err)
+
+	for _, actorName := range actors {
+		actor, aErr := discoverydomain.NewStoryActor(actorName, discoverydomain.ActorTypePerson, vo.UserStated, "test")
+		require.NoError(t, aErr)
+		require.NoError(t, story.AddActor(actor))
+	}
+
+	return story
+}
+
+func TestArtifactGenerationHandler_GenerateFromStories_HappyPath(t *testing.T) {
+	t.Parallel()
+
+	reader := &fakeStoryReader{
+		stories: map[string]*discoverydomain.DomainStory{
+			"/stories/orders.yaml":   makeTestStory(t, "Order Flow", []string{"Customer"}, []string{"places order"}),
+			"/stories/shipping.yaml": makeTestStory(t, "Shipping Flow", []string{"Warehouse"}, []string{"ships package"}),
+		},
+	}
+	renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+	storyPaths := []string{"/stories/orders.yaml", "/stories/shipping.yaml"}
+	err := handler.GenerateFromStories(context.Background(), reader, storyPaths, nil, "/tmp/docs", "/tmp/project")
+
+	require.NoError(t, err)
+	// Verify docs were written (PRD.md, DDD.md, ARCHITECTURE.md at minimum)
+	assert.GreaterOrEqual(t, len(writer.written), 3)
+}
+
+func TestArtifactGenerationHandler_GenerateFromStories_EmptyPaths_ReturnsError(t *testing.T) {
+	t.Parallel()
+
+	reader := &fakeStoryReader{}
+	renderer := newFakeRenderer("", "", "")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+	err := handler.GenerateFromStories(context.Background(), reader, []string{}, nil, "/tmp/docs", "/tmp/project")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestArtifactGenerationHandler_GenerateFromStories_NilContextMap_UsesGeneralContext(t *testing.T) {
+	t.Parallel()
+
+	reader := &fakeStoryReader{
+		stories: map[string]*discoverydomain.DomainStory{
+			"/stories/orders.yaml": makeTestStory(t, "Order Flow", []string{"Customer"}, []string{"places order"}),
+		},
+	}
+	renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+	// nil contextMap — should still work, terms categorized under "General"
+	err := handler.GenerateFromStories(context.Background(), reader, []string{"/stories/orders.yaml"}, nil, "/tmp/docs", "/tmp/project")
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, writer.written)
+}
+
+func TestBuildModelFromStories_ExtractsBoundedContexts(t *testing.T) {
+	t.Parallel()
+
+	stories := []*discoverydomain.DomainStory{
+		makeTestStory(t, "Order Flow", []string{"Customer", "Admin"}, []string{"places order", "reviews order"}),
+		makeTestStory(t, "Shipping Flow", []string{"Warehouse"}, []string{"ships package"}),
+	}
+
+	// buildModelFromStories is unexported — test via GenerateFromStories and inspect the model
+	// passed to the renderer. We use fakeArtifactRenderer to capture the model.
+	reader := &fakeStoryReader{
+		stories: map[string]*discoverydomain.DomainStory{
+			"/s/orders.yaml":   stories[0],
+			"/s/shipping.yaml": stories[1],
+		},
+	}
+	renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+	err := handler.GenerateFromStories(context.Background(), reader, []string{"/s/orders.yaml", "/s/shipping.yaml"}, nil, "/tmp/docs", "/tmp/project")
+	require.NoError(t, err)
+
+	// The renderer should have been called with a model that has bounded contexts
+	require.NotNil(t, renderer.calledModel)
+	assert.NotEmpty(t, renderer.calledModel.BoundedContexts())
 }

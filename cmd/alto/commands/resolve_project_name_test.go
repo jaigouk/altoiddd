@@ -65,6 +65,58 @@ func TestResolveProjectName_WhenReadmeMdEmpty_FallsBackToBaseName(t *testing.T) 
 	assert.Equal(t, filepath.Base(dir), got)
 }
 
+// RED phase tests for alty-cli-cul: subtitle stripping from H1.
+
+func TestResolveProjectName_WhenH1HasEmDashSubtitle_ReturnsNameOnly(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# kura — Personal Knowledge Garden\nDesc"), 0o644))
+
+	got := resolveProjectName(dir)
+	assert.Equal(t, "kura", got)
+}
+
+func TestResolveProjectName_WhenH1HasHyphenSubtitle_ReturnsNameOnly(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# kura - A CLI tool\nDesc"), 0o644))
+
+	got := resolveProjectName(dir)
+	assert.Equal(t, "kura", got)
+}
+
+func TestResolveProjectName_WhenH1HasColonSubtitle_ReturnsNameOnly(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# kura: Personal Knowledge Garden\nDesc"), 0o644))
+
+	got := resolveProjectName(dir)
+	assert.Equal(t, "kura", got)
+}
+
+func TestResolveProjectName_WhenH1HasPipeSubtitle_ReturnsNameOnly(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# kura | Fast Knowledge Capture\nDesc"), 0o644))
+
+	got := resolveProjectName(dir)
+	assert.Equal(t, "kura", got)
+}
+
+func TestResolveProjectName_WhenH1IsHyphenatedNameNoSubtitle_ReturnsFullName(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# my-project\nDesc"), 0o644))
+
+	got := resolveProjectName(dir)
+	assert.Equal(t, "my-project", got)
+}
+
 func TestResolveProjectName_WhenH1HasExtraSpaces_ReturnsTrimmed(t *testing.T) {
 	t.Parallel()
 

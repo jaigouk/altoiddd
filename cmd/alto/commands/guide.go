@@ -128,6 +128,13 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 		contextMapWriter,
 		prompter,
 		".",
+		infrastructure.WithArtifactPipeline(
+			app.ArtifactGenerationHandler,
+			app.GlossaryExportHandler,
+			app.DiscoveryReportHandler,
+			contextMapWriter,
+			storyWriter,
+		),
 	)
 
 	if err := adapter.Run(ctx); err != nil {
@@ -229,6 +236,13 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 		contextMapWriter,
 		prompter,
 		".",
+		infrastructure.WithArtifactPipeline(
+			app.ArtifactGenerationHandler,
+			app.GlossaryExportHandler,
+			app.DiscoveryReportHandler,
+			contextMapWriter,
+			storyWriter,
+		),
 	)
 
 	// Step 8: Resume

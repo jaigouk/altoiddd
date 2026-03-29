@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -148,6 +149,147 @@ func (h *ArtifactGenerationHandler) Generate(
 		return nil, err
 	}
 	return preview.Model, nil
+}
+
+// GenerateFromStories builds a domain model from story files and renders artifacts.
+// Unlike Generate, this does not require Q&A answers — it reads stories directly.
+func (h *ArtifactGenerationHandler) GenerateFromStories(
+	ctx context.Context,
+	storyReader StoryReader,
+	storyPaths []string,
+	contextMap *discoverydomain.ContextMap,
+	docsDir string,
+	projectDir string,
+) error {
+	if len(storyPaths) == 0 {
+		return fmt.Errorf("no story paths provided (empty): %w", domainerrors.ErrInvariantViolation)
+	}
+
+	model, err := h.buildModelFromStories(ctx, storyReader, storyPaths, contextMap, filepath.Base(projectDir))
+	if err != nil {
+		return fmt.Errorf("build model from stories: %w", err)
+	}
+
+	prd, err := h.renderer.RenderPRD(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render PRD: %w", err)
+	}
+
+	dddContent, err := h.renderer.RenderDDD(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render DDD: %w", err)
+	}
+
+	arch, err := h.renderer.RenderArchitecture(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render architecture: %w", err)
+	}
+
+	preview := &ArtifactPreview{
+		Model:               model,
+		PRDContent:          prd,
+		DDDContent:          dddContent,
+		ArchitectureContent: arch,
+	}
+
+	return h.WriteArtifacts(ctx, preview, docsDir, projectDir)
+}
+
+// buildModelFromStories reads stories via storyReader and extracts actors, work objects,
+// and sentences into DomainModel terms and bounded contexts.
+func (h *ArtifactGenerationHandler) buildModelFromStories(
+	ctx context.Context,
+	storyReader StoryReader,
+	storyPaths []string,
+	contextMap *discoverydomain.ContextMap,
+	projectName string,
+) (*ddd.DomainModel, error) {
+	model := ddd.NewDomainModel(projectName)
+
+	// Add bounded contexts from context map if available.
+	if contextMap != nil {
+		for _, sketch := range contextMap.Contexts() {
+			bc := vo.NewDomainBoundedContext(sketch.Name(), "Manages "+sketch.Name()+" domain", nil, nil, "")
+			if err := model.AddBoundedContext(bc); err != nil {
+				return nil, fmt.Errorf("add bounded context %q: %w", sketch.Name(), err)
+			}
+		}
+	}
+
+	// Determine the target context name for terms.
+	contextName := "General"
+	bcs := model.BoundedContexts()
+	if len(bcs) > 0 {
+		contextName = bcs[0].Name()
+	} else {
+		// Single-context: add a default General bounded context.
+		generic := vo.SubdomainGeneric
+		bc := vo.NewDomainBoundedContext("General", "Default bounded context", nil, &generic, "auto-generated")
+		if err := model.AddBoundedContext(bc); err != nil {
+			return nil, fmt.Errorf("add default bounded context: %w", err)
+		}
+	}
+
+	seenTerms := make(map[string]struct{})
+
+	for _, path := range storyPaths {
+		story, err := storyReader.Read(ctx, path)
+		if err != nil {
+			return nil, fmt.Errorf("reading story %q: %w", path, err)
+		}
+
+		// Add story to model as a value object.
+		storyVO := vo.NewDomainStory(
+			story.Title(),
+			actorNames(story),
+			story.Trigger(),
+			sentenceTexts(story),
+			nil,
+		)
+		if err := model.AddDomainStory(storyVO); err != nil {
+			if errors.Is(err, domainerrors.ErrAlreadyExists) {
+				continue // Skip duplicate stories.
+			}
+			return nil, fmt.Errorf("add domain story %q: %w", story.Title(), err)
+		}
+
+		// Extract actors as terms.
+		for _, actor := range story.Actors() {
+			termKey := strings.ToLower(actor.Name())
+			if _, seen := seenTerms[termKey]; seen {
+				continue
+			}
+			seenTerms[termKey] = struct{}{}
+
+			if err := model.AddTerm(actor.Name(), actor.Name()+" actor", contextName, []string{path}); err != nil {
+				return nil, fmt.Errorf("add actor term %q: %w", actor.Name(), err)
+			}
+		}
+	}
+
+	if err := model.Finalize(); err != nil {
+		return nil, fmt.Errorf("finalize domain model: %w", err)
+	}
+
+	return model, nil
+}
+
+func actorNames(story *discoverydomain.DomainStory) []string {
+	actors := story.Actors()
+	names := make([]string, len(actors))
+	for i, a := range actors {
+		names[i] = a.Name()
+	}
+	return names
+}
+
+func sentenceTexts(story *discoverydomain.DomainStory) []string {
+	sentences := story.Sentences()
+	texts := make([]string, len(sentences))
+	for i, s := range sentences {
+		texts[i] = fmt.Sprintf("%s %s %s", s.Subject(), s.Activity(), s.Object())
+	}
+	return texts
 }
 
 // SplitAnswer splits a free-text answer into meaningful parts.

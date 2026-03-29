@@ -22,6 +22,34 @@ type CLIDiscoveryAdapter struct {
 	contextMapWriter         application.ContextMapWriter
 	prompter                 application.StorytellingPrompter
 	projectDir               string
+	// Artifact pipeline (optional — nil when not wired).
+	artifactGen      *application.ArtifactGenerationHandler
+	glossaryExport   *application.GlossaryExportHandler
+	discoveryReport  *application.DiscoveryReportHandler
+	contextMapReader application.ContextMapReader
+	storyReader      application.StoryReader
+}
+
+// CLIDiscoveryAdapterOption configures optional behavior on CLIDiscoveryAdapter.
+type CLIDiscoveryAdapterOption func(*CLIDiscoveryAdapter)
+
+// WithArtifactPipeline wires the artifact generation pipeline that runs after
+// storytelling completes. When not provided, the adapter completes without
+// producing artifacts (backward-compatible).
+func WithArtifactPipeline(
+	artifactGen *application.ArtifactGenerationHandler,
+	glossaryExport *application.GlossaryExportHandler,
+	discoveryReport *application.DiscoveryReportHandler,
+	contextMapReader application.ContextMapReader,
+	storyReader application.StoryReader,
+) CLIDiscoveryAdapterOption {
+	return func(a *CLIDiscoveryAdapter) {
+		a.artifactGen = artifactGen
+		a.glossaryExport = glossaryExport
+		a.discoveryReport = discoveryReport
+		a.contextMapReader = contextMapReader
+		a.storyReader = storyReader
+	}
 }
 
 // NewCLIDiscoveryAdapter creates a new CLIDiscoveryAdapter.
@@ -33,8 +61,9 @@ func NewCLIDiscoveryAdapter(
 	contextMapWriter application.ContextMapWriter,
 	prompter application.StorytellingPrompter,
 	projectDir string,
+	opts ...CLIDiscoveryAdapterOption,
 ) *CLIDiscoveryAdapter {
-	return &CLIDiscoveryAdapter{
+	a := &CLIDiscoveryAdapter{
 		handler:                  handler,
 		storytellingHandler:      storytellingHandler,
 		boundaryDetectionHandler: boundaryDetectionHandler,
@@ -43,6 +72,10 @@ func NewCLIDiscoveryAdapter(
 		prompter:                 prompter,
 		projectDir:               projectDir,
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
 }
 
 // personaChoices are the persona options presented to the user.
@@ -155,8 +188,71 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 	}
 
 	// Step 7: Complete session
-	if _, err := a.handler.Complete(session.SessionID()); err != nil { //nolint:contextcheck // Discovery interface deliberately omits context
-		return fmt.Errorf("completing session: %w", err)
+	completedSession, completeErr := a.handler.Complete(session.SessionID()) //nolint:contextcheck // Discovery interface deliberately omits context
+	if completeErr != nil {
+		return fmt.Errorf("completing session: %w", completeErr)
+	}
+
+	// Step 8: Artifact pipeline
+	if pipelineErr := a.runArtifactPipeline(ctx, completedSession); pipelineErr != nil {
+		return fmt.Errorf("artifact pipeline: %w", pipelineErr)
+	}
+
+	return nil
+}
+
+// runArtifactPipeline runs glossary export, artifact generation, and discovery report
+// after storytelling completes. No-op when pipeline is not wired.
+func (a *CLIDiscoveryAdapter) runArtifactPipeline(ctx context.Context, session *domain.DiscoverySession) error {
+	if a.artifactGen == nil {
+		return nil // Pipeline not wired — backward-compatible.
+	}
+
+	storyRefs := session.StoryRefs()
+	if len(storyRefs) == 0 {
+		return nil // No stories to process.
+	}
+
+	// Resolve paths.
+	glossaryPath := filepath.Join(a.projectDir, ".alto", "glossary.yaml")
+	contextMapPath := filepath.Join(a.projectDir, ".alto", "context-map.yaml")
+	docsDir := filepath.Join(a.projectDir, "docs")
+
+	// Resolve project name.
+	projectName, err := a.resolveProjectName()
+	if err != nil {
+		return fmt.Errorf("resolving project name for artifacts: %w", err)
+	}
+	_ = projectName // Used as fallback; GenerateFromStories derives from projectDir.
+
+	// Read context map if available.
+	var contextMap *domain.ContextMap
+	if len(session.ConfirmedSketches()) > 0 && a.contextMapReader != nil {
+		contextMap, err = a.contextMapReader.Read(ctx, contextMapPath)
+		if err != nil {
+			return fmt.Errorf("reading context map: %w", err)
+		}
+	}
+
+	// Step 1: Glossary export.
+	if a.glossaryExport != nil {
+		if exportErr := a.glossaryExport.Export(ctx, storyRefs, contextMap, glossaryPath); exportErr != nil {
+			return fmt.Errorf("exporting glossary: %w", exportErr)
+		}
+	}
+
+	// Step 2: Artifact generation (PRD, DDD, ARCHITECTURE).
+	if a.storyReader != nil {
+		if genErr := a.artifactGen.GenerateFromStories(ctx, a.storyReader, storyRefs, contextMap, docsDir, a.projectDir); genErr != nil {
+			return fmt.Errorf("generating artifacts: %w", genErr)
+		}
+	}
+
+	// Step 3: Discovery report (only for multi-context — needs context map).
+	if len(session.ConfirmedSketches()) > 0 && a.discoveryReport != nil {
+		if reportErr := a.discoveryReport.GenerateReport(ctx, storyRefs, glossaryPath, contextMapPath, a.projectDir); reportErr != nil {
+			return fmt.Errorf("generating discovery report: %w", reportErr)
+		}
 	}
 
 	return nil
@@ -324,8 +420,14 @@ func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.Discov
 	}
 
 	// 6. Complete session
-	if _, err := a.handler.Complete(session.SessionID()); err != nil { //nolint:contextcheck // Discovery interface deliberately omits context
-		return fmt.Errorf("completing session: %w", err)
+	completedSession, completeErr := a.handler.Complete(session.SessionID()) //nolint:contextcheck // Discovery interface deliberately omits context
+	if completeErr != nil {
+		return fmt.Errorf("completing session: %w", completeErr)
+	}
+
+	// 7. Artifact pipeline
+	if pipelineErr := a.runArtifactPipeline(ctx, completedSession); pipelineErr != nil {
+		return fmt.Errorf("artifact pipeline: %w", pipelineErr)
 	}
 
 	return nil
@@ -357,10 +459,22 @@ func (a *CLIDiscoveryAdapter) resolveProjectName() (string, error) {
 			}
 
 			if name := strings.TrimSpace(after); name != "" {
-				return name, nil
+				return stripSubtitle(name), nil
 			}
 		}
 	}
 
 	return filepath.Base(dir), nil
+}
+
+// stripSubtitle removes a tagline/subtitle after a separator in a heading.
+// Separators checked in order: " — ", " - ", ": ", " | ". Earliest match wins.
+func stripSubtitle(heading string) string {
+	for _, sep := range []string{" — ", " - ", ": ", " | "} {
+		if idx := strings.Index(heading, sep); idx > 0 {
+			return heading[:idx]
+		}
+	}
+
+	return heading
 }

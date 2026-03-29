@@ -232,10 +232,22 @@ func resolveProjectName(projectDir string) string {
 			}
 
 			if name := strings.TrimSpace(after); name != "" {
-				return name
+				return stripSubtitle(name)
 			}
 		}
 	}
 
 	return filepath.Base(mustAbs(projectDir))
+}
+
+// stripSubtitle removes a tagline/subtitle after a separator in a heading.
+// Separators checked in order: " — ", " - ", ": ", " | ". Earliest match wins.
+func stripSubtitle(heading string) string {
+	for _, sep := range []string{" — ", " - ", ": ", " | "} {
+		if idx := strings.Index(heading, sep); idx > 0 {
+			return heading[:idx]
+		}
+	}
+
+	return heading
 }

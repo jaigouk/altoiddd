@@ -28,6 +28,34 @@ func TestCLIDiscoveryAdapter_resolveProjectName_WhenReadmeMdHasH1_ReturnsHeading
 	assert.Equal(t, "kura", got)
 }
 
+// RED phase tests for alty-cli-cul: subtitle stripping from H1.
+
+func TestCLIDiscoveryAdapter_resolveProjectName_WhenH1HasEmDashSubtitle_ReturnsNameOnly(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# kura — Personal Knowledge Garden\nDesc"), 0o644))
+
+	adapter := &CLIDiscoveryAdapter{projectDir: dir}
+
+	got, err := adapter.resolveProjectName()
+	require.NoError(t, err)
+	assert.Equal(t, "kura", got)
+}
+
+func TestCLIDiscoveryAdapter_resolveProjectName_WhenH1IsHyphenatedNameNoSubtitle_ReturnsFullName(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# my-project\nDesc"), 0o644))
+
+	adapter := &CLIDiscoveryAdapter{projectDir: dir}
+
+	got, err := adapter.resolveProjectName()
+	require.NoError(t, err)
+	assert.Equal(t, "my-project", got)
+}
+
 func TestCLIDiscoveryAdapter_resolveProjectName_WhenNoReadme_FallsBackToBaseName(t *testing.T) {
 	t.Parallel()
 
