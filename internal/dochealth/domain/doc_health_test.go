@@ -111,7 +111,7 @@ func TestBrokenLink(t *testing.T) {
 
 func TestCreateDocStatus(t *testing.T) {
 	t.Parallel()
-	today := time.Now().Truncate(24 * time.Hour)
+	today := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
 
 	t.Run("ok within interval", func(t *testing.T) {
 		t.Parallel()

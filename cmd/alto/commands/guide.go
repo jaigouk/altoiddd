@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -38,7 +39,7 @@ alto acts as a domain consultant, moderating a structured conversation:
 
 Flags:
   --no-tui     Disable TUI prompts, use plain stdin/stdout (accessibility, CI)
-  --continue   Resume a previously interrupted storytelling session
+  --continue   Resume a session started with --agent
   --agent      Output discovery session as JSONL for AI agent consumption
   --ingest     Ingest answers from JSONL file (or "-" for stdin); requires --agent
   --legacy     Use deprecated question-based flow (prints deprecation warning)`,
@@ -64,7 +65,7 @@ Flags:
 		},
 	}
 	cmd.Flags().Bool("no-tui", false, "Disable TUI prompts, use plain stdin/stdout (accessibility, CI)")
-	cmd.Flags().Bool("continue", false, "Resume a previously interrupted discovery session")
+	cmd.Flags().Bool("continue", false, "Resume a previously interrupted agent-mode session")
 	cmd.Flags().Bool("agent", false, "Output discovery session as JSONL for AI agent consumption")
 	cmd.Flags().String("ingest", "", "Ingest answers from JSONL file (or \"-\" for stdin); requires --agent")
 	cmd.Flags().Bool("legacy", false, "Use deprecated question-based discovery flow")
@@ -81,6 +82,12 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	if legacyMode && continueSession {
 		return fmt.Errorf("--legacy and --continue are mutually exclusive")
 	}
+
+	// Guard: project must be initialized before any guide flow.
+	if _, err := os.Stat(filepath.Join(".", ".alto", "config.toml")); os.IsNotExist(err) {
+		return fmt.Errorf("project not initialized: run `alto init` first")
+	}
+
 	if legacyMode {
 		return runLegacyFlow(ctx, app, noTUI)
 	}
@@ -177,7 +184,7 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 		return fmt.Errorf("checking session: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("no session to continue. Run `alto guide` first")
+		return fmt.Errorf("--continue requires a session started with `alto guide --agent`")
 	}
 
 	// Step 2: Load session
@@ -283,6 +290,9 @@ func runGuideAgentIngest(ctx context.Context, app *composition.App, ingestPath, 
 }
 
 func runGuideAgentIngestFromReader(ctx context.Context, app *composition.App, r io.Reader, altoDir string, w io.Writer) error {
+	if _, err := os.Stat(filepath.Join(altoDir, "config.toml")); os.IsNotExist(err) {
+		return fmt.Errorf("project not initialized: run `alto init` first")
+	}
 	renderer := infrastructure.NewJSONSessionRenderer()
 	sessionRepo := infrastructure.NewFileSystemSessionRepository(altoDir)
 

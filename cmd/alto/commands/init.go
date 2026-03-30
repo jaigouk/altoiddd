@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	cbterm "github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/alto-cli/alto/internal/bootstrap/domain"
@@ -50,14 +51,18 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 			}
 
 			if result.IsAmbiguous() {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Found docs/ folder but no source code.")
-				_, _ = fmt.Fprint(cmd.OutOrStdout(), "Treat as existing project? [y/N] ")
-				scanner := bufio.NewScanner(os.Stdin)
-				if scanner.Scan() {
-					answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
-					if answer == "y" || answer == "yes" {
-						return runRescue(cmd, app, dryRun, forceBranch)
+				if !yes {
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Found docs/ folder but no source code.")
+					_, _ = fmt.Fprint(cmd.OutOrStdout(), "Treat as existing project? [y/N] ")
+					scanner := bufio.NewScanner(cmd.InOrStdin())
+					if scanner.Scan() {
+						answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
+						if answer == "y" || answer == "yes" {
+							return runRescue(cmd, app, dryRun, forceBranch)
+						}
 					}
+				} else {
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Proceeding with fresh init (-y).")
 				}
 			}
 
@@ -119,7 +124,7 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, no
 	// 4. Confirm — require explicit user approval before writing files.
 	if !yes {
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), "\nProceed? [y/N] ")
-		scanner := bufio.NewScanner(os.Stdin)
+		scanner := bufio.NewScanner(cmd.InOrStdin())
 		if !scanner.Scan() {
 			return fmt.Errorf("bootstrap cancelled")
 		}
@@ -143,8 +148,9 @@ func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, no
 
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Bootstrap complete. Starting guided discovery...")
 
-	// 6. Launch guide flow.
-	return runGuide(cmd.Context(), app, false, false, false, false)
+	// 6. Launch guide flow — detect TTY to decide TUI mode.
+	noTUI := !cbterm.IsTerminal(os.Stdin.Fd()) || os.Getenv("ALTO_NO_TUI") == "1"
+	return runGuide(cmd.Context(), app, noTUI, false, false, false)
 }
 
 func runRescue(cmd *cobra.Command, app *composition.App, dryRun bool, forceBranch bool) error {

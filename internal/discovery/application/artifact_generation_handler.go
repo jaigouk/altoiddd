@@ -209,7 +209,8 @@ func (h *ArtifactGenerationHandler) buildModelFromStories(
 	// Add bounded contexts from context map if available.
 	if contextMap != nil {
 		for _, sketch := range contextMap.Contexts() {
-			bc := vo.NewDomainBoundedContext(sketch.Name(), "Manages "+sketch.Name()+" domain", nil, nil, "")
+			cls := sketch.Classification()
+			bc := vo.NewDomainBoundedContext(sketch.Name(), "Manages "+sketch.Name()+" domain", nil, &cls, "")
 			if err := model.AddBoundedContext(bc); err != nil {
 				return nil, fmt.Errorf("add bounded context %q: %w", sketch.Name(), err)
 			}

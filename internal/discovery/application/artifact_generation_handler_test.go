@@ -1081,3 +1081,98 @@ func TestBuildModelFromStories_ExtractsBoundedContexts(t *testing.T) {
 	require.NotNil(t, renderer.calledModel)
 	assert.NotEmpty(t, renderer.calledModel.BoundedContexts())
 }
+
+func TestArtifactGenerationHandler_GenerateFromStories_ContextMapClassificationPropagated(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single classification — all sketches SubdomainSupporting", func(t *testing.T) {
+		t.Parallel()
+		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+		sketch1, err := discoverydomain.NewBoundedContextSketch(
+			"Billing", vo.SubdomainSupporting, 0.8,
+			[]string{"Customer"}, nil, nil, nil, vo.UserStated,
+		)
+		require.NoError(t, err)
+		sketch2, err := discoverydomain.NewBoundedContextSketch(
+			"Shipping", vo.SubdomainSupporting, 0.7,
+			[]string{"Customer"}, nil, nil, nil, vo.UserStated,
+		)
+		require.NoError(t, err)
+
+		contextMap, err := discoverydomain.NewContextMap("TestProject", []discoverydomain.BoundedContextSketch{sketch1, sketch2}, nil)
+		require.NoError(t, err)
+
+		storyReader := &fakeStoryReader{stories: map[string]*discoverydomain.DomainStory{
+			"story1.yaml": makeTestStory(t, "Billing Flow", []string{"Customer"}, []string{"pays invoice"}),
+		}}
+
+		err = handler.GenerateFromStories(
+			context.Background(), storyReader, []string{"story1.yaml"},
+			contextMap, "/tmp/docs", "/tmp/project",
+		)
+
+		require.NoError(t, err)
+		calledModel := renderer.calledModel
+		require.NotNil(t, calledModel)
+		bcs := calledModel.BoundedContexts()
+		require.Len(t, bcs, 2)
+
+		for _, bc := range bcs {
+			require.NotNil(t, bc.Classification(),
+				"bounded context %q must have classification propagated from sketch", bc.Name())
+			assert.Equal(t, vo.SubdomainSupporting, *bc.Classification(),
+				"bounded context %q should be SubdomainSupporting", bc.Name())
+		}
+	})
+
+	t.Run("mixed classifications — SubdomainSupporting and SubdomainGeneric", func(t *testing.T) {
+		t.Parallel()
+		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+		sketch1, err := discoverydomain.NewBoundedContextSketch(
+			"Billing", vo.SubdomainSupporting, 0.8,
+			[]string{"Customer"}, nil, nil, nil, vo.UserStated,
+		)
+		require.NoError(t, err)
+		sketch2, err := discoverydomain.NewBoundedContextSketch(
+			"Notifications", vo.SubdomainGeneric, 0.9,
+			[]string{"System"}, nil, nil, nil, vo.UserStated,
+		)
+		require.NoError(t, err)
+
+		contextMap, err := discoverydomain.NewContextMap("TestProject", []discoverydomain.BoundedContextSketch{sketch1, sketch2}, nil)
+		require.NoError(t, err)
+
+		storyReader := &fakeStoryReader{stories: map[string]*discoverydomain.DomainStory{
+			"story1.yaml": makeTestStory(t, "Billing Flow", []string{"Customer"}, []string{"pays invoice"}),
+		}}
+
+		err = handler.GenerateFromStories(
+			context.Background(), storyReader, []string{"story1.yaml"},
+			contextMap, "/tmp/docs", "/tmp/project",
+		)
+
+		require.NoError(t, err)
+		calledModel := renderer.calledModel
+		require.NotNil(t, calledModel)
+		bcs := calledModel.BoundedContexts()
+		require.Len(t, bcs, 2)
+
+		classMap := map[string]vo.SubdomainClassification{}
+		for _, bc := range bcs {
+			require.NotNil(t, bc.Classification(),
+				"bounded context %q must have classification", bc.Name())
+			classMap[bc.Name()] = *bc.Classification()
+		}
+
+		assert.Equal(t, vo.SubdomainSupporting, classMap["Billing"],
+			"Billing should be SubdomainSupporting")
+		assert.Equal(t, vo.SubdomainGeneric, classMap["Notifications"],
+			"Notifications should be SubdomainGeneric")
+	})
+}
