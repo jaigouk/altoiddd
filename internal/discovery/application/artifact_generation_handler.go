@@ -125,9 +125,11 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 	if err := h.writer.WriteFile(ctx, filepath.Join(docsDir, "ARCHITECTURE.md"), preview.ArchitectureContent); err != nil {
 		return fmt.Errorf("write architecture: %w", err)
 	}
-	bcMapPath := filepath.Join(projectDir, ".alto", "bounded_context_map.yaml")
-	if err := h.writer.WriteFile(ctx, bcMapPath, preview.BoundedContextMapYAML); err != nil {
-		return fmt.Errorf("write bounded context map: %w", err)
+	if preview.BoundedContextMapYAML != "" {
+		bcMapPath := filepath.Join(projectDir, ".alto", "bounded_context_map.yaml")
+		if err := h.writer.WriteFile(ctx, bcMapPath, preview.BoundedContextMapYAML); err != nil {
+			return fmt.Errorf("write bounded context map: %w", err)
+		}
 	}
 	return nil
 }

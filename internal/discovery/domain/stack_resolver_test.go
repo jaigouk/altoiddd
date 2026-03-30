@@ -56,6 +56,30 @@ func TestResolveProfileJavaScript(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestResolveProfileGoLowercase(t *testing.T) {
+	t.Parallel()
+	ts := vo.NewTechStack("go", "go mod")
+	profile := ResolveProfile(&ts)
+	_, ok := profile.(vo.GoModProfile)
+	assert.True(t, ok)
+}
+
+func TestResolveProfileGoTitleCase(t *testing.T) {
+	t.Parallel()
+	ts := vo.NewTechStack("Go", "go mod")
+	profile := ResolveProfile(&ts)
+	_, ok := profile.(vo.GoModProfile)
+	assert.True(t, ok)
+}
+
+func TestResolveProfileGoMixedCase(t *testing.T) {
+	t.Parallel()
+	ts := vo.NewTechStack("GO", "go mod")
+	profile := ResolveProfile(&ts)
+	_, ok := profile.(vo.GoModProfile)
+	assert.True(t, ok)
+}
+
 func TestResolveProfileNilReturnsGeneric(t *testing.T) {
 	t.Parallel()
 	profile := ResolveProfile(nil)

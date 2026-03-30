@@ -172,8 +172,7 @@ func TestBootstrapHandler_Preview(t *testing.T) {
 			setupDir: func(t *testing.T, dir string) {
 				t.Helper()
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
-				require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
-				require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "PRD.md"), []byte("existing"), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("existing"), 0o644))
 			},
 			wantStatus: domain.SessionStatusPreviewed,
 		},
@@ -332,8 +331,8 @@ func TestBootstrapHandler_SkipsExistingFiles(t *testing.T) {
 
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "PRD.md"), []byte("existing"), 0o644))
+	// Pre-create AGENTS.md so it triggers a SKIP action.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("existing"), 0o644))
 
 	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{}, &fakeFileWriter{}, &fakeContentProvider{})
 	session, err := handler.Preview(dir)
@@ -342,7 +341,7 @@ func TestBootstrapHandler_SkipsExistingFiles(t *testing.T) {
 	require.NotNil(t, preview)
 
 	for _, a := range preview.FileActions() {
-		if a.Path() == "docs/PRD.md" {
+		if a.Path() == "AGENTS.md" {
 			assert.Equal(t, vo.FileActionSkip, a.ActionType())
 			assert.Equal(t, "already exists", a.Reason())
 		}
@@ -434,9 +433,8 @@ func TestBootstrapHandler_Execute_SkipsExistingFiles(t *testing.T) {
 
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
-	// Create docs/PRD.md so it gets a SKIP action
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "PRD.md"), []byte("existing"), 0o644))
+	// Pre-create AGENTS.md so it gets a SKIP action.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("existing"), 0o644))
 
 	fw := &fakeFileWriter{}
 	handler := application.NewBootstrapHandler(newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{}, fw, &fakeContentProvider{})
@@ -448,10 +446,10 @@ func TestBootstrapHandler_Execute_SkipsExistingFiles(t *testing.T) {
 	_, err = handler.Execute(session.SessionID())
 	require.NoError(t, err)
 
-	// Verify docs/PRD.md was NOT written (it was skipped)
+	// Verify AGENTS.md was NOT written (it was skipped)
 	for _, w := range fw.written {
-		assert.NotEqual(t, filepath.Join(dir, "docs", "PRD.md"), w.path,
-			"should not write skipped file docs/PRD.md")
+		assert.NotEqual(t, filepath.Join(dir, "AGENTS.md"), w.path,
+			"should not write skipped file AGENTS.md")
 	}
 }
 
@@ -555,7 +553,6 @@ func TestBootstrapHandler_Execute_WhenAllFilesSkipped_ExpectNoCommit(t *testing.
 
 	// Pre-create ALL planned files so every action is SKIP.
 	for _, planned := range []string{
-		"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md",
 		"AGENTS.md", ".alto/config.toml", ".alto/knowledge/_index.toml",
 		".alto/maintenance/doc-registry.toml",
 	} {
@@ -580,6 +577,121 @@ func TestBootstrapHandler_Execute_WhenAllFilesSkipped_ExpectNoCommit(t *testing.
 
 	assert.Empty(t, gc.stagedPaths, "should not stage when no files created")
 	assert.Empty(t, gc.commitMsg, "should not commit when no files created")
+}
+
+// ---------------------------------------------------------------------------
+// Artifact-pipeline ownership — docs NOT stubbed by bootstrap (alty-cli-18l)
+// ---------------------------------------------------------------------------
+
+func TestBootstrapHandler_Preview_WhenFreshProject_ExpectArtifactPipelineDocsAbsent(t *testing.T) {
+	t.Parallel()
+
+	// Given a fresh project with only README.md
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+	)
+
+	// When preview is generated
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	preview := session.Preview()
+	require.NotNil(t, preview)
+
+	// Then artifact-pipeline-owned docs must NOT appear in file actions
+	artifactPipelineDocs := []string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"}
+	paths := make([]string, 0, len(preview.FileActions()))
+	for _, a := range preview.FileActions() {
+		paths = append(paths, a.Path())
+	}
+
+	for _, doc := range artifactPipelineDocs {
+		assert.NotContains(t, paths, doc,
+			"bootstrap must not plan %s — owned by artifact pipeline", doc)
+	}
+}
+
+func TestBootstrapHandler_Preview_WhenFreshProject_ExpectBootstrapOwnedFilesPresent(t *testing.T) {
+	t.Parallel()
+
+	// Given a fresh project with only README.md
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		&fakeFileWriter{}, &fakeContentProvider{},
+	)
+
+	// When preview is generated
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	preview := session.Preview()
+	require.NotNil(t, preview)
+
+	// Then bootstrap-owned files must still be present
+	paths := make([]string, 0, len(preview.FileActions()))
+	for _, a := range preview.FileActions() {
+		paths = append(paths, a.Path())
+	}
+
+	bootstrapOwned := []string{
+		"AGENTS.md",
+		".alto/config.toml",
+		".alto/knowledge/_index.toml",
+		".alto/maintenance/doc-registry.toml",
+	}
+	for _, f := range bootstrapOwned {
+		assert.Contains(t, paths, f, "bootstrap must still plan %s", f)
+	}
+
+	// Exactly 4 planned files after removing artifact-pipeline docs
+	assert.Len(t, preview.FileActions(), 4,
+		"expected exactly 4 planned files (AGENTS.md + 3 .alto files)")
+}
+
+func TestBootstrapHandler_Execute_WhenFreshProject_ExpectArtifactDocsNotWritten(t *testing.T) {
+	t.Parallel()
+
+	// Given a fresh project
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("idea"), 0o644))
+
+	fw := &fakeFileWriter{}
+	handler := application.NewBootstrapHandler(
+		newFakeToolDetection(nil, nil), osFileChecker{}, &fakePublisher{},
+		fw, &fakeContentProvider{},
+	)
+
+	// When bootstrap is executed
+	session, err := handler.Preview(dir)
+	require.NoError(t, err)
+	_, err = handler.Confirm(session.SessionID())
+	require.NoError(t, err)
+	_, err = handler.Execute(session.SessionID())
+	require.NoError(t, err)
+
+	// Then artifact-pipeline docs must not be written
+	artifactPipelineDocs := []string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"}
+	for _, w := range fw.written {
+		base := filepath.Base(w.path)
+		for _, doc := range artifactPipelineDocs {
+			assert.NotEqual(t, filepath.Join(dir, doc), w.path,
+				"bootstrap must not write %s — owned by artifact pipeline", base)
+		}
+	}
+
+	// AGENTS.md must still be written
+	var agentsWritten bool
+	for _, w := range fw.written {
+		if filepath.Base(w.path) == "AGENTS.md" {
+			agentsWritten = true
+		}
+	}
+	assert.True(t, agentsWritten, "expected AGENTS.md to still be written by bootstrap")
 }
 
 func TestBootstrapHandler_Execute_WhenStageError_ExpectError(t *testing.T) {

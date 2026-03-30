@@ -2,6 +2,13 @@ package valueobjects
 
 import "strings"
 
+// Stack ID constants used by StackProfile implementations.
+const (
+	StackIDPythonUv = "python-uv"
+	StackIDGoMod    = "go-mod"
+	StackIDGeneric  = "generic"
+)
+
 // StackProfile is the strategy interface providing stack-specific knowledge.
 type StackProfile interface {
 	StackID() string
@@ -18,7 +25,7 @@ type StackProfile interface {
 type PythonUvProfile struct{}
 
 // StackID returns the stack identifier.
-func (p PythonUvProfile) StackID() string { return "python-uv" }
+func (p PythonUvProfile) StackID() string { return StackIDPythonUv }
 
 // FileGlob returns the file glob pattern.
 func (p PythonUvProfile) FileGlob() string { return "**/*.py" }
@@ -64,7 +71,7 @@ func (p PythonUvProfile) ToRootPackage(projectName string) string {
 type GenericProfile struct{}
 
 // StackID returns the stack identifier.
-func (g GenericProfile) StackID() string { return "generic" }
+func (g GenericProfile) StackID() string { return StackIDGeneric }
 
 // FileGlob returns the file glob pattern.
 func (g GenericProfile) FileGlob() string { return "*" }
@@ -91,7 +98,7 @@ func (g GenericProfile) ToRootPackage(projectName string) string { return projec
 type GoModProfile struct{}
 
 // StackID returns the stack identifier.
-func (g GoModProfile) StackID() string { return "go-mod" }
+func (g GoModProfile) StackID() string { return StackIDGoMod }
 
 // FileGlob returns the file glob pattern.
 func (g GoModProfile) FileGlob() string { return "**/*.go" }

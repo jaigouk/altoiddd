@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/alto-cli/alto/internal/shared/domain/ddd"
+	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
 var approachMap = map[string]string{
@@ -17,12 +19,90 @@ var approachMap = map[string]string{
 	"generic":    "Buy/use existing (CRUD, library)",
 }
 
+// renderContext holds profile-derived values used during markdown generation.
+type renderContext struct {
+	language       string
+	packageManager string
+	pureLayerNote  string
+	sourceLayout   []string
+}
+
+// renderContextFromProfile derives render values from a StackProfile.
+// If profile is nil, falls back to PythonUvProfile defaults.
+func renderContextFromProfile(profile vo.StackProfile) renderContext {
+	if profile == nil {
+		profile = vo.PythonUvProfile{}
+	}
+
+	switch profile.StackID() {
+	case vo.StackIDPythonUv:
+		return renderContext{
+			language:       "Python 3.12+",
+			packageManager: "uv",
+			pureLayerNote:  "Nothing (pure Python)",
+			sourceLayout:   profile.SourceLayout(),
+		}
+	case vo.StackIDGoMod:
+		return renderContext{
+			language:       "Go 1.22+",
+			packageManager: "go mod",
+			pureLayerNote:  "Nothing (pure Go)",
+			sourceLayout:   profile.SourceLayout(),
+		}
+	default:
+		return renderContext{
+			language:       "TBD",
+			packageManager: "TBD",
+			pureLayerNote:  "Nothing (pure domain logic)",
+			sourceLayout:   profile.SourceLayout(),
+		}
+	}
+}
+
+// sourceLayoutBlock returns a fenced code block showing the source layout.
+// Falls back to a generic Python layout if dirs is nil or empty.
+func sourceLayoutBlock(dirs []string) []string {
+	if len(dirs) == 0 {
+		return pythonSourceLayout()
+	}
+
+	lines := []string{"```"}
+	lines = append(lines, dirs...)
+	lines = append(lines, "```")
+
+	return lines
+}
+
+// pythonSourceLayout returns the default Python source tree.
+func pythonSourceLayout() []string {
+	return []string{
+		"```",
+		"src/",
+		"\u251c\u2500\u2500 domain/",
+		"\u2502   \u251c\u2500\u2500 models/          # Entities, Value Objects, Aggregates",
+		"\u2502   \u251c\u2500\u2500 services/        # Domain Services",
+		"\u2502   \u2514\u2500\u2500 events/          # Domain Events",
+		"\u251c\u2500\u2500 application/",
+		"\u2502   \u251c\u2500\u2500 commands/        # Command handlers (write operations)",
+		"\u2502   \u251c\u2500\u2500 queries/         # Query handlers (read operations)",
+		"\u2502   \u2514\u2500\u2500 ports/           # Interfaces (Protocols) for infrastructure",
+		"\u2514\u2500\u2500 infrastructure/",
+		"    \u251c\u2500\u2500 persistence/     # Database adapters",
+		"    \u251c\u2500\u2500 messaging/       # Message bus adapters",
+		"    \u2514\u2500\u2500 external/        # External API clients",
+		"```",
+	}
+}
+
 // MarkdownArtifactRenderer renders a finalized DomainModel into PRD, DDD, and Architecture markdown.
-type MarkdownArtifactRenderer struct{}
+type MarkdownArtifactRenderer struct {
+	profile vo.StackProfile
+}
 
 // NewMarkdownArtifactRenderer creates a new MarkdownArtifactRenderer.
-func NewMarkdownArtifactRenderer() *MarkdownArtifactRenderer {
-	return &MarkdownArtifactRenderer{}
+// If profile is nil, falls back to PythonUvProfile defaults for backward compatibility.
+func NewMarkdownArtifactRenderer(profile vo.StackProfile) *MarkdownArtifactRenderer {
+	return &MarkdownArtifactRenderer{profile: profile}
 }
 
 func escapeTableCell(text string) string {
@@ -32,10 +112,21 @@ func escapeTableCell(text string) string {
 	return text
 }
 
+// frontmatterHeader returns the standard YAML frontmatter block for generated artifacts.
+func frontmatterHeader(owner string) []string {
+	return []string{
+		"---",
+		"last_reviewed: " + time.Now().Format("2006-01-02"),
+		"owner: " + owner,
+		"status: draft",
+		"---",
+		"",
+	}
+}
+
 // RenderPRD renders the PRD markdown from a domain model.
 func (r *MarkdownArtifactRenderer) RenderPRD(_ context.Context, model *ddd.DomainModel) (string, error) {
-	var parts []string
-	parts = append(parts, "---", "last_reviewed: YYYY-MM-DD", "owner: product", "status: draft", "---", "")
+	parts := frontmatterHeader("product")
 	parts = append(parts, "# Product Requirements Document", "")
 
 	// Intro
@@ -79,12 +170,13 @@ func (r *MarkdownArtifactRenderer) RenderPRD(_ context.Context, model *ddd.Domai
 		"### Nice to Have (P2)", "", "- [ ] TODO", "")
 
 	// Constraints & tail
+	rc := renderContextFromProfile(r.profile)
 	parts = append(parts,
 		"## 6. Constraints", "", "### Technical Constraints", "",
 		"| Constraint | Value | Rationale |",
 		"|-----------|-------|-----------|",
-		"| Language | Python 3.12+ | Team expertise |",
-		"| Package manager | uv | Speed, reproducibility |", "",
+		fmt.Sprintf("| Language | %s | Team expertise |", rc.language),
+		fmt.Sprintf("| Package manager | %s | Speed, reproducibility |", rc.packageManager), "",
 		"## 7. Out of Scope", "", "- TODO", "",
 		"## 8. Success Metrics", "",
 		"| Metric | Target | Measurement Method |",
@@ -100,8 +192,7 @@ func (r *MarkdownArtifactRenderer) RenderPRD(_ context.Context, model *ddd.Domai
 
 // RenderDDD renders the DDD.md markdown from a domain model.
 func (r *MarkdownArtifactRenderer) RenderDDD(_ context.Context, model *ddd.DomainModel) (string, error) {
-	var parts []string
-	parts = append(parts, "---", "last_reviewed: YYYY-MM-DD", "owner: architecture", "status: draft", "---", "")
+	parts := frontmatterHeader("architecture")
 	parts = append(parts, "# Domain-Driven Design Artifacts", "")
 
 	// Stories
@@ -241,8 +332,7 @@ func (r *MarkdownArtifactRenderer) RenderDDD(_ context.Context, model *ddd.Domai
 
 // RenderArchitecture renders the ARCHITECTURE.md markdown from a domain model.
 func (r *MarkdownArtifactRenderer) RenderArchitecture(_ context.Context, model *ddd.DomainModel) (string, error) {
-	var parts []string
-	parts = append(parts, "---", "last_reviewed: YYYY-MM-DD", "owner: architecture", "status: draft", "---", "")
+	parts := frontmatterHeader("architecture")
 	parts = append(parts, "# Architecture", "")
 
 	// Design Principles
@@ -264,30 +354,18 @@ func (r *MarkdownArtifactRenderer) RenderArchitecture(_ context.Context, model *
 	parts = append(parts, "")
 
 	// Layer Architecture
+	rc := renderContextFromProfile(r.profile)
 	parts = append(parts, "## 3. Layer Architecture", "",
 		"Following Hexagonal / Clean Architecture aligned with DDD:", "",
 		"### Layer Rules", "",
 		"| Layer | Can Depend On | Cannot Depend On |",
 		"| -------------- | -------------------------- | --------------------------------------- |",
-		"| Domain | Nothing (pure Python) | Application, Infrastructure, frameworks |",
+		fmt.Sprintf("| Domain | %s | Application, Infrastructure, frameworks |", rc.pureLayerNote),
 		"| Application | Domain, Ports (interfaces) | Infrastructure, frameworks |",
 		"| Infrastructure | Application, Domain | -- (outermost layer) |", "",
-		"### Source Layout", "",
-		"```",
-		"src/",
-		"├── domain/",
-		"│   ├── models/          # Entities, Value Objects, Aggregates",
-		"│   ├── services/        # Domain Services",
-		"│   └── events/          # Domain Events",
-		"├── application/",
-		"│   ├── commands/        # Command handlers (write operations)",
-		"│   ├── queries/         # Query handlers (read operations)",
-		"│   └── ports/           # Interfaces (Protocols) for infrastructure",
-		"└── infrastructure/",
-		"    ├── persistence/     # Database adapters",
-		"    ├── messaging/       # Message bus adapters",
-		"    └── external/        # External API clients",
-		"```", "")
+		"### Source Layout", "")
+	parts = append(parts, sourceLayoutBlock(rc.sourceLayout)...)
+	parts = append(parts, "")
 
 	// Bounded Context Integration
 	parts = append(parts, "## 4. Bounded Context Integration", "",

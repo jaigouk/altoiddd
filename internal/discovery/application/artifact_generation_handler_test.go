@@ -1017,8 +1017,8 @@ func TestArtifactGenerationHandler_GenerateFromStories_HappyPath(t *testing.T) {
 	err := handler.GenerateFromStories(context.Background(), reader, storyPaths, nil, "/tmp/docs", "/tmp/project")
 
 	require.NoError(t, err)
-	// Verify docs were written (PRD.md, DDD.md, ARCHITECTURE.md at minimum)
-	assert.GreaterOrEqual(t, len(writer.written), 3)
+	// Story path writes exactly 3 files (PRD.md, DDD.md, ARCHITECTURE.md — no BC map).
+	assert.Len(t, writer.written, 3)
 }
 
 func TestArtifactGenerationHandler_GenerateFromStories_EmptyPaths_ReturnsError(t *testing.T) {
@@ -1175,4 +1175,97 @@ func TestArtifactGenerationHandler_GenerateFromStories_ContextMapClassificationP
 		assert.Equal(t, vo.SubdomainGeneric, classMap["Notifications"],
 			"Notifications should be SubdomainGeneric")
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Tests — WriteArtifacts skips BC map when empty
+// ---------------------------------------------------------------------------
+
+func TestArtifactGenerationHandler_WriteArtifacts_SkipsBCMapWhenEmpty(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty BoundedContextMapYAML writes exactly three files", func(t *testing.T) {
+		t.Parallel()
+		// Given: a preview with an empty BoundedContextMapYAML (story-based path).
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(
+			newFakeRenderer("", "", ""), writer, &fakePublisherA{},
+		)
+		preview := &application.ArtifactPreview{
+			PRDContent:            "# PRD",
+			DDDContent:            "# DDD",
+			ArchitectureContent:   "# ARCH",
+			BoundedContextMapYAML: "",
+		}
+
+		// When: WriteArtifacts is called.
+		err := handler.WriteArtifacts(context.Background(), preview, "/tmp/docs", "/tmp/project")
+
+		// Then: only 3 files are written — no bounded_context_map.yaml.
+		require.NoError(t, err)
+		assert.Len(t, writer.written, 3)
+		for path := range writer.written {
+			assert.NotContains(t, path, "bounded_context_map.yaml",
+				"bounded_context_map.yaml must not be written when BoundedContextMapYAML is empty")
+		}
+	})
+
+	t.Run("non-empty BoundedContextMapYAML writes four files", func(t *testing.T) {
+		t.Parallel()
+		// Given: a preview with populated BoundedContextMapYAML (Q&A path).
+		writer := newFakeFileWriterA()
+		handler := application.NewArtifactGenerationHandler(
+			newFakeRenderer("", "", ""), writer, &fakePublisherA{},
+		)
+		preview := &application.ArtifactPreview{
+			PRDContent:            "# PRD",
+			DDDContent:            "# DDD",
+			ArchitectureContent:   "# ARCH",
+			BoundedContextMapYAML: "project:\n  name: test\n",
+		}
+
+		// When: WriteArtifacts is called.
+		err := handler.WriteArtifacts(context.Background(), preview, "/tmp/docs", "/tmp/project")
+
+		// Then: 4 files are written, including bounded_context_map.yaml.
+		require.NoError(t, err)
+		assert.Len(t, writer.written, 4)
+		hasBCMap := false
+		for path := range writer.written {
+			if strings.Contains(path, "bounded_context_map.yaml") {
+				hasBCMap = true
+			}
+		}
+		assert.True(t, hasBCMap, "bounded_context_map.yaml must be written when BoundedContextMapYAML is non-empty")
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Tests — GenerateFromStories does not write BC map
+// ---------------------------------------------------------------------------
+
+func TestArtifactGenerationHandler_GenerateFromStories_DoesNotWriteBCMap(t *testing.T) {
+	t.Parallel()
+
+	// Given: a story-based generation path.
+	reader := &fakeStoryReader{
+		stories: map[string]*discoverydomain.DomainStory{
+			"/stories/orders.yaml": makeTestStory(t, "Order Flow", []string{"Customer"}, []string{"places order"}),
+		},
+	}
+	renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
+	writer := newFakeFileWriterA()
+	handler := application.NewArtifactGenerationHandler(renderer, writer, &fakePublisherA{})
+
+	// When: GenerateFromStories is called.
+	err := handler.GenerateFromStories(
+		context.Background(), reader, []string{"/stories/orders.yaml"}, nil, "/tmp/docs", "/tmp/project",
+	)
+
+	// Then: no bounded_context_map.yaml is written.
+	require.NoError(t, err)
+	for path := range writer.written {
+		assert.NotContains(t, path, "bounded_context_map.yaml",
+			"story path must not produce bounded_context_map.yaml — real map is written by runBoundaryDetection")
+	}
 }

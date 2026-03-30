@@ -26,7 +26,8 @@ func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectCo
 	case ".alto/maintenance/doc-registry.toml":
 		return DocRegistryContent()
 	default:
-		// Doc stubs (PRD.md, DDD.md, ARCHITECTURE.md, AGENTS.md)
+		// AGENTS.md is the only remaining default-case file.
+		// docs/PRD.md, DDD.md, ARCHITECTURE.md are owned by the artifact pipeline.
 		stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 		return fmt.Sprintf("# %s\n\n> TODO: Fill in content.\n", stem)
 	}
@@ -96,6 +97,11 @@ description = "TDD, SOLID, quality gate references"
 }
 
 // DocRegistryContent returns valid TOML for .alto/maintenance/doc-registry.toml.
+// NOTE: The docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md entries below are
+// forward references — these files do not exist at bootstrap time. They are
+// created later by the artifact pipeline (ArtifactGenerationHandler). The
+// registry is pre-populated so doc-health monitoring is ready once artifacts
+// are generated. See alty-cli-18l.
 func DocRegistryContent() string {
 	return `# alto document registry
 #

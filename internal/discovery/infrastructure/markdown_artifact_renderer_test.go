@@ -2,8 +2,10 @@ package infrastructure_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +69,7 @@ func minimalModel(t *testing.T) *ddd.DomainModel {
 
 func TestRenderPRD_ProducesMarkdown(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -75,7 +77,7 @@ func TestRenderPRD_ProducesMarkdown(t *testing.T) {
 
 func TestRenderPRD_ContainsHeading(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "# Product Requirements Document")
@@ -83,7 +85,7 @@ func TestRenderPRD_ContainsHeading(t *testing.T) {
 
 func TestRenderPRD_ContainsContextNames(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Ordering")
@@ -92,7 +94,7 @@ func TestRenderPRD_ContainsContextNames(t *testing.T) {
 
 func TestRenderPRD_ContainsStoriesAsScenarios(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Place Order")
@@ -101,7 +103,7 @@ func TestRenderPRD_ContainsStoriesAsScenarios(t *testing.T) {
 
 func TestRenderPRD_ContainsCapabilitiesSection(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "## 5. Capabilities")
@@ -111,7 +113,7 @@ func TestRenderPRD_ContainsCapabilitiesSection(t *testing.T) {
 
 func TestRenderDDD_ProducesMarkdown(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -119,7 +121,7 @@ func TestRenderDDD_ProducesMarkdown(t *testing.T) {
 
 func TestRenderDDD_ContainsHeading(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "# Domain-Driven Design Artifacts")
@@ -127,7 +129,7 @@ func TestRenderDDD_ContainsHeading(t *testing.T) {
 
 func TestRenderDDD_ContainsStories(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Place Order")
@@ -136,7 +138,7 @@ func TestRenderDDD_ContainsStories(t *testing.T) {
 
 func TestRenderDDD_ContainsStorySteps(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Customer places order")
@@ -145,7 +147,7 @@ func TestRenderDDD_ContainsStorySteps(t *testing.T) {
 
 func TestRenderDDD_ContainsUbiquitousLanguage(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Order")
@@ -155,7 +157,7 @@ func TestRenderDDD_ContainsUbiquitousLanguage(t *testing.T) {
 
 func TestRenderDDD_ContainsBoundedContexts(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Ordering")
@@ -165,7 +167,7 @@ func TestRenderDDD_ContainsBoundedContexts(t *testing.T) {
 
 func TestRenderDDD_ContainsClassifications(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	lower := strings.ToLower(result)
@@ -175,7 +177,7 @@ func TestRenderDDD_ContainsClassifications(t *testing.T) {
 
 func TestRenderDDD_ContainsAggregateDesigns(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "OrderRoot")
@@ -187,7 +189,7 @@ func TestRenderDDD_ContainsAggregateDesigns(t *testing.T) {
 
 func TestRenderArchitecture_ProducesMarkdown(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderArchitecture(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -195,7 +197,7 @@ func TestRenderArchitecture_ProducesMarkdown(t *testing.T) {
 
 func TestRenderArchitecture_ContainsHeading(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderArchitecture(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "# Architecture")
@@ -203,7 +205,7 @@ func TestRenderArchitecture_ContainsHeading(t *testing.T) {
 
 func TestRenderArchitecture_ContainsBoundedContexts(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderArchitecture(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	assert.Contains(t, result, "Ordering")
@@ -212,7 +214,7 @@ func TestRenderArchitecture_ContainsBoundedContexts(t *testing.T) {
 
 func TestRenderArchitecture_ContainsLayerRules(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	result, err := renderer.RenderArchitecture(context.Background(), sampleModel(t))
 	require.NoError(t, err)
 	lower := strings.ToLower(result)
@@ -225,7 +227,7 @@ func TestRenderArchitecture_ContainsLayerRules(t *testing.T) {
 
 func TestMinimalModel(t *testing.T) {
 	t.Parallel()
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	model := minimalModel(t)
 
 	prd, err := renderer.RenderPRD(context.Background(), model)
@@ -252,7 +254,7 @@ func TestNoAggregatesFallback(t *testing.T) {
 	require.NoError(t, model.ClassifySubdomain("Logging", vo.SubdomainGeneric, "Commodity"))
 	require.NoError(t, model.Finalize())
 
-	renderer := infrastructure.NewMarkdownArtifactRenderer()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
 	arch, err := renderer.RenderArchitecture(context.Background(), model)
 	require.NoError(t, err)
 	assert.Contains(t, arch, "No aggregate designs yet")
@@ -260,4 +262,42 @@ func TestNoAggregatesFallback(t *testing.T) {
 	dddDoc, err := renderer.RenderDDD(context.Background(), model)
 	require.NoError(t, err)
 	assert.Contains(t, dddDoc, "No aggregate designs yet")
+}
+
+// -- frontmatter date tests --
+
+func TestRenderPRD_FrontmatterHasValidDate(t *testing.T) {
+	t.Parallel()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
+	result, err := renderer.RenderPRD(context.Background(), sampleModel(t))
+	require.NoError(t, err)
+
+	// Must contain a real date with the current year prefix.
+	yearPrefix := fmt.Sprintf("last_reviewed: %d-", time.Now().Year())
+	assert.Contains(t, result, yearPrefix)
+
+	// Must NOT contain the placeholder.
+	assert.NotContains(t, result, "YYYY-MM-DD")
+}
+
+func TestRenderDDD_FrontmatterHasValidDate(t *testing.T) {
+	t.Parallel()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
+	result, err := renderer.RenderDDD(context.Background(), sampleModel(t))
+	require.NoError(t, err)
+
+	yearPrefix := fmt.Sprintf("last_reviewed: %d-", time.Now().Year())
+	assert.Contains(t, result, yearPrefix)
+	assert.NotContains(t, result, "YYYY-MM-DD")
+}
+
+func TestRenderArchitecture_FrontmatterHasValidDate(t *testing.T) {
+	t.Parallel()
+	renderer := infrastructure.NewMarkdownArtifactRenderer(nil)
+	result, err := renderer.RenderArchitecture(context.Background(), sampleModel(t))
+	require.NoError(t, err)
+
+	yearPrefix := fmt.Sprintf("last_reviewed: %d-", time.Now().Year())
+	assert.Contains(t, result, yearPrefix)
+	assert.NotContains(t, result, "YYYY-MM-DD")
 }

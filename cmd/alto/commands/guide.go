@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -148,6 +149,7 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 		return fmt.Errorf("discovery: %w", err)
 	}
 
+	markDiscoveryCompleted(".alto")
 	fmt.Println("Discovery complete.")
 	return nil
 }
@@ -257,6 +259,7 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 		return fmt.Errorf("resuming discovery: %w", err)
 	}
 
+	markDiscoveryCompleted(".alto")
 	fmt.Println("Discovery resumed and complete.")
 	return nil
 }
@@ -405,6 +408,7 @@ func runGuideAgentIngestFromReader(ctx context.Context, app *composition.App, r 
 		completed, completeErr := app.DiscoveryHandler.Complete(sessionID) //nolint:contextcheck // Discovery interface deliberately omits context
 		if completeErr == nil {
 			session = completed
+			markDiscoveryCompleted(altoDir)
 		}
 		// If Complete fails (e.g., MVP questions not all answered), that's fine — partial state
 	}
@@ -427,6 +431,22 @@ func runGuideAgentIngestFromReader(ctx context.Context, app *composition.App, r 
 	}
 
 	return nil
+}
+
+// markDiscoveryCompleted flips discovery.completed from false to true in
+// config.toml. Uses bytes.Replace to preserve comments and field ordering
+// (no TOML encode/decode round-trip). Best-effort: errors are logged as
+// warnings to stderr but do not fail the command.
+func markDiscoveryCompleted(altoDir string) {
+	path := filepath.Join(altoDir, "config.toml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	updated := bytes.Replace(data, []byte("completed = false"), []byte("completed = true"), 1)
+	if err := os.WriteFile(path, updated, 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not update config: %v\n", err)
+	}
 }
 
 // isLegacyMode returns true for the deprecated question-based discovery modes.
@@ -514,6 +534,7 @@ func runLegacyFlowWithDeps(ctx context.Context, app *composition.App, prompter a
 		return fmt.Errorf("completing legacy session: %w", completeErr)
 	}
 
+	markDiscoveryCompleted(".alto")
 	fmt.Println("Legacy discovery complete.")
 	return nil
 }

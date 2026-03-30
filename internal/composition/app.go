@@ -124,19 +124,21 @@ func NewApp() (*App, error) {
 	innerWriter := persistence.NewFilesystemFileWriter()
 	fileWriter := persistence.NewConflictDetectingFileWriter(innerWriter, valueobjects.ConflictStrategyRename)
 
-	// 3. Discovery infrastructure
+	// 3. Stack detection (shared by discovery + fitness)
+	stackProfile := stack.DetectProfile("")
+
+	// 4. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
-	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer()
+	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer(stackProfile)
 	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alto")
 	storyParser := &discoveryinfra.StoryYAMLParser{}
 	glossaryParser := &discoveryinfra.GlossaryYAMLParser{}
 	contextMapParser := &discoveryinfra.ContextMapYAMLParser{}
 
-	// 4. DocHealth infrastructure
+	// 5. DocHealth infrastructure
 	docScanner := dochealthinfra.NewFilesystemDocScanner()
 
-	// 5. Fitness infrastructure
-	stackProfile := stack.DetectProfile("")
+	// 6. Fitness infrastructure
 	gateRunner := fitnessinfra.NewSubprocessGateRunner("", stackProfile)
 
 	// 6. Knowledge infrastructure

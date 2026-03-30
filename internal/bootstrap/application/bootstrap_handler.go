@@ -31,10 +31,10 @@ type ContentProvider interface {
 }
 
 // plannedFiles lists files alto plans to create in a new project.
+// NOTE: docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md are intentionally
+// absent — they are owned by the artifact pipeline (ArtifactGenerationHandler),
+// not bootstrap. See alty-cli-18l.
 var plannedFiles = []string{
-	"docs/PRD.md",
-	"docs/DDD.md",
-	"docs/ARCHITECTURE.md",
 	"AGENTS.md",
 	".alto/config.toml",
 	".alto/knowledge/_index.toml",
