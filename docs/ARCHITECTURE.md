@@ -63,33 +63,48 @@ status: draft
                              |
           +------------------+------------------+
           |                  |                  |
-      CLI (vs)        MCP Server         VS Code Extension
-     [Cobra]         (alto-mcp)          (alto-vscode-extension)
-     [Go]            [mcp-go]            [TypeScript + Svelte]
-          |               |                     |
-          |               |              MCP Client (stdio)
+      CLI (alto)       MCP Server         VS Code Extension
+     [Cobra]          (alto-mcp)          (alto-vscode-extension)
+     [Go]             [mcp-go]            [TypeScript + Svelte]
           |               |                     |
           +-------+-------+---------------------+
                   |
-         Application Layer
-        (Ports / Interfaces)
-                  |
-   +--------------+---------------+
-   |              |               |
-Domain Layer  Infrastructure   .alto/
-(Pure Go)       Adapters       (Project State)
-   |              |               |
-   | Guided      |    +-----------+---------+
-   | Discovery   |    | domain-model.yaml   |
-   | Domain Model|    | config.toml         |
-   | Arch Testing|    | knowledge/          |
-   | Ticket Pipe.|    | maintenance/        |
-   | Freshness   |    +---------------------+
-   | Translation |
-   | Knowledge   +--- File I/O, Beads CLI,
-   | Bootstrap   |    Git, Template Engine,
-   | Rescue      |    Tool Detection, LLM
-   +-------------+
+  ┌───────────────────────────────────────────────────────┐
+  │  APPLICATION LAYER  (Ports / Interfaces)              │
+  │                                                       │
+  │  Handlers define "what to do."                        │
+  │  Ports define "what I need" as Go interfaces.         │
+  │  No I/O, no concretions — only orchestration logic.   │
+  └──────────────┬────────────────────────┬───────────────┘
+                 │ depends on             │ implemented by
+                 ▼                        ▼
+  ┌──────────────────────────┐  ┌─────────────────────────────────┐
+  │  DOMAIN LAYER            │  │  INFRASTRUCTURE LAYER           │
+  │  (Pure Go — zero deps)   │  │  (Adapters — external deps OK)  │
+  │                          │  │                                 │
+  │  Business rules,         │  │  Implements port interfaces:    │
+  │  value objects,          │  │                                 │
+  │  aggregates,             │  │  File I/O    ── .alto/ state    │
+  │  domain services.        │  │  LLM Client  ── Anthropic API   │
+  │                          │  │  Git         ── exec.Command    │
+  │  10 Bounded Contexts:    │  │  Templates   ── text/template   │
+  │   · Guided Discovery     │  │  Tool Detect ── filesystem scan │
+  │   · Domain Model         │  │  Beads CLI   ── subprocess      │
+  │   · Architecture Testing │  │  Web Search  ── HTTP client     │
+  │   · Ticket Pipeline      │  │  Prompters   ── stdin/huh/MCP   │
+  │   · Ticket Freshness     │  │                                 │
+  │   · Tool Translation     │  │  .alto/ Project State:          │
+  │   · Knowledge Base       │  │   · config.toml                 │
+  │   · Bootstrap            │  │   · stories/*.story.yaml        │
+  │   · Rescue               │  │   · glossary.yaml               │
+  │   · Research             │  │   · context-map.yaml            │
+  │                          │  │   · knowledge/                  │
+  │  NO imports from         │  │   · maintenance/                │
+  │  application or infra.   │  │                                 │
+  └──────────────────────────┘  └─────────────────────────────────┘
+
+  Dependency rule: Infrastructure → Application → Domain
+  Domain NEVER imports outward. Infrastructure NEVER imported by domain.
 ```
 
 > **Terminal-first principle:** Every feature is fully functional via CLI alone. The
@@ -101,7 +116,7 @@ Domain Layer  Infrastructure   .alto/
 
 | Component             | Responsibility                                          | Bounded Context      | Classification |
 | --------------------- | ------------------------------------------------------- | -------------------- | -------------- |
-| `vs` CLI              | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
+| `alto` CLI            | Parse commands, format output, delegate to ports        | CLI Framework        | Generic        |
 | `alto-mcp` MCP server | Expose tools/resources over stdio, delegate to ports    | MCP Framework        | Generic        |
 | 15 Application Ports  | Define interfaces between adapters and domain           | (cross-cutting)      | --             |
 | DiscoverySession      | Domain Storytelling flow, story capture, boundary detection, synthesis | Guided Discovery     | Core           |
@@ -134,7 +149,7 @@ Following Hexagonal Architecture (Ports and Adapters) aligned with DDD:
 |  |  +--------------------------------------------------------------+||
 |  |  |  Commands (write operations)                                 |||
 |  |  |  Queries (read operations)                                   |||
-|  |  |  Ports (15 Go interfaces)                                     |||
+|  |  |  Ports (15 Go interfaces)                                    |||
 |  |  +--------------------------------------------------------------+||
 |  |  +--------------------------------------------------------------+||
 |  |  |                      Domain Layer                            |||
@@ -802,26 +817,32 @@ _(Source: ticket pipeline spike sections 2, 4, 5, 9)_
 The complexity budget flows through the entire system:
 
 ```
-Guided Discovery
-  Q10: "Which parts are truly unique vs commodity?"
-        |
-        v
-classify_subdomain(name, classification, rationale)
-  -> SubdomainClassification value object
-        |
-        v
-.alto/domain-model.yaml (subdomains[].treatment)
-        |
-   +----+----+----+
-   |         |         |
-   v         v         v
-Fitness   Ticket    Tool
-Functions Pipeline  Translation
-   |         |         |
-   v         v         v
-Contract   Ticket    Config
-Strictness Detail    Detail
-Level      Level     Level
+  ┌─────────────────────────────────────────────────┐
+  │  GUIDED DISCOVERY                               │
+  │  Boundary detection classifies each subdomain   │
+  │  → SubdomainClassification value object         │
+  │    (Core / Supporting / Generic + rationale)    │
+  └────────────────────┬────────────────────────────┘
+                       │ persisted as
+                       ▼
+          .alto/domain-model.yaml
+          subdomains[].treatment
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+  ┌──────────────┐ ┌──────────┐ ┌──────────────┐
+  │ Fitness      │ │ Ticket   │ │ Tool         │
+  │ Functions    │ │ Pipeline │ │ Translation  │
+  │              │ │          │ │              │
+  │ Core: 4      │ │ Core:    │ │ Core:        │
+  │  contract    │ │  FULL    │ │  rich agent  │
+  │  types       │ │  detail  │ │  config      │
+  │ Supporting:  │ │ Support: │ │ Supporting:  │
+  │  layers +    │ │  STANDARD│ │  standard    │
+  │  forbidden   │ │  detail  │ │  rules       │
+  │ Generic:     │ │ Generic: │ │ Generic:     │
+  │  1 forbidden │ │  STUB    │ │  minimal     │
+  └──────────────┘ └──────────┘ └──────────────┘
 ```
 
 #### Classification Decision Tree (Khononov)
@@ -1399,22 +1420,23 @@ From `docs/PRD.md` section 6:
 
 Decisions resolved by spikes but requiring validation during implementation:
 
-- [ ] **Architecture test package resolution** -- Architecture tests resolve packages relative
-      to the module path. Verify correct path convention during implementation.
-      _(fitness function spike section 9)_
+- [x] **Architecture test package resolution** -- `arch-go.yml` has 107 dependency rules
+      with full module-relative paths (`github.com/alto-cli/alto/internal/...`), 100%
+      compliance threshold, 60% coverage threshold. Validated in epic alto-cli-awl.
 
 - [x] **Domain purity rules** -- arch-go `shouldOnlyDependsOn` with `external: ["$gostd"]`
       ensures domain layers only import Go stdlib. Validated in epic alto-cli-awl.
 
 - [ ] **Regeneration without losing manual edits** -- Users may add custom contracts or
       tests. Regeneration should preserve user-added items. Design a `# alto:generated`
-      marker convention. _(fitness function spike section 9)_
+      marker convention. Not yet implemented — `FitnessTestSuite.Regenerate()` clears all
+      rules without preservation. _(fitness function spike section 9)_
 
-- [ ] **Guided DDD flow over MCP (stateful sessions)** -- The Domain Storytelling flow is
-      stateful (multi-story session with conversation narrative). MCP tools are normally
-      stateless request/response. Options: stateful server context, context passing, MCP
-      prompts. _(CLI+MCP design spike section 9, risk #5; DST prototype spike section 5)_
+- [x] **Guided DDD flow over MCP (stateful sessions)** -- Implemented via 19 stateful
+      `guide_*` MCP tools in `tools_discovery.go` that manage session state across calls.
+      _(CLI+MCP design spike section 9, risk #5; DST prototype spike section 5)_
 
-- [ ] **Knowledge base maintenance burden** -- 4 tools x ~7 topics x 4 versions = ~112
-      TOML files. Start with `current/` only; add historical versions only on breaking changes.
+- [x] **Knowledge base maintenance burden** -- Resolved by `current/` only approach:
+      `.alto/knowledge/` has conventions/, cross-tool/, ddd/, tools/ with no version
+      directories. Historical versions deferred until breaking changes occur.
       _(knowledge base spike section 10 risk)_

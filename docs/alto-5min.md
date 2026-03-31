@@ -300,7 +300,6 @@ SPEAKER NOTES — SLIDE 1 (10 seconds)
 
 Just the title. Let it breathe.
 
-SAY:
 "Hi, I'm Jaigouk. I've been building tools for AI-assisted development.
 Today I want to share a problem I ran into — and how I solved it."
 -->
@@ -323,7 +322,6 @@ Spec-driven tools (Kiro, Spec Kit) generate tasks — but skip *domain discovery
 <!--
 SPEAKER NOTES — SLIDE 2 (30 seconds)
 
-SAY:
 "Raise your hand if you've used Claude Code, Cursor, or Copilot
 to build something. Yeah — they're amazing.
 
@@ -357,7 +355,6 @@ The ideal flow: README → PRD → DDD → Architecture → Epics → Tickets
 <!--
 SPEAKER NOTES — SLIDE 3 (60 seconds)
 
-SAY:
 "Here's what happened to me.
 
 I knew the right flow — README, PRD, DDD, architecture, then tickets.
@@ -399,7 +396,6 @@ The planning step *before* coding starts.
 <!--
 SPEAKER NOTES — SLIDE 4 (30 seconds)
 
-SAY:
 "alto is the architect that runs before the builders start.
 
 You describe your idea in a few sentences. alto runs a Domain Storytelling
@@ -440,7 +436,6 @@ We run `alto guide` in Claude Code. alto reads the README, asks questions, and p
 <!--
 SPEAKER NOTES — SLIDE 5 (15 seconds)
 
-SAY:
 "Let me show you with a concrete example.
 
 Here's a simple README — a restaurant daily specials manager.
@@ -559,7 +554,6 @@ RECOVERY: If anything breaks, just move to the next slide.
 <!--
 SPEAKER NOTES — SLIDE 7 (20 seconds)
 
-SAY:
 "Spec-driven development is real. It works. Tools like gstack and Kiro
 prove that generating specs before code is the right idea.
 
@@ -593,7 +587,6 @@ github.com/jaigouk/altoiddd
 <!--
 SPEAKER NOTES — SLIDE 8 (15 seconds)
 
-SAY:
 "That's alto. Domain discovery before coding starts.
 
 One Go install, one command to begin. Open source, Apache 2.0.
