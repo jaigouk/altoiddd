@@ -157,7 +157,7 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 
 		// Ask if user wants to continue
 		remaining := flow.RequiredStoryCount() - session.StoryCount()
-		prompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
+		basePrompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
 
 		continueChoices := []application.Choice{
 			{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
@@ -169,7 +169,10 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 			continueChoices[1].Description = fmt.Sprintf("Finish discovery (need %d more to complete)", remaining)
 		}
 
-		continueChoice, err := a.prompter.AskChoice(ctx, prompt, continueChoices, "yes")
+		rctx := application.NewRegroundingContext(session)
+		groundedPrompt := application.BuildRegroundingPrompt(rctx, basePrompt)
+
+		continueChoice, err := a.prompter.AskChoice(ctx, groundedPrompt, continueChoices, "yes")
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return context.Canceled
@@ -395,7 +398,7 @@ func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.Discov
 			}
 
 			remaining := flow.RequiredStoryCount() - session.StoryCount()
-			prompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
+			basePrompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
 
 			continueChoices := []application.Choice{
 				{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
@@ -407,7 +410,10 @@ func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.Discov
 				continueChoices[1].Description = fmt.Sprintf("Finish discovery (need %d more to complete)", remaining)
 			}
 
-			continueChoice, err := a.prompter.AskChoice(ctx, prompt, continueChoices, "yes")
+			rctx := application.NewRegroundingContext(session)
+			groundedPrompt := application.BuildRegroundingPrompt(rctx, basePrompt)
+
+			continueChoice, err := a.prompter.AskChoice(ctx, groundedPrompt, continueChoices, "yes")
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return context.Canceled

@@ -220,8 +220,11 @@ func (h *StorytellingHandler) RunStory(
 					{Key: "no", Label: "No", Description: "Keep in current story"},
 				}
 
+				rctx := NewRegroundingContext(session)
+				groundedPrompt := BuildRegroundingPrompt(rctx, "This sentence contains branching. Split into separate story?")
+
 				choice, err := h.prompter.AskChoice(
-					ctx, "This sentence contains branching. Split into separate story?", branchChoices, "yes",
+					ctx, groundedPrompt, branchChoices, "yes",
 				)
 				if err != nil {
 					return nil, narrative, fmt.Errorf("asking branching choice: %w", err)

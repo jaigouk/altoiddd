@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -43,16 +45,31 @@ Flags:
   --continue   Resume a session started with --agent
   --agent      Output discovery session as JSONL for AI agent consumption
   --ingest     Ingest answers from JSONL file (or "-" for stdin); requires --agent
-  --legacy     Use deprecated question-based flow (prints deprecation warning)`,
+  --legacy     Use deprecated question-based flow (prints deprecation warning)
+  --existing   Infer domain model from existing docs (tries docs/ then .)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			noTUI, _ := cmd.Flags().GetBool("no-tui")
 			continueSession, _ := cmd.Flags().GetBool("continue")
 			agentMode, _ := cmd.Flags().GetBool("agent")
 			legacyMode, _ := cmd.Flags().GetBool("legacy")
+			existingMode, _ := cmd.Flags().GetBool("existing")
 			ingestPath, _ := cmd.Flags().GetString("ingest")
 
 			if ingestPath != "" && !agentMode {
 				return fmt.Errorf("--ingest requires --agent")
+			}
+
+			// Mutual exclusion: --existing is incompatible with --agent, --continue, --legacy.
+			if existingMode {
+				if agentMode {
+					return fmt.Errorf("--existing and --agent are mutually exclusive")
+				}
+				if continueSession {
+					return fmt.Errorf("--existing and --continue are mutually exclusive")
+				}
+				if legacyMode {
+					return fmt.Errorf("--existing and --legacy are mutually exclusive")
+				}
 			}
 
 			if agentMode && ingestPath != "" {
@@ -60,6 +77,10 @@ Flags:
 					return runGuideAgentIngestFromReader(cmd.Context(), app, os.Stdin, ".alto", cmd.OutOrStdout())
 				}
 				return runGuideAgentIngest(cmd.Context(), app, ingestPath, ".alto", cmd.OutOrStdout())
+			}
+
+			if existingMode {
+				return runGuideExisting(cmd.Context(), app, noTUI)
 			}
 
 			return runGuide(cmd.Context(), app, noTUI, continueSession, agentMode, legacyMode)
@@ -70,6 +91,7 @@ Flags:
 	cmd.Flags().Bool("agent", false, "Output discovery session as JSONL for AI agent consumption")
 	cmd.Flags().String("ingest", "", "Ingest answers from JSONL file (or \"-\" for stdin); requires --agent")
 	cmd.Flags().Bool("legacy", false, "Use deprecated question-based discovery flow")
+	cmd.Flags().Bool("existing", false, "Infer domain model from existing docs (tries docs/ then .)")
 	return cmd
 }
 
@@ -152,6 +174,112 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	markDiscoveryCompleted(".alto")
 	fmt.Println("Discovery complete.")
 	return nil
+}
+
+// runGuideExisting is the entry point for `alto guide --existing`.
+// It wires the prompter (based on TUI preference), delegates to runGuideExistingWithDeps,
+// and falls through to storytelling if the user declines inference.
+func runGuideExisting(ctx context.Context, app *composition.App, noTUI bool) error {
+	// Guard: project must be initialized.
+	if _, err := os.Stat(filepath.Join(".", ".alto", "config.toml")); os.IsNotExist(err) {
+		return fmt.Errorf("project not initialized: run `alto init` first")
+	}
+
+	// Select prompter.
+	var prompter application.StorytellingPrompter
+	if noTUI || os.Getenv("ALTO_NO_TUI") == "1" {
+		stdinScanner := bufio.NewScanner(os.Stdin)
+		prompter = infrastructure.NewStdinStorytellingPrompterFromScanner(stdinScanner, os.Stdout)
+	} else {
+		prompter = infrastructure.NewHuhStorytellingPrompter()
+	}
+
+	err := runGuideExistingWithDeps(ctx, app.DocInferenceHandler, app.ArtifactGenerationHandler, prompter, os.Stdout)
+	if errors.Is(err, domain.ErrInferenceDismissed) {
+		// User declined inference — fall through to storytelling.
+		fmt.Println("Falling through to guided storytelling...")
+		return runGuide(ctx, app, noTUI, false, false, false)
+	}
+	return err
+}
+
+// runGuideExistingWithDeps is the testable core of runGuideExisting.
+// It tries doc inference, shows the summary, asks for confirmation, and writes
+// artifacts on acceptance. Returns ErrInferenceDismissed if the user declines.
+func runGuideExistingWithDeps(
+	ctx context.Context,
+	inferenceHandler *application.DocInferenceHandler,
+	artifactHandler *application.ArtifactGenerationHandler,
+	prompter application.StorytellingPrompter,
+	w io.Writer,
+) error {
+	// Try "docs" first, fall back to ".".
+	result, err := inferenceHandler.InferFromDocs(ctx, "docs")
+	if err != nil {
+		result, err = inferenceHandler.InferFromDocs(ctx, ".")
+	}
+	if err != nil {
+		_, _ = fmt.Fprintln(w, "No documentation found for inference. Falling through to storytelling...")
+		return domain.ErrInferenceDismissed
+	}
+
+	// Print inference summary.
+	printInferenceSummary(w, result)
+
+	// Ask user to confirm.
+	options := []application.Choice{
+		{Key: "y", Label: "Yes", Description: "Use inferred model and generate artifacts"},
+		{Key: "n", Label: "No", Description: "Discard and run guided storytelling instead"},
+		{Key: "s", Label: "Skip", Description: "Exit without generating anything"},
+	}
+	choice, err := prompter.AskChoice(ctx, "Use this inferred domain model?", options, "y")
+	if err != nil {
+		return fmt.Errorf("confirmation prompt: %w", err)
+	}
+
+	switch choice {
+	case "y":
+		if genErr := artifactHandler.GenerateFromModel(ctx, result.Model(), "docs", "."); genErr != nil {
+			return fmt.Errorf("generating artifacts from inferred model: %w", genErr)
+		}
+		markDiscoveryCompleted(".alto")
+		_, _ = fmt.Fprintln(w, "Artifacts generated from inferred model. Discovery complete.")
+		return nil
+	case "n":
+		return domain.ErrInferenceDismissed
+	case "s":
+		return nil
+	default:
+		return fmt.Errorf("unexpected choice: %q", choice)
+	}
+}
+
+// printInferenceSummary displays the inference result to the user.
+func printInferenceSummary(w io.Writer, result *domain.InferenceResult) {
+	_, _ = fmt.Fprintf(w, "\nInference Summary\n")
+	_, _ = fmt.Fprintf(w, "  Confidence: %s\n", result.Confidence())
+	docs := result.SourceDocs()
+	if len(docs) > 0 {
+		_, _ = fmt.Fprintf(w, "  Source docs: %s\n", strings.Join(docs, ", "))
+	}
+	model := result.Model()
+	if model != nil {
+		bcs := model.BoundedContexts()
+		if len(bcs) > 0 {
+			names := make([]string, len(bcs))
+			for i, bc := range bcs {
+				names[i] = bc.Name()
+			}
+			_, _ = fmt.Fprintf(w, "  Bounded contexts: %s\n", strings.Join(names, ", "))
+		}
+		if ul := model.UbiquitousLanguage(); ul != nil {
+			terms := ul.Terms()
+			if len(terms) > 0 {
+				_, _ = fmt.Fprintf(w, "  Terms: %d\n", len(terms))
+			}
+		}
+	}
+	_, _ = fmt.Fprintln(w)
 }
 
 func runGuideAgent(ctx context.Context, app *composition.App) error {

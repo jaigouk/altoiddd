@@ -197,6 +197,44 @@ func (h *ArtifactGenerationHandler) GenerateFromStories(
 	return h.WriteArtifacts(ctx, preview, docsDir, projectDir)
 }
 
+// GenerateFromModel renders and writes artifacts from a pre-built domain model.
+// Unlike GenerateFromStories, this accepts a *ddd.DomainModel directly — used by
+// the --existing flow where the model comes from doc inference rather than storytelling.
+func (h *ArtifactGenerationHandler) GenerateFromModel(
+	ctx context.Context,
+	model *ddd.DomainModel,
+	docsDir string,
+	projectDir string,
+) error {
+	if model == nil {
+		return fmt.Errorf("model cannot be nil: %w", domainerrors.ErrInvariantViolation)
+	}
+
+	prd, err := h.renderer.RenderPRD(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render PRD: %w", err)
+	}
+
+	dddContent, err := h.renderer.RenderDDD(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render DDD: %w", err)
+	}
+
+	arch, err := h.renderer.RenderArchitecture(ctx, model)
+	if err != nil {
+		return fmt.Errorf("render architecture: %w", err)
+	}
+
+	preview := &ArtifactPreview{
+		Model:               model,
+		PRDContent:          prd,
+		DDDContent:          dddContent,
+		ArchitectureContent: arch,
+	}
+
+	return h.WriteArtifacts(ctx, preview, docsDir, projectDir)
+}
+
 // buildModelFromStories reads stories via storyReader and extracts actors, work objects,
 // and sentences into DomainModel terms and bounded contexts.
 func (h *ArtifactGenerationHandler) buildModelFromStories(
