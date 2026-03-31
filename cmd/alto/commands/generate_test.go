@@ -58,6 +58,54 @@ func TestGenerateTicketsFromDocs_WhenValidDDD_PrintsPreviewSummary(t *testing.T)
 	assert.Contains(t, output, "Ticket")
 }
 
+// dddContentWithCoreAggregate returns a DDD.md that produces FULL-detail tickets
+// with aggregates that will trigger glossary alignment MAJOR findings.
+func dddContentWithCoreAggregate() string {
+	return `# Domain Model
+
+## Bounded Contexts
+
+### 1. Orders (Core)
+
+**Responsibility:** Order management and fulfillment
+
+## Aggregate Designs
+
+### OrderRoot (Orders)
+
+- **Root Entity:** OrderRoot
+- **Invariants:**
+  - must have valid total
+- **Commands:**
+  - PlaceOrder
+`
+}
+
+func TestGenerateTicketsFromDocs_WhenMAJORFindings_PrintsWarnings(t *testing.T) {
+	t.Parallel()
+	app, err := composition.NewApp()
+	require.NoError(t, err)
+	defer func() { _ = app.Close() }()
+
+	docsDir := setupDocsDir(t, dddContentWithCoreAggregate())
+
+	cmd := NewGenerateCmd(app)
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"tickets", "--from-docs", "--docs-dir", docsDir})
+
+	err = cmd.Execute()
+	// Should succeed even with MAJOR findings (they are warnings, not blockers)
+	require.NoError(t, err)
+
+	output := buf.String()
+	// After wiring, validation surfaces MAJOR findings as warnings before the summary
+	assert.Contains(t, output, "Warning:")
+	assert.Contains(t, output, "major design finding")
+	assert.Contains(t, output, "Ticket")
+}
+
 func TestGenerateTicketsFromDocs_WhenMissingDDD_ReturnsError(t *testing.T) {
 	t.Parallel()
 	app, err := composition.NewApp()

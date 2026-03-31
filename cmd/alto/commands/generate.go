@@ -2,12 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/alto-cli/alto/internal/composition"
 	"github.com/alto-cli/alto/internal/shared/infrastructure/stack"
+	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
@@ -109,12 +111,49 @@ func newGenerateTicketsCmd(app *composition.App) *cobra.Command {
 
 			profile := stack.DetectProfile("")
 
+			// Wire runtime state into the handler. These Set* calls mutate the shared
+			// App singleton, which is fine for CLI but needs revisiting for MCP server
+			// (concurrent commands would race on shared handler state).
+
+			// Wire glossary terms from the model's ubiquitous language
+			terms := model.UbiquitousLanguage().Terms()
+			if len(terms) > 0 {
+				glossaryTerms := make([]string, len(terms))
+				for i, t := range terms {
+					glossaryTerms[i] = t.Term()
+				}
+				app.TicketGenerationHandler.SetGlossaryTerms(glossaryTerms)
+			}
+
+			// Wire project root for port scanning.
+			// filepath.Dir("docs") = ".", filepath.Dir("/abs/docs") = "/abs".
+			// Unusual --docs-dir values degrade gracefully (empty scan results).
+			projectRoot := filepath.Dir(docsDir)
+			app.TicketGenerationHandler.SetPortsDir(projectRoot)
+
 			preview, err := app.TicketGenerationHandler.BuildPreview(model, profile)
 			if err != nil {
 				return fmt.Errorf("building ticket preview: %w", err)
 			}
 
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), preview.Summary)
+			w := cmd.OutOrStdout()
+
+			// Surface validation results
+			criticalCount, majorCount := countValidationFindings(preview.Validation)
+
+			if criticalCount > 0 {
+				_, _ = fmt.Fprintln(w, "CRITICAL design issues found — ticket generation blocked:")
+				printFindings(w, preview.Validation, ticketdomain.FindingSeverityCritical)
+				return fmt.Errorf("ticket generation blocked: %d critical design issue(s) found", criticalCount)
+			}
+
+			if majorCount > 0 {
+				_, _ = fmt.Fprintf(w, "Warning: %d major design finding(s) detected:\n\n", majorCount)
+				printFindings(w, preview.Validation, ticketdomain.FindingSeverityMajor)
+				_, _ = fmt.Fprintln(w, "")
+			}
+
+			_, _ = fmt.Fprintln(w, preview.Summary)
 			return nil
 		},
 	}
@@ -162,6 +201,34 @@ func newGenerateConfigsCmd(app *composition.App) *cobra.Command {
 	cmd.Flags().StringVar(&docsDir, "docs-dir", "docs", "Directory containing DDD.md")
 
 	return cmd
+}
+
+// countValidationFindings counts CRITICAL and MAJOR findings across all validation results.
+func countValidationFindings(results []ticketdomain.DesignTraceResult) (critical, major int) {
+	for _, r := range results {
+		for _, f := range r.Findings() {
+			switch f.Severity() {
+			case ticketdomain.FindingSeverityCritical:
+				critical++
+			case ticketdomain.FindingSeverityMajor:
+				major++
+			case ticketdomain.FindingSeverityMinor:
+				// informational only
+			}
+		}
+	}
+	return critical, major
+}
+
+// printFindings prints findings of the given severity from validation results.
+func printFindings(w io.Writer, results []ticketdomain.DesignTraceResult, severity ticketdomain.FindingSeverity) {
+	for _, r := range results {
+		for _, f := range r.Findings() {
+			if f.Severity() == severity {
+				_, _ = fmt.Fprintf(w, "  [%s] %s: %s\n", r.TicketID(), f.Location(), f.Description())
+			}
+		}
+	}
 }
 
 // detectSupportedTools tries to detect installed AI tools, falling back to all supported tools.

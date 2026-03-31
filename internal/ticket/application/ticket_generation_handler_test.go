@@ -418,10 +418,12 @@ func TestTicketGenerationHandler_WriteToBeads(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type fakePortScannerT struct {
-	ports map[string]ticketdomain.ScannedPort
+	ports         map[string]ticketdomain.ScannedPort
+	calledWithDir string
 }
 
-func (f *fakePortScannerT) ScanPorts(_ string) map[string]ticketdomain.ScannedPort {
+func (f *fakePortScannerT) ScanPorts(portsDir string) map[string]ticketdomain.ScannedPort {
+	f.calledWithDir = portsDir
 	return f.ports
 }
 
@@ -518,6 +520,29 @@ func TestTicketGenerationHandler_BuildPreview_WithPortScanner(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, preview)
 		assert.Len(t, preview.Validation, len(preview.Plan.Tickets()))
+	})
+
+	t.Run("SetPortsDir updates dir passed to scanner", func(t *testing.T) {
+		t.Parallel()
+		writer := newFakeFileWriterT()
+		handler := application.NewTicketGenerationHandler(writer, &fakePublisherT{})
+
+		scanner := &fakePortScannerT{
+			ports: map[string]ticketdomain.ScannedPort{},
+		}
+		handler.SetPortScanner(scanner, "/initial")
+		handler.SetPortsDir("/updated/project")
+
+		model := makeTicketModel([]struct {
+			Name           string
+			Classification vo.SubdomainClassification
+		}{{"Orders", vo.SubdomainCore}})
+
+		preview, err := handler.BuildPreview(model, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, preview)
+		assert.Equal(t, "/updated/project", scanner.calledWithDir)
 	})
 
 	t.Run("scanner returns ports that are actually used", func(t *testing.T) {

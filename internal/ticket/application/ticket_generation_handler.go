@@ -53,6 +53,12 @@ func (h *TicketGenerationHandler) SetPortScanner(scanner PortScanner, portsDir s
 	h.portsDir = portsDir
 }
 
+// SetPortsDir updates the directory used for port scanning.
+// Use this to override the portsDir after the scanner has been set.
+func (h *TicketGenerationHandler) SetPortsDir(dir string) {
+	h.portsDir = dir
+}
+
 // SetGlossaryTerms sets the glossary terms for ubiquitous language validation.
 func (h *TicketGenerationHandler) SetGlossaryTerms(terms []string) {
 	h.glossaryTerms = make([]string, len(terms))

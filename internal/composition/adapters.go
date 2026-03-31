@@ -6,6 +6,7 @@ package composition
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	bootstrapapp "github.com/alto-cli/alto/internal/bootstrap/application"
 	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
@@ -224,16 +225,41 @@ type portScannerBridge struct {
 	scanner fitnessinfra.CodebasePortScanner
 }
 
-// ScanPorts scans a directory for Go interfaces and returns ticket-domain ScannedPort values.
-func (b *portScannerBridge) ScanPorts(portsDir string) map[string]ticketdomain.ScannedPort {
-	fitnessResult := b.scanner.Scan(portsDir)
-	result := make(map[string]ticketdomain.ScannedPort, len(fitnessResult))
-	for name, port := range fitnessResult {
-		methods := make([]ticketdomain.ScannedMethod, 0, len(port.Methods()))
-		for _, m := range port.Methods() {
-			methods = append(methods, ticketdomain.NewScannedMethod(m.Name(), m.Parameters()))
+// ScanPorts scans a project root for Go interfaces across all bounded context
+// application directories (internal/*/application/) and returns merged ticket-domain
+// ScannedPort values. If projectRoot is empty or has no matching directories,
+// returns an empty map.
+//
+// NOTE: The glob pattern is Go-DDD-specific. Non-Go projects get empty results
+// (graceful skip). Derive pattern from StackProfile if multi-language support is needed.
+func (b *portScannerBridge) ScanPorts(projectRoot string) map[string]ticketdomain.ScannedPort {
+	result := make(map[string]ticketdomain.ScannedPort)
+	if projectRoot == "" {
+		return result
+	}
+
+	pattern := filepath.Join(projectRoot, "internal", "*", "application")
+	appDirs, err := filepath.Glob(pattern)
+	if err != nil || len(appDirs) == 0 {
+		return result
+	}
+
+	for _, dir := range appDirs {
+		fitnessResult := b.scanner.Scan(dir)
+		for name, port := range fitnessResult {
+			// Skip duplicate interface names across contexts (first-wins).
+			// DDD projects use context-specific names (OrderRepository, not Repository)
+			// so collisions are rare. If they occur, the validator flags "port not found"
+			// for the shadowed interface — which is correct: the ticket should be specific.
+			if _, exists := result[name]; exists {
+				continue
+			}
+			methods := make([]ticketdomain.ScannedMethod, 0, len(port.Methods()))
+			for _, m := range port.Methods() {
+				methods = append(methods, ticketdomain.NewScannedMethod(m.Name(), m.Parameters()))
+			}
+			result[name] = ticketdomain.NewScannedPort(port.Name(), port.FilePath(), methods)
 		}
-		result[name] = ticketdomain.NewScannedPort(port.Name(), port.FilePath(), methods)
 	}
 	return result
 }
