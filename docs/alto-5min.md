@@ -188,10 +188,23 @@ style: |
   }
 
   section.solution em {
-    font-size: 1.2em;
-    display: block;
-    margin-top: 20px;
+    font-style: normal;
+    font-weight: 700;
+    color: var(--teal);
+  }
+
+  section.solution p:last-of-type {
+    font-size: 1.1em;
     text-align: center;
+    margin-top: 16px;
+  }
+
+  section.solution table {
+    font-size: 0.82em;
+  }
+
+  section.solution td, section.solution th {
+    padding: 8px 14px;
   }
 
   /* ===== DEMO ===== */
@@ -386,10 +399,10 @@ The planning step *before* coding starts.
 
 | | What | Why it matters |
 |-|------|---------------|
-| 1 | *Domain Storytelling* — guided conversation discovers your domain | AI learns your business, not the other way around |
-| 2 | *Bounded contexts + ubiquitous language* → DDD.md | Code organized by business domain, not technical layers |
-| 3 | *Architecture fitness tests* generated from domain model | Boundaries enforce themselves — wrong imports fail CI |
-| 4 | *Dependency-ordered tickets* with TDD phases | AI tools know what to build next, in the right order |
+| 1 | *Domain Storytelling* — discover your domain | AI learns your business |
+| 2 | *Bounded contexts + language* → DDD.md | Code follows business domains |
+| 3 | *Fitness tests* from domain model | Wrong imports fail CI |
+| 4 | *Ordered tickets* with TDD phases | AI builds in the right order |
 
 *20 minutes of storytelling saves 20 hours of rewrites.*
 
