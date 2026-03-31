@@ -1893,7 +1893,7 @@ section.cta pre {
 <h2 id="domain-storytelling--the-ping-pong-conversation">Domain Storytelling — the ping-pong conversation</h2>
 <p><img src="./alto-demo.gif" alt="" style="width:1000px;" /></p>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-class="cheat" data-theme="default" data-style="@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap');
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-class="landscape" data-theme="default" data-style="@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap');
 
 :root {
   --teal: #2a9d8f;
@@ -2189,20 +2189,60 @@ section.cta pre {
   margin: 24px 0;
   text-align: left;
 }
-" lang="en-US" class="cheat" style="--class:cheat;--theme:default;--style:@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap')
+" lang="en-US" class="landscape" style="--class:landscape;--theme:default;--style:@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap')
 ;" data-size="16:9">
-<h1 id="demo-cheat-sheet">Demo Cheat Sheet</h1>
-<p>Live fallback — run the simulated guide session:</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>bash docs/demo-guide-sim.sh
-</code></pre>
-<p>Or run the real thing:</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>mkdir demo &amp;&amp; cd demo &amp;&amp; git init
-cat &gt; README.md &lt;&lt; 'EOF'
-A CLI tool that helps restaurant owners manage daily specials.
-Owners enter dishes with prices and dietary tags.
-EOF
-alto init -y &amp;&amp; alto guide --no-tui
-</code></pre>
+<h1 id="cli-at-a-glance">CLI at a Glance</h1>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>alto init</code></td>
+<td>Bootstrap project from README</td>
+</tr>
+<tr>
+<td><code>alto guide</code></td>
+<td>Domain Storytelling discovery</td>
+</tr>
+<tr>
+<td><code>alto guide --existing</code></td>
+<td>Infer model from existing docs</td>
+</tr>
+<tr>
+<td><code>alto detect</code></td>
+<td>Scan for AI coding tools</td>
+</tr>
+<tr>
+<td><code>alto generate</code></td>
+<td>Artifacts, configs, fitness, tickets</td>
+</tr>
+<tr>
+<td><code>alto check</code></td>
+<td>Run quality gates (lint, test, fitness)</td>
+</tr>
+<tr>
+<td><code>alto gap</code></td>
+<td>Find structural gaps (read-only)</td>
+</tr>
+<tr>
+<td><code>alto import</code></td>
+<td>Import existing DDD.md into alto</td>
+</tr>
+<tr>
+<td><code>alto fitness</code></td>
+<td>Architecture fitness tests</td>
+</tr>
+<tr>
+<td><code>alto doc-health</code></td>
+<td>Documentation freshness check</td>
+</tr>
+</tbody>
+</table>
+<p>Full reference: <strong>jaigouk.com/altoiddd/guides/cli-reference</strong></p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="8" data-class="landscape" data-theme="default" data-style="@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap');
 
@@ -2942,17 +2982,12 @@ Menu Management and Inventory. From one conversation,
 alto generates DDD.md, architecture, fitness tests, tickets.&quot;
 
 IF GIF DOESN'T LOAD:
-Run `bash docs/demo-guide-sim.sh` in terminal.</p></div><div class="bespoke-marp-note" data-index="6" tabindex="0"><p>SPEAKER NOTES — CHEAT SHEET (presenter view only)
+Run `bash docs/demo-guide-sim.sh` in terminal.</p></div><div class="bespoke-marp-note" data-index="6" tabindex="0"><p>SPEAKER NOTES — SLIDE 7 (15 seconds)
 
-Keep this on your second monitor. The audience sees the demo slide.
-
-The GIF shows the simulated guide session (30s, deterministic).
-If it fails, run the sim script directly in terminal.
-
-The real `alto guide --no-tui` works too but needs LLM connectivity
-and takes longer. Only use as backup if you have time.
-
-RECOVERY: If anything breaks, just move to the next slide.</p></div><div class="bespoke-marp-note" data-index="7" tabindex="0"><p>SPEAKER NOTES — SLIDE 7 (20 seconds)
+&quot;alto has a full CLI surface — not just four commands.
+Init, guide, generate, check, gap, import, fitness, doc-health.
+Everything you need to bootstrap and maintain structure.
+Full reference is on the docs site.&quot;</p></div><div class="bespoke-marp-note" data-index="7" tabindex="0"><p>SPEAKER NOTES — SLIDE 7 (20 seconds)
 
 &quot;Spec-driven development is real. It works. Tools like gstack and Kiro
 prove that generating specs before code is the right idea.

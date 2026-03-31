@@ -514,39 +514,32 @@ Run `bash docs/demo-guide-sim.sh` in terminal.
 
 ---
 
-<!-- _class: cheat -->
+<!-- _class: landscape -->
 
-# Demo Cheat Sheet
+# CLI at a Glance
 
-Live fallback — run the simulated guide session:
+| Command | What it does |
+|---------|-------------|
+| `alto init` | Bootstrap project from README |
+| `alto guide` | Domain Storytelling discovery |
+| `alto guide --existing` | Infer model from existing docs |
+| `alto detect` | Scan for AI coding tools |
+| `alto generate` | Artifacts, configs, fitness, tickets |
+| `alto check` | Run quality gates (lint, test, fitness) |
+| `alto gap` | Find structural gaps (read-only) |
+| `alto import` | Import existing DDD.md into alto |
+| `alto fitness` | Architecture fitness tests |
+| `alto doc-health` | Documentation freshness check |
 
-```
-bash docs/demo-guide-sim.sh
-```
-
-Or run the real thing:
-
-```
-mkdir demo && cd demo && git init
-cat > README.md << 'EOF'
-A CLI tool that helps restaurant owners manage daily specials.
-Owners enter dishes with prices and dietary tags.
-EOF
-alto init -y && alto guide --no-tui
-```
+Full reference: **jaigouk.com/altoiddd/guides/cli-reference**
 
 <!--
-SPEAKER NOTES — CHEAT SHEET (presenter view only)
+SPEAKER NOTES — SLIDE 7 (15 seconds)
 
-Keep this on your second monitor. The audience sees the demo slide.
-
-The GIF shows the simulated guide session (30s, deterministic).
-If it fails, run the sim script directly in terminal.
-
-The real `alto guide --no-tui` works too but needs LLM connectivity
-and takes longer. Only use as backup if you have time.
-
-RECOVERY: If anything breaks, just move to the next slide.
+"alto has a full CLI surface — not just four commands.
+Init, guide, generate, check, gap, import, fitness, doc-health.
+Everything you need to bootstrap and maintain structure.
+Full reference is on the docs site."
 -->
 
 ---

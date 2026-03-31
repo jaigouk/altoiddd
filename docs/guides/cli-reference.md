@@ -18,6 +18,8 @@ alto init [flags]
 | `-y`, `--yes` | Skip confirmation prompt |
 | `--dry-run` | Show plan without executing |
 | `--existing` | Rescue an existing project (branch-based scaffolding) |
+| `--force-branch` | Delete existing `alto/init` branch before creating a new one |
+| `--no-commit` | Skip auto-commit of generated files |
 
 **Examples:**
 
@@ -51,6 +53,7 @@ alto guide [flags]
 | `--continue` | Resume a previously interrupted storytelling session |
 | `--agent` | Output discovery session as JSONL for AI agent consumption |
 | `--ingest FILE` | Ingest answers from JSONL file (or "-" for stdin); requires `--agent` |
+| `--existing` | Infer domain model from existing docs (tries `docs/` then `.`) |
 | `--legacy` | Use deprecated question-based flow (prints deprecation warning) |
 
 Orchestrates persona detection, Domain Storytelling with ConfirmSentence loops and ProposeStory replay, and artifact generation.
@@ -163,6 +166,30 @@ Generate dependency-ordered beads tickets from DDD artifacts.
 
 ```bash
 alto generate tickets
+```
+
+---
+
+## `alto import`
+
+Import existing DDD documentation into alto's domain model. Parses `docs/DDD.md` to extract bounded contexts, classifications, and context relationships.
+
+```bash
+alto import [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--docs-dir <path>` | Directory containing DDD.md (default: `docs`) |
+
+**Examples:**
+
+```bash
+# Import from default docs/ directory
+alto import
+
+# Import from a custom directory
+alto import --docs-dir my-docs
 ```
 
 ---
