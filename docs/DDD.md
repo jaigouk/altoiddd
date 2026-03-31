@@ -251,6 +251,10 @@ status: draft
 | RegulatoryItem | A regulatory requirement identified from AI domain research with name, description, and source URLs *(added 2026-03-27)* | Guided Discovery |
 | ExistingSoftware | Known software in the domain identified from AI research with name, description, and a single source URL *(added 2026-03-27)* | Guided Discovery |
 | GlossaryExtractor | Domain service (pure function) that extracts UbiquitousLanguageEntry[] from DomainStory[] — dedup case-insensitive, higher trust wins, sorted lexicographic. File: `glossary_extractor.go` *(added 2026-03-28)* | Guided Discovery |
+| CoherenceValidator | Domain service (pure function) that detects cross-story contradictions: term type conflicts (same name, different ActorType/WorkObjectType) and undeclared cross-story references (sentence subjects/objects not in any story's actor/work-object declarations). Returns CoherenceReport. File: `coherence_validator.go` *(added 2026-03-31)* | Guided Discovery |
+| CoherenceFinding | Value object representing a single cross-story coherence issue with severity (CoherenceSeverity), location, and description. Constructor validates non-empty description. File: `coherence_validator.go` *(added 2026-03-31)* | Guided Discovery |
+| CoherenceReport | Value object aggregating CoherenceFindings from one validation run. Immutable with defensive copy on Findings(). IsCoherent() returns true when no findings exist. File: `coherence_validator.go` *(added 2026-03-31)* | Guided Discovery |
+| CoherenceSeverity | String enum local to discovery domain — currently CoherenceSeverityWarning only. Deliberately NOT named FindingSeverity to avoid UL collision with ticket domain. File: `coherence_validator.go` *(added 2026-03-31)* | Guided Discovery |
 | RelationshipType | Enum classifying context relationships: SharedKernel, CustomerSupplier, Conformist, AnticorruptionLayer, OpenHostService, PublishedLanguage, Partnership, SeparateWays. File: `relationship_type.go` *(added 2026-03-28)* | Domain Model |
 | ResearchQuality | Computed quality assessment of AI domain research output: counts of actors, entities, workflow steps, useful sources, and whether it meets the quality floor *(added 2026-03-27)* | Guided Discovery |
 | QualityFloor | Minimum thresholds for AI domain research to be considered usable: >=3 actors, >=3 entities, >=5 workflow steps, >=5 sources. Below floor → nil DomainResearchResult → fallback to user-narrated mode (no consultant-proposed story) *(updated 2026-03-28)* | Guided Discovery |
@@ -524,6 +528,10 @@ subdomains:
 - `ContextRelationship` (Value Object) — upstream/downstream relationship with RelationshipType
 - `RelationshipType` (Value Object) — enum for context relationship types (SharedKernel, CustomerSupplier, Conformist, AnticorruptionLayer, OpenHostService, PublishedLanguage, Partnership, SeparateWays)
 - `GlossaryExtractor` (Domain Service) — extracts UbiquitousLanguageEntry[] from stories, dedup case-insensitive + trust-aware
+- `CoherenceValidator` (Domain Service) — detects cross-story contradictions: term type conflicts + undeclared references
+- `CoherenceFinding` (Value Object) — single coherence issue: severity + location + description
+- `CoherenceReport` (Value Object) — aggregated findings from one validation run, immutable
+- `CoherenceSeverity` (Value Object) — string enum for coherence finding severity (warning only)
 - `ConversationTurn` (Value Object) — single exchange: moderator question + user response + optional synthesis
 - `ConversationNarrative` (Value Object) — complete ordered sequence of ConversationTurns with synthesis checkpoints
 - `StorytellingPrompter` (Port) — 8-method interface for CLI interaction (SelectMode, ProposeStory, AskNarration, ConfirmSentence, AskChoice, DisplayStory, SynthesisCheckpoint, AskAnnotation). Replaces the old 4-method Prompter

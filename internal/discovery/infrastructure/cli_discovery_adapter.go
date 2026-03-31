@@ -236,7 +236,7 @@ func (a *CLIDiscoveryAdapter) runArtifactPipeline(ctx context.Context, session *
 
 	// Step 1: Glossary export.
 	if a.glossaryExport != nil {
-		if exportErr := a.glossaryExport.Export(ctx, storyRefs, contextMap, glossaryPath); exportErr != nil {
+		if _, exportErr := a.glossaryExport.Export(ctx, storyRefs, contextMap, glossaryPath); exportErr != nil {
 			return fmt.Errorf("exporting glossary: %w", exportErr)
 		}
 	}
