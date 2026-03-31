@@ -475,8 +475,7 @@ func TestGuideExisting_CtrlC_AtConfirmation_PropagatesContextCanceled(t *testing
 		context.Background(),
 		inferenceHandler, artifactHandler, prompter, &out,
 	)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, context.Canceled, "Ctrl-C should propagate as context.Canceled")
+	require.ErrorIs(t, err, context.Canceled, "Ctrl-C should propagate as context.Canceled")
 	assert.Contains(t, err.Error(), "confirmation prompt")
 }
 
