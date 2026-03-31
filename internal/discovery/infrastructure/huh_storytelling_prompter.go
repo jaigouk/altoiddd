@@ -26,8 +26,8 @@ func NewHuhStorytellingPrompter() *HuhStorytellingPrompter {
 
 // modeOptions maps display text to DiscoveryMode string values.
 var modeOptions = []huh.Option[string]{
-	huh.NewOption("Rapid — fast discovery, minimal questions", string(discoverydomain.ModeRapid)),
-	huh.NewOption("Thorough — deep discovery, comprehensive questions", string(discoverydomain.ModeThorough)),
+	huh.NewOption(fmt.Sprintf("Rapid — %d stories, minimal questions per story", discoverydomain.RapidRequiredStories), string(discoverydomain.ModeRapid)),
+	huh.NewOption(fmt.Sprintf("Thorough — %d stories, comprehensive questions", discoverydomain.ThoroughRequiredStories), string(discoverydomain.ModeThorough)),
 }
 
 // SelectMode prompts the user to choose between RAPID and THOROUGH discovery modes.

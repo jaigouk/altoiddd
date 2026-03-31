@@ -8,8 +8,8 @@ import (
 
 // Story count constants — DDD.md invariant 3.
 const (
-	rapidRequiredStories    = 3
-	thoroughRequiredStories = 5
+	RapidRequiredStories    = 3
+	ThoroughRequiredStories = 5
 )
 
 // Checkpoint constants — DDD.md invariants 6 and 8.
@@ -35,9 +35,9 @@ func NewStorytellingFlow(mode DiscoveryMode) (*StorytellingFlow, error) {
 
 	switch mode {
 	case ModeRapid:
-		required = rapidRequiredStories
+		required = RapidRequiredStories
 	case ModeThorough:
-		required = thoroughRequiredStories
+		required = ThoroughRequiredStories
 	case ModeExpress, ModeDeep, ModeConversational:
 		return nil, fmt.Errorf("storytelling flow requires rapid or thorough mode, got %q: %w",
 			mode, domainerrors.ErrInvariantViolation)

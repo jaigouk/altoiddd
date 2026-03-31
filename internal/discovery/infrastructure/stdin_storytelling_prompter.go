@@ -54,8 +54,8 @@ func (p *StdinStorytellingPrompter) scanOrCancel() (string, error) {
 // SelectMode prompts the user to choose between RAPID and THOROUGH discovery modes.
 func (p *StdinStorytellingPrompter) SelectMode(_ context.Context) (discoverydomain.DiscoveryMode, error) {
 	_, _ = fmt.Fprintln(p.writer, "Select discovery mode:")
-	_, _ = fmt.Fprintln(p.writer, "1. Rapid — fast discovery, minimal questions")
-	_, _ = fmt.Fprintln(p.writer, "2. Thorough — deep discovery, comprehensive questions")
+	_, _ = fmt.Fprintf(p.writer, "1. Rapid — %d stories, minimal questions per story\n", discoverydomain.RapidRequiredStories)
+	_, _ = fmt.Fprintf(p.writer, "2. Thorough — %d stories, comprehensive questions\n", discoverydomain.ThoroughRequiredStories)
 	_, _ = fmt.Fprint(p.writer, "Enter choice (1-2): ")
 
 	choice, err := p.scanOrCancel()

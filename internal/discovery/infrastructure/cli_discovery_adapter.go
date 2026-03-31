@@ -156,12 +156,20 @@ func (a *CLIDiscoveryAdapter) Run(ctx context.Context) error {
 		}
 
 		// Ask if user wants to continue
+		remaining := flow.RequiredStoryCount() - session.StoryCount()
+		prompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
+
 		continueChoices := []application.Choice{
 			{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
 			{Key: "no", Label: "No", Description: "Finish discovery"},
 		}
 
-		continueChoice, err := a.prompter.AskChoice(ctx, "Would you like to tell another story?", continueChoices, "yes")
+		if remaining > 0 {
+			continueChoices[0].Description = fmt.Sprintf("Tell another domain story (%d more required)", remaining)
+			continueChoices[1].Description = fmt.Sprintf("Finish discovery (need %d more to complete)", remaining)
+		}
+
+		continueChoice, err := a.prompter.AskChoice(ctx, prompt, continueChoices, "yes")
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return context.Canceled
@@ -386,12 +394,20 @@ func (a *CLIDiscoveryAdapter) Resume(ctx context.Context, session *domain.Discov
 				break
 			}
 
+			remaining := flow.RequiredStoryCount() - session.StoryCount()
+			prompt := fmt.Sprintf("Story %d of %d completed. Tell another?", session.StoryCount(), flow.RequiredStoryCount())
+
 			continueChoices := []application.Choice{
 				{Key: "yes", Label: "Yes", Description: "Tell another domain story"},
 				{Key: "no", Label: "No", Description: "Finish discovery"},
 			}
 
-			continueChoice, err := a.prompter.AskChoice(ctx, "Would you like to tell another story?", continueChoices, "yes")
+			if remaining > 0 {
+				continueChoices[0].Description = fmt.Sprintf("Tell another domain story (%d more required)", remaining)
+				continueChoices[1].Description = fmt.Sprintf("Finish discovery (need %d more to complete)", remaining)
+			}
+
+			continueChoice, err := a.prompter.AskChoice(ctx, prompt, continueChoices, "yes")
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return context.Canceled

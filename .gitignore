@@ -25,6 +25,10 @@ Thumbs.db
 # Notes (private, not tracked)
 .notes/
 
+# Demo project (local-only, for meetup recording)
+demo/
+docs/demo-guide-sim.sh
+
 # Agent memory
 .claude/projects/*/memory/
 .claude/agent-memory/
