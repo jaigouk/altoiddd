@@ -5,50 +5,26 @@ sidebar:
   order: 1
 ---
 
-Get from zero to a fully structured project in under 5 minutes.
-
-## Prerequisites
-
-- A project idea (4-5 sentences is enough)
+<div class="slide-container">
+<iframe src="/altoiddd/alto-5min.html" style="width:100%; aspect-ratio:16/9; border:1px solid var(--sl-color-gray-5); border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.08);" allowfullscreen></iframe>
+<p style="text-align:center; font-size:0.85em; color:var(--sl-color-gray-3); margin-top:8px;">
+Use arrow keys to navigate slides. <a href="/altoiddd/alto-5min.html" target="_blank">Open fullscreen</a>
+</p>
+</div>
 
 ## Install
-
-Download the latest binary for your platform from the [releases page](https://github.com/jaigouk/altoiddd/releases):
-
-```bash
-# macOS (Apple Silicon)
-curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-arm64
-chmod +x /usr/local/bin/alto
-
-# macOS (Intel)
-curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-darwin-amd64
-chmod +x /usr/local/bin/alto
-
-# Linux (amd64)
-curl -L -o /usr/local/bin/alto https://github.com/jaigouk/altoiddd/releases/latest/download/alto-linux-amd64
-chmod +x /usr/local/bin/alto
-```
-
-On Windows, download `alto-windows-amd64.exe` from the [releases page](https://github.com/jaigouk/altoiddd/releases) and add it to your `PATH`.
-
-Or install from source if you have Go 1.26+:
 
 ```bash
 go install github.com/jaigouk/altoiddd/cmd/alto@latest
 ```
 
-Verify the installation:
-
-```bash
-alto version
-```
+Or download a binary from the [releases page](https://github.com/jaigouk/altoiddd/releases). See [Installation](/altoiddd/guides/installation) for platform-specific instructions and optional tools.
 
 ## Create your first project
 
-Create a directory and write a short README describing your idea:
-
 ```bash
 mkdir my-project && cd my-project
+git init
 cat > README.md << 'EOF'
 A CLI tool that helps restaurant owners manage daily specials.
 Owners enter dishes with prices and dietary tags.
@@ -57,17 +33,16 @@ It tracks which specials sell out and suggests reorders.
 EOF
 ```
 
-Run `alto init` with the `-y` flag to skip confirmation prompts:
+Bootstrap the project and start the guided discovery flow:
 
 ```bash
 alto init -y
+alto guide
 ```
 
-alto detects your installed AI coding tools, then starts a Domain Storytelling moderator conversation to discover your domain. alto proposes concrete stories about how your system works — answer in plain language and alto adapts its vocabulary to your expertise level.
+alto reads your README, detects installed AI tools, and runs a Domain Storytelling conversation to discover your domain. You answer in plain language — alto adapts to your expertise level.
 
 ## What you get
-
-After the Domain Storytelling conversation completes, alto generates:
 
 | Artifact | Purpose |
 |----------|---------|
@@ -80,8 +55,8 @@ After the Domain Storytelling conversation completes, alto generates:
 
 ## Next steps
 
-- Run `alto guide` to re-enter the guided discovery flow
-- Run `alto gap` to see what's missing from your project structure
-- Run `alto check` to verify quality gates pass
-- Read the [New Project Guide](/guides/new-project) for the full walkthrough
-- Read [Concepts](/guides/concepts) to understand why alto enforces DDD before coding
+- `alto guide --existing` — run discovery on an existing codebase
+- `alto gap` — analyze project for structural gaps
+- `alto check` — verify quality gates pass
+- [New Project Guide](/altoiddd/guides/new-project) — full walkthrough
+- [Concepts](/altoiddd/guides/concepts) — why alto enforces DDD before coding
