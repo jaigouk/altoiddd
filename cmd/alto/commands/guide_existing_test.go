@@ -323,7 +323,21 @@ func TestGuideExisting_UserDeclines_ReturnsErrInferenceDismissed(t *testing.T) {
 func TestGuideExisting_NoDocsFound_ReturnsErrInferenceDismissed(t *testing.T) {
 	t.Parallel()
 
-	inferenceHandler, artifactHandler, _ := setupExistingTest(t, nil, fmt.Errorf("no docs"))
+	// alty-cli-dfd: this test exercises the genuine "no docs anywhere" path,
+	// which under the new error semantics is signalled by an empty doc map
+	// (handler returns ErrNoDocsFound) — not by a ReadDocs error. The CLI then
+	// retries "." (also empty here) and prints the generic message.
+	docReader := &stubDocReader{docs: map[string]string{}}
+	llmReader := &stubLLMDocReader{}
+	regexImporter := &stubRegexImporter{}
+	inferenceHandler := application.NewDocInferenceHandler(docReader, llmReader, regexImporter)
+
+	bus := eventbus.NewBus()
+	t.Cleanup(func() { _ = bus.Close() })
+	publisher := eventbus.NewPublisher(bus)
+	fw := newStubFileWriter()
+	artifactHandler := application.NewArtifactGenerationHandler(&stubArtifactRenderer{}, fw, publisher)
+
 	prompter := &stubPrompterChoice{choice: "y"}
 	var out bytes.Buffer
 
@@ -359,7 +373,9 @@ func TestGuideExisting_PromptError_PropagatesError(t *testing.T) {
 func TestGuideExisting_DocsDir_TriesDocsThenRoot(t *testing.T) {
 	t.Parallel()
 
-	// Use a doc reader that fails for "docs" but succeeds for ".".
+	// alty-cli-dfd: the CLI now retries "." only when "docs" reports
+	// ErrNoDocsFound (i.e. handler returned empty), not for arbitrary ReadDocs
+	// errors. Return an empty map for "docs" to trigger the fallback.
 	callCount := 0
 	docsDir := ""
 	docReader := &trackingDocReader{
@@ -367,7 +383,7 @@ func TestGuideExisting_DocsDir_TriesDocsThenRoot(t *testing.T) {
 			callCount++
 			docsDir = dir
 			if dir == "docs" {
-				return nil, fmt.Errorf("no docs directory")
+				return map[string]string{}, nil
 			}
 			return map[string]string{"README.md": "# Root README"}, nil
 		},

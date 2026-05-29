@@ -213,13 +213,31 @@ func runGuideExistingWithDeps(
 	prompter application.StorytellingPrompter,
 	w io.Writer,
 ) error {
-	// Try "docs" first, fall back to ".".
+	// Try "docs" first; only fall back to "." when "docs" reports ErrNoDocsFound.
+	// Any other failure (LLM error, regex failure) is surfaced as a structured
+	// InferenceFailedError so we can show the user which docs we found and why
+	// inference failed — instead of a generic "no documentation found" message.
 	result, err := inferenceHandler.InferFromDocs(ctx, "docs")
 	if err != nil {
-		result, err = inferenceHandler.InferFromDocs(ctx, ".")
+		if errors.Is(err, domain.ErrNoDocsFound) {
+			// "docs" directory has nothing useful; try the project root.
+			result, err = inferenceHandler.InferFromDocs(ctx, ".")
+		}
 	}
 	if err != nil {
-		_, _ = fmt.Fprintln(w, "No documentation found for inference. Falling through to storytelling...")
+		var failed *domain.InferenceFailedError
+		switch {
+		case errors.As(err, &failed):
+			_, _ = fmt.Fprintf(w,
+				"Found %d doc(s) (%s) but inference failed: %v. Falling through to storytelling...\n",
+				len(failed.Docs), strings.Join(failed.Docs, ", "), failed.Reason,
+			)
+		case errors.Is(err, domain.ErrNoDocsFound):
+			_, _ = fmt.Fprintln(w, "No documentation found for inference. Falling through to storytelling...")
+		default:
+			// Unexpected error shape — still fall through but surface the cause.
+			_, _ = fmt.Fprintf(w, "Doc inference failed: %v. Falling through to storytelling...\n", err)
+		}
 		return domain.ErrInferenceDismissed
 	}
 

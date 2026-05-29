@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
 	"github.com/alto-cli/alto/internal/shared/infrastructure/llm"
@@ -28,14 +29,28 @@ func NewDocInferenceHandler(docReader DocReader, llmReader LLMDocReader, regexIm
 // InferFromDocs reads documentation files from docsDir, sends them to the LLM for
 // structured inference, and returns an InferenceResult. Falls back to regex-based
 // import when the LLM is unavailable.
+//
+// Error semantics (consumed by cmd/alto/commands/guide.go):
+//   - errors.Is(err, discoverydomain.ErrNoDocsFound) — docsDir reachable but empty;
+//     caller may try a fallback location.
+//   - errors.As(err, **discoverydomain.InferenceFailedError) — docs were discovered
+//     but the LLM or regex step failed; carries the sorted doc list and underlying reason.
 func (h *DocInferenceHandler) InferFromDocs(ctx context.Context, docsDir string) (*discoverydomain.InferenceResult, error) {
 	docs, err := h.docReader.ReadDocs(ctx, docsDir)
 	if err != nil {
 		return nil, fmt.Errorf("reading docs from %q: %w", docsDir, err)
 	}
 	if len(docs) == 0 {
-		return nil, fmt.Errorf("no documentation found in %q", docsDir)
+		return nil, fmt.Errorf("no documentation found in %q: %w", docsDir, discoverydomain.ErrNoDocsFound)
 	}
+
+	// Build the sorted source-doc list up front so it's available on either
+	// failure path (LLM error, regex fallback error, or fallback success).
+	sourceDocs := make([]string, 0, len(docs))
+	for name := range docs {
+		sourceDocs = append(sourceDocs, name)
+	}
+	sort.Strings(sourceDocs)
 
 	result, err := h.llmReader.InferModel(ctx, docs)
 	if err == nil {
@@ -44,18 +59,13 @@ func (h *DocInferenceHandler) InferFromDocs(ctx context.Context, docsDir string)
 
 	// Only fallback on ErrLLMUnavailable; other errors are real failures.
 	if !errors.Is(err, llm.ErrLLMUnavailable) {
-		return nil, fmt.Errorf("LLM inference failed: %w", err)
+		return nil, &discoverydomain.InferenceFailedError{Docs: sourceDocs, Reason: err}
 	}
 
 	// Fallback to regex-based import.
 	model, regexErr := h.regexImporter.Import(ctx, docsDir)
 	if regexErr != nil {
-		return nil, fmt.Errorf("regex fallback failed: %w", regexErr)
-	}
-
-	sourceDocs := make([]string, 0, len(docs))
-	for name := range docs {
-		sourceDocs = append(sourceDocs, name)
+		return nil, &discoverydomain.InferenceFailedError{Docs: sourceDocs, Reason: regexErr}
 	}
 
 	fallbackResult, resultErr := discoverydomain.NewInferenceResult(model, "low", sourceDocs)

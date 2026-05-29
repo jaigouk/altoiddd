@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	application "github.com/alto-cli/alto/internal/discovery/application"
 	domain "github.com/alto-cli/alto/internal/discovery/domain"
@@ -65,7 +66,7 @@ func (d *AlgorithmicDetector) DetectBoundaries(
 		return d.detectWorkObjectClusters(stories)
 	}
 
-	return d.clusterAndScore(allSignals)
+	return d.clusterAndScore(stories, allSignals)
 }
 
 // signalWithContext wraps a BoundarySignal with the actors, work objects, and
@@ -475,7 +476,7 @@ func (d *AlgorithmicDetector) detectWorkObjectClusters(stories []*domain.DomainS
 
 	var sketches []domain.BoundedContextSketch
 
-	for _, root := range roots {
+	for rootIdx, root := range roots {
 		indices := groups[root]
 
 		actorSet := make(map[string]struct{})
@@ -483,9 +484,12 @@ func (d *AlgorithmicDetector) detectWorkObjectClusters(stories []*domain.DomainS
 
 		var storyTitles []string
 
+		clusterStories := make([]*domain.DomainStory, 0, len(indices))
+
 		for _, idx := range indices {
 			story := stories[idx]
 			storyTitles = append(storyTitles, story.Title())
+			clusterStories = append(clusterStories, story)
 
 			for name := range buildActorNameSet(story) {
 				actorSet[name] = struct{}{}
@@ -496,7 +500,7 @@ func (d *AlgorithmicDetector) detectWorkObjectClusters(stories []*domain.DomainS
 			}
 		}
 
-		name := deriveName(actorSet, woSet)
+		name := deriveName(clusterStories, actorSet, woSet, rootIdx+1)
 
 		desc := fmt.Sprintf("stories [%s] clustered by shared work objects", strings.Join(storyTitles, ", "))
 
@@ -530,14 +534,26 @@ func (d *AlgorithmicDetector) detectWorkObjectClusters(stories []*domain.DomainS
 // --- Clustering and Scoring ---
 
 func (d *AlgorithmicDetector) clusterAndScore(
+	stories []*domain.DomainStory,
 	signals []signalWithContext,
 ) ([]domain.BoundedContextSketch, error) {
 	// Group signals by overlap of actors/work objects.
 	clusters := d.clusterSignals(signals)
 
+	// Index stories by title so each cluster can recover its source stories
+	// without scanning the full slice on every iteration.
+	storyByTitle := make(map[string]*domain.DomainStory, len(stories))
+	for _, story := range stories {
+		if story == nil {
+			continue
+		}
+
+		storyByTitle[story.Title()] = story
+	}
+
 	var sketches []domain.BoundedContextSketch
 
-	for _, cluster := range clusters {
+	for clusterIdx, cluster := range clusters {
 		if len(cluster) == 0 {
 			continue
 		}
@@ -598,7 +614,15 @@ func (d *AlgorithmicDetector) clusterAndScore(
 			score = 1.0
 		}
 
-		name := deriveName(actorSet, woSet)
+		clusterStories := make([]*domain.DomainStory, 0, len(storySet))
+
+		for title := range storySet {
+			if story, ok := storyByTitle[title]; ok {
+				clusterStories = append(clusterStories, story)
+			}
+		}
+
+		name := deriveName(clusterStories, actorSet, woSet, clusterIdx+1)
 		actors := setToSlice(actorSet)
 		workObjects := setToSlice(woSet)
 		storyTitles := setToSlice(storySet)
@@ -692,43 +716,160 @@ func (d *AlgorithmicDetector) clusterSignals(signals []signalWithContext) [][]si
 	return clusters
 }
 
-// deriveName creates a sketch name from dominant actors and work objects.
+// deriveName creates a sketch name by selecting the dominant work object in
+// the cluster, falling back to actors when no work objects are present, and
+// finally to a deterministic "Context <n>" label when the cluster carries no
+// nameable entities. Variant work-object names that differ only by a leading
+// "Updated "/"New "/"Modified " prefix are merged under their canonical form.
+//
 // TODO: plural stripping deferred — add in follow-up ticket.
-func deriveName(actors, workObjects map[string]struct{}) string {
-	var parts []string
-
-	// Prefer work objects for naming (they describe "what" the context is about).
-	for wo := range workObjects {
-		parts = append(parts, capitalize(wo))
+func deriveName(
+	stories []*domain.DomainStory,
+	actors, workObjects map[string]struct{},
+	clusterIdx int,
+) string {
+	if len(actors) == 0 && len(workObjects) == 0 {
+		return fmt.Sprintf("Context %d", clusterIdx)
 	}
 
-	if len(parts) == 0 {
-		for a := range actors {
-			parts = append(parts, capitalize(a))
+	if len(workObjects) > 0 {
+		if name := dominantWorkObjectName(stories, workObjects); name != "" {
+			return name
 		}
 	}
 
-	if len(parts) == 0 {
-		return "Unknown"
+	if name := dominantActorName(actors); name != "" {
+		return name
 	}
 
-	sort.Strings(parts)
-
-	// Limit to 2 parts for readability.
-	if len(parts) > 2 {
-		parts = parts[:2]
-	}
-
-	return strings.Join(parts, "-")
+	return fmt.Sprintf("Context %d", clusterIdx)
 }
 
-// capitalize returns s with its first letter uppercased.
-func capitalize(s string) string {
-	if s == "" {
-		return s
+// dominantWorkObjectName counts how many cluster sentences mention each work
+// object name in workObjects, merges counts under canonicalized keys, and
+// returns the canonical name with the highest count (alphabetical tie-break).
+// Returns "" when all canonicalized names are empty.
+func dominantWorkObjectName(stories []*domain.DomainStory, workObjects map[string]struct{}) string {
+	// Per-WO sentence counts (keys are lowercase raw WO names from the cluster).
+	rawCounts := make(map[string]int, len(workObjects))
+	for wo := range workObjects {
+		rawCounts[wo] = 0
 	}
 
-	return strings.ToUpper(s[:1]) + s[1:]
+	for _, story := range stories {
+		if story == nil {
+			continue
+		}
+
+		for _, sentence := range story.Sentences() {
+			obj := strings.ToLower(sentence.Object())
+			if _, ok := rawCounts[obj]; ok {
+				rawCounts[obj]++
+			}
+		}
+	}
+
+	// Merge counts under canonical keys.
+	canonicalCounts := make(map[string]int, len(rawCounts))
+
+	for raw, count := range rawCounts {
+		canonical := canonicalizeName(raw)
+		if canonical == "" {
+			continue
+		}
+
+		canonicalCounts[canonical] += count
+	}
+
+	return pickHighestCount(canonicalCounts)
+}
+
+// dominantActorName picks an actor name when no work objects are present.
+// Actor names lack the sentence-count signal, so selection is purely
+// alphabetical over canonicalized names. Returns "" when all canonicalize
+// to empty.
+func dominantActorName(actors map[string]struct{}) string {
+	canonical := make(map[string]int, len(actors))
+
+	for a := range actors {
+		name := canonicalizeName(a)
+		if name == "" {
+			continue
+		}
+
+		// Use a constant count so pickHighestCount falls back to alphabetical order.
+		canonical[name] = 1
+	}
+
+	return pickHighestCount(canonical)
+}
+
+// pickHighestCount returns the name with the highest count. Ties are broken
+// alphabetically (deterministic). Returns "" when the map is empty.
+func pickHighestCount(counts map[string]int) string {
+	if len(counts) == 0 {
+		return ""
+	}
+
+	names := make([]string, 0, len(counts))
+	for name := range counts {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+
+	best := names[0]
+	bestCount := counts[best]
+
+	for _, name := range names[1:] {
+		if counts[name] > bestCount {
+			best = name
+			bestCount = counts[name]
+		}
+	}
+
+	return best
+}
+
+// canonicalizeName trims whitespace, strips a single case-insensitive leading
+// "Updated "/"New "/"Modified " prefix, and title-cases the result so that
+// variant labels like "updated context map" collapse onto "Context Map".
+func canonicalizeName(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+
+	for _, prefix := range []string{"Updated ", "New ", "Modified "} {
+		if len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix) {
+			s = strings.TrimSpace(s[len(prefix):])
+
+			break
+		}
+	}
+
+	return titleCaseTokens(s)
+}
+
+// titleCaseTokens uppercases the first rune of each whitespace-separated token while
+// preserving the remaining runes verbatim. Empty input returns empty.
+func titleCaseTokens(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	tokens := strings.Split(s, " ")
+	for i, tok := range tokens {
+		if tok == "" {
+			continue
+		}
+
+		runes := []rune(tok)
+		runes[0] = unicode.ToUpper(runes[0])
+		tokens[i] = string(runes)
+	}
+
+	return strings.Join(tokens, " ")
 }
 
 // --- Helpers ---

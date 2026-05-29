@@ -164,3 +164,102 @@ func TestDocInferenceHandler_InferFromDocs_WhenRegexFallbackFails_ReturnsError(t
 	require.Error(t, err)
 	assert.Nil(t, result)
 }
+
+// --- alty-cli-dfd: tests for typed inference failures ---
+
+func TestDocInferenceHandler_RegexFallbackFailure_WrapsAsInferenceFailed(t *testing.T) {
+	t.Parallel()
+
+	// Given: LLM unavailable triggers regex fallback, regex fails
+	regexErr := errors.New("no bounded contexts found")
+	docReader := &mockDocReader{docs: map[string]string{
+		"b.md": "# B",
+		"a.md": "# A",
+	}}
+	reader := &mockLLMDocReader{err: llm.ErrLLMUnavailable}
+	regex := &mockRegexImporter{err: regexErr}
+	handler := discoveryapp.NewDocInferenceHandler(docReader, reader, regex)
+
+	// When
+	result, err := handler.InferFromDocs(context.Background(), "/any/dir")
+
+	// Then
+	require.Error(t, err)
+	assert.Nil(t, result)
+
+	var failed *discoverydomain.InferenceFailedError
+	require.ErrorAs(t, err, &failed)
+	assert.NotEmpty(t, failed.Docs, "Docs must carry the discovered source files")
+	assert.Equal(t, []string{"a.md", "b.md"}, failed.Docs, "Docs must be sorted for deterministic output")
+	require.ErrorIs(t, err, regexErr, "underlying regex error must be reachable via errors.Is")
+	require.ErrorIs(t, err, discoverydomain.ErrInferenceFailed, "must satisfy the ErrInferenceFailed sentinel")
+}
+
+func TestDocInferenceHandler_LLMErrorNotUnavailable_WrapsAsInferenceFailed(t *testing.T) {
+	t.Parallel()
+
+	// Given: LLM returns a generic non-unavailable error; no fallback should run
+	llmErr := errors.New("malformed response")
+	docReader := &mockDocReader{docs: map[string]string{
+		"README.md":       "# Test",
+		"ARCHITECTURE.md": "# Arch",
+	}}
+	reader := &mockLLMDocReader{err: llmErr}
+	regex := &mockRegexImporter{}
+	handler := discoveryapp.NewDocInferenceHandler(docReader, reader, regex)
+
+	// When
+	result, err := handler.InferFromDocs(context.Background(), "/any/dir")
+
+	// Then
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.False(t, regex.called, "regex must not run when LLM error is not ErrLLMUnavailable")
+
+	var failed *discoverydomain.InferenceFailedError
+	require.ErrorAs(t, err, &failed)
+	assert.NotEmpty(t, failed.Docs, "Docs must carry the discovered source files")
+	assert.Equal(t, []string{"ARCHITECTURE.md", "README.md"}, failed.Docs, "Docs must be sorted")
+	require.ErrorIs(t, err, llmErr, "underlying LLM error must be reachable via errors.Is")
+	require.ErrorIs(t, err, discoverydomain.ErrInferenceFailed)
+}
+
+func TestDocInferenceHandler_NoDocsFound_ReturnsErrNoDocsFound(t *testing.T) {
+	t.Parallel()
+
+	// Given: doc reader returns an empty map (no inference-eligible docs)
+	docReader := &mockDocReader{docs: map[string]string{}}
+	reader := &mockLLMDocReader{}
+	regex := &mockRegexImporter{}
+	handler := discoveryapp.NewDocInferenceHandler(docReader, reader, regex)
+
+	// When
+	result, err := handler.InferFromDocs(context.Background(), "/empty/dir")
+
+	// Then
+	require.Error(t, err)
+	assert.Nil(t, result)
+	require.ErrorIs(t, err, discoverydomain.ErrNoDocsFound, "callers rely on this sentinel to attempt the '.' fallback")
+	assert.False(t, reader.called, "LLM must not be invoked when no docs are present")
+	assert.False(t, regex.called, "regex must not be invoked when no docs are present")
+}
+
+func TestDocInferenceHandler_RegexSuccess_NoError(t *testing.T) {
+	t.Parallel()
+
+	// Given: LLM unavailable, regex succeeds (regression guard for the fallback path)
+	model := ddd.NewDomainModel("regex-parsed")
+	docReader := &mockDocReader{docs: map[string]string{"DDD.md": "# DDD"}}
+	reader := &mockLLMDocReader{err: llm.ErrLLMUnavailable}
+	regex := &mockRegexImporter{model: model}
+	handler := discoveryapp.NewDocInferenceHandler(docReader, reader, regex)
+
+	// When
+	result, err := handler.InferFromDocs(context.Background(), "/any/dir")
+
+	// Then
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "low", result.Confidence())
+	assert.True(t, regex.called)
+}
