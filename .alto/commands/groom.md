@@ -15,7 +15,7 @@ The grooming checklist in CLAUDE.md has 8 steps. Steps 1-7 are mechanical checks
 ## Usage
 
 ```
-/groom alto-0m9.2           # Deep-groom one ticket
+/groom <ticket-id>           # Deep-groom one ticket
 ```
 
 Always groom ONE ticket at a time. Never batch-groom.
@@ -37,7 +37,7 @@ bd label list <ticket-id>
 |-------|------|--------|
 | Freshness | `bd label list <id>` | If `review_needed` → read ripple comments, resolve before proceeding |
 | PRD traceability | `/prd-traceability <id>` | Cross-reference ticket AC against PRD capabilities |
-| Template compliance | Manual | Compare description against `docs/beads_templates/beads-ticket-template.md` |
+| Template compliance | Manual | Compare description against `.alto/templates/beads-ticket-template.md` |
 
 If template sections are missing → draft them before proceeding.
 
@@ -51,25 +51,6 @@ Verify (can be done from the ticket description alone):
 - [ ] **SOLID mapping** — concrete implementations, not generic placeholders
 - [ ] **AC testability** — every acceptance criterion is testable, not vague
 
-### Phase 3.5 — Claim Verification
-
-Run automated verification of any quantitative claims in the ticket:
-
-```bash
-alto ticket-verify <ticket-id>
-```
-
-This detects claims like "**14 findings**" and verifies them against actual command output.
-
-| Result | Action |
-|--------|--------|
-| All claims verified | Proceed to Phase 4 |
-| Mismatch detected | Update ticket with correct values before proceeding |
-| No claims found | Proceed to Phase 4 (no quantitative claims to verify) |
-| Command not in allowlist | Note as UNVERIFIED in report |
-
-**If any claim has a significant discrepancy (>2x), the ticket NEEDS UPDATE before implementation.**
-
 ### Phase 4 — Implementation Simulation (THE CRITICAL STEP)
 
 **This is not optional. Read actual code. Trace actual chains.**
@@ -81,7 +62,7 @@ For EVERY file the ticket mentions or depends on, use the Read tool:
 - Existing handlers in the same bounded context (pattern reference)
 - Domain types used in signatures (entities, value objects, result types)
 - Infrastructure adapters (existing or to-be-created)
-- Composition root (`internal/composition/app.go`, `adapters.go`)
+- Composition root (project-specific path — see `groom.project.md`)
 
 **Do NOT say "verified" without citing the file and line you read.**
 
@@ -91,12 +72,12 @@ For each new struct the ticket creates, write out the full chain:
 
 ```
 NewXxxHandler(port)
-  → port type: XxxPort interface at internal/xxx/application/ports.go:NN
+  → port type: XxxPort interface at {application_layer}/ports.<ext>:NN
   → methods: Foo(ctx, string) (Result, error) — confirmed line NN
-  → adapter: XxxAdapter at internal/xxx/infrastructure/xxx_adapter.go
+  → adapter: XxxAdapter at {infrastructure_layer}/xxx_adapter.<ext>
   → adapter constructor: NewXxxAdapter(dep1, dep2)
   → dep1 comes from: ...
-  → wired in NewApp() at internal/composition/app.go:NN
+  → wired in NewApp() at {composition_root}:NN  # project-specific
   → imports needed: xxxapp, xxxinfra
 ```
 
@@ -111,7 +92,7 @@ For each method the ticket will call:
 
 #### 4d. Check for interface mismatches
 
-Read `internal/composition/adapters.go`. If adapter method signatures don't match the port, an adapter bridge is needed. The ticket must specify this.
+Read `{composition_root}/adapters.<ext>` (see project overlay). If adapter method signatures don't match the port, an adapter bridge is needed. The ticket must specify this.
 
 #### 4e. Cross-reference within the ticket
 
