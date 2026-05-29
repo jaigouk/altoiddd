@@ -11,9 +11,9 @@ Generate a ready-to-paste prompt for launching a multi-agent team from one or mo
 ## Usage
 
 ```
-/launch-team alty-cli-1wu                                  # single ticket
-/launch-team alty-cli-cgm alty-cli-dfd                     # multiple tickets
-/launch-team alty-cli-cgm alty-cli-dfd alty-cli-yl0
+/launch-team <ticket-id>                                  # single ticket
+/launch-team <id-1> <id-2>                     # multiple tickets
+/launch-team <id-1> <id-2> <id-3>
 ```
 
 ## Process
@@ -66,7 +66,7 @@ Map tickets to dev agents. Fixed roles (all live in `.claude/agents/`):
 - **qa-engineer** — test verification, edge cases, QA reports
 - **white-hacker** — security review
 
-One **developer** agent per ticket. Name them `dev-<ticket-id>` (e.g., `dev-alty-cli-1wu`).
+One **developer** agent per ticket. Name them `dev-<ticket-id>` (e.g., `dev-<ticket-id>` (e.g. `dev-acme-42`)).
 
 For a single ticket, the team is: tech-lead + 1 dev + qa-engineer + white-hacker.
 
@@ -104,7 +104,7 @@ From the tickets and code read in Step 2, extract settled design decisions:
 - Go types and their shapes (value objects, entities, aggregates)
 - Interface contracts (port signatures, return types, context-arg position)
 - Patterns to follow (reference existing code with file:line)
-- Domain events emitted or consumed (Watermill GoChannel)
+- Domain events emitted or consumed (project event bus)
 - Bounded context boundaries (which package owns what)
 - Constraints (what NOT to do — especially DDD layer rules)
 
@@ -122,8 +122,6 @@ Create a team for: <ticket titles, comma-separated>
 - `docs/DDD.md` — domain model, bounded contexts, ubiquitous language (canonical terms)
 - `docs/ARCHITECTURE.md` — technical architecture, port/adapter layout
 - `docs/PRD.md` — product requirements (for capability traceability)
-- `.golangci.yml` — lint config v2 (must pass with 0 issues)
-- `arch-go.yml` — DDD layer enforcement (domain cannot import application/infrastructure)
 
 ## Tickets
 
@@ -184,31 +182,19 @@ Phase 7 — TL invokes the `/handoff` skill to write a session-summary doc to
 
 ## Quality Gates (must pass at every checkpoint)
 
-```bash
-go build ./...                                   # 0 errors
-go vet ./...                                     # 0 errors
-golangci-lint run ./...                          # 0 issues (v2 strict config)
-go test ./... -race                              # all pass, ≥80% coverage on new domain code
-```
+Project-specific. See the `.project.md` sibling for this project's quality gate commands.
 
 ## Enforced Principles (non-negotiable)
 
 These must hold in every PR. If any change weakens them, escalate before merging:
 
-- **DDD layer rules** — `internal/{context}/domain/` has ZERO external deps;
-  dependencies flow inward: infrastructure → application → domain.
-  Enforced by `arch-go`.
 - **Ubiquitous Language** — names match `docs/DDD.md` glossary; do NOT introduce synonyms.
 - **Value Objects first** — default to immutable VOs; entities only when identity is needed.
 - **One aggregate per transaction** — reference other aggregates by ID, not by pointer.
 - **Port/Adapter** — handlers depend on port interfaces in the application layer,
   never on concrete adapters from infrastructure.
 - **TDD required** — RED (failing test) → GREEN (minimal code) → REFACTOR.
-- **CQRS-lite** — command handlers and query handlers are structurally separated;
-  queries have no side effects; events route through Watermill GoChannel.
 - **Wrapped errors** — `fmt.Errorf("doing X: %w", err)`; lowercase, no punctuation.
-- **Testify idioms** — `assert.Len`, `assert.Empty`, `assert.ErrorIs`, `require.Error`
-  for preconditions, `assert.InDelta` for floats (testifylint enforces).
 - **No git commit/push** without explicit user permission (CLAUDE.md Git Rules).
 - **No GitHub CLI** — repo is on private Git server; don't use `gh`.
 
@@ -258,5 +244,5 @@ For a single-wave run drop the `WAVE <n> of <total>` suffix and the
 4. **Resolve file conflicts.** If two tickets own the same file, stop and ask the user.
 5. **No placeholders in output.** Every `<placeholder>` must be filled with real data. If you can't fill it, say what's missing.
 6. **Always cite the Enforced Principles in the prompt.** Teams that don't see them will accidentally break DDD/TDD/SOLID guarantees.
-7. **End every wave with `/handoff`.** Phase 7 in the generated prompt mandates a `.notes/handoff-<slug>.md` write-up. The handoff slug should be the ticket ID for a single-ticket wave (e.g., `handoff-alty-cli-1wu.md`), or a short wave name (`handoff-wave-1.md`, `handoff-discovery-redesign.md`) for a multi-ticket wave.
+7. **End every wave with `/handoff`.** Phase 7 in the generated prompt mandates a `.notes/handoff-<slug>.md` write-up. The handoff slug should be the ticket ID for a single-ticket wave (e.g., `handoff-<wave-or-ticket-id>.md`), or a short wave name (`handoff-wave-1.md`, `handoff-discovery-redesign.md`) for a multi-ticket wave.
 8. **Hard cap: 5 active agents per wave.** Running 10–11 in parallel has frozen the host (OOM). TL + QA + WH = 3 fixed slots, leaving 2 dev slots. More tickets → more waves. This is a host constraint, not a preference — never override it.
