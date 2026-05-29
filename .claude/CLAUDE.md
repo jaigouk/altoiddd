@@ -336,6 +336,17 @@ assert.InDelta(t, 42.0, val, 0)  // not assert.Equal(t, 42.0, val)
 - Commit format: `<type>: <description>` (feat/fix/test/refactor/docs/chore)
 - No GitHub -- repo is on private Git server. Do not use `gh` CLI.
 
+## Privacy Rules (OSS project)
+
+This is a public OSS project. Treat every file you produce as if it will be read by a stranger.
+
+- **No absolute home paths.** Never write `/home/<user>/...`, `/Users/<user>/...`, `~/Desktop/...`, or any absolute path that names a user's home directory. Use repo-relative paths (`docs/PRD.md`, `internal/bootstrap/...`, `.alto/commands/...`) or `<repo-root>/...` placeholders.
+- **No usernames or machine identifiers** (e.g. `kusanagi`, hostnames, personal emails like `someone@example.com`) in committed artifacts. The git author identity stays in commit metadata — do not duplicate it in file content, ticket descriptions, or doc bodies. The acceptable identity-bearing surfaces are: git history (immutable), `LICENSE`, and `CONTRIBUTING.md` (when explicitly written for OSS contact).
+- **Beads ticket and epic descriptions are committed code.** Privacy rules apply equally. When drafting bodies, scrub absolute paths, usernames, machine names, and external-system IDs that are not part of the public domain model before `bd create` / `bd update`.
+- **Spike reports + research artifacts**: cite repo-relative paths only. `file:line` citations use `internal/...:42`, not `/home/<user>/.../internal/...:42`.
+- **When unsure, prefer abstraction.** "the developer's checkout", "the operator's environment", "this repo" — all are better than `/home/<user>/...`.
+- **Scrub before commit.** Run `grep -rE '/home/[a-z]+/|<your-username>'` against staged files; treat any match as a blocker.
+
 ## Tooling
 
 - **Beads** (`bd`) -- Issue tracking in `.beads/issues.jsonl`
