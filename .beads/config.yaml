@@ -71,3 +71,5 @@ export.auto: true
 export.git-add: true
 
 export.interval: 30s
+
+export.path: "issues.jsonl"
