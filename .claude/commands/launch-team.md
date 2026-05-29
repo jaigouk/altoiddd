@@ -70,6 +70,34 @@ One **developer** agent per ticket. Name them `dev-<ticket-id>` (e.g., `dev-alty
 
 For a single ticket, the team is: tech-lead + 1 dev + qa-engineer + white-hacker.
 
+#### Hard cap: 5 active agents per wave
+
+**Never spawn more than 5 agents in parallel.** Running 10–11 agents has frozen
+the host with OOM. The cap is a system constraint, not a guideline — exceeding
+it crashes the session and loses unsaved progress for every teammate.
+
+The three fixed roles (TL + QA + WH) consume 3 slots. That leaves **2 developer
+slots per active wave**. Spike variants where `developer` is replaced by
+`researcher` follow the same cap (1 researcher per wave is typical; never more
+than 2).
+
+If the input list has more tickets than slots, split into **waves**:
+
+| Tickets in input | Waves | Per-wave team size |
+|------------------|-------|--------------------|
+| 1                | 1     | 4 (TL + 1 dev + QA + WH) |
+| 2                | 1     | 5 (TL + 2 devs + QA + WH) |
+| 3                | 2     | wave 1 = 5, wave 2 = 4 |
+| 4                | 2     | wave 1 = 5, wave 2 = 5 |
+| 5+               | ⌈N/2⌉ | each wave ≤ 5; respect dep order |
+
+Wave-split rules:
+1. **Respect `bd dep` order.** A blocked ticket must land in a wave AFTER its blocker.
+2. **Keep tickets that share files in the same wave** (the file-ownership map in Step 3 catches this).
+3. **Generate ONE prompt per wave.** Each wave gets its own fenced code block; label them `WAVE 1`, `WAVE 2`, … with the ticket IDs included in the wave's `Tickets:` header.
+4. **Hand-off between waves runs through `/handoff`.** Phase 7's `.notes/handoff-<slug>.md` is the entry point the next wave reads first.
+5. **Tell the user about the split** in the Step 7 preamble (e.g. `"3 tickets → 2 waves; paste wave 1 first, then wave 2 after the handoff lands"`).
+
 ### Step 5 — Extract Design Decisions
 
 From the tickets and code read in Step 2, extract settled design decisions:
@@ -104,7 +132,10 @@ Create a team for: <ticket titles, comma-separated>
 
 <Full ticket description from bd show>
 
-## Team Roster
+## Team Roster (max 5 agents — OOM cap)
+
+This wave runs at most 5 agents in parallel. TL + QA + WH = 3 slots fixed;
+that leaves 2 dev slots. Do NOT exceed.
 
 | Name | Agent | Ticket | Key Files |
 |------|-------|--------|-----------|
@@ -200,17 +231,24 @@ DO NOT modify files not in your ownership table.
 
 ### Step 7 — Present to User
 
-Show the generated prompt inside a code fence. Prefix it with:
+Show the generated prompt(s) inside fenced code blocks. If Step 4 split the
+input into multiple waves, output ONE block per wave, in order.
+
+Prefix each wave with:
 
 ```
-TEAM LAUNCH PROMPT
-Tickets: <list>
-Team size: <N> (TL + <N> devs + QA + WH)
+TEAM LAUNCH PROMPT — WAVE <n> of <total>
+Tickets: <ids in this wave>
+Team size: <N> (TL + <N> devs + QA + WH)   ← must be ≤ 5
 Files touched: <N>
 Conflicts: <none | list>
+Next wave entry point: .notes/handoff-<slug>.md  (omit on final wave)
 
-Copy the prompt below and paste it into a new session to launch the team.
+Copy the prompt below and paste it into a new session to launch this wave.
 ```
+
+For a single-wave run drop the `WAVE <n> of <total>` suffix and the
+`Next wave entry point` line.
 
 ## Rules
 
@@ -221,3 +259,4 @@ Copy the prompt below and paste it into a new session to launch the team.
 5. **No placeholders in output.** Every `<placeholder>` must be filled with real data. If you can't fill it, say what's missing.
 6. **Always cite the Enforced Principles in the prompt.** Teams that don't see them will accidentally break DDD/TDD/SOLID guarantees.
 7. **End every wave with `/handoff`.** Phase 7 in the generated prompt mandates a `.notes/handoff-<slug>.md` write-up. The handoff slug should be the ticket ID for a single-ticket wave (e.g., `handoff-alty-cli-1wu.md`), or a short wave name (`handoff-wave-1.md`, `handoff-discovery-redesign.md`) for a multi-ticket wave.
+8. **Hard cap: 5 active agents per wave.** Running 10–11 in parallel has frozen the host (OOM). TL + QA + WH = 3 fixed slots, leaving 2 dev slots. More tickets → more waves. This is a host constraint, not a preference — never override it.
