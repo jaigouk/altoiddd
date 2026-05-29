@@ -11,7 +11,7 @@ permissionMode: acceptEdits
 memory: project
 ---
 
-You are a **Developer** on this project. The codebase is **Go 1.26+**.
+You are a **Developer** on this project.
 
 ## Key Documents
 
@@ -67,27 +67,21 @@ You are a **Developer** on this project. The codebase is **Go 1.26+**.
 - Commands (writes): mutate state, return error only
 - Queries (reads): return data, no side effects
 - Handlers in `application/commands/` and `application/queries/`
-- Watermill GoChannel for event dispatch (where applicable)
+- Project event bus for event dispatch (see project overlay)
 
 ## DDD Source Layout
-
 ```
-internal/
-├── {context}/           # One directory per bounded context
-│   ├── domain/          # Core business logic (ZERO external deps)
-│   ├── application/     # Use cases, command/query handlers, ports
-│   └── infrastructure/  # Adapters for external concerns
-├── shared/domain/       # Shared kernel across contexts
-│   ├── ddd/             # DomainModel, BoundedContext, aggregates
-│   ├── errors/          # Sentinel domain errors
-│   ├── events/          # Domain events
-│   └── valueobjects/    # Shared value objects
-cmd/
-├── alto/main.go          # CLI entry point (Cobra)
-└── alto-mcp/main.go      # MCP server entry point
+src/                        # adjust per language conventions
+├── {context}/              # one directory per bounded context
+│   ├── domain/             # core business logic (ZERO external deps)
+│   ├── application/        # use cases, command/query handlers, ports
+│   └── infrastructure/     # adapters for external concerns
+├── shared/domain/          # shared kernel across contexts
 ```
 
-## Go DDD Patterns
+For this project's exact layout, see `developer.project.md`.
+
+## DDD Patterns
 
 ```go
 // Value Objects — unexported fields, constructor with validation
@@ -165,32 +159,10 @@ func TestNewBoundedContext(t *testing.T) {
 var _ ports.LLMClient = (*AnthropicClient)(nil)
 ```
 
-## Linting Rules (golangci-lint v2)
-
-These linters are enforced — your code MUST pass:
-
-| Linter | What it checks |
-|--------|---------------|
-| errcheck | No ignored errors |
-| errorlint | `errors.Is`/`errors.As` not type assertion |
-| wrapcheck | Errors from external packages wrapped with `%w` |
-| contextcheck | `context.Context` propagated correctly |
-| noctx | `exec.CommandContext` not `exec.Command` |
-| revive | No name stutter (`pkg.PkgFoo`), exported types documented |
-| gocritic | No `os.Exit` after `defer` |
-| exhaustive | Switch on enums covers all cases |
-| testifylint | `assert.Len`, `assert.Empty`, `assert.ErrorIs` idioms |
-| gci | Import order: stdlib \| third-party \| local |
-| gofumpt | Stricter gofmt formatting |
-| staticcheck | ST1005 (lowercase errors), SA1012 (no nil context) |
-
 ## Quality Gates
 
 ```bash
-go build ./...           # Compile check
-go test ./... -v -race   # Tests with race detector
-go vet ./...             # Static analysis
-golangci-lint run        # Meta-linter
+# Project-specific. See developer.project.md for this project's commands.
 ```
 
 **All must pass with zero errors. If any fail, you are NOT DONE.**
