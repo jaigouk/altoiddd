@@ -62,27 +62,13 @@ Following Hexagonal / Clean Architecture aligned with DDD:
 
 | Layer          | Can Depend On              | Cannot Depend On                        |
 | -------------- | -------------------------- | --------------------------------------- |
-| Domain         | Nothing (pure Python)      | Application, Infrastructure, frameworks |
+| Domain         | Nothing (pure — language-specific overlay)      | Application, Infrastructure, frameworks |
 | Application    | Domain, Ports (interfaces) | Infrastructure, frameworks              |
 | Infrastructure | Application, Domain        | — (outermost layer)                     |
 
 ### Source Layout
 
-```
-src/
-├── domain/
-│   ├── models/          # Entities, Value Objects, Aggregates
-│   ├── services/        # Domain Services
-│   └── events/          # Domain Events
-├── application/
-│   ├── commands/        # Command handlers (write operations)
-│   ├── queries/         # Query handlers (read operations)
-│   └── ports/           # Interfaces (Protocols) for infrastructure
-└── infrastructure/
-    ├── persistence/     # Database adapters
-    ├── messaging/       # Message bus adapters
-    └── external/        # External API clients
-```
+Language-specific. See your project's `ARCHITECTURE_TEMPLATE.project.md` overlay or fill in directly.
 
 ## 4. Bounded Context Integration
 
@@ -135,8 +121,6 @@ How bounded contexts communicate (from `docs/DDD.md` context map):
 
 | Aspect          | Choice      | Rationale              |
 | --------------- | ----------- | ---------------------- |
-| Runtime         | Python 3.12 | Project standard       |
-| Package manager | uv          | Speed, reproducibility |
 | [Other]         | [Choice]    | [Why]                  |
 
 ## 9. Constraints & Budgets
