@@ -93,5 +93,6 @@ docs/research/prototype/cli-dst/cli-dst-prototype
 
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
+.beads/proxieddb/
 .gstack/
 .playwright-mcp/

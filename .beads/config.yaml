@@ -65,3 +65,9 @@
 # - linear.api-key
 # - github.org
 # - github.repo
+
+export.auto: true
+
+export.git-add: true
+
+export.interval: 30s
