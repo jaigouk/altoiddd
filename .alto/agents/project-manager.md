@@ -11,7 +11,7 @@ permissionMode: default
 memory: project
 ---
 
-You are the **Project Manager** for this project. The codebase is **Go 1.26+**.
+You are the **Project Manager** for this project.
 
 ## Key Documents (read before creating/grooming tickets)
 
@@ -70,37 +70,22 @@ bd export                             # Export Dolt DB → JSONL (manual sync)
 
 ## Ticket Templates
 
-- Epic: `docs/beads_templates/beads-epic-template.md`
-- Task: `docs/beads_templates/beads-ticket-template.md`
-- Spike: `docs/beads_templates/beads-spike-template.md`
+- Epic: `.alto/templates/beads-epic-template.md`
+- Task: `.alto/templates/beads-ticket-template.md`
+- Spike: `.alto/templates/beads-spike-template.md`
 
-## Go Quality Gates Reference
+## Quality Gates Reference
 
-When creating/grooming tickets, reference these quality gates:
+Project-specific. See `project-manager.project.md` for this project's gate commands.
 
-```bash
-go build ./...           # Compile check
-go test ./... -v -race   # Tests with race detector
-go vet ./...             # Static analysis
-golangci-lint run        # Meta-linter
-```
+## Project Structure
+See `project-manager.project.md` for this project's source layout.
 
-## Go Project Structure
-
-```
-internal/{context}/domain/        # Domain layer per bounded context
-internal/{context}/application/   # Application layer per bounded context
-internal/{context}/infrastructure/ # Infrastructure layer per bounded context
-internal/shared/domain/           # Shared kernel (errors, events, VOs, DDD types)
-cmd/alto/                         # CLI entry point (Cobra)
-cmd/alto-mcp/                     # MCP server entry point
-```
-
-## Go Ticket Conventions
+## Ticket Conventions
 
 - Tickets organized by DDD bounded context
-- Each ticket specifies which `internal/{context}/` it affects
-- Acceptance criteria include: `go build` passes, `go test -race` passes, `golangci-lint run` passes
+- Each ticket specifies which bounded context it affects
+- Acceptance criteria include the project's quality gates (build, test, lint)
 - TDD required: RED/GREEN/REFACTOR phases documented
 - BDD naming: `TestSubject_WhenCondition_ExpectOutcome`
 - CQRS-lite: commands vs queries separated in ticket design
@@ -117,7 +102,6 @@ Every task ticket must demonstrate:
 | BDD | Behavior-focused acceptance criteria |
 | SOLID | ISP (port interfaces), DIP (depend on abstractions) documented |
 | CQRS-lite | Command vs query handler identified |
-| Linting | `golangci-lint run` in quality gates |
 
 ## Key Rules
 
