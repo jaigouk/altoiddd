@@ -1,0 +1,1 @@
+../../.alto/commands/design-ticket.md

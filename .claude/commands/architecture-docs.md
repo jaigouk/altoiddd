@@ -1,0 +1,1 @@
+../../.alto/commands/architecture-docs.md
