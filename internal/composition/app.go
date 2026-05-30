@@ -38,6 +38,8 @@ import (
 	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
 	ticketinfra "github.com/alto-cli/alto/internal/ticket/infrastructure"
 	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
+	ttinfra "github.com/alto-cli/alto/internal/tooltranslation/infrastructure"
 )
 
 // Version is the application version. Set via ldflags at build time.
@@ -78,12 +80,14 @@ type App struct {
 	TicketVerifyHandler     *ticketapp.TicketVerifyHandler
 
 	// --- ToolTranslation ---
-	ConfigGenerationHandler *ttapp.ConfigGenerationHandler
-	PersonaHandler          *ttapp.PersonaHandler
+	ConfigGenerationHandler        *ttapp.ConfigGenerationHandler
+	PersonaHandler                 *ttapp.PersonaHandler
+	WorkflowAssetGenerationHandler *ttapp.WorkflowAssetGenerationHandler
 
 	// --- DocHealth ---
-	DocHealthHandler *dochealthapp.DocHealthHandler
-	DocReviewHandler *dochealthapp.DocReviewHandler
+	DocHealthHandler      *dochealthapp.DocHealthHandler
+	DocReviewHandler      *dochealthapp.DocReviewHandler
+	ScaffoldHealthHandler *dochealthapp.ScaffoldHealthHandler
 
 	// --- Research ---
 	SpikeFollowUpHandler *researchapp.SpikeFollowUpHandler
@@ -247,8 +251,16 @@ func NewApp() (*App, error) {
 	ticketVerifyHandler := ticketapp.NewTicketVerifyHandler(ticketContentReader, commandRunner)
 	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter, publisher)
 	personaHandler := ttapp.NewPersonaHandler(fileWriter)
+	openCodeCommandAdapter := ttinfra.NewOpenCodeCommandAdapter()
+	workflowAssetRegistry := map[ttdomain.SupportedTool]ttapp.WorkflowAssetGeneration{
+		ttdomain.ToolOpenCode: openCodeCommandAdapter,
+	}
+	workflowAssetGenerationHandler := ttapp.NewWorkflowAssetGenerationHandler(workflowAssetRegistry)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
 	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
+	scaffoldWalker := dochealthinfra.NewFilesystemScaffoldWalker()
+	scaffoldRules := dochealthinfra.DefaultScaffoldRules()
+	scaffoldHealthHandler := dochealthapp.NewScaffoldHealthHandler(scaffoldWalker, scaffoldRules)
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
 	driftDetectionHandler := knowledgeapp.NewDriftDetectionHandler(driftDetector)
 	spikeFollowUpHandler := researchapp.NewSpikeFollowUpHandler(spikeFollowUpAdapter)
@@ -261,43 +273,45 @@ func NewApp() (*App, error) {
 	versionHandler := challengeapp.NewVersionHandler(fileReader, fileWriter, versionParser)
 
 	return &App{
-		BootstrapHandler:          bootstrapHandler,
-		ProjectDetector:           projectDetector,
-		GitCommitter:              gitCommitter,
-		DocImportHandler:          docImportHandler,
-		DetectionHandler:          detectionHandler,
-		DiscoveryHandler:          discoveryHandler,
-		ArtifactGenerationHandler: artifactGenerationHandler,
-		DocInferenceHandler:       docInferenceHandler,
-		BoundaryDetector:          hybridDetector,
-		DomainResearcher:          domainResearcher,
-		GlossaryExportHandler:     glossaryExportHandler,
-		ContextMapExportHandler:   contextMapExportHandler,
-		PlantUMLExportHandler:     plantUMLExportHandler,
-		EgnExportHandler:          egnExportHandler,
-		DiscoveryReportHandler:    discoveryReportHandler,
-		FitnessGenerationHandler:  fitnessGenerationHandler,
-		QualityGateHandler:        qualityGateHandler,
-		TicketGenerationHandler:   ticketGenerationHandler,
-		TicketHealthHandler:       ticketHealthHandler,
-		TicketVerifyHandler:       ticketVerifyHandler,
-		ConfigGenerationHandler:   configGenerationHandler,
-		PersonaHandler:            personaHandler,
-		DocHealthHandler:          docHealthHandler,
-		DocReviewHandler:          docReviewHandler,
-		SpikeFollowUpHandler:      spikeFollowUpHandler,
-		KnowledgeLookupHandler:    knowledgeLookupHandler,
-		DriftDetectionHandler:     driftDetectionHandler,
-		RescueHandler:             rescueHandler,
-		GapQueryHandler:           gapQueryHandler,
-		ChallengeHandler:          challengeHandler,
-		VersionHandler:            versionHandler,
-		LLMClient:                 llmClient,
-		EventBus:                  bus,
-		Subscriber:                subscriber,
-		WorkflowCoordinator:       coordinator,
-		Version:                   Version,
-		cancelEvents:              cancelSub,
+		BootstrapHandler:               bootstrapHandler,
+		ProjectDetector:                projectDetector,
+		GitCommitter:                   gitCommitter,
+		DocImportHandler:               docImportHandler,
+		DetectionHandler:               detectionHandler,
+		DiscoveryHandler:               discoveryHandler,
+		ArtifactGenerationHandler:      artifactGenerationHandler,
+		DocInferenceHandler:            docInferenceHandler,
+		BoundaryDetector:               hybridDetector,
+		DomainResearcher:               domainResearcher,
+		GlossaryExportHandler:          glossaryExportHandler,
+		ContextMapExportHandler:        contextMapExportHandler,
+		PlantUMLExportHandler:          plantUMLExportHandler,
+		EgnExportHandler:               egnExportHandler,
+		DiscoveryReportHandler:         discoveryReportHandler,
+		FitnessGenerationHandler:       fitnessGenerationHandler,
+		QualityGateHandler:             qualityGateHandler,
+		TicketGenerationHandler:        ticketGenerationHandler,
+		TicketHealthHandler:            ticketHealthHandler,
+		TicketVerifyHandler:            ticketVerifyHandler,
+		ConfigGenerationHandler:        configGenerationHandler,
+		PersonaHandler:                 personaHandler,
+		WorkflowAssetGenerationHandler: workflowAssetGenerationHandler,
+		DocHealthHandler:               docHealthHandler,
+		DocReviewHandler:               docReviewHandler,
+		ScaffoldHealthHandler:          scaffoldHealthHandler,
+		SpikeFollowUpHandler:           spikeFollowUpHandler,
+		KnowledgeLookupHandler:         knowledgeLookupHandler,
+		DriftDetectionHandler:          driftDetectionHandler,
+		RescueHandler:                  rescueHandler,
+		GapQueryHandler:                gapQueryHandler,
+		ChallengeHandler:               challengeHandler,
+		VersionHandler:                 versionHandler,
+		LLMClient:                      llmClient,
+		EventBus:                       bus,
+		Subscriber:                     subscriber,
+		WorkflowCoordinator:            coordinator,
+		Version:                        Version,
+		cancelEvents:                   cancelSub,
 	}, nil
 }
 

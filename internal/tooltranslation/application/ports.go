@@ -25,3 +25,21 @@ type PersonaManager interface {
 	// Generate generates persona configuration files for specified tools.
 	Generate(ctx context.Context, personaName string, tools []string, outputDir string) error
 }
+
+// WorkflowAssetGeneration renders .alto/commands/*.md workflow assets
+// into tool-native command formats. Sibling port to ConfigGeneration
+// (which renders a DomainModel). Distinct concern — file-source-based,
+// not model-based.
+//
+// Implementations read every primary `<name>.md` under sourceDir (skipping
+// `<name>.project.md` overlay siblings), merge in any matching overlay,
+// transform the body (bash-block stripping, template inlining), and emit
+// per-tool command files under outputDir.
+type WorkflowAssetGeneration interface {
+	// GenerateFromAssets renders all workflow assets under sourceDir into
+	// tool-native command files under outputDir. Non-fatal per-asset
+	// errors (e.g. ErrInvocationProtectionNotSupported,
+	// ErrMissingTemplate) are aggregated and returned alongside any
+	// successfully written files.
+	GenerateFromAssets(ctx context.Context, sourceDir string, outputDir string) error
+}

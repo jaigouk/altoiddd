@@ -101,11 +101,11 @@ Edges: `.2 → {.5, .7}`; `.5 → .4`; `.7 → .6`. So `.4` waits on `{.2, .5}`;
 
 ### Summary
 
-| Wave | Tickets | Agents | Wall-clock dep |
-|------|---------|--------|----------------|
-| 1 | 766.2 | 4 | (no blocker — start now) |
-| 2 | 766.5 + 766.7 | 5 | after Wave 1 closes |
-| 3 | 766.4 + 766.6 | 5 | after Wave 2 closes |
+| Wave | Tickets | Agents | Status |
+|------|---------|--------|--------|
+| 1 | 766.2 | 4 | ✅ closed |
+| 2 | 766.5 + 766.7 | 5 | ✅ closed (2026-05-30) — handoff `.notes/handoff-wave-2-adapters.md` |
+| 3 | 766.4 + 766.6 | 5 | ⏳ ready (Wave 2 unblocked both) |
 
 3 waves total. Each wave's `/launch-team` prompt should be generated via `.claude/commands/launch-team.md` — that command already enforces the 5-agent cap (rule #8) and writes `WAVE <n> of <total>` headers (Step 7).
 
@@ -145,4 +145,4 @@ Settled decisions from spike alty-cli-766.1:
 - Generic vs alto-specific split: `.project.md` overlay siblings (NOT placeholders, NOT layered CLAUDE.md alone)
 - Slash-command continuity: symlink bridge in repo (interim); `additionalDirectories` deferred to follow-up #2
 - Shipping mechanism: `alto init --with-scaffold` via Go `embed.FS`
-- Tool translation: extends existing `internal/tooltranslation/application/ConfigGeneration` port; adapters under `internal/tooltranslation/infrastructure/`
+- Tool translation: new sibling port `WorkflowAssetGeneration` in `internal/tooltranslation/application/` (NOT modifying `ConfigGeneration`); adapters under `internal/tooltranslation/infrastructure/`. Reconciled with L118 after alty-cli-766.5 grooming surfaced LSP violation in the older spike wording.
