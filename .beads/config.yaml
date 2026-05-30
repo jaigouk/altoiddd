@@ -73,3 +73,5 @@ export.git-add: true
 export.interval: 30s
 
 export.path: "issues.jsonl"
+
+dolt.auto-push: false
