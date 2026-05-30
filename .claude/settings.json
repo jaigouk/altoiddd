@@ -13,7 +13,11 @@
       "Bash(command -v yq)",
       "Bash(yq --version)",
       "Bash(command -v uvx)",
-      "Bash(uvx --from pyyaml python3 -c ' *)"
+      "Bash(uvx --from pyyaml python3 -c ' *)",
+      "Bash(cp .beads/issues.jsonl /tmp/issues-before-server-init.jsonl && bd init --force --server --prefix alty-cli --from-jsonl --skip-agents --skip-hooks --destroy-token \"DESTROY-alty-cli\" 2>&1 | tail -25)"
+    ],
+    "additionalDirectories": [
+      "/home/kusanagi/Alty/alto/.beads"
     ]
   }
 }
