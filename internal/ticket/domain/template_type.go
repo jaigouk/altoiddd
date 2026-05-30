@@ -1,7 +1,7 @@
 package domain
 
 // TemplateType represents the type of beads template to use when creating a ticket.
-// Maps to templates in docs/beads_templates/:
+// Maps to templates in .alto/templates/:
 //   - epic: beads-epic-template.md
 //   - task: beads-ticket-template.md
 //   - spike: beads-spike-template.md

@@ -131,10 +131,14 @@ alto/
 │   └── integration/             # Cross-context integration tests
 ├── docs/
 │   ├── PRD.md                   # Product requirements
-│   ├── templates/               # PRD, DDD Story, Architecture templates
-│   ├── beads_templates/         # Epic, spike, ticket templates
-│   ├── spikes/                  # Research spike definitions
 │   └── research/                # Spike output reports
+├── .alto/                       # Scaffold root (commands, agents, templates, skills)
+│   ├── CONTEXT.md               # Ubiquitous-language glossary
+│   ├── commands/                # Slash commands (GENERIC + .project.md OVERLAY siblings)
+│   ├── agents/                  # Agent personas (GENERIC + .project.md OVERLAY siblings)
+│   ├── templates/               # PRD, DDD Story, Architecture, beads templates
+│   ├── skills/                  # Reserved for shipped alto skills
+│   └── lifecycle/               # in-progress/ + deprecated/
 ├── .claude/
 │   ├── CLAUDE.md                # This file
 │   ├── agents/                  # Agent personas
@@ -351,8 +355,8 @@ This is a public OSS project. Treat every file you produce as if it will be read
 
 - **Beads** (`bd`) -- Issue tracking in `.beads/issues.jsonl`
 - **Context7** -- MCP server for library docs
-- **Templates** -- `docs/beads_templates/` (epic, spike, ticket)
-- **Doc Templates** -- `docs/templates/` (PRD, DDD Story, Architecture)
+- **Templates** -- `.alto/templates/` (epic, spike, ticket)
+- **Doc Templates** -- `.alto/templates/` (PRD, DDD Story, Architecture)
 - **golangci-lint v2** -- Strict lint config in `.golangci.yml`
 - **Watermill** -- Event bus (GoChannel for local, NATS for distributed)
 - **Cobra** -- CLI framework

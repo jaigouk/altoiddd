@@ -22,8 +22,9 @@ vendor/
 .DS_Store
 Thumbs.db
 
-# Notes (private, not tracked)
-.notes/
+# Notes (private, not tracked) — order.md whitelisted for scaffold migration registration (alty-cli-766.2)
+/.notes/*
+!/.notes/order.md
 
 # Demo project (local-only, for meetup recording)
 demo/
