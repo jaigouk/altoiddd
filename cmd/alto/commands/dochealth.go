@@ -10,53 +10,97 @@ import (
 )
 
 // NewDocHealthCmd creates the "alto doc-health" command.
+//
+// Modes:
+//   - Default: validates docs/ (registered docs + unregistered scan)
+//   - --paths: also validates scaffold assets under the given directories
+//     (e.g. --paths=.alto/). Multi-value: --paths=.alto/,custom-dir/ or
+//     repeat the flag.
+//
+// Exit code is non-zero when EITHER mode reports issues.
 func NewDocHealthCmd(app *composition.App) *cobra.Command {
-	return &cobra.Command{
+	var paths []string
+	cmd := &cobra.Command{
 		Use:   "doc-health [project-dir]",
 		Short: "Check documentation freshness and health",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projectDir := "."
-			if len(args) > 0 {
-				projectDir = args[0]
-			}
+			var docHealthFailed, scaffoldFailed bool
 
-			report, err := app.DocHealthHandler.Handle(
-				context.Background(), projectDir,
-			)
-			if err != nil {
-				return fmt.Errorf("doc health: %w", err)
-			}
-
-			fmt.Println("Doc Health Report")
-			fmt.Println("----------------------------------------")
-
-			for _, status := range report.Statuses() {
-				icon := "  ? "
-				switch string(status.Status()) {
-				case "ok":
-					icon = "  OK"
-				case "stale":
-					icon = "  !!"
-				case "missing":
-					icon = "  XX"
-				case "no_frontmatter":
-					icon = "  ! "
+			// docs/ freshness runs when (a) no --paths is given (legacy
+			// invocation) OR (b) a positional project-dir is provided
+			// alongside --paths. `--paths=.alto/` alone is purely scaffold.
+			runDocs := len(paths) == 0 || len(args) > 0
+			if runDocs {
+				projectDir := "."
+				if len(args) > 0 {
+					projectDir = args[0]
 				}
-				fmt.Printf("%s %-40s %s\n", icon, status.Path(), status.Status())
+				report, err := app.DocHealthHandler.Handle(context.Background(), projectDir)
+				if err != nil {
+					return fmt.Errorf("doc health: %w", err)
+				}
+				fmt.Println("Doc Health Report")
+				fmt.Println("----------------------------------------")
+				for _, status := range report.Statuses() {
+					icon := "  ? "
+					switch string(status.Status()) {
+					case "ok":
+						icon = "  OK"
+					case "stale":
+						icon = "  !!"
+					case "missing":
+						icon = "  XX"
+					case "no_frontmatter":
+						icon = "  ! "
+					}
+					fmt.Printf("%s %-40s %s\n", icon, status.Path(), status.Status())
+				}
+				fmt.Println()
+				fmt.Printf("Summary: %d checked, %d issue(s) found\n",
+					report.TotalChecked(), report.IssueCount())
+				if report.HasIssues() {
+					docHealthFailed = true
+				}
 			}
 
-			fmt.Println()
-			fmt.Printf("Summary: %d checked, %d issue(s) found\n",
-				report.TotalChecked(), report.IssueCount())
+			for _, p := range paths {
+				if err := runScaffoldCheck(cmd, app, p, &scaffoldFailed); err != nil {
+					return err
+				}
+			}
 
-			if report.HasIssues() {
+			if docHealthFailed || scaffoldFailed {
 				return fmt.Errorf("documentation health check found issues")
 			}
-
 			return nil
 		},
 	}
+	cmd.Flags().StringSliceVar(&paths, "paths", nil,
+		"Comma-separated additional paths to validate (e.g. --paths=.alto/,custom-dir/)")
+	return cmd
+}
+
+func runScaffoldCheck(cmd *cobra.Command, app *composition.App, altoDir string, failed *bool) error {
+	out := cmd.OutOrStdout()
+	report, err := app.ScaffoldHealthHandler.Handle(context.Background(), altoDir)
+	if err != nil {
+		return fmt.Errorf("scaffold health %s: %w", altoDir, err)
+	}
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintf(out, "Scaffold Health Report — %s\n", altoDir)
+	_, _ = fmt.Fprintln(out, "----------------------------------------")
+	for _, v := range report.Violations() {
+		_, _ = fmt.Fprintf(out, "  %s  %-32s  %s — %s\n",
+			v.Severity(), v.Rule(), v.File(), v.Message())
+	}
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintf(out, "Summary: %d violation(s) (%d error, %d warning)\n",
+		report.TotalCount(), report.ErrorCount(), report.WarningCount())
+	if report.HasErrors() {
+		*failed = true
+	}
+	return nil
 }
 
 // NewDocReviewCmd creates the "alto doc-review" command with subcommands.

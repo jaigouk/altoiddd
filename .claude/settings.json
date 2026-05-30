@@ -14,10 +14,15 @@
       "Bash(yq --version)",
       "Bash(command -v uvx)",
       "Bash(uvx --from pyyaml python3 -c ' *)",
-      "Bash(cp .beads/issues.jsonl /tmp/issues-before-server-init.jsonl && bd init --force --server --prefix alty-cli --from-jsonl --skip-agents --skip-hooks --destroy-token \"DESTROY-alty-cli\" 2>&1 | tail -25)"
+      "Bash(cp .beads/issues.jsonl /tmp/issues-before-server-init.jsonl && bd init --force --server --prefix alty-cli --from-jsonl --skip-agents --skip-hooks --destroy-token \"DESTROY-alty-cli\" 2>&1 | tail -25)",
+      "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks\\)/' /tmp/t5.txt)",
+      "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks\\)/' /tmp/t7.txt)",
+      "Bash(command -v arch-go)",
+      "Bash(rm -f .git/index.lock && git status --short 2>&1 | head -3 && echo \"---\" && git reset HEAD .beads/issues.jsonl 2>&1 | head -3)"
     ],
     "additionalDirectories": [
-      "/home/kusanagi/Alty/alto/.beads"
+      "/home/kusanagi/Alty/alto/.beads",
+      "/home/kusanagi/Alty/alto/.git"
     ]
   }
 }
