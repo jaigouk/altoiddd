@@ -5,7 +5,12 @@ description: >
   task progress, groom backlogs, create epics/tasks/spikes, and coordinate
   work across teammates. Invoke whenever work needs to be planned, assigned,
   tracked, or closed.
-tools: Read, Grep, Glob, Bash, Write, Edit
+kind: agent
+phase: groom
+when_to_use: When managing beads tickets, grooming backlogs, or coordinating work across teammates
+tools_required: Read, Grep, Glob, Bash, Write, Edit
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: default
 memory: project

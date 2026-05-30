@@ -5,7 +5,12 @@ description: >
   changes for architecture review, DDD/SOLID/CQRS-lite compliance, code review,
   and quality gate enforcement. Also invoke before structural changes to verify
   alignment with ARCHITECTURE.md. Go codebase with strict linting.
-tools: Read, Grep, Glob, Bash, Write, Edit
+kind: agent
+phase: review
+when_to_use: When reviewing architecture, DDD/SOLID compliance, or enforcing quality gates after code changes
+tools_required: Read, Grep, Glob, Bash, Write, Edit
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: default
 memory: project
@@ -113,3 +118,31 @@ Project-specific. See `tech-lead.project.md` for this project's lint config and 
 - NEVER approve work where quality gates fail.
 - NEVER approve code where `go build` fails.
 - Unblock developers fast. A decision now beats a perfect decision next week.
+
+## Long-running Bash patterns (mandatory)
+
+When you must background a long-running command (`Bash(run_in_background: true)`) and poll for completion, **NEVER** use `pgrep -f <pattern>` where `<pattern>` is a substring of the wait loop's own command line. The wait loop's `bash -c` argv contains the literal pattern and `pgrep -f` matches itself, so the loop never exits.
+
+**Forbidden:**
+```bash
+# DON'T — self-matches. Loop never exits.
+while pgrep -f "bd-ripple <ticket-id>" > /dev/null; do sleep 5; done
+```
+
+**Safe alternatives (pick one):**
+```bash
+# A. Capture PID, watch with kill -0
+bin/bd-ripple "$ID" "$CTX" &
+PID=$!
+while kill -0 "$PID" 2>/dev/null; do sleep 2; done
+wait "$PID"
+
+# B. Use the wait builtin directly
+bin/bd-ripple "$ID" "$CTX" &
+wait
+
+# C. Watch an output file's mtime stability (process done = file unchanged for N seconds)
+until [ -s out.log ] && [ "$(stat -c %Y out.log)" -lt "$(($(date +%s) - 5))" ]; do sleep 2; done
+```
+
+**Default to foreground.** `bin/bd-ripple` on typical (≤8 dependents) tickets completes in <10s — well inside the Bash tool's default 2-minute timeout. Background polling is unnecessary for the ripple step and reserved for genuinely long (>90s) operations.

@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:buildingbetter.tech)"
+      "WebFetch(domain:buildingbetter.tech)",
+      "Bash(wait)",
+      "Bash(kill 304981 318223 646625)",
+      "Bash(dolt fsck *)",
+      "Bash(dolt --data-dir .beads/dolt sql -q \"SHOW DATABASES\")",
+      "Bash(dolt admin *)",
+      "Bash(xxd .dolt/noms/journal.idx)",
+      "Bash(pkill -9 dolt)",
+      "Bash(pkill -9 -f \"git fetch.*refs/dolt\")",
+      "Bash(command -v yq)",
+      "Bash(yq --version)",
+      "Bash(command -v uvx)",
+      "Bash(uvx --from pyyaml python3 -c ' *)"
     ]
   }
 }

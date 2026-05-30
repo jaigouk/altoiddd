@@ -5,7 +5,12 @@ description: >
   and implementing features following Red/Green/Refactor. Works on assigned
   beads tickets and follows DDD + SOLID + CQRS-lite principles with strict
   Go linting enforcement.
-tools: Read, Edit, Write, Grep, Glob, Bash
+kind: agent
+phase: implement
+when_to_use: When writing code or fixing bugs on a claimed ticket via TDD red-green-refactor
+tools_required: Read, Edit, Write, Grep, Glob, Bash
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: acceptEdits
 memory: project

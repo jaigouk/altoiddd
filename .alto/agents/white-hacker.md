@@ -5,7 +5,12 @@ description: >
   security auditing. Uses Trivy MCP for vulnerability scanning and OWASP
   security knowledge. Invoke for security reviews, attack surface analysis,
   and hardening recommendations. Go codebase.
-tools: Read, Grep, Glob, Bash
+kind: agent
+phase: review
+when_to_use: When auditing security, assessing attack surface, or producing hardening recommendations
+tools_required: Read, Grep, Glob, Bash
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: default
 memory: project

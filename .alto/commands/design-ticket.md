@@ -1,7 +1,12 @@
 ---
 name: design-ticket
 description: Design a new ticket with architecture verification — architect designs, tech-lead reviews, then creates beads issue
-allowed-tools: Agent, Bash, Read, Grep, Glob
+kind: command
+phase: groom
+when_to_use: When designing a new ticket and verifying it against the architecture before creating the beads issue
+tools_required: Agent, Bash, Read, Grep, Glob
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /design-ticket <title-or-description>

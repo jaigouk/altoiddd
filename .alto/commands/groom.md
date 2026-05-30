@@ -1,7 +1,12 @@
 ---
 name: groom
 description: Deep-groom a ticket — enforced implementation simulation, scope check, split detection
-allowed-tools: Read, Grep, Glob, Bash
+kind: command
+phase: groom
+when_to_use: When deep-grooming a ticket before claiming — implementation simulation, scope check, split detection
+tools_required: Read, Grep, Glob, Bash
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /groom <ticket-id>

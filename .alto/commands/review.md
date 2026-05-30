@@ -1,7 +1,12 @@
 ---
 name: review
 description: Structured code review based on Hartwork methodology — bugs, clarity, DDD/SOLID, tests
-allowed-tools: Read, Grep, Glob, Bash
+kind: command
+phase: review
+when_to_use: When performing a structured code review (Hartwork methodology — bugs, clarity, DDD/SOLID, tests)
+tools_required: Read, Grep, Glob, Bash
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /review <target>

@@ -1,6 +1,12 @@
 ---
 name: brainstorm
 description: Guided DDD discovery — turn an idea into PRD, DDD.md, and ARCHITECTURE.md
+kind: command
+phase: design
+when_to_use: When turning a raw idea into PRD, DDD model, and architecture before any code is written
+tools_required: Read, Write, Edit, Grep, Glob
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /brainstorm

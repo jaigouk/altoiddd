@@ -6,7 +6,12 @@ description: >
   options, or writing research reports. Invoke for any spike ticket under an
   ADR epic or when the team needs concrete facts before making a decision.
   Go codebase context — evaluate Go libraries and patterns.
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
+kind: agent
+phase: design
+when_to_use: When investigating libraries, comparing options, or producing a research report for a spike
+tools_required: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: acceptEdits
 memory: project

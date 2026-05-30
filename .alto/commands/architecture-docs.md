@@ -1,7 +1,12 @@
 ---
 name: architecture-docs
 description: Access project architecture documentation using RLM pattern
-allowed-tools: Read
+kind: command
+phase: design
+when_to_use: When you need to read or reference project architecture documentation
+tools_required: Read
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /architecture-docs <topic>

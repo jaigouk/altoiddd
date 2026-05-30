@@ -5,7 +5,12 @@ description: >
   coverage, verifying edge cases from multiple angles, investigating failures,
   and producing detailed QA reports with root cause analysis.
   Go codebase with DDD + TDD + BDD + SOLID + CQRS-lite + strict linting.
-tools: Read, Edit, Write, Grep, Glob, Bash
+kind: agent
+phase: review
+when_to_use: When writing tests, validating coverage, or investigating failures with root-cause analysis
+tools_required: Read, Edit, Write, Grep, Glob, Bash
+bash_substitution_policy: none
+license: Apache-2.0
 model: opus
 permissionMode: acceptEdits
 memory: project

@@ -20,6 +20,13 @@ set -euo pipefail
 #   4. Adds review_needed label to each
 #   5. Adds a comment explaining what changed
 #   6. Prints a summary
+#
+# Runtime expectation:
+#   Typical (≤8 dependents) runs complete in <10 seconds — run in foreground.
+#   If you must background this, see safe wait patterns in
+#   .alto/agents/tech-lead.md ("Long-running Bash patterns"). DO NOT use
+#   `pgrep -f "bd-ripple ..."` to poll; the wait loop's own argv matches
+#   the pattern and the loop will never exit.
 
 TICKET_ID="${1:-}"
 CONTEXT="${2:-}"

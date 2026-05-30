@@ -1,7 +1,12 @@
 ---
 name: launch-team
 description: Generate a team launch prompt from one or more beads tickets
-allowed-tools: Agent, Bash, Read, Grep, Glob
+kind: command
+phase: implement
+when_to_use: When launching a multi-agent team to work on one or more beads tickets
+tools_required: Agent, Bash, Read, Grep, Glob
+bash_substitution_policy: none
+license: Apache-2.0
 ---
 
 # /launch-team <ticket-id> [ticket-id...]
