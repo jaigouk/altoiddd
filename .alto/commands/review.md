@@ -141,7 +141,7 @@ Output a structured report:
 |------|--------|
 | `go build ./...` | PASS/FAIL |
 | `go vet ./...` | PASS/FAIL |
-| `golangci-lint run` | PASS/FAIL |
+| `<linter>` | PASS/FAIL |
 | `go test -race ./...` | PASS/FAIL |
 
 ### Recommendations

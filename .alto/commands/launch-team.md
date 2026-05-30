@@ -54,7 +54,7 @@ Also read:
 From the tickets, map each file to exactly one dev. If two tickets touch the same file, flag it:
 
 ```
-CONFLICT: internal/discovery/domain/session.go claimed by <ticket-1> AND <ticket-2>
+CONFLICT: <path/to/file> claimed by <ticket-1> AND <ticket-2>
 ```
 
 Ask the user to resolve conflicts before proceeding.
