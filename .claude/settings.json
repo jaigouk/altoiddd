@@ -18,11 +18,21 @@
       "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks\\)/' /tmp/t5.txt)",
       "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks\\)/' /tmp/t7.txt)",
       "Bash(command -v arch-go)",
-      "Bash(rm -f .git/index.lock && git status --short 2>&1 | head -3 && echo \"---\" && git reset HEAD .beads/issues.jsonl 2>&1 | head -3)"
+      "Bash(rm -f .git/index.lock && git status --short 2>&1 | head -3 && echo \"---\" && git reset HEAD .beads/issues.jsonl 2>&1 | head -3)",
+      "Bash(bd show *)",
+      "Bash(cp .beads/issues.jsonl /tmp/issues-before-recovery2.jsonl)",
+      "Bash(rm -f .beads/dolt-server.lock .beads/dolt-server.pid .beads/dolt-server.port)",
+      "Bash(mv .beads/dolt .beads/dolt.broken-2026-05-30-pm)",
+      "Bash(awk '/^## Post-Wave-2 Reconciliation/,/^LABELS:|^PARENT/' /tmp/g4.txt)",
+      "Bash(awk '/^## Post-Wave-2 Reconciliation/,/^LABELS:|^PARENT/' /tmp/g6.txt)",
+      "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks|Post\\)/' /tmp/g4.txt)",
+      "Bash(awk '/^## Acceptance Criteria/,/^## \\(Edge|Quality|Pre|QA|Commit|Risks|Post\\)/' /tmp/g6.txt)",
+      "Bash(cat > *)"
     ],
     "additionalDirectories": [
       "/home/kusanagi/Alty/alto/.beads",
-      "/home/kusanagi/Alty/alto/.git"
+      "/home/kusanagi/Alty/alto/.git",
+      "/tmp"
     ]
   }
 }
