@@ -315,29 +315,29 @@ func IdentifyGaps(
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingKnowledge,
-			".alto/knowledge/",
+			"alto-scaffold/knowledge/",
 			"Missing knowledge base directory",
 			rescuedomain.GapSeverityRecommended,
 		))
 	}
 
-	// Check .alto/config.toml
+	// Check alto-scaffold/config.toml
 	if !scan.HasAltoConfig() {
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingConfig,
-			".alto/config.toml",
+			"alto-scaffold/config.toml",
 			"Missing alto project configuration",
 			rescuedomain.GapSeverityRecommended,
 		))
 	}
 
-	// Check .alto/maintenance/
+	// Check alto-scaffold/maintenance/
 	if !scan.HasMaintenanceDir() {
 		gaps = append(gaps, rescuedomain.NewGap(
 			identity.NewID(),
 			rescuedomain.GapTypeMissingStructure,
-			".alto/maintenance/",
+			"alto-scaffold/maintenance/",
 			"Missing doc maintenance directory",
 			rescuedomain.GapSeverityRecommended,
 		))

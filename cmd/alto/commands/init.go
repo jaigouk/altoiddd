@@ -18,11 +18,18 @@ import (
 // NewInitCmd creates the "alto init" command.
 func NewInitCmd(app *composition.App) *cobra.Command {
 	var (
-		existing    bool
-		dryRun      bool
-		yes         bool
-		forceBranch bool
-		noCommit    bool
+		existing     bool
+		dryRun       bool
+		yes          bool
+		forceBranch  bool
+		noCommit     bool
+		withScaffold bool
+		force        bool
+		projectName  string
+		ticketPrefix string
+		issueTracker string
+		boundedCtxs  []string
+		primaryTool  string
 	)
 
 	cmd := &cobra.Command{
@@ -31,8 +38,29 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 		Long: `Bootstrap a new project from a README idea.
 
 Auto-detects whether the current directory contains an existing project
-and chooses the appropriate path. Use --existing to force rescue mode.`,
+and chooses the appropriate path. Use --existing to force rescue mode.
+
+Use --with-scaffold to extract the embedded alto-scaffold/ workflow scaffold into
+the current directory. The five --project-name / --ticket-prefix /
+--issue-tracker / --bounded-contexts / --primary-tool flags supply the
+template parameters substituted into the scaffold files. Use --force to
+overwrite an existing alto-scaffold/ tree (a per-file [OVERWRITE] preview is
+emitted before any write occurs).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --with-scaffold short-circuits the rescue / detect path; it is
+			// strictly an "extract the embedded alto-scaffold/" operation. The
+			// --existing rescue integration is out of scope for this ticket.
+			if withScaffold {
+				return runWithScaffold(cmd, app, withScaffoldArgs{
+					projectName:  projectName,
+					ticketPrefix: ticketPrefix,
+					issueTracker: issueTracker,
+					boundedCtxs:  boundedCtxs,
+					primaryTool:  primaryTool,
+					force:        force,
+				})
+			}
+
 			// --existing flag overrides auto-detection.
 			if existing {
 				return runRescue(cmd, app, dryRun, forceBranch)
@@ -76,7 +104,50 @@ and chooses the appropriate path. Use --existing to force rescue mode.`,
 	cmd.Flags().BoolVar(&forceBranch, "force-branch", false, "Delete existing alto/init branch before creating a new one")
 	cmd.Flags().BoolVar(&noCommit, "no-commit", false, "Skip auto-commit of generated files")
 
+	cmd.Flags().BoolVar(&withScaffold, "with-scaffold", false, "Extract the embedded alto-scaffold/ workflow scaffold into the current directory")
+	cmd.Flags().BoolVar(&force, "force", false, "With --with-scaffold: overwrite an existing alto-scaffold/ tree (per-file [OVERWRITE] preview emitted)")
+	cmd.Flags().StringVar(&projectName, "project-name", "", "With --with-scaffold: project name (substituted into template parameter)")
+	cmd.Flags().StringVar(&ticketPrefix, "ticket-prefix", "", "With --with-scaffold: ticket prefix (must end with '-'), e.g. 'demo-'")
+	cmd.Flags().StringVar(&issueTracker, "issue-tracker", "beads", "With --with-scaffold: one of {beads, github, linear}")
+	cmd.Flags().StringSliceVar(&boundedCtxs, "bounded-contexts", nil, "With --with-scaffold: comma-separated PascalCase context names, e.g. Orders,Catalog")
+	cmd.Flags().StringVar(&primaryTool, "primary-tool", "claude", "With --with-scaffold: one of {claude, opencode}")
+
 	return cmd
+}
+
+// withScaffoldArgs bundles the --with-scaffold flag values into a single
+// parameter object — keeps the run function under the linter's argument
+// count limit and documents intent at the call site.
+type withScaffoldArgs struct {
+	projectName  string
+	ticketPrefix string
+	issueTracker string
+	boundedCtxs  []string
+	primaryTool  string
+	force        bool
+}
+
+// runWithScaffold builds the ScaffoldParams VO from CLI flags and asks
+// the BootstrapHandler to extract the embedded alto-scaffold/ tree. The handler
+// chains into the OpenCode adapter when --primary-tool=opencode.
+func runWithScaffold(cmd *cobra.Command, app *composition.App, args withScaffoldArgs) error {
+	params, err := domain.NewScaffoldParams(
+		args.projectName,
+		args.ticketPrefix,
+		args.issueTracker,
+		args.boundedCtxs,
+		args.primaryTool,
+	)
+	if err != nil {
+		return fmt.Errorf("scaffold parameters: %w", err)
+	}
+
+	if err := app.BootstrapHandler.WriteScaffold(cmd.Context(), ".", params, args.force); err != nil {
+		return fmt.Errorf("writing scaffold: %w", err)
+	}
+
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Scaffold extracted to alto-scaffold/")
+	return nil
 }
 
 func runInit(cmd *cobra.Command, app *composition.App, dryRun bool, yes bool, noCommit bool, detection domain.ProjectDetectionResult) error {

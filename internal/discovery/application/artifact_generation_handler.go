@@ -109,7 +109,7 @@ func (h *ArtifactGenerationHandler) BuildPreview(
 
 // WriteArtifacts writes previously previewed artifacts to disk.
 // docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go (typically docs/).
-// projectDir is the project root where .alto/bounded_context_map.yaml goes.
+// projectDir is the project root where alto-scaffold/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) WriteArtifacts(
 	ctx context.Context,
 	preview *ArtifactPreview,
@@ -126,7 +126,7 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 		return fmt.Errorf("write architecture: %w", err)
 	}
 	if preview.BoundedContextMapYAML != "" {
-		bcMapPath := filepath.Join(projectDir, ".alto", "bounded_context_map.yaml")
+		bcMapPath := filepath.Join(projectDir, "alto-scaffold", "bounded_context_map.yaml")
 		if err := h.writer.WriteFile(ctx, bcMapPath, preview.BoundedContextMapYAML); err != nil {
 			return fmt.Errorf("write bounded context map: %w", err)
 		}
@@ -136,7 +136,7 @@ func (h *ArtifactGenerationHandler) WriteArtifacts(
 
 // Generate is a convenience method that builds preview and writes in one step.
 // docsDir is where PRD.md, DDD.md, ARCHITECTURE.md go.
-// projectDir is the project root where .alto/bounded_context_map.yaml goes.
+// projectDir is the project root where alto-scaffold/bounded_context_map.yaml goes.
 func (h *ArtifactGenerationHandler) Generate(
 	ctx context.Context,
 	event discoverydomain.DiscoveryCompletedEvent,

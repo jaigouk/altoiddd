@@ -47,8 +47,8 @@ Global settings scan:
   OK — no conflicts detected
 
 Project files:
-  CREATE  .alto/config.toml
-  CREATE  .alto/knowledge/ddd/...          (12 files)
+  CREATE  alto-scaffold/config.toml
+  CREATE  alto-scaffold/knowledge/ddd/...          (12 files)
   CREATE  .claude/CLAUDE.md
   CREATE  .claude/agents/developer.md
   ...

@@ -46,7 +46,7 @@ func NewDocHealthHandler(scanner DocScanner) *DocHealthHandler {
 
 // Handle executes the doc health query.
 func (h *DocHealthHandler) Handle(ctx context.Context, projectDir string) (domain.DocHealthReport, error) {
-	registryPath := filepath.Join(projectDir, ".alto", "maintenance", "doc-registry.toml")
+	registryPath := filepath.Join(projectDir, "alto-scaffold", "maintenance", "doc-registry.toml")
 	entries, err := h.scanner.LoadRegistry(ctx, registryPath)
 	if err != nil {
 		return domain.DocHealthReport{}, fmt.Errorf("load registry: %w", err)

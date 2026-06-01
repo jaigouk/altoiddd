@@ -1,6 +1,6 @@
 // Package domain — scaffold health value objects.
 //
-// This file adds the .alto/ scaffold validation domain model alongside the
+// This file adds the alto-scaffold/ scaffold validation domain model alongside the
 // existing docs/ DocHealth model. Both live in the DocHealth bounded context
 // but address distinct concerns: docs/ tracks freshness + broken links;
 // scaffold tracks frontmatter schema + leak rules + overlay pairing.
@@ -13,7 +13,9 @@ package domain
 import (
 	"fmt"
 	"maps"
+	"regexp"
 	"strings"
+	"time"
 
 	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 )
@@ -94,7 +96,7 @@ func (v ScaffoldViolation) Severity() ViolationSeverity { return v.severity }
 // Line returns the line number (1-based) or 0 if not applicable.
 func (v ScaffoldViolation) Line() int { return v.line }
 
-// ScaffoldAsset is a single .alto/**/*.md file already parsed into
+// ScaffoldAsset is a single alto-scaffold/**/*.md file already parsed into
 // frontmatter + body. Walker constructs these; rules read them.
 type ScaffoldAsset struct {
 	path          string
@@ -102,11 +104,21 @@ type ScaffoldAsset struct {
 	body          string
 	bodyLineCount int
 	isOverlay     bool
+	modTime       time.Time
 }
 
 // NewScaffoldAsset constructs a ScaffoldAsset. path must be non-empty; the
-// frontmatter map is defensively copied (shallow).
+// frontmatter map is defensively copied (shallow). modTime defaults to the
+// zero value (rules that consume mtime — e.g. LifecycleStalenessRule —
+// interpret zero as "skip"). Use NewScaffoldAssetWithModTime when the
+// caller has a real timestamp.
 func NewScaffoldAsset(path string, frontmatter map[string]any, body string, bodyLineCount int, isOverlay bool) (ScaffoldAsset, error) {
+	return NewScaffoldAssetWithModTime(path, frontmatter, body, bodyLineCount, isOverlay, time.Time{})
+}
+
+// NewScaffoldAssetWithModTime constructs a ScaffoldAsset with an explicit
+// modification time captured by the walker. Used by LifecycleStalenessRule.
+func NewScaffoldAssetWithModTime(path string, frontmatter map[string]any, body string, bodyLineCount int, isOverlay bool, modTime time.Time) (ScaffoldAsset, error) {
 	if strings.TrimSpace(path) == "" {
 		return ScaffoldAsset{}, fmt.Errorf("path required: %w", domainerrors.ErrInvariantViolation)
 	}
@@ -121,6 +133,7 @@ func NewScaffoldAsset(path string, frontmatter map[string]any, body string, body
 		body:          body,
 		bodyLineCount: bodyLineCount,
 		isOverlay:     isOverlay,
+		modTime:       modTime,
 	}, nil
 }
 
@@ -151,6 +164,10 @@ func (a ScaffoldAsset) BodyLineCount() int { return a.bodyLineCount }
 // NoInternalLeaksRule (and FrontmatterSchemaRule — overlays have no
 // frontmatter; the parent GENERIC sibling carries the schema).
 func (a ScaffoldAsset) IsOverlay() bool { return a.isOverlay }
+
+// ModTime returns the file modification time captured by the walker. Zero
+// value means "not captured" — staleness rules treat zero as skip.
+func (a ScaffoldAsset) ModTime() time.Time { return a.modTime }
 
 // ScaffoldHealthReport aggregates ScaffoldViolations produced by all rules.
 type ScaffoldHealthReport struct {
@@ -200,3 +217,66 @@ func (r ScaffoldHealthReport) HasErrors() bool { return r.ErrorCount() > 0 }
 
 // TotalCount returns the total number of violations.
 func (r ScaffoldHealthReport) TotalCount() int { return len(r.violations) }
+
+// SecretPattern wraps a compiled regexp + display name. Used by
+// SecretsGrepRule to detect credential leaks in scaffold bodies. The name
+// surfaces in violation messages so operators can identify which pattern
+// fired.
+type SecretPattern struct {
+	name    string
+	pattern *regexp.Regexp
+}
+
+// NewSecretPattern compiles pattern and constructs a validated
+// SecretPattern. name must be non-empty; pattern must compile under RE2
+// (regexp.Compile failure → ErrInvariantViolation).
+func NewSecretPattern(name, pattern string) (SecretPattern, error) {
+	if strings.TrimSpace(name) == "" {
+		return SecretPattern{}, fmt.Errorf("name required: %w", domainerrors.ErrInvariantViolation)
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return SecretPattern{}, fmt.Errorf("compiling pattern %q: %w", pattern, domainerrors.ErrInvariantViolation)
+	}
+	return SecretPattern{name: name, pattern: re}, nil
+}
+
+// Name returns the human-readable identifier.
+func (p SecretPattern) Name() string { return p.name }
+
+// Pattern returns the compiled regexp.
+func (p SecretPattern) Pattern() *regexp.Regexp { return p.pattern }
+
+// ScaffoldParams bundles configuration passed to DefaultScaffoldRules.
+// Constructed once at composition root, then handed to rule factories
+// that need parameters (LifecycleStalenessRule, SecretsGrepRule).
+type ScaffoldParams struct {
+	defaultStalenessDays int
+	secretPatterns       []SecretPattern
+}
+
+// NewScaffoldParams constructs validated ScaffoldParams.
+// defaultStalenessDays must be >= 1; secretPatterns may be nil/empty
+// (empty means "rule applies binding-floor defaults").
+func NewScaffoldParams(defaultStalenessDays int, secretPatterns []SecretPattern) (ScaffoldParams, error) {
+	if defaultStalenessDays < 1 {
+		return ScaffoldParams{}, fmt.Errorf("defaultStalenessDays must be >= 1, got %d: %w", defaultStalenessDays, domainerrors.ErrInvariantViolation)
+	}
+	sp := make([]SecretPattern, len(secretPatterns))
+	copy(sp, secretPatterns)
+	return ScaffoldParams{
+		defaultStalenessDays: defaultStalenessDays,
+		secretPatterns:       sp,
+	}, nil
+}
+
+// DefaultStalenessDays returns the configured staleness threshold (days).
+func (p ScaffoldParams) DefaultStalenessDays() int { return p.defaultStalenessDays }
+
+// SecretPatterns returns a defensive copy of the configured secret
+// patterns. Empty slice signals "use binding-floor defaults".
+func (p ScaffoldParams) SecretPatterns() []SecretPattern {
+	out := make([]SecretPattern, len(p.secretPatterns))
+	copy(out, p.secretPatterns)
+	return out
+}

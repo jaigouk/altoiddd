@@ -31,7 +31,7 @@ func NewDocReviewAdapter(scanner *FilesystemDocScanner) *DocReviewAdapter {
 // ReviewableDocs returns docs that are due for review by scanning the registry
 // and checking frontmatter dates.
 func (a *DocReviewAdapter) ReviewableDocs(ctx context.Context, projectDir string) ([]domain.DocStatus, error) {
-	registryPath := filepath.Join(projectDir, ".alto", "maintenance", "doc-registry.toml")
+	registryPath := filepath.Join(projectDir, "alto-scaffold", "maintenance", "doc-registry.toml")
 
 	entries, err := a.scanner.LoadRegistry(registryPath)
 	if err != nil {

@@ -1,7 +1,7 @@
 // Package application — scaffold-health ports.
 //
 // These ports sit alongside the existing DocHealth + DocReview ports
-// (ports.go) but address a distinct concern: validating `.alto/**/*.md`
+// (ports.go) but address a distinct concern: validating `alto-scaffold/**/*.md`
 // scaffold assets (frontmatter schema, leak rules, overlay pairing) as
 // opposed to docs/ freshness.
 //
@@ -37,7 +37,7 @@ type ValidationRule interface {
 	Check(asset dochealthdomain.ScaffoldAsset, corpus []dochealthdomain.ScaffoldAsset) []dochealthdomain.ScaffoldViolation
 }
 
-// ScaffoldWalker enumerates `.alto/**/*.md` files under altoDir, parses
+// ScaffoldWalker enumerates `alto-scaffold/**/*.md` files under altoDir, parses
 // each into a ScaffoldAsset, and returns the slice. The walker is the
 // only piece that performs filesystem I/O for the scaffold-health flow.
 type ScaffoldWalker interface {

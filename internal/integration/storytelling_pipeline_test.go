@@ -108,7 +108,7 @@ func TestStorytellingPipeline_RAPID_E2E_CompletesWithStatusCompleted(t *testing.
 	// Given: a project directory with README
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea for pipeline test"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// And: a prompter configured for 3 rapid-mode stories
 	prompter := newIntegrationStoryPrompter(3)

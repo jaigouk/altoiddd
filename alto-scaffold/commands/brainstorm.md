@@ -251,7 +251,7 @@ Use the templates as structural guides:
 
 ### 5.1 PRD (`docs/PRD.md`)
 
-**Template reference:** `.alto/templates/PRD_TEMPLATE.md`
+**Template reference:** `alto-scaffold/templates/PRD_TEMPLATE.md`
 
 Generate each section from discovery answers:
 
@@ -271,7 +271,7 @@ Present each section and ask: "Does this section look right? Any changes?"
 
 ### 5.2 DDD.md (`docs/DDD.md`)
 
-**Template reference:** `.alto/templates/DDD_STORY_TEMPLATE.md`
+**Template reference:** `alto-scaffold/templates/DDD_STORY_TEMPLATE.md`
 
 Generate each section:
 
@@ -291,7 +291,7 @@ Present each section and ask: "Does this section look right? Any changes?"
 
 ### 5.3 ARCHITECTURE.md (`docs/ARCHITECTURE.md`)
 
-**Template reference:** `.alto/templates/ARCHITECTURE_TEMPLATE.md`
+**Template reference:** `alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md`
 
 Generate each section:
 

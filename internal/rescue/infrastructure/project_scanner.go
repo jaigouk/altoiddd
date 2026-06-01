@@ -83,11 +83,11 @@ func (s *ProjectScanner) Scan(
 		}
 	}
 
-	hasKnowledgeDir := dirExists(filepath.Join(projectDir, ".alto", "knowledge"))
+	hasKnowledgeDir := dirExists(filepath.Join(projectDir, "alto-scaffold", "knowledge"))
 	hasAgentsMD := fileExists(filepath.Join(projectDir, "AGENTS.md"))
 	hasGit := pathExists(filepath.Join(projectDir, ".git"))
-	hasAltoConfig := fileExists(filepath.Join(projectDir, ".alto", "config.toml"))
-	hasMaintenanceDir := dirExists(filepath.Join(projectDir, ".alto", "maintenance"))
+	hasAltoConfig := fileExists(filepath.Join(projectDir, "alto-scaffold", "config.toml"))
+	hasMaintenanceDir := dirExists(filepath.Join(projectDir, "alto-scaffold", "maintenance"))
 
 	return rescuedomain.NewProjectScan(
 		projectDir,

@@ -309,7 +309,7 @@ func (h *StorytellingHandler) RunStory(
 	}
 
 	// 5. PERSIST
-	storyPath := fmt.Sprintf(".alto/stories/%02d-%s.story.yaml", storyIndex, slugify(story.Title()))
+	storyPath := fmt.Sprintf("alto-scaffold/stories/%02d-%s.story.yaml", storyIndex, slugify(story.Title()))
 
 	if err := h.storyWriter.Write(ctx, storyPath, story); err != nil {
 		return nil, narrative, fmt.Errorf("writing story: %w", err)

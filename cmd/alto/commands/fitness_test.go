@@ -81,7 +81,7 @@ func TestFitnessGenerateCmd_Preview(t *testing.T) {
 
 	// Create temp directory with bounded_context_map.yaml and go.mod
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bcMapContent := `project:
@@ -119,7 +119,7 @@ func TestFitnessGenerateCmd_Brownfield(t *testing.T) {
 
 	// Create temp directory with bounded_context_map.yaml and go.mod
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bcMapContent := `project:
@@ -154,7 +154,7 @@ func TestFitnessGenerateCmd_NoGoMod(t *testing.T) {
 
 	// Create temp directory with bounded_context_map.yaml but NO go.mod
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bcMapContent := `project:
@@ -236,7 +236,7 @@ func TestConvertBCMapToDomainModel(t *testing.T) {
 
 	// Parse a sample bounded context map
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bcMapContent := `project:
@@ -297,7 +297,7 @@ func TestFitnessGenerateCmd_Preview_OutputContainsArchGoYAML(t *testing.T) {
 
 	// Create temp directory with bounded_context_map.yaml and go.mod
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bcMapContent := `project:

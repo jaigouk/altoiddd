@@ -32,7 +32,7 @@ var _ application.ToolDetector = (*stubToolDetector)(nil)
 
 func TestGuide_WhenMissingConfig_ReturnsInitError(t *testing.T) {
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	t.Chdir(tmpDir)
@@ -49,7 +49,7 @@ func TestGuide_WhenMissingConfig_ReturnsInitError(t *testing.T) {
 
 func TestGuide_WhenPresentConfig_NoInitError(t *testing.T) {
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "config.toml"), []byte{}, 0o644))
 
@@ -78,7 +78,7 @@ func TestGuideIngest_WhenMissingConfig_ReturnsInitError(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	bus := eventbus.NewBus()
@@ -103,7 +103,7 @@ func TestGuideIngest_WhenMissingConfig_ReturnsInitError(t *testing.T) {
 
 func TestGuideLegacy_WhenMissingConfig_ReturnsInitError(t *testing.T) {
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 
 	t.Chdir(tmpDir)

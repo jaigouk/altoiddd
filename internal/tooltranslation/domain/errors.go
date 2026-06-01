@@ -1,5 +1,5 @@
 // Package domain — Tool Translation sentinel errors for workflow asset
-// translation (`.alto/commands/*.md` → tool-native command files).
+// translation (`alto-scaffold/commands/*.md` → tool-native command files).
 //
 // These sentinels live in the domain layer with stdlib `errors` as their
 // only dependency, per the bounded-context layer rules in arch-go.yml.
@@ -30,7 +30,7 @@ var ErrInvalidAssetName = errors.New("invalid asset name")
 // against `name: ../evil` and similar inputs.
 var ErrPathTraversal = errors.New("path traversal detected")
 
-// ErrInvalidFrontmatter is returned when the source `.alto/commands/<name>.md`
+// ErrInvalidFrontmatter is returned when the source `alto-scaffold/commands/<name>.md`
 // frontmatter is malformed YAML or is missing a required field
 // (per the 8-field canonical schema).
 var ErrInvalidFrontmatter = errors.New("invalid frontmatter")

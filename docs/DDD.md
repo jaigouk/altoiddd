@@ -319,7 +319,7 @@ status: draft
 | Term | Context A Meaning | Context B Meaning |
 |------|------------------|------------------|
 | Template | A file template copied during `alto init` (Bootstrap context) | A beads ticket template with DDD fields (Ticket Pipeline context) |
-| Config | A alto configuration in `.alto/config.toml` (Bootstrap context) | A tool-native configuration like `.claude/CLAUDE.md` (Tool Translation context) |
+| Config | A alto configuration in `alto-scaffold/config.toml` (Bootstrap context) | A tool-native configuration like `.claude/CLAUDE.md` (Tool Translation context) |
 | Story | A structured Domain Storytelling narrative with actors, sentences, annotations, and metadata — NOT free-text (Domain Model context). See DomainStory in glossary | A user scenario from the PRD (Product context — not used in code) |
 | Agent | (1) An AI coding tool agent persona (Tool Translation context) | (2) A DDD actor in a domain story (Domain Model context — use "Actor" to disambiguate). (3) An AI coding tool operating in non-interactive mode (AgentMode — Guided Discovery context) |
 | Mode | DiscoveryMode — rapid/thorough story count selector (Guided Discovery context) | Mode in legacy flow — express/deep/conversational session-level question strategy (Legacy context — coexists until --legacy flag removed) |
@@ -946,3 +946,21 @@ Before proceeding to architecture:
 - [ ] How does `alto doc-health` relate to Ticket Freshness? Are they the same bounded context or separate? (Doc freshness is time-based, ticket freshness is event-based)
 - [ ] Should the Knowledge Base support user-contributed entries (community patterns) or remain curated-only?
 - [ ] How does the complexity budget interact with rescue mode? When scanning an existing project, do we classify its subdomains automatically or ask the user?
+
+## 9. Build-time resource packages
+
+Packages at the module root that exist solely to host `//go:embed` declarations
+(e.g. the root-level `alto` package in `/scaffold_embed.go`, which exports
+`ScaffoldFS`) are NOT bounded contexts and do NOT participate in the
+domain/application/infrastructure layering. They are pure build-time resource
+carriers: a single `embed.FS` variable, no business logic, no domain types.
+Their location is forced by the Go embed constraint — `//go:embed` patterns
+are package-directory-relative and may not traverse upward with `..` — and the
+embedded asset trees (`alto-scaffold/`) live at the module root.
+
+Consuming adapters live in the appropriate `internal/{context}/infrastructure/`
+package and import the embed FS as a resource handle. The host package's
+public surface is the `embed.FS` variable only; walking, filtering, templating,
+and writing all stay inside the consuming adapter (e.g.
+`internal/bootstrap/infrastructure/embed_scaffold_writer.go` for the
+`alto init --with-scaffold` flow).

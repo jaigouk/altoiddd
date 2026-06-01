@@ -2,7 +2,7 @@
 # migrate-to-alto.sh — Scaffold migration script for ticket alty-cli-766.2
 #
 # Migrates scaffold assets from `.claude/` + `docs/templates/` + `docs/beads_templates/`
-# + `docs/spikes/` into the canonical `.alto/` root (flat-by-category) with alto-specific
+# + `docs/spikes/` into the canonical `alto-scaffold/` root (flat-by-category) with alto-specific
 # overlay siblings `.project.md`. Produces 17 commits in execution order.
 #
 # Binding plan: bd show alty-cli-766.2
@@ -14,7 +14,7 @@
 #
 # Safety:
 #   * Refuses to run on a dirty working tree (git diff --quiet check)
-#   * Refuses to overwrite a populated .alto/ (CONTEXT.md or commands/ present)
+#   * Refuses to overwrite a populated alto-scaffold/ (CONTEXT.md or commands/ present)
 #   * Two-flag override required (BOTH --force AND --i-know-what-i-am-doing)
 #   * Uses `sed -i.bak` for all in-place edits with backups committed in final commit
 #   * Uses `ln -s` (not `ln -sf`) with pre-existence collision abort
@@ -34,7 +34,7 @@ for arg in "$@"; do
         --i-know-what-i-am-doing) CONFIRM=1 ;;
         -h|--help)
             cat <<'USAGE'
-migrate-to-alto.sh — Scaffold migration to .alto/ root (alty-cli-766.2)
+migrate-to-alto.sh — Scaffold migration to alto-scaffold/ root (alty-cli-766.2)
 
 Usage:
   bin/migrate-to-alto.sh --dry-run
@@ -45,7 +45,7 @@ Usage:
 
 Exit codes:
   0   success (dry-run or completed migration)
-  1   refusal (missing override flags, dirty tree, populated .alto/)
+  1   refusal (missing override flags, dirty tree, populated alto-scaffold/)
   2   verification failure (post-migration checks failed; backups not committed)
 USAGE
             exit 0
@@ -59,7 +59,7 @@ USAGE
 done
 
 # Override semantics: BOTH --force AND --i-know-what-i-am-doing required for mutation.
-# Single-flag invocations refuse (even when .alto/ is empty) so the operator confirms intent.
+# Single-flag invocations refuse (even when alto-scaffold/ is empty) so the operator confirms intent.
 # --dry-run bypasses ALL preflight refusals and prints the plan without touching the filesystem.
 
 # ---------- Console helpers ----------
@@ -82,7 +82,7 @@ phase0_preflight() {
 
     if [ "$DRY_RUN" -eq 1 ]; then
         say "  skip clean-tree refusal (dry-run)"
-        say "  skip .alto/{CONTEXT.md,commands/} refusal (dry-run)"
+        say "  skip alto-scaffold/{CONTEXT.md,commands/} refusal (dry-run)"
         say "  skip two-flag override refusal (dry-run)"
         return 0
     fi
@@ -98,11 +98,11 @@ phase0_preflight() {
         fail "staged changes present — commit or unstage first"
     fi
 
-    if [ -e .alto/CONTEXT.md ] || [ -d .alto/commands ]; then
-        fail ".alto/ already populated (CONTEXT.md or commands/ exists) — remove before re-running"
+    if [ -e alto-scaffold/CONTEXT.md ] || [ -d alto-scaffold/commands ]; then
+        fail "alto-scaffold/ already populated (CONTEXT.md or commands/ exists) — remove before re-running"
     fi
 
-    say "  clean tree, .alto/ unpopulated, override flags set — proceed"
+    say "  clean tree, alto-scaffold/ unpopulated, override flags set — proceed"
 }
 
 # ---------- commit_phase helper ----------
@@ -120,79 +120,79 @@ commit_phase() {
     git commit -m "$subject"
 }
 
-# ---------- Phase 1 — Create .alto/ skeleton ----------
-# Commit #1: chore(scaffold): create .alto/ skeleton with .gitkeep files
+# ---------- Phase 1 — Create alto-scaffold/ skeleton ----------
+# Commit #1: chore(scaffold): create alto-scaffold/ skeleton with .gitkeep files
 phase1_skeleton() {
-    say "Phase 1 — Create .alto/ skeleton + migration-backups/"
+    say "Phase 1 — Create alto-scaffold/ skeleton + migration-backups/"
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        say "  mkdir -p .alto/{commands,agents,templates,skills,lifecycle/{in-progress,deprecated}}"
+        say "  mkdir -p alto-scaffold/{commands,agents,templates,skills,lifecycle/{in-progress,deprecated}}"
         say "  touch 3 .gitkeep files (skills, lifecycle/in-progress, lifecycle/deprecated)"
         say "  mkdir -p migration-backups/"
-        say "  COMMIT #1: chore(scaffold): create .alto/ skeleton with .gitkeep files"
+        say "  COMMIT #1: chore(scaffold): create alto-scaffold/ skeleton with .gitkeep files"
         return 0
     fi
 
-    mkdir -p .alto/commands .alto/agents .alto/templates .alto/skills \
-             .alto/lifecycle/in-progress .alto/lifecycle/deprecated
-    touch .alto/skills/.gitkeep \
-          .alto/lifecycle/in-progress/.gitkeep \
-          .alto/lifecycle/deprecated/.gitkeep
+    mkdir -p alto-scaffold/commands alto-scaffold/agents alto-scaffold/templates alto-scaffold/skills \
+             alto-scaffold/lifecycle/in-progress alto-scaffold/lifecycle/deprecated
+    touch alto-scaffold/skills/.gitkeep \
+          alto-scaffold/lifecycle/in-progress/.gitkeep \
+          alto-scaffold/lifecycle/deprecated/.gitkeep
     mkdir -p migration-backups
-    commit_phase "chore(scaffold): create .alto/ skeleton with .gitkeep files" \
-        .alto/skills/.gitkeep \
-        .alto/lifecycle/in-progress/.gitkeep \
-        .alto/lifecycle/deprecated/.gitkeep
+    commit_phase "chore(scaffold): create alto-scaffold/ skeleton with .gitkeep files" \
+        alto-scaffold/skills/.gitkeep \
+        alto-scaffold/lifecycle/in-progress/.gitkeep \
+        alto-scaffold/lifecycle/deprecated/.gitkeep
 }
 
 # ---------- Phase 2 — git mv 14 + 4 OVERLAY-source files (18 total) ----------
-# Commit #2: chore(scaffold): git-mv 14 generic assets into .alto/{agents,commands,templates}
+# Commit #2: chore(scaffold): git-mv 14 generic assets into alto-scaffold/{agents,commands,templates}
 #
 # 14 GENERIC moves listed in the charter, PLUS the 4 OVERLAY command sources
 # (brainstorm/groom/launch-team/prd-traceability) — both batches in one commit because
-# the spike & ticket body both place them in Phase 2 (they need to live at .alto/commands/
+# the spike & ticket body both place them in Phase 2 (they need to live at alto-scaffold/commands/
 # before being split in commits #3-6). The 5 OVERLAY agent sources move in the same commit
 # for symmetry. ARCHITECTURE_TEMPLATE.md is already in the 14 GENERIC list (it splits in #13).
 #
 # Total git mv calls: 14 charter list + 4 OVERLAY commands + 5 OVERLAY agents = 23 moves.
 # We override the charter subject's "14" wording because the binding ticket body Phase 2 says
-# move generic AND pre-split (Phase 3 splits operate on .alto/* paths). The commit message
+# move generic AND pre-split (Phase 3 splits operate on alto-scaffold/* paths). The commit message
 # keeps the charter wording verbatim per the orchestrator instruction.
 phase2_moves() {
     say "Phase 2 — git mv 14 GENERIC files + pre-position 9 OVERLAY sources"
 
     # 14 GENERIC moves (charter list)
     local generic_pairs=(
-        ".claude/agents/researcher.md|.alto/agents/researcher.md"
-        ".claude/agents/white-hacker.md|.alto/agents/white-hacker.md"
-        ".claude/commands/architecture-docs.md|.alto/commands/architecture-docs.md"
-        ".claude/commands/design-ticket.md|.alto/commands/design-ticket.md"
-        ".claude/commands/doc-health.md|.alto/commands/doc-health.md"
-        ".claude/commands/review.md|.alto/commands/review.md"
-        "docs/templates/PRD_TEMPLATE.md|.alto/templates/PRD_TEMPLATE.md"
-        "docs/templates/DDD_STORY_TEMPLATE.md|.alto/templates/DDD_STORY_TEMPLATE.md"
-        "docs/templates/ARCHITECTURE_TEMPLATE.md|.alto/templates/ARCHITECTURE_TEMPLATE.md"
-        "docs/beads_templates/beads-epic-template.md|.alto/templates/beads-epic-template.md"
-        "docs/beads_templates/beads-ticket-template.md|.alto/templates/beads-ticket-template.md"
-        "docs/beads_templates/beads-spike-template.md|.alto/templates/beads-spike-template.md"
-        "docs/beads_templates/beads-stub-template.md|.alto/templates/beads-stub-template.md"
-        "docs/spikes/ddd_reference.md|.alto/templates/ddd_reference.md"
+        ".claude/agents/researcher.md|alto-scaffold/agents/researcher.md"
+        ".claude/agents/white-hacker.md|alto-scaffold/agents/white-hacker.md"
+        ".claude/commands/architecture-docs.md|alto-scaffold/commands/architecture-docs.md"
+        ".claude/commands/design-ticket.md|alto-scaffold/commands/design-ticket.md"
+        ".claude/commands/doc-health.md|alto-scaffold/commands/doc-health.md"
+        ".claude/commands/review.md|alto-scaffold/commands/review.md"
+        "docs/templates/PRD_TEMPLATE.md|alto-scaffold/templates/PRD_TEMPLATE.md"
+        "docs/templates/DDD_STORY_TEMPLATE.md|alto-scaffold/templates/DDD_STORY_TEMPLATE.md"
+        "docs/templates/ARCHITECTURE_TEMPLATE.md|alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md"
+        "docs/beads_templates/beads-epic-template.md|alto-scaffold/templates/beads-epic-template.md"
+        "docs/beads_templates/beads-ticket-template.md|alto-scaffold/templates/beads-ticket-template.md"
+        "docs/beads_templates/beads-spike-template.md|alto-scaffold/templates/beads-spike-template.md"
+        "docs/beads_templates/beads-stub-template.md|alto-scaffold/templates/beads-stub-template.md"
+        "docs/spikes/ddd_reference.md|alto-scaffold/templates/ddd_reference.md"
     )
 
-    # 4 OVERLAY command sources (need to be at .alto/commands/ before split commits)
+    # 4 OVERLAY command sources (need to be at alto-scaffold/commands/ before split commits)
     local overlay_cmd_pairs=(
-        ".claude/commands/brainstorm.md|.alto/commands/brainstorm.md"
-        ".claude/commands/groom.md|.alto/commands/groom.md"
-        ".claude/commands/launch-team.md|.alto/commands/launch-team.md"
-        ".claude/commands/prd-traceability.md|.alto/commands/prd-traceability.md"
+        ".claude/commands/brainstorm.md|alto-scaffold/commands/brainstorm.md"
+        ".claude/commands/groom.md|alto-scaffold/commands/groom.md"
+        ".claude/commands/launch-team.md|alto-scaffold/commands/launch-team.md"
+        ".claude/commands/prd-traceability.md|alto-scaffold/commands/prd-traceability.md"
     )
 
-    # 5 OVERLAY agent sources (need to be at .alto/agents/ before split commits)
+    # 5 OVERLAY agent sources (need to be at alto-scaffold/agents/ before split commits)
     local overlay_agent_pairs=(
-        ".claude/agents/developer.md|.alto/agents/developer.md"
-        ".claude/agents/tech-lead.md|.alto/agents/tech-lead.md"
-        ".claude/agents/project-manager.md|.alto/agents/project-manager.md"
-        ".claude/agents/qa-engineer.md|.alto/agents/qa-engineer.md"
+        ".claude/agents/developer.md|alto-scaffold/agents/developer.md"
+        ".claude/agents/tech-lead.md|alto-scaffold/agents/tech-lead.md"
+        ".claude/agents/project-manager.md|alto-scaffold/agents/project-manager.md"
+        ".claude/agents/qa-engineer.md|alto-scaffold/agents/qa-engineer.md"
     )
     # NOTE: white-hacker.md is in the GENERIC list above (will be split in commit #12)
     # That is per spike-amendment: spike tagged it GENERIC originally, but L95 hit forces
@@ -214,11 +214,11 @@ phase2_moves() {
     done
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        say "  COMMIT #2: chore(scaffold): git-mv 14 generic assets into .alto/{agents,commands,templates}"
+        say "  COMMIT #2: chore(scaffold): git-mv 14 generic assets into alto-scaffold/{agents,commands,templates}"
         return 0
     fi
 
-    commit_phase "chore(scaffold): git-mv 14 generic assets into .alto/{agents,commands,templates}" \
+    commit_phase "chore(scaffold): git-mv 14 generic assets into alto-scaffold/{agents,commands,templates}" \
         "${commit_files[@]}"
 }
 
@@ -279,11 +279,11 @@ write_overlay() {
 
 # Commit #3: brainstorm.md
 split_brainstorm() {
-    say "Phase 3a-1 — split .alto/commands/brainstorm.md + brainstorm.project.md"
+    say "Phase 3a-1 — split alto-scaffold/commands/brainstorm.md + brainstorm.project.md"
 
     # OVERLAY payload (alto-namespace + literal docs/ paths)
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/commands/brainstorm.project.md "alto namespace + literal paths" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/commands/brainstorm.project.md "alto namespace + literal paths" <<'OVERLAY_EOF'
 # /brainstorm — alto-specific addenda
 
 ## Alto namespace
@@ -299,41 +299,41 @@ verb. Both resolve to the same skill.
 
 ## Template references (this project)
 
-- PRD template: `.alto/templates/PRD_TEMPLATE.md`
-- DDD story template: `.alto/templates/DDD_STORY_TEMPLATE.md`
-- Architecture template: `.alto/templates/ARCHITECTURE_TEMPLATE.md`
+- PRD template: `alto-scaffold/templates/PRD_TEMPLATE.md`
+- DDD story template: `alto-scaffold/templates/DDD_STORY_TEMPLATE.md`
+- Architecture template: `alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md`
 OVERLAY_EOF
     else
-        write_overlay .alto/commands/brainstorm.project.md "alto namespace + literal paths" </dev/null
+        write_overlay alto-scaffold/commands/brainstorm.project.md "alto namespace + literal paths" </dev/null
     fi
 
     # GENERIC parent rewrites:
     #   (a) frontmatter `name: alto-brainstorm` -> `name: brainstorm`
     #   (b) heading `/alto-brainstorm` -> `/brainstorm`
-    #   (c) docs/templates/ template references -> .alto/templates/ (path migration)
-    sed_edit .alto/commands/brainstorm.md \
+    #   (c) docs/templates/ template references -> alto-scaffold/templates/ (path migration)
+    sed_edit alto-scaffold/commands/brainstorm.md \
         's|^name: alto-brainstorm$|name: brainstorm|' \
         "frontmatter name -> generic"
-    backup_bak .alto/commands/brainstorm.md.bak brainstorm.md.bak-1
-    sed_edit .alto/commands/brainstorm.md \
+    backup_bak alto-scaffold/commands/brainstorm.md.bak brainstorm.md.bak-1
+    sed_edit alto-scaffold/commands/brainstorm.md \
         's|/alto-brainstorm|/brainstorm|g' \
         "heading + body /alto-brainstorm -> /brainstorm"
-    backup_bak .alto/commands/brainstorm.md.bak brainstorm.md.bak-2
-    sed_edit .alto/commands/brainstorm.md \
-        's|docs/templates/|.alto/templates/|g' \
-        "template path references -> .alto/templates/"
-    backup_bak .alto/commands/brainstorm.md.bak brainstorm.md.bak-3
+    backup_bak alto-scaffold/commands/brainstorm.md.bak brainstorm.md.bak-2
+    sed_edit alto-scaffold/commands/brainstorm.md \
+        's|docs/templates/|alto-scaffold/templates/|g' \
+        "template path references -> alto-scaffold/templates/"
+    backup_bak alto-scaffold/commands/brainstorm.md.bak brainstorm.md.bak-3
 
-    commit_phase "refactor(scaffold): split .alto/commands/brainstorm.md + brainstorm.project.md" \
-        .alto/commands/brainstorm.md .alto/commands/brainstorm.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/commands/brainstorm.md + brainstorm.project.md" \
+        alto-scaffold/commands/brainstorm.md alto-scaffold/commands/brainstorm.project.md
 }
 
 # Commit #4: groom.md
 split_groom() {
-    say "Phase 3a-2 — split .alto/commands/groom.md + groom.project.md"
+    say "Phase 3a-2 — split alto-scaffold/commands/groom.md + groom.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/commands/groom.project.md "composition-root paths + ticket prefix" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/commands/groom.project.md "composition-root paths + ticket prefix" <<'OVERLAY_EOF'
 # /groom — alto-specific addenda
 
 ## Ticket ID format
@@ -380,72 +380,72 @@ NewXxxHandler(port)
 
 ## Template reference
 
-Generic template path becomes: `.alto/templates/beads-ticket-template.md`.
+Generic template path becomes: `alto-scaffold/templates/beads-ticket-template.md`.
 OVERLAY_EOF
     else
-        write_overlay .alto/commands/groom.project.md "composition-root paths + ticket prefix" </dev/null
+        write_overlay alto-scaffold/commands/groom.project.md "composition-root paths + ticket prefix" </dev/null
     fi
 
     # GENERIC parent rewrites — drop alto-specific examples + composition root references.
     #   (a) Usage example "alto-0m9.2" -> generic placeholder "<ticket-id>"
-    #   (b) Template path docs/beads_templates/ -> .alto/templates/
+    #   (b) Template path docs/beads_templates/ -> alto-scaffold/templates/
     #   (c) Drop Phase 3.5 (Claim Verification — alto-only)
     #   (d) Drop internal/composition/ + internal/xxx/* references from Phase 4
 
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|/groom alto-0m9.2|/groom <ticket-id>|g' \
         "drop alto-0m9.2 example"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-1
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-1
 
-    sed_edit .alto/commands/groom.md \
-        's|docs/beads_templates/|.alto/templates/|g' \
-        "template path -> .alto/templates/"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-2
+    sed_edit alto-scaffold/commands/groom.md \
+        's|docs/beads_templates/|alto-scaffold/templates/|g' \
+        "template path -> alto-scaffold/templates/"
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-2
 
     # Delete Phase 3.5 Claim Verification block (lines from "### Phase 3.5" through "### Phase 4 —")
     # Pattern-based deletion is durable: removes from Phase 3.5 header up to (not including) the next "### Phase" header.
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         '/^### Phase 3\.5 — Claim Verification/,/^### Phase 4 — Implementation Simulation/{/^### Phase 4/!d;}' \
         "drop Phase 3.5 Claim Verification (alto ticket-verify is alto-only)"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-3
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-3
 
     # Replace internal/-specific Phase 4a bullet ("Composition root (...)") with generic pointer
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|- Composition root (`internal/composition/app.go`, `adapters.go`)|- Composition root (project-specific path — see `groom.project.md`)|' \
         "Phase 4a: replace internal/composition/ ref with generic pointer"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-4
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-4
 
     # Replace `internal/xxx/...` lines in Phase 4b constructor-chain example with generic placeholders
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|internal/xxx/application/ports\.go:NN|{application_layer}/ports.<ext>:NN|g' \
         "Phase 4b: internal/xxx/application/ports.go -> generic placeholder"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-5
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-5
 
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|internal/xxx/infrastructure/xxx_adapter\.go|{infrastructure_layer}/xxx_adapter.<ext>|g' \
         "Phase 4b: internal/xxx/infrastructure/ -> generic placeholder"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-6
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-6
 
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|internal/composition/app\.go:NN|{composition_root}:NN  # project-specific|g' \
         "Phase 4b: internal/composition/app.go -> generic placeholder"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-7
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-7
 
-    sed_edit .alto/commands/groom.md \
+    sed_edit alto-scaffold/commands/groom.md \
         's|`internal/composition/adapters\.go`|`{composition_root}/adapters.<ext>` (see project overlay)|g' \
         "Phase 4d: internal/composition/adapters.go -> generic placeholder"
-    backup_bak .alto/commands/groom.md.bak groom.md.bak-8
+    backup_bak alto-scaffold/commands/groom.md.bak groom.md.bak-8
 
-    commit_phase "refactor(scaffold): split .alto/commands/groom.md + groom.project.md" \
-        .alto/commands/groom.md .alto/commands/groom.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/commands/groom.md + groom.project.md" \
+        alto-scaffold/commands/groom.md alto-scaffold/commands/groom.project.md
 }
 
 # Commit #5: launch-team.md
 split_launchteam() {
-    say "Phase 3a-3 — split .alto/commands/launch-team.md + launch-team.project.md"
+    say "Phase 3a-3 — split alto-scaffold/commands/launch-team.md + launch-team.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/commands/launch-team.project.md "ticket prefix + Go quality gates" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/commands/launch-team.project.md "ticket prefix + Go quality gates" <<'OVERLAY_EOF'
 # /launch-team — alto-specific addenda
 
 ## Ticket prefix
@@ -500,7 +500,7 @@ Single-ticket waves: `.notes/handoff-alty-cli-<id>.md` (e.g. `handoff-alty-cli-1
 Multi-ticket waves: `.notes/handoff-wave-<n>.md` or `.notes/handoff-<short-name>.md`.
 OVERLAY_EOF
     else
-        write_overlay .alto/commands/launch-team.project.md "ticket prefix + Go quality gates" </dev/null
+        write_overlay alto-scaffold/commands/launch-team.project.md "ticket prefix + Go quality gates" </dev/null
     fi
 
     # GENERIC parent rewrites — drop alty-cli- examples, Watermill, Go gates, .notes path.
@@ -509,95 +509,95 @@ OVERLAY_EOF
     # the language-neutral 7-phase team protocol.
 
     # (a) Usage examples: alty-cli-* -> generic <ticket-id> placeholders
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|/launch-team alty-cli-1wu|/launch-team <ticket-id>|g' \
         "Usage: drop alty-cli-1wu single-ticket example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-1
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-1
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|/launch-team alty-cli-cgm alty-cli-dfd alty-cli-yl0|/launch-team <id-1> <id-2> <id-3>|g' \
         "Usage: drop 3-ticket alty-cli example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-2
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-2
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|/launch-team alty-cli-cgm alty-cli-dfd|/launch-team <id-1> <id-2>|g' \
         "Usage: drop 2-ticket alty-cli example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-3
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-3
 
     # (b) Dev agent name template
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|`dev-alty-cli-1wu`|`dev-<ticket-id>` (e.g. `dev-acme-42`)|' \
         "Dev agent name: drop alty-cli-1wu example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-4
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-4
 
     # (c) Watermill GoChannel reference -> generic "event bus"
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|Domain events emitted or consumed (Watermill GoChannel)|Domain events emitted or consumed (project event bus)|' \
         "Step 5: Watermill GoChannel -> generic event bus"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-5
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-5
 
     # (d) Reference Files block: drop .golangci.yml + arch-go.yml (Go-specific)
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^- `\.golangci\.yml`/d' \
         "Reference Files: drop .golangci.yml line"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-6
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-6
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^- `arch-go\.yml`/d' \
         "Reference Files: drop arch-go.yml line"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-7
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-7
 
     # (e) Quality Gates block — replace Go-specific block with generic pointer
     # Match from "## Quality Gates" to the next "## " heading and replace
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^## Quality Gates (must pass at every checkpoint)/,/^## Enforced Principles/{/^## Enforced Principles/!d;}' \
         "Quality Gates: drop Go-specific gates block (use project overlay)"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-8
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-8
 
     # Inject a generic-pointer block right BEFORE the Enforced Principles heading.
     # We add a marker comment + pointer; the project overlay carries the actual gates.
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|^## Enforced Principles (non-negotiable)$|## Quality Gates (must pass at every checkpoint)\n\nProject-specific. See the `.project.md` sibling for this project'\''s quality gate commands.\n\n## Enforced Principles (non-negotiable)|' \
         "Insert generic Quality Gates pointer"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-9
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-9
 
     # (f) Drop DDD layer rules + CQRS-lite + Testify idioms lines (Go-specific)
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^- \*\*DDD layer rules\*\*/,/  Enforced by `arch-go`\./d' \
         "Enforced Principles: drop DDD layer rules (Go arch-go reference)"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-10
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-10
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^- \*\*CQRS-lite\*\* — command handlers/,/  queries have no side effects; events route through Watermill GoChannel\./d' \
         "Enforced Principles: drop CQRS-lite + Watermill line"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-11
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-11
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         '/^- \*\*Testify idioms\*\*/,/  for preconditions, `assert\.InDelta` for floats (testifylint enforces)\./d' \
         "Enforced Principles: drop Testify idioms (Go-specific)"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-12
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-12
 
     # (g) Handoff path: `.notes/handoff-alty-cli-1wu.md` -> generic `<wave-or-ticket-id>`
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|handoff-alty-cli-1wu\.md|handoff-<wave-or-ticket-id>.md|g' \
         "Phase 7: drop alty-cli-1wu handoff filename example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-13
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-13
 
-    sed_edit .alto/commands/launch-team.md \
+    sed_edit alto-scaffold/commands/launch-team.md \
         's|(e\.g\., `handoff-alty-cli-1wu\.md`)|(e.g., `handoff-acme-42.md`)|g' \
         "Rule 7: drop alty-cli-1wu handoff filename example"
-    backup_bak .alto/commands/launch-team.md.bak launch-team.md.bak-14
+    backup_bak alto-scaffold/commands/launch-team.md.bak launch-team.md.bak-14
 
-    commit_phase "refactor(scaffold): split .alto/commands/launch-team.md + launch-team.project.md" \
-        .alto/commands/launch-team.md .alto/commands/launch-team.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/commands/launch-team.md + launch-team.project.md" \
+        alto-scaffold/commands/launch-team.md alto-scaffold/commands/launch-team.project.md
 }
 
 # Commit #6: prd-traceability.md (RLM pattern stays generic; C1-C25 -> overlay)
 split_prdtraceability() {
-    say "Phase 3a-4 — split .alto/commands/prd-traceability.md + prd-traceability.project.md"
+    say "Phase 3a-4 — split alto-scaffold/commands/prd-traceability.md + prd-traceability.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/commands/prd-traceability.project.md "alto C1-C25 + k7m.4 + doc-health invocation" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/commands/prd-traceability.project.md "alto C1-C25 + k7m.4 + doc-health invocation" <<'OVERLAY_EOF'
 # /prd-traceability — alto-specific addenda
 
 ## PRD Capability Map — alto P0 + P1 tables
@@ -608,7 +608,7 @@ split_prdtraceability() {
 |----|---------------|-----------------|----------------------|
 | C1 | CLI tool (`vs`) | Bootstrap | CLI command tree, subcommands |
 | C2 | MCP server | Bootstrap | MCP tool schemas, shared ports |
-| C3 | `.alto/` project directory | Bootstrap | Directory structure, config.toml |
+| C3 | `alto-scaffold/` project directory | Bootstrap | Directory structure, config.toml |
 | C4 | `alto init` with preview | Bootstrap | Preview, confirm, file safety |
 | C5 | Global settings detection | Bootstrap | Tool detection, conflict resolution |
 | C6 | Existing project adoption (`alto init --existing`) | Rescue | Branch safety, gap report, scaffolding |
@@ -667,7 +667,7 @@ alto doc-health          # alto-specific doc-health invocation
 ```
 OVERLAY_EOF
     else
-        write_overlay .alto/commands/prd-traceability.project.md "alto C1-C25 + k7m.4 + doc-health invocation" </dev/null
+        write_overlay alto-scaffold/commands/prd-traceability.project.md "alto C1-C25 + k7m.4 + doc-health invocation" </dev/null
     fi
 
     # GENERIC parent rewrites — drop the entire P0 capability table + P1 table + worked
@@ -675,51 +675,51 @@ OVERLAY_EOF
 
     # (a) Delete P0 table body (rows from "| C1 |" through "| C25 |") AND the P1 section header + table.
     # Replace with a generic pointer. Use a block delete pattern.
-    sed_edit .alto/commands/prd-traceability.md \
+    sed_edit alto-scaffold/commands/prd-traceability.md \
         '/^### P0 Capability → Bounded Context → Expected Ticket Coverage$/,/^## Implementation$/{/^## Implementation$/!d;}' \
         "Drop alto P0 + P1 capability tables (C1-C25, alto-only)"
-    backup_bak .alto/commands/prd-traceability.md.bak prd-traceability.md.bak-1
+    backup_bak alto-scaffold/commands/prd-traceability.md.bak prd-traceability.md.bak-1
 
     # Insert a generic pointer immediately before "## Implementation"
-    sed_edit .alto/commands/prd-traceability.md \
+    sed_edit alto-scaffold/commands/prd-traceability.md \
         's|^## Implementation$|### Capability Table\n\nProject-specific. See `prd-traceability.project.md` for this project'\''s PRD capability map (P0 + P1).\n\n## Implementation|' \
         "Insert generic Capability Table pointer (project overlay carries the table)"
-    backup_bak .alto/commands/prd-traceability.md.bak prd-traceability.md.bak-2
+    backup_bak alto-scaffold/commands/prd-traceability.md.bak prd-traceability.md.bak-2
 
     # (b) Replace worked-example report (alto-k7m.4 references) with a generic example
-    sed_edit .alto/commands/prd-traceability.md \
+    sed_edit alto-scaffold/commands/prd-traceability.md \
         '/^PRD TRACEABILITY REPORT: <scope>$/,/^Gaps: 2 capabilities with no ticket coverage$/{/^PRD TRACEABILITY REPORT: <scope>$/!{/^Gaps: 2 capabilities with no ticket coverage$/!d;};}' \
         "Worked example: strip alto-k7m.4 details (keep header + footer placeholder)"
-    backup_bak .alto/commands/prd-traceability.md.bak prd-traceability.md.bak-3
+    backup_bak alto-scaffold/commands/prd-traceability.md.bak prd-traceability.md.bak-3
 
     # (c) Drop alto doc-health invocation lines from "Implementation" section if any remain in body.
     # The worked-example block has "alto doc-health" — that block is already deleted above.
     # Re-check via a final tidy: replace residual `alto doc-health` mentions with generic doc-health.
-    sed_edit .alto/commands/prd-traceability.md \
+    sed_edit alto-scaffold/commands/prd-traceability.md \
         's|alto doc-health|doc-health|g' \
         "Strip alto-namespace from any residual doc-health mentions"
-    backup_bak .alto/commands/prd-traceability.md.bak prd-traceability.md.bak-4
+    backup_bak alto-scaffold/commands/prd-traceability.md.bak prd-traceability.md.bak-4
 
-    sed_edit .alto/commands/prd-traceability.md \
+    sed_edit alto-scaffold/commands/prd-traceability.md \
         's|alto doc-review|doc-review|g' \
         "Strip alto-namespace from any residual doc-review mentions"
-    backup_bak .alto/commands/prd-traceability.md.bak prd-traceability.md.bak-5
+    backup_bak alto-scaffold/commands/prd-traceability.md.bak prd-traceability.md.bak-5
 
-    commit_phase "refactor(scaffold): split .alto/commands/prd-traceability.md + prd-traceability.project.md (RLM pattern stays generic; C1-C25 -> overlay)" \
-        .alto/commands/prd-traceability.md .alto/commands/prd-traceability.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/commands/prd-traceability.md + prd-traceability.project.md (RLM pattern stays generic; C1-C25 -> overlay)" \
+        alto-scaffold/commands/prd-traceability.md alto-scaffold/commands/prd-traceability.project.md
 }
 
 # Commit #7: architecture-docs.md cross-ref edit (no split; sed only)
 edit_architecturedocs() {
-    say "Phase 3a-5 — sed .alto/commands/architecture-docs.md L34+L51 prd-traceability path"
+    say "Phase 3a-5 — sed alto-scaffold/commands/architecture-docs.md L34+L51 prd-traceability path"
 
-    sed_edit .alto/commands/architecture-docs.md \
-        's|\.claude/commands/prd-traceability\.md|.alto/commands/prd-traceability.md|g' \
-        "L34+L51: .claude/commands/prd-traceability.md -> .alto/commands/prd-traceability.md"
-    backup_bak .alto/commands/architecture-docs.md.bak architecture-docs.md.bak
+    sed_edit alto-scaffold/commands/architecture-docs.md \
+        's|\.claude/commands/prd-traceability\.md|alto-scaffold/commands/prd-traceability.md|g' \
+        "L34+L51: .claude/commands/prd-traceability.md -> alto-scaffold/commands/prd-traceability.md"
+    backup_bak alto-scaffold/commands/architecture-docs.md.bak architecture-docs.md.bak
 
-    commit_phase "refactor(scaffold): sed -i.bak .alto/commands/architecture-docs.md L34+L51 prd-traceability path -> .alto/commands/" \
-        .alto/commands/architecture-docs.md
+    commit_phase "refactor(scaffold): sed -i.bak alto-scaffold/commands/architecture-docs.md L34+L51 prd-traceability path -> alto-scaffold/commands/" \
+        alto-scaffold/commands/architecture-docs.md
 }
 
 phase3a_command_splits() {
@@ -735,10 +735,10 @@ phase3a_command_splits() {
 
 # Commit #8: developer.md
 split_developer() {
-    say "Phase 3b-1 — split .alto/agents/developer.md + developer.project.md"
+    say "Phase 3b-1 — split alto-scaffold/agents/developer.md + developer.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/agents/developer.project.md "Go 1.26+, Watermill, lint v2" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/agents/developer.project.md "Go 1.26+, Watermill, lint v2" <<'OVERLAY_EOF'
 # Developer — alto Go addenda
 
 ## Project language / runtime
@@ -797,7 +797,7 @@ golangci-lint run        # Meta-linter
 ```
 OVERLAY_EOF
     else
-        write_overlay .alto/agents/developer.project.md "Go 1.26+, Watermill, lint v2" </dev/null
+        write_overlay alto-scaffold/agents/developer.project.md "Go 1.26+, Watermill, lint v2" </dev/null
     fi
 
     # GENERIC parent rewrites:
@@ -809,64 +809,64 @@ OVERLAY_EOF
     #   (f) Drop the cmd/alto/* sub-tree from DDD Source Layout
 
     # (a) Remove "The codebase is Go 1.26+."
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         's| The codebase is \*\*Go 1\.26+\*\*\.||g' \
         "Drop Go 1.26+ mention (project-specific)"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-1
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-1
 
     # (c) Replace "Watermill GoChannel for event dispatch" line with generic event bus
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         's|- Watermill GoChannel for event dispatch (where applicable)|- Project event bus for event dispatch (see project overlay)|' \
         "CQRS-lite: Watermill -> generic event bus"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-2
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-2
 
     # (b)+(f) Replace the DDD Source Layout tree block (Go-specific paths) with generic.
     # Match from "```" after "## DDD Source Layout" header through the trailing "```".
     # Simpler approach: delete the block containing internal/+cmd/ paths and replace with a generic.
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         '/^## DDD Source Layout$/,/^## Go DDD Patterns$/{/^## DDD Source Layout$/!{/^## Go DDD Patterns$/!d;};}' \
         "Drop Go-specific DDD Source Layout tree (project overlay has Go variant)"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-3
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-3
 
     # Insert generic layout pointer between the now-empty section and "## Go DDD Patterns"
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         's|^## Go DDD Patterns$|```\nsrc/                        # adjust per language conventions\n├── {context}/              # one directory per bounded context\n│   ├── domain/             # core business logic (ZERO external deps)\n│   ├── application/        # use cases, command/query handlers, ports\n│   └── infrastructure/     # adapters for external concerns\n├── shared/domain/          # shared kernel across contexts\n```\n\nFor this project'\''s exact layout, see `developer.project.md`.\n\n## DDD Patterns|' \
         "Insert generic DDD Source Layout + rename Go DDD Patterns -> DDD Patterns"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-4
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-4
 
     # (d) Delete "## Linting Rules (golangci-lint v2)" entire section to "## Quality Gates"
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         '/^## Linting Rules (golangci-lint v2)$/,/^## Quality Gates$/{/^## Quality Gates$/!d;}' \
         "Drop Linting Rules (golangci-lint v2) section — Go-specific"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-5
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-5
 
     # (e) Replace Quality Gates Go commands block with generic pointer.
     # The block is: ## Quality Gates\n\n```bash\ngo build ./... ...\n```\n\n**All must pass...
     # Delete the "go build ./...\n...\ngolangci-lint run" block and replace with a generic pointer.
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         '/^go build \.\/\.\.\.           # Compile check$/,/^golangci-lint run        # Meta-linter$/d' \
         "Quality Gates: drop Go-specific gate commands"
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-6
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-6
 
-    sed_edit .alto/agents/developer.md \
+    sed_edit alto-scaffold/agents/developer.md \
         's|^```bash$|```bash\n# Project-specific. See developer.project.md for this project'\''s commands.|' \
         "Quality Gates: insert generic pointer in the now-empty bash block (first occurrence)"
     # The above is global; it would prepend the marker to EVERY ```bash. Mitigation: only the
     # first ```bash in this file is the now-empty Quality Gates block (the Go DDD Patterns block
     # was renamed to DDD Patterns and uses ```go). Other code blocks use ```go. Verified by
     # reading the source before authoring this script.
-    backup_bak .alto/agents/developer.md.bak developer.md.bak-7
+    backup_bak alto-scaffold/agents/developer.md.bak developer.md.bak-7
 
-    commit_phase "refactor(scaffold): split .alto/agents/developer.md + developer.project.md (Go 1.26+, Watermill, lint v2)" \
-        .alto/agents/developer.md .alto/agents/developer.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/agents/developer.md + developer.project.md (Go 1.26+, Watermill, lint v2)" \
+        alto-scaffold/agents/developer.md alto-scaffold/agents/developer.project.md
 }
 
 # Commit #9: tech-lead.md
 split_techlead() {
-    say "Phase 3b-2 — split .alto/agents/tech-lead.md + tech-lead.project.md"
+    say "Phase 3b-2 — split alto-scaffold/agents/tech-lead.md + tech-lead.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/agents/tech-lead.project.md "Go greps + arch-go" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/agents/tech-lead.project.md "Go greps + arch-go" <<'OVERLAY_EOF'
 # Tech Lead — alto Go addenda
 
 ## Project language / runtime
@@ -928,76 +928,76 @@ golangci-lint v2 config in `.golangci.yml`. Key linters:
 DDD layer enforcement also handled by `arch-go` (MIT) — see `arch-go.yml`.
 OVERLAY_EOF
     else
-        write_overlay .alto/agents/tech-lead.project.md "Go greps + arch-go" </dev/null
+        write_overlay alto-scaffold/agents/tech-lead.project.md "Go greps + arch-go" </dev/null
     fi
 
     # GENERIC parent rewrites — strip Go runtime mention, internal/ paths, Watermill, lint tables.
 
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         's| The codebase is \*\*Go 1\.26+\*\*\.||g' \
         "Drop Go 1.26+ mention"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-1
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-1
 
     # DDD Layer Paths section — drop Go-specific layout, point to project overlay
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         '/^\*\*DDD Layer Paths:\*\*$/,/^### 2\. CQRS-lite Compliance$/{/^### 2\. CQRS-lite Compliance$/!d;}' \
         "Drop Go-specific DDD Layer Paths block"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-2
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-2
 
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         's|^### 2\. CQRS-lite Compliance$|**DDD Layer Paths:** project-specific. See `tech-lead.project.md`.\n\n### 2. CQRS-lite Compliance|' \
         "Insert generic DDD Layer Paths pointer"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-3
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-3
 
     # CQRS-lite section — drop Watermill GoChannel
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         '/^- Watermill GoChannel for event dispatch (where applicable)$/d' \
         "CQRS-lite: drop Watermill GoChannel"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-4
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-4
 
     # Layer Violation Detection — drop Go grep recipes (entire ### 3 section's bash block)
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         '/^### 3\. Layer Violation Detection$/,/^### 4\. Code Review/{/^### 4\. Code Review/!d;}' \
         "Drop Go grep recipes (Layer Violation Detection section)"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-5
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-5
 
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         's|^### 4\. Code Review — What to Look For$|### 3. Layer Violation Detection\n\nProject-specific. See `tech-lead.project.md` for grep recipes that detect cross-layer imports.\n\n### 4. Code Review — What to Look For|' \
         "Insert generic Layer Violation Detection pointer"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-6
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-6
 
     # Quality Gate Enforcement — drop Go commands
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         '/^### 6\. Quality Gate Enforcement$/,/^### 7\. Linting Enforcement$/{/^### 7\. Linting Enforcement$/!d;}' \
         "Drop Go Quality Gate Enforcement commands"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-7
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-7
 
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         's|^### 7\. Linting Enforcement$|### 6. Quality Gate Enforcement\n\nProject-specific. See `tech-lead.project.md` for this project'\''s gates.\n\n### 7. Linting Enforcement|' \
         "Insert generic Quality Gate Enforcement pointer"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-8
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-8
 
     # Linting Enforcement — drop golangci-lint v2 table
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         '/^### 7\. Linting Enforcement$/,/^## Key Rules$/{/^## Key Rules$/!d;}' \
         "Drop golangci-lint v2 table (project overlay carries it)"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-9
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-9
 
-    sed_edit .alto/agents/tech-lead.md \
+    sed_edit alto-scaffold/agents/tech-lead.md \
         's|^## Key Rules$|### 7. Linting Enforcement\n\nProject-specific. See `tech-lead.project.md` for this project'\''s lint config and rules.\n\n## Key Rules|' \
         "Insert generic Linting Enforcement pointer"
-    backup_bak .alto/agents/tech-lead.md.bak tech-lead.md.bak-10
+    backup_bak alto-scaffold/agents/tech-lead.md.bak tech-lead.md.bak-10
 
-    commit_phase "refactor(scaffold): split .alto/agents/tech-lead.md + tech-lead.project.md (Go greps + arch-go)" \
-        .alto/agents/tech-lead.md .alto/agents/tech-lead.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/agents/tech-lead.md + tech-lead.project.md (Go greps + arch-go)" \
+        alto-scaffold/agents/tech-lead.md alto-scaffold/agents/tech-lead.project.md
 }
 
 # Commit #10: project-manager.md
 split_pm() {
-    say "Phase 3b-3 — split .alto/agents/project-manager.md + project-manager.project.md"
+    say "Phase 3b-3 — split alto-scaffold/agents/project-manager.md + project-manager.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/agents/project-manager.project.md "internal/{context}/, cmd/alto/" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/agents/project-manager.project.md "internal/{context}/, cmd/alto/" <<'OVERLAY_EOF'
 # Project Manager — alto Go addenda
 
 ## Project language / runtime
@@ -1006,9 +1006,9 @@ split_pm() {
 
 ## Ticket templates (this project)
 
-- Epic: `.alto/templates/beads-epic-template.md`
-- Task: `.alto/templates/beads-ticket-template.md`
-- Spike: `.alto/templates/beads-spike-template.md`
+- Epic: `alto-scaffold/templates/beads-epic-template.md`
+- Task: `alto-scaffold/templates/beads-ticket-template.md`
+- Spike: `alto-scaffold/templates/beads-spike-template.md`
 
 ## Go Quality Gates Reference
 
@@ -1049,71 +1049,71 @@ cmd/alto-mcp/                     # MCP server entry point
 | Linting | `golangci-lint run` in quality gates |
 OVERLAY_EOF
     else
-        write_overlay .alto/agents/project-manager.project.md "internal/{context}/, cmd/alto/" </dev/null
+        write_overlay alto-scaffold/agents/project-manager.project.md "internal/{context}/, cmd/alto/" </dev/null
     fi
 
     # GENERIC parent rewrites
 
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         's| The codebase is \*\*Go 1\.26+\*\*\.||g' \
         "Drop Go 1.26+ mention"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-1
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-1
 
-    # Ticket Templates section — replace docs/beads_templates/ with .alto/templates/
-    sed_edit .alto/agents/project-manager.md \
-        's|docs/beads_templates/|.alto/templates/|g' \
-        "Ticket Templates: docs/beads_templates/ -> .alto/templates/"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-2
+    # Ticket Templates section — replace docs/beads_templates/ with alto-scaffold/templates/
+    sed_edit alto-scaffold/agents/project-manager.md \
+        's|docs/beads_templates/|alto-scaffold/templates/|g' \
+        "Ticket Templates: docs/beads_templates/ -> alto-scaffold/templates/"
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-2
 
     # Drop "## Go Quality Gates Reference" entire block (with code) -> pointer to project overlay
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         '/^## Go Quality Gates Reference$/,/^## Go Project Structure$/{/^## Go Project Structure$/!d;}' \
         "Drop Go Quality Gates Reference (Go-specific commands)"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-3
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-3
 
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         's|^## Go Project Structure$|## Quality Gates Reference\n\nProject-specific. See `project-manager.project.md` for this project'\''s gate commands.\n\n## Project Structure|' \
         "Insert generic Quality Gates Reference pointer + rename Go Project Structure"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-4
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-4
 
     # Replace the internal/ tree block with a generic layout pointer
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         '/^## Project Structure$/,/^## Go Ticket Conventions$/{/^## Project Structure$/!{/^## Go Ticket Conventions$/!d;};}' \
         "Drop Go-specific project tree (kept project overlay)"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-5
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-5
 
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         's|^## Go Ticket Conventions$|See `project-manager.project.md` for this project'\''s source layout.\n\n## Ticket Conventions|' \
         "Insert generic source-layout pointer + rename Go Ticket Conventions"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-6
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-6
 
     # Drop Go-specific Ticket Conventions bullets (golangci-lint, BDD test name format, etc.)
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         's|- Each ticket specifies which `internal/{context}/` it affects|- Each ticket specifies which bounded context it affects|' \
         "Ticket Conventions: internal/{context}/ -> bounded context (generic)"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-7
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-7
 
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         's|- Acceptance criteria include: `go build` passes, `go test -race` passes, `golangci-lint run` passes|- Acceptance criteria include the project'\''s quality gates (build, test, lint)|' \
         "Ticket Conventions: Go AC line -> generic"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-8
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-8
 
     # Enforced Principles table — drop the Linting (golangci-lint) row (Go-specific)
-    sed_edit .alto/agents/project-manager.md \
+    sed_edit alto-scaffold/agents/project-manager.md \
         '/^| Linting | `golangci-lint run` in quality gates |$/d' \
         "Enforced Principles: drop golangci-lint row"
-    backup_bak .alto/agents/project-manager.md.bak project-manager.md.bak-9
+    backup_bak alto-scaffold/agents/project-manager.md.bak project-manager.md.bak-9
 
-    commit_phase "refactor(scaffold): split .alto/agents/project-manager.md + project-manager.project.md (internal/{context}/, cmd/alto/)" \
-        .alto/agents/project-manager.md .alto/agents/project-manager.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/agents/project-manager.md + project-manager.project.md (internal/{context}/, cmd/alto/)" \
+        alto-scaffold/agents/project-manager.md alto-scaffold/agents/project-manager.project.md
 }
 
 # Commit #11: qa-engineer.md
 split_qa() {
-    say "Phase 3b-4 — split .alto/agents/qa-engineer.md + qa-engineer.project.md"
+    say "Phase 3b-4 — split alto-scaffold/agents/qa-engineer.md + qa-engineer.project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/agents/qa-engineer.project.md "go test recipes" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/agents/qa-engineer.project.md "go test recipes" <<'OVERLAY_EOF'
 # QA Engineer — alto Go addenda
 
 ## Project language / runtime
@@ -1142,46 +1142,46 @@ golangci-lint run        # Meta-linter
 ```
 OVERLAY_EOF
     else
-        write_overlay .alto/agents/qa-engineer.project.md "go test recipes" </dev/null
+        write_overlay alto-scaffold/agents/qa-engineer.project.md "go test recipes" </dev/null
     fi
 
-    sed_edit .alto/agents/qa-engineer.md \
+    sed_edit alto-scaffold/agents/qa-engineer.md \
         's| The codebase is \*\*Go 1\.26+\*\*\.||g' \
         "Drop Go 1.26+ mention"
-    backup_bak .alto/agents/qa-engineer.md.bak qa-engineer.md.bak-1
+    backup_bak alto-scaffold/agents/qa-engineer.md.bak qa-engineer.md.bak-1
 
     # Drop "## Test Commands" Go-specific block, replace with pointer
-    sed_edit .alto/agents/qa-engineer.md \
+    sed_edit alto-scaffold/agents/qa-engineer.md \
         '/^## Test Commands$/,/^## Go Test Patterns$/{/^## Go Test Patterns$/!d;}' \
         "Drop Go test command recipes (project overlay carries them)"
-    backup_bak .alto/agents/qa-engineer.md.bak qa-engineer.md.bak-2
+    backup_bak alto-scaffold/agents/qa-engineer.md.bak qa-engineer.md.bak-2
 
-    sed_edit .alto/agents/qa-engineer.md \
+    sed_edit alto-scaffold/agents/qa-engineer.md \
         's|^## Go Test Patterns$|## Test Commands\n\nProject-specific. See `qa-engineer.project.md` for this project'\''s test command recipes.\n\n## Test Patterns|' \
         "Insert generic Test Commands pointer + rename Go Test Patterns"
-    backup_bak .alto/agents/qa-engineer.md.bak qa-engineer.md.bak-3
+    backup_bak alto-scaffold/agents/qa-engineer.md.bak qa-engineer.md.bak-3
 
     # Drop "## Quality Gates" Go-specific block
-    sed_edit .alto/agents/qa-engineer.md \
+    sed_edit alto-scaffold/agents/qa-engineer.md \
         '/^## Quality Gates$/,/^## Key Rules$/{/^## Key Rules$/!d;}' \
         "Drop Go Quality Gates commands"
-    backup_bak .alto/agents/qa-engineer.md.bak qa-engineer.md.bak-4
+    backup_bak alto-scaffold/agents/qa-engineer.md.bak qa-engineer.md.bak-4
 
-    sed_edit .alto/agents/qa-engineer.md \
+    sed_edit alto-scaffold/agents/qa-engineer.md \
         's|^## Key Rules$|## Quality Gates\n\nProject-specific. See `qa-engineer.project.md` for this project'\''s gate commands.\n\n## Key Rules|' \
         "Insert generic Quality Gates pointer"
-    backup_bak .alto/agents/qa-engineer.md.bak qa-engineer.md.bak-5
+    backup_bak alto-scaffold/agents/qa-engineer.md.bak qa-engineer.md.bak-5
 
-    commit_phase "refactor(scaffold): split .alto/agents/qa-engineer.md + qa-engineer.project.md (go test recipes)" \
-        .alto/agents/qa-engineer.md .alto/agents/qa-engineer.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/agents/qa-engineer.md + qa-engineer.project.md (go test recipes)" \
+        alto-scaffold/agents/qa-engineer.md alto-scaffold/agents/qa-engineer.project.md
 }
 
 # Commit #12: white-hacker.md (spike amendment — L95 golangci-lint --enable gosec)
 split_whitehacker() {
-    say "Phase 3b-5 — split .alto/agents/white-hacker.md + white-hacker.project.md (spike amendment)"
+    say "Phase 3b-5 — split alto-scaffold/agents/white-hacker.md + white-hacker.project.md (spike amendment)"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/agents/white-hacker.project.md "OVERLAY amendment: L95 gosec invocation" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/agents/white-hacker.project.md "OVERLAY amendment: L95 gosec invocation" <<'OVERLAY_EOF'
 # White Hat Hacker — alto Go addenda
 
 ## Project language / runtime
@@ -1208,42 +1208,42 @@ grep -rn "password\|secret\|api.key\|token" --include="*.go" . | grep -v "_test.
 ```
 OVERLAY_EOF
     else
-        write_overlay .alto/agents/white-hacker.project.md "OVERLAY amendment: L95 gosec invocation" </dev/null
+        write_overlay alto-scaffold/agents/white-hacker.project.md "OVERLAY amendment: L95 gosec invocation" </dev/null
     fi
 
-    sed_edit .alto/agents/white-hacker.md \
+    sed_edit alto-scaffold/agents/white-hacker.md \
         's| The codebase is \*\*Go 1\.26+\*\*\.||g' \
         "Drop Go 1.26+ mention"
-    backup_bak .alto/agents/white-hacker.md.bak white-hacker.md.bak-1
+    backup_bak alto-scaffold/agents/white-hacker.md.bak white-hacker.md.bak-1
 
     # Drop the Go-specific `golangci-lint run --enable gosec` line (the spike-amendment L95 hit)
-    sed_edit .alto/agents/white-hacker.md \
+    sed_edit alto-scaffold/agents/white-hacker.md \
         '/^# Static analysis security rules$/,/^golangci-lint run --enable gosec$/d' \
         "Drop Go golangci-lint gosec invocation (L95 — spike amendment)"
-    backup_bak .alto/agents/white-hacker.md.bak white-hacker.md.bak-2
+    backup_bak alto-scaffold/agents/white-hacker.md.bak white-hacker.md.bak-2
 
     # Drop the govulncheck Go-specific block
-    sed_edit .alto/agents/white-hacker.md \
+    sed_edit alto-scaffold/agents/white-hacker.md \
         '/^# Go vulnerability check$/,/^govulncheck \.\/\.\.\.$/d' \
         "Drop Go govulncheck recipe"
-    backup_bak .alto/agents/white-hacker.md.bak white-hacker.md.bak-3
+    backup_bak alto-scaffold/agents/white-hacker.md.bak white-hacker.md.bak-3
 
     # Drop the Go list dependency-audit block
-    sed_edit .alto/agents/white-hacker.md \
+    sed_edit alto-scaffold/agents/white-hacker.md \
         '/^# Dependency audit$/,/^go list -m -json all | grep -i "CVE\\|vulnerability"$/d' \
         "Drop Go dependency-audit recipe"
-    backup_bak .alto/agents/white-hacker.md.bak white-hacker.md.bak-4
+    backup_bak alto-scaffold/agents/white-hacker.md.bak white-hacker.md.bak-4
 
     # Generalise the hardcoded-secrets grep (drop --include="*.go").
     # Uses # as delimiter because replacement contains literal | (shell pipes).
     # Anchored to ^...$ so it does not match the word "secret" elsewhere in the file.
-    sed_edit .alto/agents/white-hacker.md \
+    sed_edit alto-scaffold/agents/white-hacker.md \
         's#^grep -rn "password\\|secret\\|api\.key\\|token" --include="\*\.go" \. | grep -v "_test\.go" | grep -v "vendor/"$#grep -rnE "password\|secret\|api[._-]?key\|token" . | grep -v "vendor/"#' \
         "Generalise hardcoded-secret grep (drop Go-specific --include)"
-    backup_bak .alto/agents/white-hacker.md.bak white-hacker.md.bak-5
+    backup_bak alto-scaffold/agents/white-hacker.md.bak white-hacker.md.bak-5
 
-    commit_phase "refactor(scaffold): split .alto/agents/white-hacker.md + white-hacker.project.md (OVERLAY amendment: L95 golangci-lint --enable gosec)" \
-        .alto/agents/white-hacker.md .alto/agents/white-hacker.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/agents/white-hacker.md + white-hacker.project.md (OVERLAY amendment: L95 golangci-lint --enable gosec)" \
+        alto-scaffold/agents/white-hacker.md alto-scaffold/agents/white-hacker.project.md
 }
 
 phase3b_agent_splits() {
@@ -1257,10 +1257,10 @@ phase3b_agent_splits() {
 
 # ---------- Phase 3c — Split ARCHITECTURE_TEMPLATE.md (commit #13) ----------
 split_archtemplate() {
-    say "Phase 3c — split .alto/templates/ARCHITECTURE_TEMPLATE.md + .project.md"
+    say "Phase 3c — split alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md + .project.md"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        write_overlay .alto/templates/ARCHITECTURE_TEMPLATE.project.md "Go internal/{context}/ overlay" <<'OVERLAY_EOF'
+        write_overlay alto-scaffold/templates/ARCHITECTURE_TEMPLATE.project.md "Go internal/{context}/ overlay" <<'OVERLAY_EOF'
 ---
 last_reviewed: YYYY-MM-DD
 owner: architecture
@@ -1305,55 +1305,55 @@ cmd/
 | Package manager | go mod  | Stdlib                 |
 OVERLAY_EOF
     else
-        write_overlay .alto/templates/ARCHITECTURE_TEMPLATE.project.md "Go internal/{context}/ overlay" </dev/null
+        write_overlay alto-scaffold/templates/ARCHITECTURE_TEMPLATE.project.md "Go internal/{context}/ overlay" </dev/null
     fi
 
     # GENERIC parent rewrites — drop Python residue.
     # (a) Line 66 "pure Python" -> "pure" (language-neutral)
-    sed_edit .alto/templates/ARCHITECTURE_TEMPLATE.md \
+    sed_edit alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md \
         's|Nothing (pure Python)|Nothing (pure — language-specific overlay)|' \
         "Layer Rules: drop 'pure Python' residue"
-    backup_bak .alto/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-1
+    backup_bak alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-1
 
     # (b) Drop the Python src/{domain,application,infrastructure}/ tree block (lines 72-85).
     # Replace with a generic pointer + reference to the project overlay.
-    sed_edit .alto/templates/ARCHITECTURE_TEMPLATE.md \
+    sed_edit alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md \
         '/^### Source Layout$/,/^## 4\. Bounded Context Integration$/{/^### Source Layout$/!{/^## 4\. Bounded Context Integration$/!d;};}' \
         "Source Layout: drop Python tree (project overlay carries language-specific tree)"
-    backup_bak .alto/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-2
+    backup_bak alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-2
 
-    sed_edit .alto/templates/ARCHITECTURE_TEMPLATE.md \
+    sed_edit alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md \
         's|^### Source Layout$|### Source Layout\n\nLanguage-specific. See your project'\''s `ARCHITECTURE_TEMPLATE.project.md` overlay or fill in directly.\n|' \
         "Insert generic Source Layout pointer"
-    backup_bak .alto/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-3
+    backup_bak alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-3
 
     # (c) Line 138 "Runtime | Python 3.12 | Project standard" + "Package manager | uv | ..."
     # Drop these two rows; keep the table header + a placeholder row.
-    sed_edit .alto/templates/ARCHITECTURE_TEMPLATE.md \
+    sed_edit alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md \
         '/^| Runtime         | Python 3\.12 | Project standard       |$/d' \
         "Deployment: drop Python 3.12 row"
-    backup_bak .alto/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-4
+    backup_bak alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-4
 
-    sed_edit .alto/templates/ARCHITECTURE_TEMPLATE.md \
+    sed_edit alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md \
         '/^| Package manager | uv          | Speed, reproducibility |$/d' \
         "Deployment: drop uv row"
-    backup_bak .alto/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-5
+    backup_bak alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md.bak ARCHITECTURE_TEMPLATE.md.bak-5
 
-    commit_phase "refactor(scaffold): split .alto/templates/ARCHITECTURE_TEMPLATE.md + .project.md (Go internal/{context}/ overlay)" \
-        .alto/templates/ARCHITECTURE_TEMPLATE.md .alto/templates/ARCHITECTURE_TEMPLATE.project.md
+    commit_phase "refactor(scaffold): split alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md + .project.md (Go internal/{context}/ overlay)" \
+        alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md alto-scaffold/templates/ARCHITECTURE_TEMPLATE.project.md
 }
 
 phase3c_template_split() {
     split_archtemplate
 }
 
-# ---------- Phase 4 — Write .alto/CONTEXT.md (commit #14) ----------
+# ---------- Phase 4 — Write alto-scaffold/CONTEXT.md (commit #14) ----------
 phase4_context() {
-    say "Phase 4 — write .alto/CONTEXT.md (5 ubiquitous-language terms)"
+    say "Phase 4 — write alto-scaffold/CONTEXT.md (5 ubiquitous-language terms)"
 
     if [ "$DRY_RUN" -eq 0 ]; then
-        cat > .alto/CONTEXT.md <<'CTX_EOF'
-# .alto/ Scaffold — Ubiquitous Language
+        cat > alto-scaffold/CONTEXT.md <<'CTX_EOF'
+# alto-scaffold/ Scaffold — Ubiquitous Language
 
 This document defines the terms used across this scaffold's commands, agents, templates,
 and skills. Mirrors mattpocock/skills' `CONTEXT.md` role ("helps agents decode the jargon
@@ -1362,11 +1362,11 @@ used in the project").
 ## Core terms (in this order)
 
 ### Scaffold
-The `.alto/` tree shipped to downstream consumers. It contains workflow assets that any
+The `alto-scaffold/` tree shipped to downstream consumers. It contains workflow assets that any
 project can adopt: commands, agents, templates, skills. Lifecycle folders track maturity.
 
 ### Workflow Asset
-Any `.md` file under `.alto/` (command, agent, template, or skill). Each asset carries
+Any `.md` file under `alto-scaffold/` (command, agent, template, or skill). Each asset carries
 YAML frontmatter declaring its `name`, `description`, `kind`, `phase`, and required tools.
 
 ### GENERIC
@@ -1381,8 +1381,8 @@ references (lint configs, test commands), and any other context that does not ge
 
 ### `.project.md` sibling
 The file naming convention `<asset>.project.md` carrying project-local content next to
-a GENERIC asset. Example: `.alto/commands/groom.md` (GENERIC) lives next to
-`.alto/commands/groom.project.md` (OVERLAY). Claude Code automatically merges sibling
+a GENERIC asset. Example: `alto-scaffold/commands/groom.md` (GENERIC) lives next to
+`alto-scaffold/commands/groom.project.md` (OVERLAY). Claude Code automatically merges sibling
 `.md` files when invoking a skill, so the OVERLAY loads at invocation time.
 
 ## Scope clarifications
@@ -1391,20 +1391,20 @@ a GENERIC asset. Example: `.alto/commands/groom.md` (GENERIC) lives next to
   skills under `.claude/skills/` (adapt, animate, audit, etc.) and the vendored `gstack/`
   bundle (symlinks) are NOT migrated. They are personal Claude Code assets, not alto
   workflow scaffold.
-- **`.alto/skills/` is reserved for shipped alto workflow skills only.** It is empty at
+- **`alto-scaffold/skills/` is reserved for shipped alto workflow skills only.** It is empty at
   migration time (placeholder `.gitkeep` only); follow-up tickets may add scaffold skills.
 
 ## Platform caveats
 
 - **Windows POSIX symlinks.** The Phase-5 symlink bridge (`.claude/commands/*.md ->
-  ../../.alto/commands/*.md`) uses `ln -s`. On Windows, Claude Code may not resolve POSIX
+  ../../alto-scaffold/commands/*.md`) uses `ln -s`. On Windows, Claude Code may not resolve POSIX
   symlinks created without administrator privileges. Windows users defer to the
   `additionalDirectories` settings.json mechanism (`alto init --with-scaffold` follow-up).
 
 ## File-tree contract
 
 ```
-.alto/
+alto-scaffold/
 ├── CONTEXT.md            # this file
 ├── commands/             # invocable workflows (one .md per command)
 ├── agents/               # personas (one .md per agent)
@@ -1415,18 +1415,18 @@ a GENERIC asset. Example: `.alto/commands/groom.md` (GENERIC) lives next to
     └── deprecated/       # retained for migration, not for new use
 ```
 CTX_EOF
-        say "  wrote .alto/CONTEXT.md"
+        say "  wrote alto-scaffold/CONTEXT.md"
     else
-        say "  WRITE .alto/CONTEXT.md (5 terms: Scaffold, Workflow Asset, GENERIC, OVERLAY, .project.md sibling)"
+        say "  WRITE alto-scaffold/CONTEXT.md (5 terms: Scaffold, Workflow Asset, GENERIC, OVERLAY, .project.md sibling)"
     fi
 
-    commit_phase "docs(scaffold): add .alto/CONTEXT.md (ubiquitous language: Scaffold, Workflow Asset, GENERIC, OVERLAY, .project.md sibling)" \
-        .alto/CONTEXT.md
+    commit_phase "docs(scaffold): add alto-scaffold/CONTEXT.md (ubiquitous language: Scaffold, Workflow Asset, GENERIC, OVERLAY, .project.md sibling)" \
+        alto-scaffold/CONTEXT.md
 }
 
 # ---------- Phase 5 — Symlink bridge (commit #15) ----------
 phase5_symlinks() {
-    say "Phase 5 — symlink bridge .claude/commands/ -> .alto/commands/"
+    say "Phase 5 — symlink bridge .claude/commands/ -> alto-scaffold/commands/"
 
     local names=(architecture-docs brainstorm design-ticket doc-health groom launch-team prd-traceability review)
     local name target
@@ -1435,14 +1435,14 @@ phase5_symlinks() {
         target=".claude/commands/${name}.md"
         if [ "$DRY_RUN" -eq 1 ]; then
             say "  pre-existence check: $target"
-            say "  ln -s ../../.alto/commands/${name}.md $target"
+            say "  ln -s ../../alto-scaffold/commands/${name}.md $target"
             continue
         fi
         if [ -e "$target" ] || [ -L "$target" ]; then
             fail "symlink collision at $target — refusing to overwrite (use 'rm' first and re-run)"
         fi
-        ln -s "../../.alto/commands/${name}.md" "$target"
-        say "  created $target -> ../../.alto/commands/${name}.md"
+        ln -s "../../alto-scaffold/commands/${name}.md" "$target"
+        say "  created $target -> ../../alto-scaffold/commands/${name}.md"
     done
 
     if [ "$DRY_RUN" -eq 0 ]; then
@@ -1450,10 +1450,10 @@ phase5_symlinks() {
         for name in "${names[@]}"; do
             symlink_files+=(".claude/commands/${name}.md")
         done
-        commit_phase "chore(scaffold): add 8 .claude/commands/ -> ../../.alto/commands/ symlinks (ln -s, collision-abort)" \
+        commit_phase "chore(scaffold): add 8 .claude/commands/ -> ../../alto-scaffold/commands/ symlinks (ln -s, collision-abort)" \
             "${symlink_files[@]}"
     else
-        say "  COMMIT #15: chore(scaffold): add 8 .claude/commands/ -> ../../.alto/commands/ symlinks"
+        say "  COMMIT #15: chore(scaffold): add 8 .claude/commands/ -> ../../alto-scaffold/commands/ symlinks"
     fi
 }
 
@@ -1470,25 +1470,25 @@ phase5_symlinks() {
 phase6_root_edits() {
     say "Phase 6 — root edits (.claude/CLAUDE.md, bin/bd-ripple, template_type.go:4, .notes/order.md)"
 
-    # (a) .claude/CLAUDE.md — docs/beads_templates/ -> .alto/templates/
+    # (a) .claude/CLAUDE.md — docs/beads_templates/ -> alto-scaffold/templates/
     sed_edit .claude/CLAUDE.md \
-        's|docs/beads_templates/|.alto/templates/|g' \
-        ".claude/CLAUDE.md: docs/beads_templates/ -> .alto/templates/"
+        's|docs/beads_templates/|alto-scaffold/templates/|g' \
+        ".claude/CLAUDE.md: docs/beads_templates/ -> alto-scaffold/templates/"
     backup_bak .claude/CLAUDE.md.bak CLAUDE.md.bak-1
 
-    # (b) .claude/CLAUDE.md — docs/templates/ -> .alto/templates/
+    # (b) .claude/CLAUDE.md — docs/templates/ -> alto-scaffold/templates/
     sed_edit .claude/CLAUDE.md \
-        's|docs/templates/|.alto/templates/|g' \
-        ".claude/CLAUDE.md: docs/templates/ -> .alto/templates/"
+        's|docs/templates/|alto-scaffold/templates/|g' \
+        ".claude/CLAUDE.md: docs/templates/ -> alto-scaffold/templates/"
     backup_bak .claude/CLAUDE.md.bak CLAUDE.md.bak-2
 
     # (c) .claude/CLAUDE.md — Project Structure tree (lines 132-137 in source):
-    #     update the `├── docs/` subtree to reference `.alto/templates/` and friends.
+    #     update the `├── docs/` subtree to reference `alto-scaffold/templates/` and friends.
     #     The block targets lines 134-137 specifically (templates/, beads_templates/, spikes/).
     #     Strategy: pattern-replace each tree line individually so the indentation stays intact.
     sed_edit .claude/CLAUDE.md \
         's|│   ├── templates/               # PRD, DDD Story, Architecture templates|│   └── research/                # Spike output reports|' \
-        "Project Structure tree: drop docs/templates/ line (moved to .alto/templates/)"
+        "Project Structure tree: drop docs/templates/ line (moved to alto-scaffold/templates/)"
     backup_bak .claude/CLAUDE.md.bak CLAUDE.md.bak-3a
 
     # Now we have two identical lines — remove one of them (the original └── research/).
@@ -1521,23 +1521,23 @@ phase6_root_edits() {
         say "    awk: collapse duplicate '│   └── research/' line (sed cannot count occurrences)"
     fi
 
-    # Now insert a .alto/ subtree below the docs/ block to reflect the new home.
+    # Now insert a alto-scaffold/ subtree below the docs/ block to reflect the new home.
     # Add it RIGHT AFTER the docs/ block, BEFORE the .claude/ block.
     sed_edit .claude/CLAUDE.md \
-        's|^├── \.claude/$|├── .alto/                       # Scaffold root (commands, agents, templates, skills)\n│   ├── CONTEXT.md               # Ubiquitous-language glossary\n│   ├── commands/                # Slash commands (GENERIC + .project.md OVERLAY siblings)\n│   ├── agents/                  # Agent personas (GENERIC + .project.md OVERLAY siblings)\n│   ├── templates/               # PRD, DDD Story, Architecture, beads templates\n│   ├── skills/                  # Reserved for shipped alto skills\n│   └── lifecycle/               # in-progress/ + deprecated/\n├── .claude/|' \
-        "Project Structure tree: insert .alto/ subtree before .claude/"
+        's|^├── \.claude/$|├── alto-scaffold/                       # Scaffold root (commands, agents, templates, skills)\n│   ├── CONTEXT.md               # Ubiquitous-language glossary\n│   ├── commands/                # Slash commands (GENERIC + .project.md OVERLAY siblings)\n│   ├── agents/                  # Agent personas (GENERIC + .project.md OVERLAY siblings)\n│   ├── templates/               # PRD, DDD Story, Architecture, beads templates\n│   ├── skills/                  # Reserved for shipped alto skills\n│   └── lifecycle/               # in-progress/ + deprecated/\n├── .claude/|' \
+        "Project Structure tree: insert alto-scaffold/ subtree before .claude/"
     backup_bak .claude/CLAUDE.md.bak CLAUDE.md.bak-3e
 
     # (d) bin/bd-ripple — L191 + L238 (single sed pattern covers BOTH)
     sed_edit bin/bd-ripple \
-        's|docs/beads_templates/beads-ticket-template\.md|.alto/templates/beads-ticket-template.md|g' \
-        "bin/bd-ripple: L191+L238 ticket-template path -> .alto/templates/"
+        's|docs/beads_templates/beads-ticket-template\.md|alto-scaffold/templates/beads-ticket-template.md|g' \
+        "bin/bd-ripple: L191+L238 ticket-template path -> alto-scaffold/templates/"
     backup_bak bin/bd-ripple.bak bd-ripple.bak
 
     # (e) internal/ticket/domain/template_type.go:4 comment
     sed_edit internal/ticket/domain/template_type.go \
-        's|docs/beads_templates/|.alto/templates/|g' \
-        "template_type.go:4: docs/beads_templates/ -> .alto/templates/"
+        's|docs/beads_templates/|alto-scaffold/templates/|g' \
+        "template_type.go:4: docs/beads_templates/ -> alto-scaffold/templates/"
     backup_bak internal/ticket/domain/template_type.go.bak template_type.go.bak
 
     # (f) .notes/order.md — APPEND a paragraph registering alty-cli-766 settled decisions.
@@ -1555,7 +1555,7 @@ phase6_root_edits() {
 
 Settled decisions from spike alty-cli-766.1:
 
-- Root folder name: `.alto/`
+- Root folder name: `alto-scaffold/`
 - Layout: flat-by-category (`commands/`, `agents/`, `templates/`, `skills/`, `lifecycle/{in-progress,deprecated}/`)
 - Generic vs alto-specific split: `.project.md` overlay siblings (NOT placeholders, NOT layered CLAUDE.md alone)
 - Slash-command continuity: symlink bridge in repo (interim); `additionalDirectories` deferred to follow-up #2
@@ -1581,7 +1581,7 @@ phase7_verify_and_backups() {
     say "Phase 7 — verify + commit migration-backups/"
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        say "  verify .alto/ structure (commands, agents, templates, skills, lifecycle/{in-progress,deprecated})"
+        say "  verify alto-scaffold/ structure (commands, agents, templates, skills, lifecycle/{in-progress,deprecated})"
         say "  verify fitness grep returns 0 matches"
         say "  verify orphan check (every .project.md has matching .md)"
         say "  verify stale-path grep returns 0 matches"
@@ -1594,9 +1594,9 @@ phase7_verify_and_backups() {
 
     local failed=0
 
-    say "  [check 1/6] .alto/ structure"
-    for d in .alto/commands .alto/agents .alto/templates .alto/skills \
-             .alto/lifecycle/in-progress .alto/lifecycle/deprecated; do
+    say "  [check 1/6] alto-scaffold/ structure"
+    for d in alto-scaffold/commands alto-scaffold/agents alto-scaffold/templates alto-scaffold/skills \
+             alto-scaffold/lifecycle/in-progress alto-scaffold/lifecycle/deprecated; do
         if [ ! -d "$d" ]; then
             say "    MISSING: $d"
             failed=1
@@ -1606,7 +1606,7 @@ phase7_verify_and_backups() {
 
     say "  [check 2/6] fitness grep (coupling tokens in GENERIC files)"
     if grep -rE '\binternal/|\balto-|\balty-cli\b|cmd/alto\b|Watermill\b|golangci' \
-        .alto/commands/*.md .alto/agents/*.md .alto/templates/*.md 2>/dev/null \
+        alto-scaffold/commands/*.md alto-scaffold/agents/*.md alto-scaffold/templates/*.md 2>/dev/null \
         | grep -v '\.project\.md' \
         | grep -v '^[^:]*:$' >/tmp/alto-fitness-grep.$$ ; then
         if [ -s /tmp/alto-fitness-grep.$$ ]; then
@@ -1620,7 +1620,7 @@ phase7_verify_and_backups() {
 
     say "  [check 3/6] orphan check (every .project.md has matching .md)"
     local f base
-    for f in .alto/commands/*.project.md .alto/agents/*.project.md .alto/templates/*.project.md; do
+    for f in alto-scaffold/commands/*.project.md alto-scaffold/agents/*.project.md alto-scaffold/templates/*.project.md; do
         [ -e "$f" ] || continue
         base="${f%.project.md}.md"
         if [ ! -f "$base" ]; then

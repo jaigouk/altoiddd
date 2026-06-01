@@ -43,7 +43,7 @@ func (r ProjectDetectionResult) Language() string { return r.language }
 // HasDocsFolder returns true if a docs/ directory was found.
 func (r ProjectDetectionResult) HasDocsFolder() bool { return r.hasDocsFolder }
 
-// HasAltoConfig returns true if .alto/config.toml was found.
+// HasAltoConfig returns true if alto-scaffold/config.toml was found.
 func (r ProjectDetectionResult) HasAltoConfig() bool { return r.hasAltoConfig }
 
 // HasAIToolConfig returns true if AI tool configs (.claude/, .cursor/, CLAUDE.md) were found.

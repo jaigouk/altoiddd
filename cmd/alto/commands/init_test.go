@@ -216,7 +216,7 @@ func TestRunRescue_NoGaps_PrintsSuccess(t *testing.T) {
 	scan := rescuedomain.NewProjectScan(
 		".",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"}, // all docs present
-		[]string{".claude/CLAUDE.md", ".alto/config.toml"},             // all configs
+		[]string{".claude/CLAUDE.md", "alto-scaffold/config.toml"},     // all configs
 		[]string{},
 		true, // has knowledge dir
 		true, // has agents.md

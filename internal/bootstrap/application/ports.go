@@ -37,3 +37,31 @@ type GitCommitter interface {
 	// Commit creates a commit with the given message.
 	Commit(ctx context.Context, projectDir string, message string) error
 }
+
+// ScaffoldWriter writes the embedded alto-scaffold/ scaffold tree to a target
+// project directory, substituting the five template parameters carried by
+// ScaffoldParams via text/template data binding. Adapters create the
+// `<targetDir>/alto-scaffold/` subtree internally — the caller passes the project
+// root, not the alto-scaffold path.
+type ScaffoldWriter interface {
+	// WriteScaffold renders the embedded scaffold into <targetDir>/alto-scaffold/.
+	// When force is false the call fails (wrapped ErrAlreadyExists) if any
+	// destination file would be overwritten; when true the existing files
+	// are reported via [OVERWRITE] lines before being truncated.
+	WriteScaffold(ctx context.Context, targetDir string, params domain.ScaffoldParams, force bool) error
+}
+
+// WorkflowAssetGenerator translates a freshly written alto-scaffold/commands/ tree
+// into a tool-native view directory for the given primary tool (e.g.
+// "opencode" -> `<targetDir>/.opencode/commands/...`). Defined in the
+// Bootstrap context as a thin port so the handler can remain ignorant of
+// the ToolTranslation bounded context — composition wires an adapter that
+// bridges to the tooltranslation handler. The primaryTool argument is a
+// string (not a SupportedTool enum) so the bootstrap layer has no
+// compile-time dependency on the tooltranslation domain.
+type WorkflowAssetGenerator interface {
+	// GenerateForTool reads workflow assets from sourceDir (typically
+	// `<projectRoot>/alto-scaffold/commands`) and renders them under projectRoot
+	// in the tool-native layout for primaryTool.
+	GenerateForTool(ctx context.Context, primaryTool string, sourceDir string, projectRoot string) error
+}

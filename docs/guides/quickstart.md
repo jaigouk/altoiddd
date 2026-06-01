@@ -49,7 +49,7 @@ alto reads your README, detects installed AI tools, and runs a Domain Storytelli
 | `docs/PRD.md` | Product requirements derived from your domain stories |
 | `docs/DDD.md` | Domain model — bounded contexts, aggregates, ubiquitous language |
 | `docs/ARCHITECTURE.md` | Technical architecture informed by the domain model |
-| `.alto/` | Project config, knowledge base, doc maintenance registry |
+| `alto-scaffold/` | Project config, knowledge base, doc maintenance registry |
 | `.claude/agents/` | AI agent personas (developer, tech-lead, QA, etc.) |
 | `.beads/` | Dependency-ordered tickets ready for implementation |
 

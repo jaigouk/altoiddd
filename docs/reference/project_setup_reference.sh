@@ -18,4 +18,4 @@
 # - Branch for existing projects (--existing)
 # - Test verification for existing projects (zero regression gate)
 # - Drop grepai, notebooklm
-# - Add .alto/ directory, knowledge base, templates
+# - Add alto-scaffold/ directory, knowledge base, templates

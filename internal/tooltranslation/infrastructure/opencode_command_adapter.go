@@ -1,6 +1,6 @@
 // Package infrastructure — OpenCode command adapter.
 //
-// Renders `.alto/commands/*.md` workflow assets into `.opencode/commands/*.md`
+// Renders `alto-scaffold/commands/*.md` workflow assets into `.opencode/commands/*.md`
 // per the binding spike L307-319. Implements the
 // application.WorkflowAssetGeneration port; the sibling
 // application.ConfigGeneration port (DomainModel-based) is untouched.

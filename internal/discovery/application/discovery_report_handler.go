@@ -82,7 +82,7 @@ func (h *DiscoveryReportHandler) GenerateReport(
 		dist = dist.AddSketch(sketch)
 	}
 
-	reportPath := filepath.Join(projectDir, ".alto", "discovery-report.md")
+	reportPath := filepath.Join(projectDir, "alto-scaffold", "discovery-report.md")
 
 	data := reportData{
 		summaries:      summaries,

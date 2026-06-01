@@ -11,6 +11,7 @@ package rules
 
 import (
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
@@ -28,6 +29,16 @@ func makeViolation(file, ruleName, message string) dochealthdomain.ScaffoldViola
 	return v
 }
 
+// makeWarning is the WARNING-severity sibling of makeViolation. Same panic
+// contract — rule-controlled inputs only.
+func makeWarning(file, ruleName, message string) dochealthdomain.ScaffoldViolation {
+	v, err := dochealthdomain.NewScaffoldViolation(file, ruleName, message, dochealthdomain.SeverityWarning, 0)
+	if err != nil {
+		panic("rule built invalid warning: " + err.Error())
+	}
+	return v
+}
+
 // pathDisplay returns a repo-relative slash-normalised path for display.
 func pathDisplay(p string) string { return filepath.ToSlash(p) }
 
@@ -37,7 +48,104 @@ var (
 	_ dochealthapp.ValidationRule = (*PhaseEnumRule)(nil)
 	_ dochealthapp.ValidationRule = (*NoInternalLeaksRule)(nil)
 	_ dochealthapp.ValidationRule = (*OrphanOverlayRule)(nil)
+	_ dochealthapp.ValidationRule = (*BodySizeRule)(nil)
+	_ dochealthapp.ValidationRule = (*UnknownToolsRule)(nil)
+	_ dochealthapp.ValidationRule = (*SecretsGrepRule)(nil)
+	_ dochealthapp.ValidationRule = (*LifecycleStalenessRule)(nil)
+	_ dochealthapp.ValidationRule = (*BashSubstitutionPolicyRule)(nil)
+	_ dochealthapp.ValidationRule = (*BashArgumentsRule)(nil)
+	_ dochealthapp.ValidationRule = (*BashWithParametersWarnRule)(nil)
+	_ dochealthapp.ValidationRule = (*PathSubstitutionDepthRule)(nil)
 )
+
+// bashBlocks extracts every bash-execution block from a body. Returns:
+//   - inline blocks `!` cmd “ (inner text between the backticks) — Claude Code form
+//   - fenced blocks ` ```! ... ``` ` (inner text) — Claude Code form
+//   - standard Markdown shell fences ` ```bash ... ``` `, ` ```sh `,
+//     ` ```zsh `, ` ```shell `, ` ```console ` (case-insensitive lang tag)
+//
+// Used by BashSubstitutionPolicyRule and BashArgumentsRule. RE2 — no
+// catastrophic backtracking. Both regexes are anchored to begin/end markers
+// to avoid greedy over-capture across markdown paragraphs.
+//
+// WH-HIGH-1 (Round 1) added the standard-shell-fence form: scaffold authors
+// who copy bash from external docs naturally use ` ```bash ` rather than
+// the Claude-specific ` ```! `; the rules MUST inspect both.
+var (
+	inlineBashBlockRegex  = regexp.MustCompile("!`([^`]*)`")
+	fencedBashBlockRegex  = regexp.MustCompile("(?s)```!\\s*\\n(.*?)\\n```")
+	fencedShellBlockRegex = regexp.MustCompile("(?s)```(?i:bash|sh|zsh|shell|console)\\s*\\n(.*?)\\n```")
+)
+
+// extractBashBlocks returns the inner text of every bash block in body.
+// Inline `!`x“, fenced ```` ```! ... ``` ````, and standard fenced
+// ```` ```bash ... ``` ```` (or sh/zsh/shell/console) are returned in a
+// single slice; callers don't care which form produced each string.
+func extractBashBlocks(body string) []string {
+	var out []string
+	for _, m := range inlineBashBlockRegex.FindAllStringSubmatch(body, -1) {
+		out = append(out, m[1])
+	}
+	for _, m := range fencedBashBlockRegex.FindAllStringSubmatch(body, -1) {
+		out = append(out, m[1])
+	}
+	for _, m := range fencedShellBlockRegex.FindAllStringSubmatch(body, -1) {
+		out = append(out, m[1])
+	}
+	return out
+}
+
+// hasAnyBashBlock reports whether body contains at least one bash block.
+func hasAnyBashBlock(body string) bool {
+	return inlineBashBlockRegex.MatchString(body) ||
+		fencedBashBlockRegex.MatchString(body) ||
+		fencedShellBlockRegex.MatchString(body)
+}
+
+// toolsList parses the `tools_required` frontmatter value (string or
+// []any) into a normalised []string of trimmed entries.
+func toolsList(fm map[string]any) []string {
+	raw, ok := fm["tools_required"]
+	if !ok {
+		return nil
+	}
+	switch v := raw.(type) {
+	case string:
+		var out []string
+		for _, p := range strings.Split(v, ",") {
+			if t := strings.TrimSpace(p); t != "" {
+				out = append(out, t)
+			}
+		}
+		return out
+	case []any:
+		var out []string
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				if t := strings.TrimSpace(s); t != "" {
+					out = append(out, t)
+				}
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+// boolValue returns the typed boolean for key, or (false, false) when the
+// field is missing or not a bool.
+func boolValue(fm map[string]any, key string) (bool, bool) {
+	raw, ok := fm[key]
+	if !ok {
+		return false, false
+	}
+	b, ok := raw.(bool)
+	if !ok {
+		return false, false
+	}
+	return b, true
+}
 
 // stringValue extracts a non-empty string from a frontmatter map. Returns
 // (value, true) when key exists, value is a string AND non-empty. Empty

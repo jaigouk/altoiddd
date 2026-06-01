@@ -264,7 +264,7 @@ func TestCLIDiscovery_HappyPath_StorytellingFlow(t *testing.T) {
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow
@@ -382,7 +382,7 @@ func TestCLIDiscovery_MultipleStories(t *testing.T) {
 	storytellingHandler := application.NewStorytellingHandler(writer, prompter, nil)
 	detector, bPrompter, cmWriter := newIntegrationBoundaryFakes()
 	bdHandler := application.NewBoundaryDetectionHandler(detector)
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 	adapter := infrastructure.NewCLIDiscoveryAdapter(handler, storytellingHandler, bdHandler, bPrompter, cmWriter, prompter, tmpDir)
 
 	// When: running the discovery flow

@@ -67,8 +67,8 @@ func TestNewGuideCmd_ContinueNoSession_ErrorMentionsAgent(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	// Create .alto/config.toml so the init guard passes
-	altoDir := filepath.Join(tmpDir, ".alto")
+	// Create alto-scaffold/config.toml so the init guard passes
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "config.toml"), nil, 0o644))
 

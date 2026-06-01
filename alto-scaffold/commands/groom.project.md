@@ -44,4 +44,4 @@ NewXxxHandler(port)
 
 ## Template reference
 
-Generic template path becomes: `.alto/templates/beads-ticket-template.md`.
+Generic template path becomes: `alto-scaffold/templates/beads-ticket-template.md`.

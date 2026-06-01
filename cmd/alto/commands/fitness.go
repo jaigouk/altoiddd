@@ -44,7 +44,7 @@ func newFitnessGenerateCmd(app *composition.App) *cobra.Command {
 		Short: "Generate architecture fitness test configuration",
 		Long: `Generate arch-go.yml configuration from the bounded context map.
 
-Reads .alto/bounded_context_map.yaml and generates arch-go.yml for
+Reads alto-scaffold/bounded_context_map.yaml and generates arch-go.yml for
 architecture fitness testing.
 
 Examples:
@@ -71,7 +71,7 @@ func runFitnessGenerate(ctx context.Context, app *composition.App, projectDir st
 	}
 
 	// Check for bounded context map
-	bcMapPath := filepath.Join(absDir, ".alto", "bounded_context_map.yaml")
+	bcMapPath := filepath.Join(absDir, "alto-scaffold", "bounded_context_map.yaml")
 	if _, statErr := os.Stat(bcMapPath); os.IsNotExist(statErr) {
 		return fmt.Errorf("bounded_context_map.yaml not found at %s\nRun 'alto guide' first to generate it", bcMapPath)
 	}

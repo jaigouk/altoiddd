@@ -9,6 +9,7 @@ import (
 
 	"github.com/alto-cli/alto/internal/bootstrap/domain"
 	sharedapp "github.com/alto-cli/alto/internal/shared/application"
+	domainerrors "github.com/alto-cli/alto/internal/shared/domain/errors"
 	vo "github.com/alto-cli/alto/internal/shared/domain/valueobjects"
 )
 
@@ -36,9 +37,9 @@ type ContentProvider interface {
 // not bootstrap. See alty-cli-18l.
 var plannedFiles = []string{
 	"AGENTS.md",
-	".alto/config.toml",
-	".alto/knowledge/_index.toml",
-	".alto/maintenance/doc-registry.toml",
+	"alto-scaffold/config.toml",
+	"alto-scaffold/knowledge/_index.toml",
+	"alto-scaffold/maintenance/doc-registry.toml",
 }
 
 // ScaffoldCommitMessage is the commit message used when auto-committing scaffold files.
@@ -46,15 +47,17 @@ const ScaffoldCommitMessage = "chore: initialize alto project structure"
 
 // BootstrapHandler orchestrates the preview -> confirm -> execute bootstrap flow.
 type BootstrapHandler struct {
-	toolDetection   ToolDetector
-	fileChecker     FileChecker
-	publisher       sharedapp.EventPublisher
-	fileWriter      sharedapp.FileWriter
-	contentProvider ContentProvider
-	gitCommitter    GitCommitter
-	mu              sync.Mutex
-	sessions        map[string]*domain.BootstrapSession
-	configs         map[string]domain.ProjectConfig
+	toolDetection    ToolDetector
+	fileChecker      FileChecker
+	publisher        sharedapp.EventPublisher
+	fileWriter       sharedapp.FileWriter
+	contentProvider  ContentProvider
+	gitCommitter     GitCommitter
+	scaffoldWriter   ScaffoldWriter
+	workflowAssetGen WorkflowAssetGenerator
+	mu               sync.Mutex
+	sessions         map[string]*domain.BootstrapSession
+	configs          map[string]domain.ProjectConfig
 }
 
 // BootstrapOption configures optional dependencies for BootstrapHandler.
@@ -64,6 +67,29 @@ type BootstrapOption func(*BootstrapHandler)
 func WithGitCommitter(gc GitCommitter) BootstrapOption {
 	return func(h *BootstrapHandler) {
 		h.gitCommitter = gc
+	}
+}
+
+// WithScaffoldWriter injects the writer used by --with-scaffold to extract the
+// embedded alto-scaffold/ tree into target projects. Without it, WriteScaffold returns
+// a wrapped ErrInvariantViolation — the CLI surfaces this as a configuration
+// error.
+func WithScaffoldWriter(sw ScaffoldWriter) BootstrapOption {
+	return func(h *BootstrapHandler) {
+		h.scaffoldWriter = sw
+	}
+}
+
+// WithWorkflowAssetGenerator injects the orchestrator that translates the
+// freshly written alto-scaffold/commands/ tree into tool-native views for the
+// selected --primary-tool. Required when --primary-tool=opencode; nil is
+// permitted only for --primary-tool=claude (the native scaffold).
+// The parameter is the bootstrap-local port type — composition wires an
+// adapter that bridges to the tooltranslation handler, keeping the
+// bootstrap bounded context free of any tooltranslation imports.
+func WithWorkflowAssetGenerator(wag WorkflowAssetGenerator) BootstrapOption {
+	return func(h *BootstrapHandler) {
+		h.workflowAssetGen = wag
 	}
 }
 
@@ -248,5 +274,33 @@ func (h *BootstrapHandler) commitScaffold(ctx context.Context, projectDir string
 		return fmt.Errorf("creating commit: %w", err)
 	}
 
+	return nil
+}
+
+// WriteScaffold extracts the embedded alto-scaffold/ tree into targetDir, applying
+// the five template-parameter substitutions carried by params. When
+// params.PrimaryTool is "opencode" the workflow-asset generator is invoked
+// after a successful embed write to translate alto-scaffold/commands/ into the
+// .opencode/commands/ view dir; the generator MUST be wired via
+// WithWorkflowAssetGenerator in that case, otherwise a wrapped
+// ErrInvariantViolation is returned and no files are written.
+func (h *BootstrapHandler) WriteScaffold(ctx context.Context, targetDir string, params domain.ScaffoldParams, force bool) error {
+	if h.scaffoldWriter == nil {
+		return fmt.Errorf("scaffold writer not configured: %w", domainerrors.ErrInvariantViolation)
+	}
+	if params.PrimaryTool == "opencode" && h.workflowAssetGen == nil {
+		return fmt.Errorf("workflow-asset generator required for --primary-tool=opencode: %w", domainerrors.ErrInvariantViolation)
+	}
+
+	if err := h.scaffoldWriter.WriteScaffold(ctx, targetDir, params, force); err != nil {
+		return fmt.Errorf("writing scaffold: %w", err)
+	}
+
+	if params.PrimaryTool == "opencode" {
+		sourceDir := filepath.Join(targetDir, "alto-scaffold", "commands")
+		if err := h.workflowAssetGen.GenerateForTool(ctx, params.PrimaryTool, sourceDir, targetDir); err != nil {
+			return fmt.Errorf("generating opencode workflow assets: %w", err)
+		}
+	}
 	return nil
 }

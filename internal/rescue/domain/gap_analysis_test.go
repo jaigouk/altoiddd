@@ -403,7 +403,7 @@ func TestGap_IsDirectory(t *testing.T) {
 		path    string
 		wantDir bool
 	}{
-		{"trailing slash is directory", ".alto/knowledge/", true},
+		{"trailing slash is directory", "alto-scaffold/knowledge/", true},
 		{"no trailing slash is file", "docs/PRD.md", false},
 		{"root slash is directory", "/", true},
 		{"nested trailing slash", "src/domain/", true},

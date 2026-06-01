@@ -116,3 +116,64 @@ func TestFilesystemScaffoldWalker_SkipsUnknownSubdirs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, got, "templates/ must not be walked")
 }
+
+func TestFilesystemScaffoldWalker_LifecycleInProgress_Walks(t *testing.T) {
+	t.Parallel()
+	root := setupAltoTree(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "lifecycle", "in-progress"), 0o755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(root, "lifecycle", "in-progress", "draft.md"),
+		[]byte(validScaffoldFrontmatter), 0o600,
+	))
+
+	w := NewFilesystemScaffoldWalker()
+	got, err := w.Walk(context.TODO(), root)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Contains(t, got[0].Path(), "lifecycle/in-progress/draft.md")
+}
+
+func TestFilesystemScaffoldWalker_LifecycleInProgress_SweepsCanonical(t *testing.T) {
+	t.Parallel()
+	// Canonical invocation: --paths=alto-scaffold/ must include lifecycle/in-progress/ files.
+	root := setupAltoTree(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "lifecycle", "in-progress"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "commands", "foo.md"), []byte(validScaffoldFrontmatter), 0o600))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(root, "lifecycle", "in-progress", "draft.md"),
+		[]byte(validScaffoldFrontmatter), 0o600,
+	))
+
+	w := NewFilesystemScaffoldWalker()
+	got, err := w.Walk(context.TODO(), root)
+	require.NoError(t, err)
+	assert.Len(t, got, 2, "must walk commands/ + lifecycle/in-progress/")
+}
+
+func TestFilesystemScaffoldWalker_FlatDirAutoDetect_Walks(t *testing.T) {
+	t.Parallel()
+	// Direct invocation: --paths=alto-scaffold/lifecycle/in-progress/ must walk *.md
+	// in that dir directly when no known subdir exists at that level.
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "a.md"), []byte(validScaffoldFrontmatter), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "b.md"), []byte(validScaffoldFrontmatter), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "ignore.txt"), []byte("x"), 0o600))
+
+	w := NewFilesystemScaffoldWalker()
+	got, err := w.Walk(context.TODO(), root)
+	require.NoError(t, err)
+	assert.Len(t, got, 2)
+}
+
+func TestFilesystemScaffoldWalker_CapturesModTime(t *testing.T) {
+	t.Parallel()
+	root := setupAltoTree(t)
+	p := filepath.Join(root, "commands", "foo.md")
+	require.NoError(t, os.WriteFile(p, []byte(validScaffoldFrontmatter), 0o600))
+
+	w := NewFilesystemScaffoldWalker()
+	got, err := w.Walk(context.TODO(), root)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.False(t, got[0].ModTime().IsZero(), "walker must capture mtime")
+}

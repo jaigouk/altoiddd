@@ -103,8 +103,8 @@ func TestFileSystemProjectDetector_Detect_WhenDocsFolderPresent_ExpectDocsDetect
 func TestFileSystemProjectDetector_Detect_WhenAltoConfigPresent_ExpectAltoDetected(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte(""), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "alto-scaffold", "config.toml"), []byte(""), 0o644))
 
 	detector := &FileSystemProjectDetector{}
 	result, err := detector.Detect(dir)
@@ -156,8 +156,8 @@ func TestFileSystemProjectDetector_Detect_WhenFullProject_ExpectAllDetected(t *t
 	// Given: a fully set up Go project with docs and AI tools
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte(""), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "alto-scaffold", "config.toml"), []byte(""), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".claude"), 0o755))
 
 	detector := &FileSystemProjectDetector{}

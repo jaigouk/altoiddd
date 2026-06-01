@@ -5,7 +5,7 @@ kind: command
 phase: groom
 when_to_use: When designing a new ticket and verifying it against the architecture before creating the beads issue
 tools_required: Agent, Bash, Read, Grep, Glob
-bash_substitution_policy: none
+bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
 license: Apache-2.0
 ---
 

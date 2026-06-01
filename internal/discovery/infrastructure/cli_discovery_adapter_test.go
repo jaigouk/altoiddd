@@ -189,7 +189,7 @@ func TestCLIDiscoveryAdapter_Run_HappyPath_RapidMode(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3) // RAPID = 3 stories
 	writer := &fakeStoryWriter{}
@@ -275,7 +275,7 @@ func TestCLIDiscoveryAdapter_Run_CompleteCalled(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -299,7 +299,7 @@ func TestCLIDiscoveryAdapter_Run_MultipleStories(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// Let's test THOROUGH with exactly 5 stories.
 	prompter := newRapidStoryPrompter(5)
@@ -328,7 +328,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithContextMapWritten(t *test
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -361,7 +361,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_WithMissingContext(t *testing
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -393,7 +393,7 @@ func TestCLIDiscoveryAdapter_Run_BoundaryDetection_UserRejectsAll(t *testing.T) 
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -546,7 +546,7 @@ func TestCLIDiscoveryAdapter_Run_NoPipeline_Succeeds(t *testing.T) {
 	// Verify backward compatibility: adapter without artifact pipeline still works.
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -570,7 +570,7 @@ func TestCLIDiscoveryAdapter_Run_CallsArtifactPipeline_AfterComplete(t *testing.
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -600,7 +600,7 @@ func TestCLIDiscoveryAdapter_Run_ArtifactPipelineError_PropagatesError(t *testin
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}
@@ -626,7 +626,7 @@ func TestCLIDiscoveryAdapter_Resume_CallsArtifactPipeline(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("My project idea"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	prompter := newRapidStoryPrompter(3)
 	writer := &fakeStoryWriter{}

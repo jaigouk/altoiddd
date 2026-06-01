@@ -55,7 +55,7 @@ func TestGapQueryHandler_AnalyzeGaps_WhenMissingDocs_ExpectGapsReturned(t *testi
 func TestGapQueryHandler_AnalyzeGaps_WhenMissingAltoConfig_ExpectRecommendedGap(t *testing.T) {
 	t.Parallel()
 
-	// Given: a project with all docs but no .alto/config.toml
+	// Given: a project with all docs but no alto-scaffold/config.toml
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md"},
@@ -74,13 +74,13 @@ func TestGapQueryHandler_AnalyzeGaps_WhenMissingAltoConfig_ExpectRecommendedGap(
 
 	var configEntry *application.GapReportEntry
 	for _, e := range report.Entries {
-		if e.Path == ".alto/config.toml" {
+		if e.Path == "alto-scaffold/config.toml" {
 			e := e
 			configEntry = &e
 			break
 		}
 	}
-	require.NotNil(t, configEntry, "should detect missing .alto/config.toml")
+	require.NotNil(t, configEntry, "should detect missing alto-scaffold/config.toml")
 	assert.Equal(t, string(rescuedomain.GapSeverityRecommended), configEntry.Severity)
 }
 
@@ -91,7 +91,7 @@ func TestGapQueryHandler_AnalyzeGaps_WhenCleanProject_ExpectEmptyGaps(t *testing
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
-		[]string{".claude/CLAUDE.md", ".alto/config.toml"},
+		[]string{".claude/CLAUDE.md", "alto-scaffold/config.toml"},
 		nil,
 		true, true, true, true, true,
 	)
@@ -113,7 +113,7 @@ func TestGapQueryHandler_AnalyzeGaps_WhenStackProfile_ExpectProfileGapsIncluded(
 	scan := rescuedomain.NewProjectScan(
 		"/tmp/proj",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
-		[]string{".claude/CLAUDE.md", ".alto/config.toml"},
+		[]string{".claude/CLAUDE.md", "alto-scaffold/config.toml"},
 		nil,
 		true, true, true, true, true,
 	)

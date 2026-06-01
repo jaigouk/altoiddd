@@ -1,6 +1,6 @@
-# .alto/ Internal File Formats
+# alto-scaffold/ Internal File Formats
 
-This document describes every file that alto creates inside the `.alto/` directory.
+This document describes every file that alto creates inside the `alto-scaffold/` directory.
 These schemas are the source of truth for manual creation, debugging, and the `alto import` command.
 
 ## File Inventory
@@ -12,9 +12,9 @@ Content generators: `internal/bootstrap/infrastructure/content.go`
 
 | File | Format | Generator Function | Source Line |
 |------|--------|--------------------|-------------|
-| `.alto/config.toml` | TOML | `AltoConfigContent()` | `content.go:35` |
-| `.alto/knowledge/_index.toml` | TOML | `KnowledgeIndexContent()` | `content.go:43` |
-| `.alto/maintenance/doc-registry.toml` | TOML | `DocRegistryContent()` | `content.go:67` |
+| `alto-scaffold/config.toml` | TOML | `AltoConfigContent()` | `content.go:35` |
+| `alto-scaffold/knowledge/_index.toml` | TOML | `KnowledgeIndexContent()` | `content.go:43` |
+| `alto-scaffold/maintenance/doc-registry.toml` | TOML | `DocRegistryContent()` | `content.go:67` |
 
 ### Created by `alto guide` (ArtifactGenerationHandler / DiscoveryHandler)
 
@@ -22,10 +22,10 @@ Source: `internal/discovery/application/artifact_generation_handler.go:127`
 
 | File | Format | Generator Function | Source Line |
 |------|--------|--------------------|-------------|
-| `.alto/bounded_context_map.yaml` | YAML | `renderBoundedContextMapYAML()` | `artifact_generation_handler.go:391` |
-| `.alto/stories/<name>.story.yaml` | YAML | TBD (Phase 1) | -- |
-| `.alto/glossary.yaml` | YAML | TBD (Phase 1) | -- |
-| `.alto/context-map.yaml` | YAML | TBD (Phase 1) | -- |
+| `alto-scaffold/bounded_context_map.yaml` | YAML | `renderBoundedContextMapYAML()` | `artifact_generation_handler.go:391` |
+| `alto-scaffold/stories/<name>.story.yaml` | YAML | TBD (Phase 1) | -- |
+| `alto-scaffold/glossary.yaml` | YAML | TBD (Phase 1) | -- |
+| `alto-scaffold/context-map.yaml` | YAML | TBD (Phase 1) | -- |
 
 ### Files that do NOT exist
 
@@ -33,7 +33,7 @@ Source: `internal/discovery/application/artifact_generation_handler.go:127`
 
 ---
 
-## 1. `.alto/config.toml`
+## 1. `alto-scaffold/config.toml`
 
 **Purpose:** Project-level alto configuration. Created during `alto init` with detected project settings.
 
@@ -77,9 +77,9 @@ completed = false
 
 ---
 
-## 2. `.alto/knowledge/_index.toml`
+## 2. `alto-scaffold/knowledge/_index.toml`
 
-**Purpose:** Index of the knowledge base. Maps section names to subdirectories under `.alto/knowledge/`. Each section contains RLM-addressable documents.
+**Purpose:** Index of the knowledge base. Maps section names to subdirectories under `alto-scaffold/knowledge/`. Each section contains RLM-addressable documents.
 
 **Generator:** `internal/bootstrap/infrastructure/content.go:43` — `KnowledgeIndexContent()`
 
@@ -89,7 +89,7 @@ completed = false
 |-------|------|----------|-------------|
 | `knowledge.version` | integer | yes | Knowledge index schema version |
 | `sections` | array of table | yes | List of knowledge sections |
-| `sections[].name` | string | yes | Section directory name under `.alto/knowledge/` |
+| `sections[].name` | string | yes | Section directory name under `alto-scaffold/knowledge/` |
 | `sections[].description` | string | yes | Human-readable section purpose |
 
 ### Example
@@ -97,7 +97,7 @@ completed = false
 ```toml
 # alto knowledge base index
 #
-# Sections map to subdirectories under .alto/knowledge/.
+# Sections map to subdirectories under alto-scaffold/knowledge/.
 # Each section contains RLM-addressable documents.
 
 [knowledge]
@@ -118,7 +118,7 @@ description = "TDD, SOLID, quality gate references"
 
 ---
 
-## 3. `.alto/maintenance/doc-registry.toml`
+## 3. `alto-scaffold/maintenance/doc-registry.toml`
 
 **Purpose:** Tracks which project documents to monitor for freshness, their owners, and review cadence. Used by `alto doc-health`.
 
@@ -162,7 +162,7 @@ review_days = 90
 
 ---
 
-## 4. `.alto/bounded_context_map.yaml`
+## 4. `alto-scaffold/bounded_context_map.yaml`
 
 **Purpose:** Machine-readable map of bounded contexts, their subdomain classifications, layers, and inter-context relationships. Used by `alto fitness generate` to validate architecture conformance.
 
@@ -305,7 +305,7 @@ The parser (`bounded_context_map_parser.go:71-78`) enforces:
 
 ---
 
-## 5. `.alto/stories/<name>.story.yaml`
+## 5. `alto-scaffold/stories/<name>.story.yaml`
 
 **Purpose:** Machine-readable domain story captured during `alto guide` (Discovery). One file per story. Used by boundary detection, DDD.md generation, and ticket pipeline.
 
@@ -528,7 +528,7 @@ variations:
 
 ---
 
-## 6. `.alto/glossary.yaml`
+## 6. `alto-scaffold/glossary.yaml`
 
 **Purpose:** Ubiquitous language glossary with trust levels and bounded context ownership. Used by DDD.md generation and ticket pipeline. Terms are extracted from domain stories captured during `alto guide`.
 
@@ -624,7 +624,7 @@ terms:
 
 ---
 
-## 7. `.alto/context-map.yaml`
+## 7. `alto-scaffold/context-map.yaml`
 
 **Purpose:** Bounded context map with boundary signals, relationships, and subdomain classification. Derived from domain story analysis during `alto guide`. Used by fitness function generation and ticket pipeline.
 
@@ -633,7 +633,7 @@ terms:
 
 **Schema source:** `docs/research/20260323_6_story_format_validation.md` Section 5 (finalized)
 
-**Note:** This file is distinct from `.alto/bounded_context_map.yaml` (Section 4). The bounded_context_map is generated by the existing ArtifactGenerationHandler and focused on module paths and DDD layers. This context-map is generated from domain stories and captures boundary signals, actor/work-object ownership, and DDD relationship patterns.
+**Note:** This file is distinct from `alto-scaffold/bounded_context_map.yaml` (Section 4). The bounded_context_map is generated by the existing ArtifactGenerationHandler and focused on module paths and DDD layers. This context-map is generated from domain stories and captures boundary signals, actor/work-object ownership, and DDD relationship patterns.
 
 ### Top-level Fields
 

@@ -13,6 +13,6 @@ verb. Both resolve to the same skill.
 
 ## Template references (this project)
 
-- PRD template: `.alto/templates/PRD_TEMPLATE.md`
-- DDD story template: `.alto/templates/DDD_STORY_TEMPLATE.md`
-- Architecture template: `.alto/templates/ARCHITECTURE_TEMPLATE.md`
+- PRD template: `alto-scaffold/templates/PRD_TEMPLATE.md`
+- DDD story template: `alto-scaffold/templates/DDD_STORY_TEMPLATE.md`
+- Architecture template: `alto-scaffold/templates/ARCHITECTURE_TEMPLATE.md`

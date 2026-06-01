@@ -65,7 +65,7 @@ func TestGapCmd_WhenNoGaps_PrintsCompliant(t *testing.T) {
 	scan := rescuedomain.NewProjectScan(
 		".",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
-		[]string{".claude/CLAUDE.md", ".alto/config.toml"},
+		[]string{".claude/CLAUDE.md", "alto-scaffold/config.toml"},
 		nil,
 		true, true, true, true, true,
 	)
@@ -89,7 +89,7 @@ func TestGapCmd_WhenNoGaps_PrintsCompliant(t *testing.T) {
 }
 
 func TestGapCmd_WhenOnlyRecommended_ReturnsNoError(t *testing.T) {
-	// Given: project with all required files but missing recommended .alto/config.toml
+	// Given: project with all required files but missing recommended alto-scaffold/config.toml
 	scan := rescuedomain.NewProjectScan(
 		".",
 		[]string{"docs/PRD.md", "docs/DDD.md", "docs/ARCHITECTURE.md", "AGENTS.md"},
@@ -113,6 +113,6 @@ func TestGapCmd_WhenOnlyRecommended_ReturnsNoError(t *testing.T) {
 	require.NoError(t, err)
 
 	output := buf.String()
-	assert.Contains(t, output, ".alto/config.toml")
+	assert.Contains(t, output, "alto-scaffold/config.toml")
 	assert.Contains(t, output, "recommended")
 }

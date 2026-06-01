@@ -212,7 +212,7 @@ alto fitness generate [flags]
 | `--brownfield` | Use 80% compliance threshold for existing projects |
 | `--dir <path>` | Project directory (default: current directory) |
 
-Reads `.alto/bounded_context_map.yaml` and generates arch-go rules based on subdomain classification.
+Reads `alto-scaffold/bounded_context_map.yaml` and generates arch-go rules based on subdomain classification.
 
 **Examples:**
 

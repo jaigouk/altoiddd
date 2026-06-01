@@ -304,7 +304,7 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		for _, a := range preview.FileActions() {
 			paths = append(paths, a.Path())
 		}
-		assert.Contains(t, paths, ".alto/config.toml")
+		assert.Contains(t, paths, "alto-scaffold/config.toml")
 	})
 
 	t.Run("includes alto maintenance", func(t *testing.T) {
@@ -322,7 +322,7 @@ func TestBootstrapHandler_PlannedFiles(t *testing.T) {
 		for _, a := range preview.FileActions() {
 			paths = append(paths, a.Path())
 		}
-		assert.Contains(t, paths, ".alto/maintenance/doc-registry.toml")
+		assert.Contains(t, paths, "alto-scaffold/maintenance/doc-registry.toml")
 	})
 }
 
@@ -417,15 +417,15 @@ func TestBootstrapHandler_Execute_WritesCreateFiles(t *testing.T) {
 
 	assert.Len(t, fw.written, createCount, "should write one file per CREATE action")
 
-	// Verify .alto/config.toml was written via the content provider
+	// Verify alto-scaffold/config.toml was written via the content provider
 	var foundConfig bool
 	for _, w := range fw.written {
 		if filepath.Base(w.path) == "config.toml" {
-			assert.Contains(t, w.content, ".alto/config.toml")
+			assert.Contains(t, w.content, "alto-scaffold/config.toml")
 			foundConfig = true
 		}
 	}
-	assert.True(t, foundConfig, "expected .alto/config.toml to be written")
+	assert.True(t, foundConfig, "expected alto-scaffold/config.toml to be written")
 }
 
 func TestBootstrapHandler_Execute_SkipsExistingFiles(t *testing.T) {
@@ -553,8 +553,8 @@ func TestBootstrapHandler_Execute_WhenAllFilesSkipped_ExpectNoCommit(t *testing.
 
 	// Pre-create ALL planned files so every action is SKIP.
 	for _, planned := range []string{
-		"AGENTS.md", ".alto/config.toml", ".alto/knowledge/_index.toml",
-		".alto/maintenance/doc-registry.toml",
+		"AGENTS.md", "alto-scaffold/config.toml", "alto-scaffold/knowledge/_index.toml",
+		"alto-scaffold/maintenance/doc-registry.toml",
 	} {
 		full := filepath.Join(dir, planned)
 		require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))
@@ -640,9 +640,9 @@ func TestBootstrapHandler_Preview_WhenFreshProject_ExpectBootstrapOwnedFilesPres
 
 	bootstrapOwned := []string{
 		"AGENTS.md",
-		".alto/config.toml",
-		".alto/knowledge/_index.toml",
-		".alto/maintenance/doc-registry.toml",
+		"alto-scaffold/config.toml",
+		"alto-scaffold/knowledge/_index.toml",
+		"alto-scaffold/maintenance/doc-registry.toml",
 	}
 	for _, f := range bootstrapOwned {
 		assert.Contains(t, paths, f, "bootstrap must still plan %s", f)
@@ -650,7 +650,7 @@ func TestBootstrapHandler_Preview_WhenFreshProject_ExpectBootstrapOwnedFilesPres
 
 	// Exactly 4 planned files after removing artifact-pipeline docs
 	assert.Len(t, preview.FileActions(), 4,
-		"expected exactly 4 planned files (AGENTS.md + 3 .alto files)")
+		"expected exactly 4 planned files (AGENTS.md + 3 alto-scaffold files)")
 }
 
 func TestBootstrapHandler_Execute_WhenFreshProject_ExpectArtifactDocsNotWritten(t *testing.T) {

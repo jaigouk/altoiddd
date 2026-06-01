@@ -81,7 +81,7 @@ alto performs these steps in order:
 After rescue mode completes, review the branch diff:
 
 ```bash
-git diff main..alto/init
+git diff main..alto-scaffold/init
 ```
 
 If you're satisfied, merge:

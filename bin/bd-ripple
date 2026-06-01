@@ -24,7 +24,7 @@ set -euo pipefail
 # Runtime expectation:
 #   Typical (≤8 dependents) runs complete in <10 seconds — run in foreground.
 #   If you must background this, see safe wait patterns in
-#   .alto/agents/tech-lead.md ("Long-running Bash patterns"). DO NOT use
+#   alto-scaffold/agents/tech-lead.md ("Long-running Bash patterns"). DO NOT use
 #   `pgrep -f "bd-ripple ..."` to poll; the wait loop's own argv matches
 #   the pattern and the loop will never exit.
 
@@ -195,7 +195,7 @@ echo "Done. $FLAGGED ticket(s) flagged for review."
 
 # --- Template Compliance Check ---
 # Verify flagged tickets follow the beads ticket template (required sections).
-# Required sections from .alto/templates/beads-ticket-template.md.
+# Required sections from alto-scaffold/templates/beads-ticket-template.md.
 
 REQUIRED_SECTIONS=(
     "## Goal"
@@ -242,7 +242,7 @@ done
 if [[ $TEMPLATE_ISSUES -gt 0 ]]; then
     echo ""
     echo "  $TEMPLATE_ISSUES ticket(s) have template gaps. Groom before claiming."
-    echo "  Template: .alto/templates/beads-ticket-template.md"
+    echo "  Template: alto-scaffold/templates/beads-ticket-template.md"
 fi
 
 # Run claim verification on flagged tickets (Step 7 of alto-7xe)

@@ -147,7 +147,7 @@ func TestDiscoveryReportHandler_GenerateReport_HappyPath(t *testing.T) {
 	err := handler.GenerateReport(context.TODO(), []string{"order.yaml"}, "glossary.yaml", "contextmap.yaml", "/tmp/project")
 
 	require.NoError(t, err)
-	assert.Equal(t, "/tmp/project/.alto/discovery-report.md", writer.writtenPath)
+	assert.Equal(t, "/tmp/project/alto-scaffold/discovery-report.md", writer.writtenPath)
 	assert.Contains(t, writer.writtenContent, "# Discovery Report")
 	assert.Contains(t, writer.writtenContent, "## Stories")
 	assert.Contains(t, writer.writtenContent, "## Trust Distribution")

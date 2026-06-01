@@ -18,6 +18,7 @@ import (
 	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
 	discoveryinfra "github.com/alto-cli/alto/internal/discovery/infrastructure"
 	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
+	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
 	dochealthinfra "github.com/alto-cli/alto/internal/dochealth/infrastructure"
 	docimportapp "github.com/alto-cli/alto/internal/docimport/application"
 	docimportinfra "github.com/alto-cli/alto/internal/docimport/infrastructure"
@@ -134,7 +135,7 @@ func NewApp() (*App, error) {
 	// 4. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")
 	artifactRenderer := discoveryinfra.NewMarkdownArtifactRenderer(stackProfile)
-	sessionRepo := discoveryinfra.NewFileSystemSessionRepository(".alto")
+	sessionRepo := discoveryinfra.NewFileSystemSessionRepository("alto-scaffold")
 	storyParser := &discoveryinfra.StoryYAMLParser{}
 	glossaryParser := &discoveryinfra.GlossaryYAMLParser{}
 	contextMapParser := &discoveryinfra.ContextMapYAMLParser{}
@@ -146,7 +147,7 @@ func NewApp() (*App, error) {
 	gateRunner := fitnessinfra.NewSubprocessGateRunner("", stackProfile)
 
 	// 6. Knowledge infrastructure
-	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader(".alto/knowledge")
+	knowledgeReader := knowledgeinfra.NewFileKnowledgeReader("alto-scaffold/knowledge")
 	driftDetector := knowledgeinfra.NewDriftDetectionAdapter(".")
 
 	// 7. Rescue infrastructure
@@ -225,7 +226,9 @@ func NewApp() (*App, error) {
 	docImportHandler := docimportapp.NewDocImportHandler(docParser)
 
 	gitCommitter := &bootstrapinfra.GitCommitterAdapter{}
-	bootstrapHandler := bootstrapapp.NewBootstrapHandler(toolDetector, fileChecker, publisher, fileWriter, contentProvider, bootstrapapp.WithGitCommitter(gitCommitter))
+	// bootstrapHandler is constructed AFTER workflowAssetGenerationHandler
+	// below so it can be wired with WithWorkflowAssetGenerator. See
+	// "Bootstrap handler relocation" comment further down.
 	detectionHandler := discoveryapp.NewDetectionHandler(discoveryDetector)
 	discoveryHandler := discoveryapp.NewDiscoveryHandler(publisher, discoveryapp.WithSessionRepository(sessionRepo))
 	artifactGenerationHandler := discoveryapp.NewArtifactGenerationHandler(artifactRenderer, fileWriter, publisher)
@@ -256,10 +259,31 @@ func NewApp() (*App, error) {
 		ttdomain.ToolOpenCode: openCodeCommandAdapter,
 	}
 	workflowAssetGenerationHandler := ttapp.NewWorkflowAssetGenerationHandler(workflowAssetRegistry)
+	// Bootstrap handler relocation: constructed here so the
+	// WithWorkflowAssetGenerator option can reference the already-built
+	// WAG handler. The CLI's `alto init --with-scaffold --primary-tool=opencode`
+	// flow dispatches into WAG after the embed write succeeds.
+	// The bootstrapWorkflowAssetAdapter bridges from the bootstrap-local
+	// port to the tooltranslation handler — bootstrap must not depend on
+	// tooltranslation directly (arch-go boundary).
+	embedScaffoldWriter := bootstrapinfra.NewEmbedScaffoldWriter()
+	workflowAssetBridge := &bootstrapWorkflowAssetAdapter{handler: workflowAssetGenerationHandler}
+	bootstrapHandler := bootstrapapp.NewBootstrapHandler(
+		toolDetector, fileChecker, publisher, fileWriter, contentProvider,
+		bootstrapapp.WithGitCommitter(gitCommitter),
+		bootstrapapp.WithScaffoldWriter(embedScaffoldWriter),
+		bootstrapapp.WithWorkflowAssetGenerator(workflowAssetBridge),
+	)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
 	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
 	scaffoldWalker := dochealthinfra.NewFilesystemScaffoldWalker()
-	scaffoldRules := dochealthinfra.DefaultScaffoldRules()
+	scaffoldParams, paramsErr := dochealthdomain.NewScaffoldParams(30, nil)
+	if paramsErr != nil {
+		cancelSub()
+		_ = bus.Close()
+		return nil, fmt.Errorf("constructing scaffold params: %w", paramsErr)
+	}
+	scaffoldRules := dochealthinfra.DefaultScaffoldRules(scaffoldParams)
 	scaffoldHealthHandler := dochealthapp.NewScaffoldHealthHandler(scaffoldWalker, scaffoldRules)
 	knowledgeLookupHandler := knowledgeapp.NewKnowledgeLookupHandler(knowledgeReader)
 	driftDetectionHandler := knowledgeapp.NewDriftDetectionHandler(driftDetector)

@@ -1171,7 +1171,7 @@ func TestDiscoverySession_AddStoryRef_FromPersonaDetected_TransitionsToAnswering
 	t.Parallel()
 	session := sessionWithPersona("1")
 	require.Equal(t, StatusPersonaDetected, session.Status())
-	err := session.AddStoryRef(".alto/stories/01-story.story.yaml")
+	err := session.AddStoryRef("alto-scaffold/stories/01-story.story.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, StatusAnswering, session.Status())
 	assert.Equal(t, 1, session.StoryCount())

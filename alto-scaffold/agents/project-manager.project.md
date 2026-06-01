@@ -6,9 +6,9 @@
 
 ## Ticket templates (this project)
 
-- Epic: `.alto/templates/beads-epic-template.md`
-- Task: `.alto/templates/beads-ticket-template.md`
-- Spike: `.alto/templates/beads-spike-template.md`
+- Epic: `alto-scaffold/templates/beads-epic-template.md`
+- Task: `alto-scaffold/templates/beads-ticket-template.md`
+- Spike: `alto-scaffold/templates/beads-spike-template.md`
 
 ## Go Quality Gates Reference
 

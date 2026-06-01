@@ -5,7 +5,7 @@ kind: command
 phase: groom
 when_to_use: When deep-grooming a ticket before claiming — implementation simulation, scope check, split detection
 tools_required: Read, Grep, Glob, Bash
-bash_substitution_policy: none
+bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
 license: Apache-2.0
 ---
 
@@ -42,7 +42,7 @@ bd label list <ticket-id>
 |-------|------|--------|
 | Freshness | `bd label list <id>` | If `review_needed` → read ripple comments, resolve before proceeding |
 | PRD traceability | `/prd-traceability <id>` | Cross-reference ticket AC against PRD capabilities |
-| Template compliance | Manual | Compare description against `.alto/templates/beads-ticket-template.md` |
+| Template compliance | Manual | Compare description against `alto-scaffold/templates/beads-ticket-template.md` |
 
 If template sections are missing → draft them before proceeding.
 

@@ -120,7 +120,7 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 
 - [ ] **CLI tool (`vs`)** — Primary user interface for all alto operations (`alto init`, `alto guide`, `alto generate`)
 - [ ] **MCP server** — Expose guided bootstrap and knowledge base as MCP tools for AI tool integration
-- [ ] **`.alto/` project directory** — Per-project state, knowledge base, and doc maintenance config (see section 5.1)
+- [ ] **`alto-scaffold/` project directory** — Per-project state, knowledge base, and doc maintenance config (see section 5.1)
 - [ ] **`alto init` with preview** — Show exactly what will be installed/copied, require user confirmation before any action
 - [ ] **Global settings detection** — Detect tool global configs (`~/.claude/`, `~/.cursor/`, etc.), report conflicts with local settings, let user choose resolution per conflict
 - [ ] **Existing project adoption (`alto init --existing`)** — Branch-based scaffolding for existing projects: gap report, missing artifact generation, agent profile adaptation (see Scenario 2). Basic structural overlay only; smart migration is P1.
@@ -153,12 +153,12 @@ Someone with an idea — a developer, product owner, or domain expert — descri
 - [ ] **Template library** — Domain-specific templates (web API, CLI tool, data pipeline, etc.)
 - [ ] **Knowledge auto-update** — Fetch latest tool docs and update knowledge base
 
-### 5.1 `.alto/` Directory (per-project)
+### 5.1 `alto-scaffold/` Directory (per-project)
 
-Every project initialized with `alto init` gets a `.alto/` directory:
+Every project initialized with `alto init` gets a `alto-scaffold/` directory:
 
 ```
-.alto/
+alto-scaffold/
 ├── config.toml              # Project-specific alto settings
 ├── knowledge/               # RLM-addressable knowledge base (copied from seed)
 │   ├── ddd/                 # DDD patterns, tactical/strategic references
@@ -239,9 +239,9 @@ Global settings scan:
                 [3] Note in local CLAUDE.md that agents need these tools
 
 Project files:
-  CREATE  .alto/config.toml
-  CREATE  .alto/knowledge/ddd/...          (12 files)
-  CREATE  .alto/knowledge/tools/...        (8 files)
+  CREATE  alto-scaffold/config.toml
+  CREATE  alto-scaffold/knowledge/ddd/...          (12 files)
+  CREATE  alto-scaffold/knowledge/tools/...        (8 files)
   ...
   SKIP    .claude/CLAUDE.md                     (already exists)
   CREATE  .claude/agents/developer.md
@@ -260,7 +260,7 @@ Markdown files are living documents. After each epic or at regular intervals:
 
 - `alto doc-health` — Check freshness, broken references, missing metadata (like `/doc-health`)
 - `alto doc-review` — Mark docs as reviewed, update `last_reviewed` dates
-- `.alto/maintenance/doc-registry.toml` — Tracks which docs to monitor, owners, review cadence
+- `alto-scaffold/maintenance/doc-registry.toml` — Tracks which docs to monitor, owners, review cadence
 
 This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, and `/owasp-docs` commands but is generalized and project-independent.
 
@@ -343,7 +343,7 @@ This mirrors the pattern from Tachikoma's `/doc-health`, `/architecture-docs`, a
 
 - [x] ~~**Spike: MCP vs CLI** — Decided: both. CLI (`vs`) for humans, MCP server for AI tools.~~
 - [ ] **Spike: CLI + MCP design** — Command tree for `vs`, MCP tool schemas, shared application core
-- [ ] **Spike: Knowledge base structure** — How to organize `.alto/knowledge/` with RLM addressability and version tracking?
+- [ ] **Spike: Knowledge base structure** — How to organize `alto-scaffold/knowledge/` with RLM addressability and version tracking?
 - [ ] **Spike: Multi-tool config generation** — What are the config formats for Cursor, Roo Code, OpenCode? How similar/different?
 - [ ] **Spike: Guided question framework** — What's the minimal effective set of DDD questions to go from idea to bounded contexts? Includes complexity budget classification (Core/Supporting/Generic).
 - [ ] **Spike: Conversational UX + Domain Storytelling** (alty-cli-jcf) — Learn from gstack's conversational interaction patterns (consultant posture, progressive disclosure, auto-inference, one-decision-per-question). Research Domain Storytelling as primary discovery technique (lighter than Event Storming, maps to DDD). Design AI domain expert agent that bootstraps domain knowledge via web research when users have vague ideas. Evaluate gstack + alto pipeline: gstack for scope/product challenge, alto for DDD discovery and ticket generation.

@@ -19,12 +19,12 @@ func TestOpenCodeCommandAdapter_CompileTimeAssertion(t *testing.T) {
 	var _ ttapp.WorkflowAssetGeneration = (*OpenCodeCommandAdapter)(nil)
 }
 
-// setupAltoFixture creates a tempdir with .alto/commands/ + .alto/templates/
+// setupAltoFixture creates a tempdir with alto-scaffold/commands/ + alto-scaffold/templates/
 // layout and returns (altoDir, projectRoot).
 func setupAltoFixture(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
-	altoDir := filepath.Join(root, ".alto")
+	altoDir := filepath.Join(root, "alto-scaffold")
 	commandsDir := filepath.Join(altoDir, "commands")
 	tmplDir := filepath.Join(altoDir, "templates")
 	require.NoError(t, os.MkdirAll(commandsDir, 0o755))
@@ -112,7 +112,7 @@ func TestOpenCodeCommandAdapter_StripsInlineBashBlocks(t *testing.T) {
 func TestOpenCodeCommandAdapter_InlinesTemplateRefs(t *testing.T) {
 	t.Parallel()
 	commandsDir, projectRoot := setupAltoFixture(t)
-	tmplPath := filepath.Join(projectRoot, ".alto", "templates", "epic.md")
+	tmplPath := filepath.Join(projectRoot, "alto-scaffold", "templates", "epic.md")
 	require.NoError(t, os.WriteFile(tmplPath, []byte("EPIC_TEMPLATE_INLINED"), 0o600))
 	body := "Use ${CLAUDE_SKILL_DIR}/../templates/epic.md to draft.\n"
 	writeSource(t, commandsDir, "foo.md", validFrontmatter+body)

@@ -63,8 +63,8 @@ func (d *FileSystemProjectDetector) Detect(projectDir string) (domain.ProjectDet
 		hasDocsFolder = true
 	}
 
-	// Check for .alto/config.toml.
-	if fileExists(filepath.Join(projectDir, ".alto", "config.toml")) {
+	// Check for alto-scaffold/config.toml.
+	if fileExists(filepath.Join(projectDir, "alto-scaffold", "config.toml")) {
 		hasAltoConfig = true
 	}
 

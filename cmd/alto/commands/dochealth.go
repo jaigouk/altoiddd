@@ -3,10 +3,15 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"github.com/alto-cli/alto/internal/composition"
+	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
+	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
+	dochealthinfra "github.com/alto-cli/alto/internal/dochealth/infrastructure"
 )
 
 // NewDocHealthCmd creates the "alto doc-health" command.
@@ -14,12 +19,17 @@ import (
 // Modes:
 //   - Default: validates docs/ (registered docs + unregistered scan)
 //   - --paths: also validates scaffold assets under the given directories
-//     (e.g. --paths=.alto/). Multi-value: --paths=.alto/,custom-dir/ or
+//     (e.g. --paths=alto-scaffold/). Multi-value: --paths=alto-scaffold/,custom-dir/ or
 //     repeat the flag.
+//   - --secret-patterns=<path>: override SecretsGrepRule's default
+//     binding-floor regex set with a YAML file of `{name, pattern}` items.
 //
 // Exit code is non-zero when EITHER mode reports issues.
 func NewDocHealthCmd(app *composition.App) *cobra.Command {
-	var paths []string
+	var (
+		paths              []string
+		secretPatternsPath string
+	)
 	cmd := &cobra.Command{
 		Use:   "doc-health [project-dir]",
 		Short: "Check documentation freshness and health",
@@ -29,7 +39,7 @@ func NewDocHealthCmd(app *composition.App) *cobra.Command {
 
 			// docs/ freshness runs when (a) no --paths is given (legacy
 			// invocation) OR (b) a positional project-dir is provided
-			// alongside --paths. `--paths=.alto/` alone is purely scaffold.
+			// alongside --paths. `--paths=alto-scaffold/` alone is purely scaffold.
 			runDocs := len(paths) == 0 || len(args) > 0
 			if runDocs {
 				projectDir := "."
@@ -64,8 +74,25 @@ func NewDocHealthCmd(app *composition.App) *cobra.Command {
 				}
 			}
 
+			// Build a per-invocation scaffold handler ONLY when overrides
+			// are present; otherwise reuse the composition-root handler
+			// (cheap path for the canonical invocation).
+			scaffoldHandler := app.ScaffoldHealthHandler
+			if secretPatternsPath != "" {
+				custom, err := loadSecretPatterns(secretPatternsPath)
+				if err != nil {
+					return fmt.Errorf("loading secret patterns: %w", err)
+				}
+				params, perr := dochealthdomain.NewScaffoldParams(30, custom)
+				if perr != nil {
+					return fmt.Errorf("building scaffold params: %w", perr)
+				}
+				walker := dochealthinfra.NewFilesystemScaffoldWalker()
+				scaffoldHandler = dochealthapp.NewScaffoldHealthHandler(walker, dochealthinfra.DefaultScaffoldRules(params))
+			}
+
 			for _, p := range paths {
-				if err := runScaffoldCheck(cmd, app, p, &scaffoldFailed); err != nil {
+				if err := runScaffoldCheck(cmd, scaffoldHandler, p, &scaffoldFailed); err != nil {
 					return err
 				}
 			}
@@ -77,13 +104,15 @@ func NewDocHealthCmd(app *composition.App) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringSliceVar(&paths, "paths", nil,
-		"Comma-separated additional paths to validate (e.g. --paths=.alto/,custom-dir/)")
+		"Comma-separated additional paths to validate (e.g. --paths=alto-scaffold/,custom-dir/)")
+	cmd.Flags().StringVar(&secretPatternsPath, "secret-patterns", "",
+		"Path to YAML file with custom secret-detection regexes (overrides defaults)")
 	return cmd
 }
 
-func runScaffoldCheck(cmd *cobra.Command, app *composition.App, altoDir string, failed *bool) error {
+func runScaffoldCheck(cmd *cobra.Command, handler *dochealthapp.ScaffoldHealthHandler, altoDir string, failed *bool) error {
 	out := cmd.OutOrStdout()
-	report, err := app.ScaffoldHealthHandler.Handle(context.Background(), altoDir)
+	report, err := handler.Handle(context.Background(), altoDir)
 	if err != nil {
 		return fmt.Errorf("scaffold health %s: %w", altoDir, err)
 	}
@@ -101,6 +130,37 @@ func runScaffoldCheck(cmd *cobra.Command, app *composition.App, altoDir string, 
 		*failed = true
 	}
 	return nil
+}
+
+// secretPatternFile is the YAML schema for --secret-patterns input:
+//
+//   - name: aws_access_key
+//     pattern: 'AKIA[0-9A-Z]{16}'
+//   - name: github_pat
+//     pattern: 'gh[pousr]_[A-Za-z0-9]{36,}'
+type secretPatternFile struct {
+	Name    string `yaml:"name"`
+	Pattern string `yaml:"pattern"`
+}
+
+func loadSecretPatterns(path string) ([]dochealthdomain.SecretPattern, error) {
+	raw, err := os.ReadFile(path) //nolint:gosec // operator-supplied path is intentional.
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	var items []secretPatternFile
+	if err := yaml.Unmarshal(raw, &items); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
+	}
+	out := make([]dochealthdomain.SecretPattern, 0, len(items))
+	for _, item := range items {
+		p, perr := dochealthdomain.NewSecretPattern(item.Name, item.Pattern)
+		if perr != nil {
+			return nil, fmt.Errorf("invalid pattern %q: %w", item.Name, perr)
+		}
+		out = append(out, p)
+	}
+	return out, nil
 }
 
 // NewDocReviewCmd creates the "alto doc-review" command with subcommands.

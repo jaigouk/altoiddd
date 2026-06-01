@@ -132,7 +132,7 @@ alto/
 ├── docs/
 │   ├── PRD.md                   # Product requirements
 │   └── research/                # Spike output reports
-├── .alto/                       # Scaffold root (commands, agents, templates, skills)
+├── alto-scaffold/                       # Scaffold root (commands, agents, templates, skills)
 │   ├── CONTEXT.md               # Ubiquitous-language glossary
 │   ├── commands/                # Slash commands (GENERIC + .project.md OVERLAY siblings)
 │   ├── agents/                  # Agent personas (GENERIC + .project.md OVERLAY siblings)
@@ -344,7 +344,7 @@ assert.InDelta(t, 42.0, val, 0)  // not assert.Equal(t, 42.0, val)
 
 This is a public OSS project. Treat every file you produce as if it will be read by a stranger.
 
-- **No absolute home paths.** Never write `/home/<user>/...`, `/Users/<user>/...`, `~/Desktop/...`, or any absolute path that names a user's home directory. Use repo-relative paths (`docs/PRD.md`, `internal/bootstrap/...`, `.alto/commands/...`) or `<repo-root>/...` placeholders.
+- **No absolute home paths.** Never write `/home/<user>/...`, `/Users/<user>/...`, `~/Desktop/...`, or any absolute path that names a user's home directory. Use repo-relative paths (`docs/PRD.md`, `internal/bootstrap/...`, `alto-scaffold/commands/...`) or `<repo-root>/...` placeholders.
 - **No usernames or machine identifiers** (e.g. `kusanagi`, hostnames, personal emails like `someone@example.com`) in committed artifacts. The git author identity stays in commit metadata — do not duplicate it in file content, ticket descriptions, or doc bodies. The acceptable identity-bearing surfaces are: git history (immutable), `LICENSE`, and `CONTRIBUTING.md` (when explicitly written for OSS contact).
 - **Beads ticket and epic descriptions are committed code.** Privacy rules apply equally. When drafting bodies, scrub absolute paths, usernames, machine names, and external-system IDs that are not part of the public domain model before `bd create` / `bd update`.
 - **Spike reports + research artifacts**: cite repo-relative paths only. `file:line` citations use `internal/...:42`, not `/home/<user>/.../internal/...:42`.
@@ -355,8 +355,8 @@ This is a public OSS project. Treat every file you produce as if it will be read
 
 - **Beads** (`bd`) -- Issue tracking in `.beads/issues.jsonl`
 - **Context7** -- MCP server for library docs
-- **Templates** -- `.alto/templates/` (epic, spike, ticket)
-- **Doc Templates** -- `.alto/templates/` (PRD, DDD Story, Architecture)
+- **Templates** -- `alto-scaffold/templates/` (epic, spike, ticket)
+- **Doc Templates** -- `alto-scaffold/templates/` (PRD, DDD Story, Architecture)
 - **golangci-lint v2** -- Strict lint config in `.golangci.yml`
 - **Watermill** -- Event bus (GoChannel for local, NATS for distributed)
 - **Cobra** -- CLI framework

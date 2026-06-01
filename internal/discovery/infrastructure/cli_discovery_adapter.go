@@ -225,8 +225,8 @@ func (a *CLIDiscoveryAdapter) runArtifactPipeline(ctx context.Context, session *
 	}
 
 	// Resolve paths.
-	glossaryPath := filepath.Join(a.projectDir, ".alto", "glossary.yaml")
-	contextMapPath := filepath.Join(a.projectDir, ".alto", "context-map.yaml")
+	glossaryPath := filepath.Join(a.projectDir, "alto-scaffold", "glossary.yaml")
+	contextMapPath := filepath.Join(a.projectDir, "alto-scaffold", "context-map.yaml")
 	docsDir := filepath.Join(a.projectDir, "docs")
 
 	// Resolve project name.
@@ -270,7 +270,7 @@ func (a *CLIDiscoveryAdapter) runArtifactPipeline(ctx context.Context, session *
 }
 
 // runBoundaryDetection detects, displays, and confirms boundary sketches,
-// then persists the context map to .alto/context-map.yaml.
+// then persists the context map to alto-scaffold/context-map.yaml.
 func (a *CLIDiscoveryAdapter) runBoundaryDetection(
 	ctx context.Context,
 	session *domain.DiscoverySession,
@@ -351,7 +351,7 @@ func (a *CLIDiscoveryAdapter) runBoundaryDetection(
 		return fmt.Errorf("creating context map: %w", err)
 	}
 
-	contextMapPath := filepath.Join(a.projectDir, ".alto", "context-map.yaml")
+	contextMapPath := filepath.Join(a.projectDir, "alto-scaffold", "context-map.yaml")
 
 	if err := a.contextMapWriter.Write(ctx, contextMapPath, cm); err != nil {
 		return fmt.Errorf("writing context map: %w", err)

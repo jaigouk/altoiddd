@@ -9,7 +9,7 @@ kind: agent
 phase: groom
 when_to_use: When managing beads tickets, grooming backlogs, or coordinating work across teammates
 tools_required: Read, Grep, Glob, Bash, Write, Edit
-bash_substitution_policy: none
+bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
 license: Apache-2.0
 model: opus
 permissionMode: default
@@ -75,9 +75,9 @@ bd export                             # Export Dolt DB → JSONL (manual sync)
 
 ## Ticket Templates
 
-- Epic: `.alto/templates/beads-epic-template.md`
-- Task: `.alto/templates/beads-ticket-template.md`
-- Spike: `.alto/templates/beads-spike-template.md`
+- Epic: `alto-scaffold/templates/beads-epic-template.md`
+- Task: `alto-scaffold/templates/beads-ticket-template.md`
+- Spike: `alto-scaffold/templates/beads-spike-template.md`
 
 ## Quality Gates Reference
 

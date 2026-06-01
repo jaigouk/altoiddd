@@ -19,11 +19,11 @@ type ContentProviderAdapter struct{}
 // ContentFor returns the generated content for a planned file path.
 func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectConfig) string {
 	switch path {
-	case ".alto/config.toml":
+	case "alto-scaffold/config.toml":
 		return AltoConfigContent(config)
-	case ".alto/knowledge/_index.toml":
+	case "alto-scaffold/knowledge/_index.toml":
 		return KnowledgeIndexContent()
-	case ".alto/maintenance/doc-registry.toml":
+	case "alto-scaffold/maintenance/doc-registry.toml":
 		return DocRegistryContent()
 	default:
 		// AGENTS.md is the only remaining default-case file.
@@ -33,7 +33,7 @@ func (c *ContentProviderAdapter) ContentFor(path string, config domain.ProjectCo
 	}
 }
 
-// AltoConfigContent returns valid TOML for .alto/config.toml.
+// AltoConfigContent returns valid TOML for alto-scaffold/config.toml.
 func AltoConfigContent(config domain.ProjectConfig) string {
 	var b strings.Builder
 	b.WriteString("# alto project configuration\n\n[project]\n")
@@ -72,11 +72,11 @@ func AltoConfigContent(config domain.ProjectConfig) string {
 	return b.String()
 }
 
-// KnowledgeIndexContent returns valid TOML for .alto/knowledge/_index.toml.
+// KnowledgeIndexContent returns valid TOML for alto-scaffold/knowledge/_index.toml.
 func KnowledgeIndexContent() string {
 	return `# alto knowledge base index
 #
-# Sections map to subdirectories under .alto/knowledge/.
+# Sections map to subdirectories under alto-scaffold/knowledge/.
 # Each section contains RLM-addressable documents.
 
 [knowledge]
@@ -96,7 +96,7 @@ description = "TDD, SOLID, quality gate references"
 `
 }
 
-// DocRegistryContent returns valid TOML for .alto/maintenance/doc-registry.toml.
+// DocRegistryContent returns valid TOML for alto-scaffold/maintenance/doc-registry.toml.
 // NOTE: The docs/PRD.md, docs/DDD.md, docs/ARCHITECTURE.md entries below are
 // forward references — these files do not exist at bootstrap time. They are
 // created later by the artifact pipeline (ArtifactGenerationHandler). The

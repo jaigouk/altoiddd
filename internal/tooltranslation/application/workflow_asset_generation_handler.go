@@ -18,7 +18,7 @@ type workflowAssetAdapterRegistry map[ttdomain.SupportedTool]WorkflowAssetGenera
 
 // WorkflowAssetGenerationHandler orchestrates per-tool workflow-asset
 // rendering. Distinct from ConfigGenerationHandler (DomainModel-based) —
-// this handler operates on a filesystem source under `.alto/commands/`.
+// this handler operates on a filesystem source under `alto-scaffold/commands/`.
 type WorkflowAssetGenerationHandler struct {
 	registry workflowAssetAdapterRegistry
 }

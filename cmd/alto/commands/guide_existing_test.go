@@ -234,7 +234,7 @@ func TestGuideExisting_MutualExclusion_Legacy(t *testing.T) {
 
 func TestGuideExisting_NoConfig_ReturnsInitError(t *testing.T) {
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	// No config.toml written
 

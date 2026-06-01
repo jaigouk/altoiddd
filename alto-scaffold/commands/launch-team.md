@@ -5,7 +5,7 @@ kind: command
 phase: implement
 when_to_use: When launching a multi-agent team to work on one or more beads tickets
 tools_required: Agent, Bash, Read, Grep, Glob
-bash_substitution_policy: none
+bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
 license: Apache-2.0
 ---
 

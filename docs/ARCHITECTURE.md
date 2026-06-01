@@ -84,7 +84,7 @@ status: draft
   │                          │  │                                 │
   │  Business rules,         │  │  Implements port interfaces:    │
   │  value objects,          │  │                                 │
-  │  aggregates,             │  │  File I/O    ── .alto/ state    │
+  │  aggregates,             │  │  File I/O    ── alto-scaffold/ state    │
   │  domain services.        │  │  LLM Client  ── Anthropic API   │
   │                          │  │  Git         ── exec.Command    │
   │  10 Bounded Contexts:    │  │  Templates   ── text/template   │
@@ -93,7 +93,7 @@ status: draft
   │   · Architecture Testing │  │  Web Search  ── HTTP client     │
   │   · Ticket Pipeline      │  │  Prompters   ── stdin/huh/MCP   │
   │   · Ticket Freshness     │  │                                 │
-  │   · Tool Translation     │  │  .alto/ Project State:          │
+  │   · Tool Translation     │  │  alto-scaffold/ Project State:          │
   │   · Knowledge Base       │  │   · config.toml                 │
   │   · Bootstrap            │  │   · stories/*.story.yaml        │
   │   · Rescue               │  │   · glossary.yaml               │
@@ -320,9 +320,9 @@ How bounded contexts communicate, from `docs/DDD.md` section 4 context map:
 | Upstream Context     | Downstream Context   | Integration Pattern                 | Data Format                             |
 | -------------------- | -------------------- | ----------------------------------- | --------------------------------------- |
 | Guided Discovery     | Domain Model         | Domain Event (DiscoveryCompleted)   | In-memory event object                  |
-| Domain Model         | Architecture Testing | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
-| Domain Model         | Ticket Pipeline      | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
-| Domain Model         | Tool Translation     | Domain Event (DomainModelGenerated) | `.alto/domain-model.yaml`               |
+| Domain Model         | Architecture Testing | Domain Event (DomainModelGenerated) | `alto-scaffold/domain-model.yaml`               |
+| Domain Model         | Ticket Pipeline      | Domain Event (DomainModelGenerated) | `alto-scaffold/domain-model.yaml`               |
+| Domain Model         | Tool Translation     | Domain Event (DomainModelGenerated) | `alto-scaffold/domain-model.yaml`               |
 | Knowledge Base       | Tool Translation     | Query (lookup)                      | TOML entries via KnowledgeLookupPort    |
 | Ticket Pipeline      | Beads (external)     | ACL (subprocess)                    | `bd create` + `bd dep add` CLI commands |
 | Beads (external)     | Ticket Freshness     | ACL + Domain Event                  | `bd show --json` parsed by ACL adapter  |
@@ -342,7 +342,7 @@ The complete `alto init` flow crosses all bounded contexts in this order:
 3. Guided Discovery -> Domain Storytelling flow (mode selection, story capture, boundary detection)
    emits: StoryCompleted (per story), BoundariesDetected, DiscoveryCompleted
 4. Domain Model   -> generate DDD artifacts (ArtifactGenerationPort)
-   writes: docs/DDD.md + .alto/domain-model.yaml
+   writes: docs/DDD.md + alto-scaffold/domain-model.yaml
    emits: DomainModelGenerated
 5. Architecture Testing -> generate fitness functions (FitnessGenerationPort)
    writes: arch-go.yml (dependency rules)
@@ -366,17 +366,17 @@ Each step shows a preview and waits for user approval before proceeding.
 | Aggregate        | Storage                                   | Rationale                                                   |
 | ---------------- | ----------------------------------------- | ----------------------------------------------------------- |
 | DiscoverySession | In-memory during session; persisted as `.story.yaml` files when stories complete | Stateful conversation; stories saved incrementally          |
-| DomainStory      | `.alto/stories/*.story.yaml`              | YAML for machine consumption, alto text format for terminal display |
-| DomainModel      | `.alto/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
+| DomainStory      | `alto-scaffold/stories/*.story.yaml`              | YAML for machine consumption, alto text format for terminal display |
+| DomainModel      | `alto-scaffold/domain-model.yaml` + `docs/DDD.md` | YAML for machine consumption, Markdown for humans           |
 | FitnessTestSuite | In-memory during generation               | Output written to `arch-go.yml` (107 dependency rules)      |
 | TicketPlan       | In-memory during generation               | Output written to Beads via `bd create` subprocess          |
 | RippleReview     | Beads labels + comments                   | Uses existing beads features; no custom storage needed      |
 | ToolConfig       | In-memory during generation               | Output written to `.claude/`, `.cursor/`, etc.              |
-| KnowledgeEntry   | `.alto/knowledge/` directory tree         | TOML for tool conventions, Markdown for DDD/convention refs |
+| KnowledgeEntry   | `alto-scaffold/knowledge/` directory tree         | TOML for tool conventions, Markdown for DDD/convention refs |
 | BootstrapSession | In-memory (session duration)              | Orchestration state; no persistence needed                  |
 | GapAnalysis      | In-memory during scan                     | Output is a gap report shown to user                        |
 
-### Shared YAML IR: `.alto/domain-model.yaml`
+### Shared YAML IR: `alto-scaffold/domain-model.yaml`
 
 The domain model YAML is the central intermediate representation consumed by multiple
 downstream generators. It is produced by `alto generate artifacts` (Domain Model context)
@@ -394,7 +394,7 @@ _(Source: ticket pipeline spike section 1; fitness function spike section 2)_
 #### Schema Summary
 
 ```yaml
-# .alto/domain-model.yaml
+# alto-scaffold/domain-model.yaml
 version: "1.0"
 project_name: "example-project"
 generated_at: "2026-02-23T10:00:00Z"
@@ -456,9 +456,9 @@ The Domain Storytelling redesign introduces three companion formats alongside
 
 | Format | Path | Producer | Consumer |
 |--------|------|----------|----------|
-| `.story.yaml` | `.alto/stories/*.story.yaml` | DiscoverySession (per story) | DomainModel artifact generation, PlantUML/Egon export |
-| `glossary.yaml` | `.alto/glossary.yaml` | DiscoverySession (accumulated) | DomainModel `terms[]` generation, ubiquitous language validation |
-| `context-map.yaml` | `.alto/context-map.yaml` | DiscoverySession (boundary detection) | DomainModel `bounded_contexts[]` and `context_map[]` generation |
+| `.story.yaml` | `alto-scaffold/stories/*.story.yaml` | DiscoverySession (per story) | DomainModel artifact generation, PlantUML/Egon export |
+| `glossary.yaml` | `alto-scaffold/glossary.yaml` | DiscoverySession (accumulated) | DomainModel `terms[]` generation, ubiquitous language validation |
+| `context-map.yaml` | `alto-scaffold/context-map.yaml` | DiscoverySession (boundary detection) | DomainModel `bounded_contexts[]` and `context_map[]` generation |
 
 All three use `gopkg.in/yaml.v3` for round-trip-safe serialization. Each format
 includes a `trust` field (TrustLevel enum from shared kernel) for provenance
@@ -612,10 +612,10 @@ Tools handle write operations; resources handle read-only queries.
 
 | Resource URI                               | Description                 | Data Source                    |
 | ------------------------------------------ | --------------------------- | ------------------------------ |
-| `alto://knowledge/tools/{tool}/{subtopic}` | AI tool conventions         | `.alto/knowledge/tools/`       |
-| `alto://knowledge/ddd/{topic}`             | DDD patterns/references     | `.alto/knowledge/ddd/`         |
-| `alto://knowledge/conventions/{topic}`     | TDD/SOLID/quality gate refs | `.alto/knowledge/conventions/` |
-| `alto://knowledge/cross-tool/{topic}`      | Cross-tool mappings         | `.alto/knowledge/cross-tool/`  |
+| `alto://knowledge/tools/{tool}/{subtopic}` | AI tool conventions         | `alto-scaffold/knowledge/tools/`       |
+| `alto://knowledge/ddd/{topic}`             | DDD patterns/references     | `alto-scaffold/knowledge/ddd/`         |
+| `alto://knowledge/conventions/{topic}`     | TDD/SOLID/quality gate refs | `alto-scaffold/knowledge/conventions/` |
+| `alto://knowledge/cross-tool/{topic}`      | Cross-tool mappings         | `alto-scaffold/knowledge/cross-tool/`  |
 | `alto://project/{dir}/domain-model`        | Current DDD.md              | `docs/DDD.md`                  |
 | `alto://project/{dir}/architecture`        | Current ARCHITECTURE.md     | `docs/ARCHITECTURE.md`         |
 | `alto://tickets/ready`                     | Tickets in ready state      | beads `bd ready`               |
@@ -650,7 +650,7 @@ MCP (mcp-go) ---+           |
 // internal/composition/adapters.go
 func NewAppContext() *AppContext {
     // Wire all ports to their implementations
-    knowledgeService := knowledge.NewFileKnowledgeReader(".alto/knowledge")
+    knowledgeService := knowledge.NewFileKnowledgeReader("alto-scaffold/knowledge")
     scaffoldService := persistence.NewFileScaffoldService()
     beadsService := external.NewBeadsCliWriter()
     // ... wire all ports
@@ -694,7 +694,7 @@ _(Source: CLI+MCP design spike section 5; DDD.md section 2 ubiquitous language)_
 #### Pipeline
 
 ```
-.alto/domain-model.yaml (bounded_contexts section)
+alto-scaffold/domain-model.yaml (bounded_contexts section)
         |
         v
 BoundedContextMapParser (Infrastructure: YAML reader)
@@ -749,7 +749,7 @@ _(Source: fitness function spike sections 3, 4, 6, 7; epic alto-cli-awl implemen
 #### Pipeline
 
 ```
-.alto/domain-model.yaml
+alto-scaffold/domain-model.yaml
         |
 [1. Parse and Validate]     -- Go structs in domain layer
         |
@@ -825,7 +825,7 @@ The complexity budget flows through the entire system:
   └────────────────────┬────────────────────────────┘
                        │ persisted as
                        ▼
-          .alto/domain-model.yaml
+          alto-scaffold/domain-model.yaml
           subdomains[].treatment
                        │
           ┌────────────┼────────────┐
@@ -890,7 +890,7 @@ configs (for tools that support richer features like agents, modes, skills).
 
 #### Generation Matrix
 
-From `.alto/knowledge/cross-tool/generation-matrix.toml`:
+From `alto-scaffold/knowledge/cross-tool/generation-matrix.toml`:
 
 | Output               | Claude Code                              | Cursor                      | Roo Code                           | OpenCode                        |
 | -------------------- | ---------------------------------------- | --------------------------- | ---------------------------------- | ------------------------------- |
@@ -965,13 +965,13 @@ _(Source: PRD section 4 scenario 2, section 5.2 behavior, section 6 file safety 
 
 ### 7.6 Living Knowledge Base
 
-**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `.alto/` directory
+**PRD reference:** Section 5 P0 "Knowledge base (RLM)"; section 5.1 `alto-scaffold/` directory
 **Spike source:** `docs/research/20260222_knowledge_base_structure.md`
 
 #### Directory Structure
 
 ```
-.alto/knowledge/
+alto-scaffold/knowledge/
   _index.toml                     # Master index for RLM O(1) lookup
   tools/
     claude-code/
@@ -1221,7 +1221,7 @@ contracts. The LLMClient is a shared implementation detail that adapters use int
 #### Provider Configuration
 
 ```toml
-# .alto/config.toml
+# alto-scaffold/config.toml
 [llm]
 provider = "anthropic"          # anthropic | ollama | vertexai | none
 model = "claude-sonnet-4-20250514"       # Provider-specific model ID
@@ -1263,12 +1263,12 @@ model = "gemini-2.0-flash"
 
 _(Source: AI-assisted DDD discovery spike section 9; Claude Agent SDK evaluation)_
 
-## 8. `.alto/` Project Directory
+## 8. `alto-scaffold/` Project Directory
 
 Every project initialized with `alto init` gets this directory:
 
 ```
-.alto/
+alto-scaffold/
 +-- config.toml                   # Project-specific alto settings
 +-- domain-model.yaml             # Machine-readable DDD IR (generated)
 +-- stories/                      # Domain story files (generated during discovery)
@@ -1404,7 +1404,7 @@ From `docs/PRD.md` section 6:
 | ADR-004 | Knowledge base: TOML for tool conventions (machine), Markdown for DDD/conventions (human)      | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 10 |
 | ADR-005 | Ticket pipeline: `bd create` + `bd dep add` via subprocess (not JSONL generation)              | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 4    |
 | ADR-006 | Ripple review: labels + comments in beads (no custom fields, no beads schema changes)          | Accepted | `docs/research/20260223_ripple_review_design.md` section 1      |
-| ADR-007 | Shared YAML IR at `.alto/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
+| ADR-007 | Shared YAML IR at `alto-scaffold/domain-model.yaml` consumed by fitness, tickets, and tool translation | Accepted | `docs/research/20260223_ticket_pipeline_design.md` section 1    |
 | ADR-008 | Cross-tool bridge: generate both AGENTS.md and tool-specific configs                           | Accepted | `docs/research/20260222_knowledge_base_structure.md` section 3  |
 | ADR-009 | YAML editing: gopkg.in/yaml.v3 for round-trip preservation                                     | Accepted | `docs/research/20260223_fitness_function_design.md` section 8   |
 | ADR-010 | 13 application-layer ports (Go interfaces) shared between CLI and MCP                          | Accepted | `docs/research/20260222_cli_mcp_design.md` section 4            |
@@ -1437,6 +1437,6 @@ Decisions resolved by spikes but requiring validation during implementation:
       _(CLI+MCP design spike section 9, risk #5; DST prototype spike section 5)_
 
 - [x] **Knowledge base maintenance burden** -- Resolved by `current/` only approach:
-      `.alto/knowledge/` has conventions/, cross-tool/, ddd/, tools/ with no version
+      `alto-scaffold/knowledge/` has conventions/, cross-tool/, ddd/, tools/ with no version
       directories. Historical versions deferred until breaking changes occur.
       _(knowledge base spike section 10 risk)_

@@ -36,7 +36,7 @@ Access architecture knowledge using the **RLM pattern**: documents are addressab
 | Overview / Design Principles | `docs/ARCHITECTURE.md` |
 | Domain Model / Bounded Contexts | `docs/DDD.md` |
 | Product Requirements | `docs/PRD.md` |
-| PRD Capability → Ticket Map | `.alto/commands/prd-traceability.md` |
+| PRD Capability → Ticket Map | `alto-scaffold/commands/prd-traceability.md` |
 | DDD Question Framework | `docs/research/20260222_guided_ddd_question_framework_consolidated.md` |
 | Subdomain Classification | `docs/DDD.md` → Section 3 (Complexity Budget YAML) |
 | Context Map | `docs/DDD.md` → Section 4 (Bounded Contexts + Relationships) |
@@ -53,7 +53,7 @@ Access architecture knowledge using the **RLM pattern**: documents are addressab
 | context map, integration pattern, upstream, downstream | `docs/DDD.md` → Section 4 |
 | architecture, design, principle, layer | `docs/ARCHITECTURE.md` |
 | requirement, constraint, user story, scenario | `docs/PRD.md` |
-| capability, coverage, traceability, gap | `.alto/commands/prd-traceability.md` |
+| capability, coverage, traceability, gap | `alto-scaffold/commands/prd-traceability.md` |
 | question framework, dual register, persona, discovery | `docs/research/20260222_guided_ddd_question_framework_consolidated.md` |
 
 <!-- CUSTOMIZE: Add project-specific keyword mappings -->

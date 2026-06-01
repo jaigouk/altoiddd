@@ -1,4 +1,4 @@
-# .alto/ Scaffold — Ubiquitous Language
+# alto-scaffold/ Scaffold — Ubiquitous Language
 
 This document defines the terms used across this scaffold's commands, agents, templates,
 and skills. Mirrors mattpocock/skills' `CONTEXT.md` role ("helps agents decode the jargon
@@ -7,11 +7,11 @@ used in the project").
 ## Core terms (in this order)
 
 ### Scaffold
-The `.alto/` tree shipped to downstream consumers. It contains workflow assets that any
+The `alto-scaffold/` tree shipped to downstream consumers. It contains workflow assets that any
 project can adopt: commands, agents, templates, skills. Lifecycle folders track maturity.
 
 ### Workflow Asset
-Any `.md` file under `.alto/` (command, agent, template, or skill). Each asset carries
+Any `.md` file under `alto-scaffold/` (command, agent, template, or skill). Each asset carries
 YAML frontmatter declaring its `name`, `description`, `kind`, `phase`, and required tools.
 
 ### GENERIC
@@ -26,8 +26,8 @@ references (lint configs, test commands), and any other context that does not ge
 
 ### `.project.md` sibling
 The file naming convention `<asset>.project.md` carrying project-local content next to
-a GENERIC asset. Example: `.alto/commands/groom.md` (GENERIC) lives next to
-`.alto/commands/groom.project.md` (OVERLAY). Claude Code automatically merges sibling
+a GENERIC asset. Example: `alto-scaffold/commands/groom.md` (GENERIC) lives next to
+`alto-scaffold/commands/groom.project.md` (OVERLAY). Claude Code automatically merges sibling
 `.md` files when invoking a skill, so the OVERLAY loads at invocation time.
 
 ## Scope clarifications
@@ -36,20 +36,20 @@ a GENERIC asset. Example: `.alto/commands/groom.md` (GENERIC) lives next to
   skills under `.claude/skills/` (adapt, animate, audit, etc.) and the vendored `gstack/`
   bundle (symlinks) are NOT migrated. They are personal Claude Code assets, not alto
   workflow scaffold.
-- **`.alto/skills/` is reserved for shipped alto workflow skills only.** It is empty at
+- **`alto-scaffold/skills/` is reserved for shipped alto workflow skills only.** It is empty at
   migration time (placeholder `.gitkeep` only); follow-up tickets may add scaffold skills.
 
 ## Platform caveats
 
 - **Windows POSIX symlinks.** The Phase-5 symlink bridge (`.claude/commands/*.md ->
-  ../../.alto/commands/*.md`) uses `ln -s`. On Windows, Claude Code may not resolve POSIX
+  ../../alto-scaffold/commands/*.md`) uses `ln -s`. On Windows, Claude Code may not resolve POSIX
   symlinks created without administrator privileges. Windows users defer to the
   `additionalDirectories` settings.json mechanism (`alto init --with-scaffold` follow-up).
 
 ## File-tree contract
 
 ```
-.alto/
+alto-scaffold/
 ├── CONTEXT.md            # this file
 ├── commands/             # invocable workflows (one .md per command)
 ├── agents/               # personas (one .md per agent)

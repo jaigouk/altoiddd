@@ -53,7 +53,7 @@ func (a *DriftDetectionAdapter) Detect(ctx context.Context) (domain.DriftReport,
 
 	var signals []domain.DriftSignal
 
-	toolsDir := filepath.Join(a.projectDir, ".alto", "knowledge", "tools")
+	toolsDir := filepath.Join(a.projectDir, "alto-scaffold", "knowledge", "tools")
 	entries, err := os.ReadDir(toolsDir)
 	if err != nil {
 		if os.IsNotExist(err) {

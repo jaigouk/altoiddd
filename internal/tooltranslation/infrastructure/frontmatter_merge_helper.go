@@ -3,7 +3,7 @@
 //
 // Responsibilities (single-file scope by design):
 //   - Parse the canonical 8-field frontmatter schema produced by
-//     alty-cli-766.2 from `.alto/commands/<name>.md`.
+//     alty-cli-766.2 from `alto-scaffold/commands/<name>.md`.
 //   - Detect overlay siblings (`<name>.project.md`) and append their body
 //     (newline-separated) per the binding spike L307-319.
 //   - Strip `!“cmd```` inline and ```!“ fenced bash blocks, replacing
@@ -165,7 +165,7 @@ func stripBashBlocks(body string) string {
 //
 // Per the spike L307-319 the OpenCode adapter INLINES referenced templates
 // — assuming the consumer tool can resolve `@<relpath>` is unsafe because
-// `.alto/templates/` may not exist in the target. Missing templates produce
+// `alto-scaffold/templates/` may not exist in the target. Missing templates produce
 // an `ErrMissingTemplate` aggregated alongside the rendered body.
 func inlineTemplateRefs(body, templatesDir string) (string, []error) {
 	var errs []error

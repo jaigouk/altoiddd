@@ -26,7 +26,7 @@ type PersonaManager interface {
 	Generate(ctx context.Context, personaName string, tools []string, outputDir string) error
 }
 
-// WorkflowAssetGeneration renders .alto/commands/*.md workflow assets
+// WorkflowAssetGeneration renders alto-scaffold/commands/*.md workflow assets
 // into tool-native command formats. Sibling port to ConfigGeneration
 // (which renders a DomainModel). Distinct concern — file-source-based,
 // not model-based.

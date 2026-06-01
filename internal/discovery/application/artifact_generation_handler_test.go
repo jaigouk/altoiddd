@@ -764,7 +764,7 @@ func TestArtifactGenerationHandler_BCMapContent_EdgeCases(t *testing.T) {
 func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltoDir(t *testing.T) {
 	t.Parallel()
 
-	t.Run("writes bounded_context_map.yaml to projectDir/.alto/", func(t *testing.T) {
+	t.Run("writes bounded_context_map.yaml to projectDir/alto-scaffold/", func(t *testing.T) {
 		t.Parallel()
 		renderer := newFakeRenderer("# PRD", "# DDD", "# ARCH")
 		writer := newFakeFileWriterA()
@@ -776,15 +776,15 @@ func TestArtifactGenerationHandler_WriteArtifacts_WritesBCMapToAltoDir(t *testin
 
 		require.NoError(t, err)
 
-		// Should write to .alto/ under project dir
+		// Should write to alto-scaffold/ under project dir
 		found := false
 		for path := range writer.written {
-			if strings.Contains(path, ".alto/bounded_context_map.yaml") {
+			if strings.Contains(path, "alto-scaffold/bounded_context_map.yaml") {
 				found = true
 				break
 			}
 		}
-		assert.True(t, found, "expected bounded_context_map.yaml in .alto/ directory")
+		assert.True(t, found, "expected bounded_context_map.yaml in alto-scaffold/ directory")
 	})
 
 	t.Run("writes all four artifacts", func(t *testing.T) {

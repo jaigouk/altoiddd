@@ -8,7 +8,7 @@
 |----|---------------|-----------------|----------------------|
 | C1 | CLI tool (`vs`) | Bootstrap | CLI command tree, subcommands |
 | C2 | MCP server | Bootstrap | MCP tool schemas, shared ports |
-| C3 | `.alto/` project directory | Bootstrap | Directory structure, config.toml |
+| C3 | `alto-scaffold/` project directory | Bootstrap | Directory structure, config.toml |
 | C4 | `alto init` with preview | Bootstrap | Preview, confirm, file safety |
 | C5 | Global settings detection | Bootstrap | Tool detection, conflict resolution |
 | C6 | Existing project adoption (`alto init --existing`) | Rescue | Branch safety, gap report, scaffolding |

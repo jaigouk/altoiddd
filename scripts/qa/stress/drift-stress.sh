@@ -69,7 +69,7 @@ echo ""
 # Test 1: Large number of tools (100 tools)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "Test 1: Scanning 100 tools"
-TOOLS_DIR="$TEMP_DIR/many-tools/.alto/knowledge/tools"
+TOOLS_DIR="$TEMP_DIR/many-tools/alto-scaffold/knowledge/tools"
 mkdir -p "$TOOLS_DIR"
 
 for i in $(seq 1 100); do
@@ -91,7 +91,7 @@ echo ""
 # Test 2: Many versions per tool (50 versions each)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "Test 2: Scanning tool with 50 versions"
-VERSIONS_DIR="$TEMP_DIR/many-versions/.alto/knowledge/tools/mega-tool"
+VERSIONS_DIR="$TEMP_DIR/many-versions/alto-scaffold/knowledge/tools/mega-tool"
 mkdir -p "$VERSIONS_DIR"
 
 {

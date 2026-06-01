@@ -74,9 +74,9 @@ Flags:
 
 			if agentMode && ingestPath != "" {
 				if ingestPath == "-" {
-					return runGuideAgentIngestFromReader(cmd.Context(), app, os.Stdin, ".alto", cmd.OutOrStdout())
+					return runGuideAgentIngestFromReader(cmd.Context(), app, os.Stdin, "alto-scaffold", cmd.OutOrStdout())
 				}
-				return runGuideAgentIngest(cmd.Context(), app, ingestPath, ".alto", cmd.OutOrStdout())
+				return runGuideAgentIngest(cmd.Context(), app, ingestPath, "alto-scaffold", cmd.OutOrStdout())
 			}
 
 			if existingMode {
@@ -107,7 +107,7 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 	}
 
 	// Guard: project must be initialized before any guide flow.
-	if _, err := os.Stat(filepath.Join(".", ".alto", "config.toml")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(".", "alto-scaffold", "config.toml")); os.IsNotExist(err) {
 		return fmt.Errorf("project not initialized: run `alto init` first")
 	}
 
@@ -171,7 +171,7 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 		return fmt.Errorf("discovery: %w", err)
 	}
 
-	markDiscoveryCompleted(".alto")
+	markDiscoveryCompleted("alto-scaffold")
 	fmt.Println("Discovery complete.")
 	return nil
 }
@@ -181,7 +181,7 @@ func runGuide(ctx context.Context, app *composition.App, noTUI bool, continueSes
 // and falls through to storytelling if the user declines inference.
 func runGuideExisting(ctx context.Context, app *composition.App, noTUI bool) error {
 	// Guard: project must be initialized.
-	if _, err := os.Stat(filepath.Join(".", ".alto", "config.toml")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(".", "alto-scaffold", "config.toml")); os.IsNotExist(err) {
 		return fmt.Errorf("project not initialized: run `alto init` first")
 	}
 
@@ -260,7 +260,7 @@ func runGuideExistingWithDeps(
 		if genErr := artifactHandler.GenerateFromModel(ctx, result.Model(), "docs", "."); genErr != nil {
 			return fmt.Errorf("generating artifacts from inferred model: %w", genErr)
 		}
-		markDiscoveryCompleted(".alto")
+		markDiscoveryCompleted("alto-scaffold")
 		_, _ = fmt.Fprintln(w, "Artifacts generated from inferred model. Discovery complete.")
 		return nil
 	case "n":
@@ -326,7 +326,7 @@ func runGuideAgent(ctx context.Context, app *composition.App) error {
 
 func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) error {
 	// Step 1: Check session exists
-	sessionRepo := infrastructure.NewFileSystemSessionRepository(".alto")
+	sessionRepo := infrastructure.NewFileSystemSessionRepository("alto-scaffold")
 	exists, err := sessionRepo.Exists(ctx, "")
 	if err != nil {
 		return fmt.Errorf("checking session: %w", err)
@@ -405,7 +405,7 @@ func runGuideContinue(ctx context.Context, app *composition.App, noTUI bool) err
 		return fmt.Errorf("resuming discovery: %w", err)
 	}
 
-	markDiscoveryCompleted(".alto")
+	markDiscoveryCompleted("alto-scaffold")
 	fmt.Println("Discovery resumed and complete.")
 	return nil
 }
@@ -680,7 +680,7 @@ func runLegacyFlowWithDeps(ctx context.Context, app *composition.App, prompter a
 		return fmt.Errorf("completing legacy session: %w", completeErr)
 	}
 
-	markDiscoveryCompleted(".alto")
+	markDiscoveryCompleted("alto-scaffold")
 	fmt.Println("Legacy discovery complete.")
 	return nil
 }

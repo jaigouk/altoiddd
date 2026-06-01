@@ -19,7 +19,7 @@ import (
 func TestGapEmptyProject_GivenEmptyDirectory_WhenAnalyzeGaps_ThenReportsAllRequiredGaps(t *testing.T) {
 	t.Parallel()
 
-	// Given: an empty directory (no docs, no configs, no .alto)
+	// Given: an empty directory (no docs, no configs, no alto-scaffold)
 	app := newApp(t)
 	dir := t.TempDir()
 
@@ -67,10 +67,10 @@ func TestGapCompleteProject_GivenFullyStructuredProject_WhenAnalyzeGaps_ThenRepo
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".claude"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".claude", "CLAUDE.md"), []byte("# Claude\n"), 0o644))
 
-	// Create recommended .alto structure
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "maintenance"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte("project_name = \"test\"\n"), 0o644))
+	// Create recommended alto-scaffold structure
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold", "maintenance"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "alto-scaffold", "config.toml"), []byte("project_name = \"test\"\n"), 0o644))
 
 	// Create AGENTS.md
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("# Agents\n"), 0o644))
@@ -86,7 +86,7 @@ func TestGapCompleteProject_GivenFullyStructuredProject_WhenAnalyzeGaps_ThenRepo
 func TestGapPartialProject_GivenProjectMissingAlto_WhenAnalyzeGaps_ThenReportsAltoGapsAsRecommended(t *testing.T) {
 	t.Parallel()
 
-	// Given: a project with docs and configs but no .alto/ directory
+	// Given: a project with docs and configs but no alto-scaffold/ directory
 	app := newApp(t)
 	dir := t.TempDir()
 
@@ -107,20 +107,20 @@ func TestGapPartialProject_GivenProjectMissingAlto_WhenAnalyzeGaps_ThenReportsAl
 	report, err := app.GapQueryHandler.AnalyzeGaps(context.Background(), dir)
 	require.NoError(t, err)
 
-	// Then: .alto gaps should be recommended, not required
+	// Then: alto-scaffold gaps should be recommended, not required
 	altoGaps := map[string]string{}
 	for _, e := range report.Entries {
-		if e.Path == ".alto/config.toml" ||
-			e.Path == ".alto/knowledge/" ||
-			e.Path == ".alto/maintenance/" {
+		if e.Path == "alto-scaffold/config.toml" ||
+			e.Path == "alto-scaffold/knowledge/" ||
+			e.Path == "alto-scaffold/maintenance/" {
 			altoGaps[e.Path] = e.Severity
 		}
 	}
 
-	assert.NotEmpty(t, altoGaps, "should detect missing .alto/ structure")
+	assert.NotEmpty(t, altoGaps, "should detect missing alto-scaffold/ structure")
 	for path, sev := range altoGaps {
 		assert.Equal(t, string(rescuedomain.GapSeverityRecommended), sev,
-			".alto gap %s should be recommended severity", path)
+			"alto-scaffold gap %s should be recommended severity", path)
 	}
 
 	// Should have no required gaps (docs and configs are present)
@@ -138,11 +138,11 @@ func TestGapEmptyProject_GivenEmptyDir_WhenAnalyzeGaps_ThenReportsRecommendedAlt
 	report, err := app.GapQueryHandler.AnalyzeGaps(context.Background(), dir)
 	require.NoError(t, err)
 
-	// Then: should include recommended .alto gaps
+	// Then: should include recommended alto-scaffold gaps
 	recommendedPaths := map[string]bool{
-		".alto/config.toml":  false,
-		".alto/knowledge/":   false,
-		".alto/maintenance/": false,
+		"alto-scaffold/config.toml":  false,
+		"alto-scaffold/knowledge/":   false,
+		"alto-scaffold/maintenance/": false,
 	}
 
 	for _, e := range report.Entries {

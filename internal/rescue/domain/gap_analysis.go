@@ -120,10 +120,10 @@ func (s ProjectScan) ExistingStructure() []string {
 	return out
 }
 
-// HasAltoConfig returns whether the project has .alto/config.toml.
+// HasAltoConfig returns whether the project has alto-scaffold/config.toml.
 func (s ProjectScan) HasAltoConfig() bool { return s.hasAltoConfig }
 
-// HasMaintenanceDir returns whether the project has .alto/maintenance/.
+// HasMaintenanceDir returns whether the project has alto-scaffold/maintenance/.
 func (s ProjectScan) HasMaintenanceDir() bool { return s.hasMaintenanceDir }
 
 // Gap is a single structural gap found during project analysis.

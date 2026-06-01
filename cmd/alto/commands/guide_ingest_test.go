@@ -25,7 +25,7 @@ func setupIngestTest(t *testing.T) (*composition.App, string, string) {
 	t.Helper()
 
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "config.toml"), nil, 0o644))
 
@@ -208,7 +208,7 @@ func TestGuideAgentIngest_WhenNoSessionFile_ReturnsError(t *testing.T) {
 	publisher := eventbus.NewPublisher(bus)
 
 	emptyDir := t.TempDir()
-	altoDir := filepath.Join(emptyDir, ".alto")
+	altoDir := filepath.Join(emptyDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "config.toml"), nil, 0o644))
 
@@ -324,7 +324,7 @@ func TestGuideAgentIngest_WhenPersonaResponse_DetectsPersona(t *testing.T) {
 
 	// Create a session that hasn't had persona detected yet
 	tmpDir := t.TempDir()
-	altoDir := filepath.Join(tmpDir, ".alto")
+	altoDir := filepath.Join(tmpDir, "alto-scaffold")
 	require.NoError(t, os.MkdirAll(altoDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(altoDir, "config.toml"), nil, 0o644))
 

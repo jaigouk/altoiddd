@@ -226,7 +226,7 @@ func TestDocHealthFlow_GivenProjectWithRegistry_WhenHandle_ThenUsesRegistry(t *t
 	dir := t.TempDir()
 
 	// Create a registry file
-	registryDir := filepath.Join(dir, ".alto", "maintenance")
+	registryDir := filepath.Join(dir, "alto-scaffold", "maintenance")
 	require.NoError(t, os.MkdirAll(registryDir, 0o755))
 	registryContent := `[[docs]]
 path = "docs/CUSTOM.md"

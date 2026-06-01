@@ -163,7 +163,7 @@ func TestScanFindsInfrastructureDir(t *testing.T) {
 func TestScanFindsKnowledgeDir(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold", "knowledge"), 0o755))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
@@ -183,8 +183,8 @@ func TestScanFindsGitDir(t *testing.T) {
 func TestScanFindsAltoConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".alto", "config.toml"), []byte("[alto]"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "alto-scaffold", "config.toml"), []byte("[alto]"), 0o644))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
@@ -203,7 +203,7 @@ func TestScanNoAltoConfig(t *testing.T) {
 func TestScanFindsMaintenanceDir(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "maintenance"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold", "maintenance"), 0o755))
 	scanner := &infrastructure.ProjectScanner{}
 	scan, err := scanner.Scan(context.Background(), dir, nil)
 	require.NoError(t, err)
@@ -247,7 +247,7 @@ func TestScanFullProject(t *testing.T) {
 	}
 
 	// Special dirs
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".alto", "knowledge"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "alto-scaffold", "knowledge"), 0o755))
 	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
 
 	scanner := &infrastructure.ProjectScanner{}

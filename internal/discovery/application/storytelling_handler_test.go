@@ -212,7 +212,7 @@ func TestStorytellingHandler_RunStory_HappyPath_OneSentence(t *testing.T) {
 	assert.Len(t, story.WorkObjects(), 1)
 	assert.Positive(t, narrative.TurnCount())
 	assert.Len(t, writer.writtenPaths, 1)
-	assert.Contains(t, writer.writtenPaths[0], ".alto/stories/")
+	assert.Contains(t, writer.writtenPaths[0], "alto-scaffold/stories/")
 }
 
 func TestStorytellingHandler_RunStory_ThreeSentences_MidStoryCheckpoint(t *testing.T) {
@@ -469,7 +469,7 @@ func TestStorytellingHandler_RunStory_StoryRefAddedToSession(t *testing.T) {
 	require.NoError(t, err)
 	refs := session.StoryRefs()
 	assert.Len(t, refs, 1)
-	assert.Contains(t, refs[0], ".alto/stories/")
+	assert.Contains(t, refs[0], "alto-scaffold/stories/")
 	assert.Contains(t, refs[0], fmt.Sprintf("%02d-", 1))
 }
 

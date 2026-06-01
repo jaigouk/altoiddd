@@ -40,7 +40,7 @@ model: <provider/model>              # optional — overrides default model for 
 
 - `tools` — tool restriction is configured per-agent in `opencode.json`, not
   per-command. The agent named in `agent:` controls tool access. The portable
-  `tools_required` field in `.alto/commands/*.md` therefore has no direct
+  `tools_required` field in `alto-scaffold/commands/*.md` therefore has no direct
   OpenCode-command equivalent and is dropped at translation time. If a future
   schema revision adds `tools:` to commands, update the transformation table.
 - `disable_model_invocation` — OpenCode has no equivalent gating field. Per

@@ -49,7 +49,7 @@ func TestScaffoldHealthHandler_Handle_NoRules_NoViolations(t *testing.T) {
 	t.Parallel()
 	w := &stubWalker{corpus: []dochealthdomain.ScaffoldAsset{mustAsset(t, "foo.md")}}
 	h := dochealthapp.NewScaffoldHealthHandler(w, nil)
-	report, err := h.Handle(context.TODO(), ".alto/")
+	report, err := h.Handle(context.TODO(), "alto-scaffold/")
 	require.NoError(t, err)
 	assert.Equal(t, 0, report.TotalCount())
 }
@@ -66,7 +66,7 @@ func TestScaffoldHealthHandler_Handle_AggregatesAcrossRulesAndAssets(t *testing.
 	}
 	w := &stubWalker{corpus: corpus}
 	h := dochealthapp.NewScaffoldHealthHandler(w, rules)
-	report, err := h.Handle(context.TODO(), ".alto/")
+	report, err := h.Handle(context.TODO(), "alto-scaffold/")
 	require.NoError(t, err)
 	// 2 rules × 2 assets = 4 violations.
 	assert.Equal(t, 4, report.TotalCount())
@@ -77,7 +77,7 @@ func TestScaffoldHealthHandler_Handle_WalkerError_Propagates(t *testing.T) {
 	sentinel := errors.New("walker boom")
 	w := &stubWalker{err: sentinel}
 	h := dochealthapp.NewScaffoldHealthHandler(w, nil)
-	_, err := h.Handle(context.TODO(), ".alto/")
+	_, err := h.Handle(context.TODO(), "alto-scaffold/")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, sentinel)
 }

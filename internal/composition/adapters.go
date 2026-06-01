@@ -24,6 +24,8 @@ import (
 	ticketapp "github.com/alto-cli/alto/internal/ticket/application"
 	ticketdomain "github.com/alto-cli/alto/internal/ticket/domain"
 	ticketinfra "github.com/alto-cli/alto/internal/ticket/infrastructure"
+	ttapp "github.com/alto-cli/alto/internal/tooltranslation/application"
+	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -262,4 +264,42 @@ func (b *portScannerBridge) ScanPorts(projectRoot string) map[string]ticketdomai
 		}
 	}
 	return result
+}
+
+// ---------------------------------------------------------------------------
+// Bootstrap WorkflowAssetGenerator adapter (ToolTranslation bridge)
+// ---------------------------------------------------------------------------
+
+// Compile-time interface check.
+var _ bootstrapapp.WorkflowAssetGenerator = (*bootstrapWorkflowAssetAdapter)(nil)
+
+// primaryToolToSupportedTool maps the string --primary-tool values
+// accepted by the bootstrap CLI onto the tool-translation enum. Only
+// tools that have a workflow-asset adapter registered participate; the
+// adapter rejects unknown names with a wrapped error so the bootstrap
+// caller sees a clean failure mode without depending on the
+// tooltranslation enum directly.
+var primaryToolToSupportedTool = map[string]ttdomain.SupportedTool{
+	"opencode": ttdomain.ToolOpenCode,
+}
+
+// bootstrapWorkflowAssetAdapter bridges the bootstrap-local
+// WorkflowAssetGenerator port to *ttapp.WorkflowAssetGenerationHandler.
+// It exists in the composition root so the bootstrap bounded context has
+// zero compile-time dependency on tooltranslation (arch-go boundary).
+type bootstrapWorkflowAssetAdapter struct {
+	handler *ttapp.WorkflowAssetGenerationHandler
+}
+
+// GenerateForTool resolves the primary-tool string to a SupportedTool
+// enum and delegates to the underlying handler.
+func (a *bootstrapWorkflowAssetAdapter) GenerateForTool(ctx context.Context, primaryTool string, sourceDir string, projectRoot string) error {
+	tool, ok := primaryToolToSupportedTool[primaryTool]
+	if !ok {
+		return fmt.Errorf("unsupported primary tool %q for workflow-asset generation", primaryTool)
+	}
+	if err := a.handler.GenerateForTools(ctx, []ttdomain.SupportedTool{tool}, sourceDir, projectRoot); err != nil {
+		return fmt.Errorf("workflow asset generation for %s: %w", primaryTool, err)
+	}
+	return nil
 }

@@ -14,14 +14,17 @@ import (
 
 // scaffoldAssetDirs lists the subdirectories of altoDir that contain
 // validated scaffold assets (files with the canonical 8-field
-// frontmatter). Other `.alto/` subtrees (templates/, knowledge/,
-// lifecycle/, skills/ — when populated) carry their own minimal schemas
-// and are out of scope for this ticket. The fast-follow ticket extends
-// coverage to template/skill assets.
-var scaffoldAssetDirs = []string{"commands", "agents"}
+// frontmatter). Other `alto-scaffold/` subtrees (templates/, knowledge/, skills/,
+// lifecycle/deprecated/) carry their own minimal schemas and are out of
+// scope.
+//
+// lifecycle/in-progress/ was added by alty-cli-ihk so the canonical
+// `--paths=alto-scaffold/` sweep also flags in-progress assets via the 8-field
+// rules — unblocks the alty-cli-766.6 meta-skill FIX-1 transition AC.
+var scaffoldAssetDirs = []string{"commands", "agents", "lifecycle/in-progress"}
 
-// FilesystemScaffoldWalker enumerates `.alto/commands/*.md` and
-// `.alto/agents/*.md`, parsing each into a ScaffoldAsset.
+// FilesystemScaffoldWalker enumerates `alto-scaffold/commands/*.md` and
+// `alto-scaffold/agents/*.md`, parsing each into a ScaffoldAsset.
 //
 // Resource defences:
 //   - filepath.WalkDir handles symlink cycles deterministically (does not
@@ -46,6 +49,14 @@ var _ dochealthapp.ScaffoldWalker = (*FilesystemScaffoldWalker)(nil)
 // Walk enumerates scaffold-asset subdirs of altoDir, returning every `.md`
 // file as a parsed ScaffoldAsset. Non-existent altoDir or scaffold subdir
 // is NOT an error — an empty corpus is the valid "no scaffold here" answer.
+//
+// Two invocation forms are supported:
+//  1. Canonical: `altoDir = alto-scaffold/` — walks `commands/`, `agents/`,
+//     `lifecycle/in-progress/` subdirs (per scaffoldAssetDirs).
+//  2. Flat-dir auto-detect: `altoDir = alto-scaffold/lifecycle/in-progress/` —
+//     when none of the known scaffold subdirs exist beneath altoDir, the
+//     walker treats altoDir itself as a flat directory of `*.md` files.
+//     This supports `alto doc-health --paths=alto-scaffold/lifecycle/in-progress/`.
 func (w *FilesystemScaffoldWalker) Walk(_ context.Context, altoDir string) ([]dochealthdomain.ScaffoldAsset, error) {
 	cleaned := filepath.Clean(altoDir)
 	info, err := os.Stat(cleaned)
@@ -60,15 +71,28 @@ func (w *FilesystemScaffoldWalker) Walk(_ context.Context, altoDir string) ([]do
 	}
 
 	var assets []dochealthdomain.ScaffoldAsset
+	knownFound := false
 	for _, sub := range scaffoldAssetDirs {
 		subDir := filepath.Join(cleaned, sub)
 		subInfo, serr := os.Stat(subDir)
 		if serr != nil || !subInfo.IsDir() {
 			continue
 		}
+		knownFound = true
 		walked, werr := w.walkSubtree(subDir)
 		if werr != nil {
 			return nil, fmt.Errorf("walking %s: %w", subDir, werr)
+		}
+		assets = append(assets, walked...)
+	}
+
+	// Flat-dir auto-detect: if cleaned contains no known scaffold subdir,
+	// walk cleaned itself as a flat *.md directory. This makes
+	// `--paths=alto-scaffold/lifecycle/in-progress/` (direct invocation) work.
+	if !knownFound {
+		walked, werr := w.walkSubtree(cleaned)
+		if werr != nil {
+			return nil, fmt.Errorf("walking %s: %w", cleaned, werr)
 		}
 		assets = append(assets, walked...)
 	}
@@ -99,8 +123,14 @@ func (w *FilesystemScaffoldWalker) walkSubtree(subDir string) ([]dochealthdomain
 			return fmt.Errorf("parse %s: %w", path, perr)
 		}
 		isOverlay := strings.HasSuffix(d.Name(), ".project.md")
-		asset, aerr := dochealthdomain.NewScaffoldAsset(
-			filepath.ToSlash(path), fm, body, lineN, isOverlay,
+		// Capture mtime so LifecycleStalenessRule can compute staleness
+		// without doing I/O (rules MUST stay pure).
+		fi, ierr := d.Info()
+		if ierr != nil {
+			return fmt.Errorf("stat %s: %w", path, ierr)
+		}
+		asset, aerr := dochealthdomain.NewScaffoldAssetWithModTime(
+			filepath.ToSlash(path), fm, body, lineN, isOverlay, fi.ModTime(),
 		)
 		if aerr != nil {
 			return fmt.Errorf("construct asset %s: %w", path, aerr)

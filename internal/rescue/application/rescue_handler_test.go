@@ -279,7 +279,7 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 			}
 		}
 		assert.Len(t, knowledgeGaps, 1)
-		assert.Equal(t, ".alto/knowledge/", knowledgeGaps[0].Path())
+		assert.Equal(t, "alto-scaffold/knowledge/", knowledgeGaps[0].Path())
 	})
 
 	t.Run("all artifacts present returns analyzed with no gaps", func(t *testing.T) {
@@ -336,8 +336,8 @@ func TestRescueHandler_HappyPath(t *testing.T) {
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
 			if g.GapType() == rescuedomain.GapTypeMissingStructure {
-				// Only .alto/ structure gaps allowed without profile
-				assert.Contains(t, g.Path(), ".alto/")
+				// Only alto-scaffold/ structure gaps allowed without profile
+				assert.Contains(t, g.Path(), "alto-scaffold/")
 			}
 		}
 	})
@@ -481,7 +481,7 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
-			if g.Path() == ".alto/config.toml" {
+			if g.Path() == "alto-scaffold/config.toml" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
 			}
 		}
@@ -492,7 +492,7 @@ func TestRescueHandler_GapSeverity(t *testing.T) {
 		handler := application.NewRescueHandler(newFakeScanner(nil), defaultFakeGitOps(), nil, &fakePublisherR{}, nil, nil)
 		analysis, _ := handler.Rescue(context.Background(), "/tmp/proj", nil, false, false)
 		for _, g := range analysis.Gaps() {
-			if g.Path() == ".alto/knowledge/" {
+			if g.Path() == "alto-scaffold/knowledge/" {
 				assert.Equal(t, rescuedomain.GapSeverityRecommended, g.Severity())
 			}
 		}
@@ -698,7 +698,7 @@ func TestRescueHandler_ExecutePlan_WhenGapIsDirectory_ExpectDirCreatedNotFile(t 
 	err := handler.ExecutePlan(context.Background(), analysis)
 	require.NoError(t, err)
 
-	// Directory gaps (.alto/knowledge/, .alto/maintenance/) should use DirCreator
+	// Directory gaps (alto-scaffold/knowledge/, alto-scaffold/maintenance/) should use DirCreator
 	assert.NotEmpty(t, dirCreator.createdDirs, "directory gaps should call DirCreator")
 	for _, dir := range dirCreator.createdDirs {
 		assert.NotContains(t, writer.writtenFiles, dir, "directory gaps should not be written as files")
@@ -742,13 +742,13 @@ func TestRescueHandler_ExecutePlan_WhenMixedGaps_ExpectBothDirsAndFiles(t *testi
 	hasKnowledgeDir := false
 	hasMaintenanceDir := false
 	for _, dir := range dirCreator.createdDirs {
-		if dir == "/tmp/proj/.alto/knowledge" {
+		if dir == "/tmp/proj/alto-scaffold/knowledge" {
 			hasKnowledgeDir = true
 		}
-		if dir == "/tmp/proj/.alto/maintenance" {
+		if dir == "/tmp/proj/alto-scaffold/maintenance" {
 			hasMaintenanceDir = true
 		}
 	}
-	assert.True(t, hasKnowledgeDir, ".alto/knowledge/ gap should create directory")
-	assert.True(t, hasMaintenanceDir, ".alto/maintenance/ gap should create directory")
+	assert.True(t, hasKnowledgeDir, "alto-scaffold/knowledge/ gap should create directory")
+	assert.True(t, hasMaintenanceDir, "alto-scaffold/maintenance/ gap should create directory")
 }

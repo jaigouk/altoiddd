@@ -11,13 +11,15 @@ import (
 // scaffold must NOT contain in GENERIC files (so the scaffold can be
 // adopted by downstream projects without leaking alto's internals).
 //
-// Word boundaries on `internal/`, `alto-`, `alty-cli`, `cmd/alto`,
+// Word boundaries on `internal/`, `alto-cli`, `alty-cli`, `cmd/alto`,
 // `Watermill`, `golangci`. The `/` after `internal` prevents the prose
 // word "internally" from triggering the rule — verified by
-// TestNoInternalLeaksRule_ProseInternallyNoSlash_NoFalsePositive.
+// TestNoInternalLeaksRule_ProseInternallyNoSlash_NoFalsePositive. The
+// `alto-cli` form (not bare `alto-`) is required so user-facing references
+// to the `alto-scaffold/` directory in GENERIC bodies do not false-positive.
 //
 // RE2 (no backtracking) — no ReDoS surface even on adversarial input.
-var internalLeaksRegex = regexp.MustCompile(`\binternal/|\balto-|\balty-cli\b|\bcmd/alto\b|\bWatermill\b|\bgolangci`)
+var internalLeaksRegex = regexp.MustCompile(`\binternal/|\balto-cli\b|\balty-cli\b|\bcmd/alto\b|\bWatermill\b|\bgolangci`)
 
 // NoInternalLeaksRule rejects alto-internal references in GENERIC asset
 // bodies. Overlays carry alto-internal content by design and are exempt.

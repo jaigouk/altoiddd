@@ -217,7 +217,7 @@ func TestCLIDiscoveryAdapter_Resume_SkipsBoundaryWhenDone(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// Given a session with 3 stories and boundaries already confirmed
 	session := buildResumedSession(t, 3, true)
@@ -253,7 +253,7 @@ func TestCLIDiscoveryAdapter_Resume_RunsBoundaryWhenNotDone(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// Given a session with 3 stories but boundaries NOT confirmed
 	session := buildResumedSession(t, 3, false)
@@ -288,7 +288,7 @@ func TestCLIDiscoveryAdapter_Resume_StartsAtCorrectStoryIndex(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// Given a session with 1 story done (ModeRapid needs 3)
 	session := buildResumedSession(t, 1, false)
@@ -318,7 +318,7 @@ func TestCLIDiscoveryAdapter_Resume_CompletedSessionHandledByCaller(t *testing.T
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".alto"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "alto-scaffold"), 0o755))
 
 	// Given a completed session — the caller is responsible for guarding against this.
 	// Resume itself does NOT check status. Build a completed session via snapshot.
