@@ -1,3 +1,6 @@
+---
+last_reviewed: 2026-06-01
+---
 # Beads (bd) Internal Knowledge Reference
 
 > **Version**: v0.55.4 | **Backend**: Embedded Dolt | **Prefix**: `alto-k7m`

@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: Quickstart
 description: Get started with alto in 5 minutes — from install to your first structured project
 sidebar:
@@ -18,7 +19,7 @@ Use arrow keys to navigate slides. <a href="/altoiddd/alto-5min.html" target="_b
 go install github.com/jaigouk/altoiddd/cmd/alto@latest
 ```
 
-Or download a binary from the [releases page](https://github.com/jaigouk/altoiddd/releases). See [Installation](/altoiddd/guides/installation) for platform-specific instructions and optional tools.
+Or download a binary from the [releases page](https://github.com/jaigouk/altoiddd/releases). See [Installation](./installation.md) for platform-specific instructions and optional tools.
 
 ## Create your first project
 
@@ -58,5 +59,5 @@ alto reads your README, detects installed AI tools, and runs a Domain Storytelli
 - `alto guide --existing` — run discovery on an existing codebase
 - `alto gap` — analyze project for structural gaps
 - `alto check` — verify quality gates pass
-- [New Project Guide](/altoiddd/guides/new-project) — full walkthrough
-- [Concepts](/altoiddd/guides/concepts) — why alto enforces DDD before coding
+- [New Project Guide](./new-project.md) — full walkthrough
+- [Concepts](./concepts.md) — why alto enforces DDD before coding

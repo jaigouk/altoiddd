@@ -1,11 +1,12 @@
 ---
+last_reviewed: 2026-06-01
 title: New Project
 description: Full walkthrough of bootstrapping a new project with alto — from README to tickets
 sidebar:
   order: 3
 ---
 
-This guide covers the complete flow of turning a project idea into a structured, production-ready project. For the abbreviated version, see the [Quickstart](/guides/quickstart).
+This guide covers the complete flow of turning a project idea into a structured, production-ready project. For the abbreviated version, see the [Quickstart](./quickstart.md).
 
 ## Step 1: Write your README
 
@@ -56,7 +57,7 @@ Project files:
 Proceed? [y/N]
 ```
 
-If alto detects conflicts between your global AI tool settings and what it wants to set locally, it shows each conflict and lets you choose a resolution. See [AI Tool Integration](/guides/ai-tool-integration) for details.
+If alto detects conflicts between your global AI tool settings and what it wants to set locally, it shows each conflict and lets you choose a resolution. See [AI Tool Integration](./ai-tool-integration.md) for details.
 
 Use `--dry-run` to see the preview without any confirmation prompt:
 

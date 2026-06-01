@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: Existing Project
 description: Apply alto structure to an existing codebase with rescue mode and gap analysis
 sidebar:

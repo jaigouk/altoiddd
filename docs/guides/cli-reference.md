@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: CLI Reference
 description: Complete reference for all alto CLI commands, flags, and usage
 sidebar:

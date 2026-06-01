@@ -67,7 +67,10 @@ func (h *DocHealthHandler) Handle(ctx context.Context, projectDir string) (domai
 	}
 
 	docsDir := filepath.Join(projectDir, "docs")
-	excludeDirs := []string{"templates", "beads_templates"}
+	// research/ = immutable spike reports; plans/ = dated design snapshots.
+	// Both are archival artifacts, not living docs on a freshness cadence —
+	// same rationale as templates/beads_templates above. (alty-cli-766.8)
+	excludeDirs := []string{"templates", "beads_templates", "research", "plans"}
 	unregisteredStatuses, err := h.scanner.ScanUnregistered(ctx, docsDir, registeredPaths, excludeDirs)
 	if err != nil {
 		return domain.DocHealthReport{}, fmt.Errorf("scan unregistered docs: %w", err)

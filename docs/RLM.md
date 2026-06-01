@@ -1,3 +1,6 @@
+---
+last_reviewed: 2026-06-01
+---
 # RLM (Recursive Language Model) Reference Guide
 
 > A practical guide for developers who want to understand and implement RLM patterns for complex reasoning tasks.

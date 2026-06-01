@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-03-28
+last_reviewed: 2026-06-01
 owner: architecture
 status: draft
 ---
@@ -1117,7 +1117,7 @@ Generated into every bootstrapped project's CLAUDE.md:
 
 ```
 Step 1: Ripple Review
-  bin/bd-ripple <closed-id> "<what this ticket produced>"
+  alto-scaffold/scripts/bd-ripple <closed-id> "<what this ticket produced>"
   -> flags open dependents/siblings with review_needed + context diff comment
 
 Step 2: Review Flagged Tickets

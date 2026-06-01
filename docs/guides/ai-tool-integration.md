@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: AI Tool Integration
 description: How alto works with Claude Code, Cursor, Roo Code, and OpenCode
 sidebar:

@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: Installation
 description: Install alto and its prerequisites on your system
 sidebar:

@@ -1,3 +1,6 @@
+---
+last_reviewed: 2026-06-01
+---
 # alto-scaffold/ Internal File Formats
 
 This document describes every file that alto creates inside the `alto-scaffold/` directory.

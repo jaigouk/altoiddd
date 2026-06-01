@@ -1,4 +1,5 @@
 ---
+last_reviewed: 2026-06-01
 title: Concepts
 description: Why alto enforces DDD, TDD, and SOLID before AI coding tools start writing code
 sidebar:

@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-03-28
+last_reviewed: 2026-06-01
 owner: architecture
 status: draft
 ---

@@ -126,6 +126,8 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		excludeDirs := scanner.scanUnregisteredCalls[0].excludeDirs
 		assert.Contains(t, excludeDirs, "templates")
 		assert.Contains(t, excludeDirs, "beads_templates")
+		assert.Contains(t, excludeDirs, "research")
+		assert.Contains(t, excludeDirs, "plans")
 	})
 
 	t.Run("combines registered and unregistered", func(t *testing.T) {
