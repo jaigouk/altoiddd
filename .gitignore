@@ -9,6 +9,7 @@ bin/alto-mcp
 
 # Go build artifacts
 coverage.out
+cov.out
 vendor/
 
 # IDE
@@ -22,9 +23,11 @@ vendor/
 .DS_Store
 Thumbs.db
 
-# Notes (private, not tracked) — order.md whitelisted for scaffold migration registration (alty-cli-766.2)
-/.notes/*
-!/.notes/order.md
+# Notes (private, not tracked)
+/.notes/
+
+# Migration backups (one-off scaffold-migration artifacts, kept out of tree)
+/migration-backups/
 
 # Demo project (local-only, for meetup recording)
 demo/
@@ -40,6 +43,11 @@ docs/demo-guide-sim.sh
 # Environment
 .env
 .env.local
+
+# Stray Python tooling scratch (alto is a Go project — these are leftover
+# venvs / caches from one-off tool runs, never tracked)
+.venv/
+.mypy_cache/
 
 # Dolt database files (added by bd init)
 .dolt/
