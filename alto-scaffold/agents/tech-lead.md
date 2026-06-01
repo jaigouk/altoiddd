@@ -132,17 +132,17 @@ while pgrep -f "bd-ripple <ticket-id>" > /dev/null; do sleep 5; done
 **Safe alternatives (pick one):**
 ```bash
 # A. Capture PID, watch with kill -0
-bin/bd-ripple "$ID" "$CTX" &
+alto-scaffold/scripts/bd-ripple "$ID" "$CTX" &
 PID=$!
 while kill -0 "$PID" 2>/dev/null; do sleep 2; done
 wait "$PID"
 
 # B. Use the wait builtin directly
-bin/bd-ripple "$ID" "$CTX" &
+alto-scaffold/scripts/bd-ripple "$ID" "$CTX" &
 wait
 
 # C. Watch an output file's mtime stability (process done = file unchanged for N seconds)
 until [ -s out.log ] && [ "$(stat -c %Y out.log)" -lt "$(($(date +%s) - 5))" ]; do sleep 2; done
 ```
 
-**Default to foreground.** `bin/bd-ripple` on typical (≤8 dependents) tickets completes in <10s — well inside the Bash tool's default 2-minute timeout. Background polling is unnecessary for the ripple step and reserved for genuinely long (>90s) operations.
+**Default to foreground.** `alto-scaffold/scripts/bd-ripple` on typical (≤8 dependents) tickets completes in <10s — well inside the Bash tool's default 2-minute timeout. Background polling is unnecessary for the ripple step and reserved for genuinely long (>90s) operations.

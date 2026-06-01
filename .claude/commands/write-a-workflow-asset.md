@@ -1,0 +1,1 @@
+../../alto-scaffold/commands/write-a-workflow-asset.md

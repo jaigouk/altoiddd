@@ -1,1 +1,1 @@
-../../.alto/commands/architecture-docs.md
+../../alto-scaffold/commands/architecture-docs.md

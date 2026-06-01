@@ -1,1 +1,1 @@
-../../.alto/commands/review.md
+../../alto-scaffold/commands/review.md

@@ -1,1 +1,1 @@
-../../.alto/commands/brainstorm.md
+../../alto-scaffold/commands/brainstorm.md

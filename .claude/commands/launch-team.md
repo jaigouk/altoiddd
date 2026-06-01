@@ -1,1 +1,1 @@
-../../.alto/commands/launch-team.md
+../../alto-scaffold/commands/launch-team.md

@@ -487,7 +487,7 @@ func TestMemoryMd(t *testing.T) {
 		t.Parallel()
 		content := getMemoryContent(t, makeModel(t), vo.PythonUvProfile{})
 		assert.Contains(t, content, "After-Close Protocol")
-		assert.Contains(t, content, "bin/bd-ripple")
+		assert.Contains(t, content, "alto-scaffold/scripts/bd-ripple")
 	})
 
 	t.Run("has grooming checklist", func(t *testing.T) {

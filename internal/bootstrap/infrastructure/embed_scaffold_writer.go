@@ -29,8 +29,14 @@ var _ bootstrapapp.ScaffoldWriter = (*EmbedScaffoldWriter)(nil)
 // alto-scaffold/ scaffold gains or loses GENERIC files, update this constant
 // in the same change as the underlying file edit so the test catches
 // drift. Tech-lead Phase 1 contract locked at 24; current scaffold
-// state (post .gitkeep + overlay filter) yields 23.
-const ExpectedEmbedFileCount = 23
+// state (post .gitkeep + overlay filter, + README.md, + scripts/bd-ripple,
+// + commands/write-a-workflow-asset.md per alty-cli-766.6) yields 26.
+const ExpectedEmbedFileCount = 26
+
+// scriptsPrefix marks files that must be written with the executable bit
+// set. Any embed path under alto-scaffold/scripts/ ships as a shell script
+// and is unusable without 0o755.
+const scriptsPrefix = embedRootPrefix + "/scripts/"
 
 // embedRootPrefix is the path prefix every embed entry begins with — the
 // //go:embed directive lists `alto-scaffold/...`, so fs.WalkDir results retain
@@ -207,13 +213,29 @@ func (w *EmbedScaffoldWriter) writeFile(srcPath string, targetDir string, params
 	if force {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | noFollow
 	}
-	f, err := os.OpenFile(dst, flags, 0o644) //nolint:gosec // dst path is derived from sanitized targetDir + embed FS contents; O_NOFOLLOW + plan-phase Lstat sweep guard against symlink overwrites
+	mode := os.FileMode(0o644)
+	if strings.HasPrefix(srcPath, scriptsPrefix) {
+		mode = 0o755
+	}
+	f, err := os.OpenFile(dst, flags, mode) //nolint:gosec // dst path is derived from sanitized targetDir + embed FS contents; O_NOFOLLOW + plan-phase Lstat sweep guard against symlink overwrites
 	if err != nil {
 		return fmt.Errorf("opening %s: %w", dst, err)
 	}
 	defer func() { _ = f.Close() }()
 	if _, err := f.Write(rendered); err != nil {
 		return fmt.Errorf("writing %s: %w", dst, err)
+	}
+	// O_TRUNC reuses the existing inode and keeps its mode bits, so a
+	// stale 0o644 from a previous --with-scaffold run would leave the
+	// script non-executable. Chmod after write to make the bit
+	// idempotent regardless of prior state. Use f.Chmod (fchmod on the
+	// already-open, O_NOFOLLOW-validated fd) rather than path-based
+	// os.Chmod: a path-based chmod follows symlinks and would re-open the
+	// local TOCTOU symlink-swap vector that the O_NOFOLLOW open closes.
+	if mode == 0o755 {
+		if err := f.Chmod(mode); err != nil {
+			return fmt.Errorf("chmod %s: %w", dst, err)
+		}
 	}
 	return nil
 }

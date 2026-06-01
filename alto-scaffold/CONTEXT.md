@@ -4,6 +4,10 @@ This document defines the terms used across this scaffold's commands, agents, te
 and skills. Mirrors mattpocock/skills' `CONTEXT.md` role ("helps agents decode the jargon
 used in the project").
 
+**Scope.** This file owns vocabulary, the file-tree contract, scope clarifications, and
+platform caveats. For install / update / customize procedures, see [README.md](README.md).
+Each concept has a single owner: cross-references use links, not copies.
+
 ## Core terms (in this order)
 
 ### Scaffold
@@ -44,16 +48,18 @@ a GENERIC asset. Example: `alto-scaffold/commands/groom.md` (GENERIC) lives next
 - **Windows POSIX symlinks.** The Phase-5 symlink bridge (`.claude/commands/*.md ->
   ../../alto-scaffold/commands/*.md`) uses `ln -s`. On Windows, Claude Code may not resolve POSIX
   symlinks created without administrator privileges. Windows users defer to the
-  `additionalDirectories` settings.json mechanism (`alto init --with-scaffold` follow-up).
+  `additionalDirectories` settings.json mechanism — see [README.md § Install](README.md#install).
 
 ## File-tree contract
 
 ```
 alto-scaffold/
 ├── CONTEXT.md            # this file
+├── README.md             # install / update / customize procedures
 ├── commands/             # invocable workflows (one .md per command)
 ├── agents/               # personas (one .md per agent)
 ├── templates/            # documentation + ticket templates
+├── scripts/              # shell scripts referenced by commands & agents (written with 0o755)
 ├── skills/               # reserved for shipped alto skills (empty)
 └── lifecycle/
     ├── in-progress/      # assets under design, not yet stable

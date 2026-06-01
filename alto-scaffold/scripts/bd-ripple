@@ -67,7 +67,7 @@ if [[ -z "$CONTEXT" || "$CONTEXT" == "Closed" ]]; then
     echo "Error: Non-empty context summary required for ripple review."
     echo ""
     echo "Provide context as the second argument:"
-    echo "  bin/bd-ripple $TICKET_ID \"<what this ticket produced>\""
+    echo "  alto-scaffold/scripts/bd-ripple $TICKET_ID \"<what this ticket produced>\""
     echo ""
     echo "Or close with a reason first:"
     echo "  bd close $TICKET_ID --reason \"<what changed>\""

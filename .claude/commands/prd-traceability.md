@@ -1,1 +1,1 @@
-../../.alto/commands/prd-traceability.md
+../../alto-scaffold/commands/prd-traceability.md

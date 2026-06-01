@@ -1,1 +1,1 @@
-../../.alto/commands/design-ticket.md
+../../alto-scaffold/commands/design-ticket.md

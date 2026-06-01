@@ -1,1 +1,1 @@
-../../.alto/commands/doc-health.md
+../../alto-scaffold/commands/doc-health.md

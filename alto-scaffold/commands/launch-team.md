@@ -163,7 +163,7 @@ Phase 5 — Fix cycle: dev fixes → re-verify with QA + WH → TL confirms.
           Max 3 rounds per issue — TL escalates to user after that.
 Phase 6 — TL runs final quality gates, closes tickets via `bd close`,
           then runs the After-Close Protocol from CLAUDE.md:
-            a) `bin/bd-ripple <closed-id> "<what shipped>"` to flag dependents
+            a) `alto-scaffold/scripts/bd-ripple <closed-id> "<what shipped>"` to flag dependents
             b) `bd query label=review_needed` and review each flagged ticket
             c) Compatibility check (read sources + dependent design, cite file:line)
             d) Present any suggested updates to the user — never auto-apply

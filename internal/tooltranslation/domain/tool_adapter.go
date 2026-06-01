@@ -17,7 +17,7 @@ const afterCloseProtocolText = `## After-Close Protocol
 
 After every ` + "`bd close <id>`" + `, run these steps:
 
-1. **Ripple review** -- ` + "`bin/bd-ripple <id> \"<what this ticket produced>\"`" + `
+1. **Ripple review** -- ` + "`alto-scaffold/scripts/bd-ripple <id> \"<what this ticket produced>\"`" + `
 2. **Review flagged tickets** -- ` + "`bd query label=review_needed`" + `, read ripple comments,
    draft updates, present to user for approval
 3. **Follow-up tickets** -- create using beads templates, set dependencies
@@ -164,7 +164,7 @@ func buildMemoryBeadsWorkflow() string {
 		"bd show <id>                     # View ticket details\n" +
 		"bd update <id> --status in_progress  # Claim a ticket\n" +
 		"bd close <id>                    # Close completed ticket\n" +
-		"bin/bd-ripple <id> \"<summary>\"   # Flag dependents (ripple review)\n" +
+		"alto-scaffold/scripts/bd-ripple <id> \"<summary>\"   # Flag dependents (ripple review)\n" +
 		"bd query label=review_needed     # See tickets needing review\n" +
 		"bd label remove <id> review_needed   # Clear flag after review\n" +
 		"```\n"

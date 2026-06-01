@@ -27,7 +27,7 @@ bd ready                         # Find available work
 bd show <id>                     # View details
 bd update <id> --status in_progress
 bd close <id>
-bin/bd-ripple <id>               # Flag dependents after close (ripple review)
+alto-scaffold/scripts/bd-ripple <id>   # Flag dependents after close (ripple review)
 bd query label=review_needed     # See tickets needing review
 bd update <id> --remove-label review_needed  # Clear flag after review
 bd label add <id> <label>        # Add label to issue
@@ -187,7 +187,7 @@ After every `bd close <id>`, run these steps automatically. Do not wait for the 
 
 ### 1. Ripple Review
 ```bash
-bin/bd-ripple <closed-id> "<what this ticket produced>"
+alto-scaffold/scripts/bd-ripple <closed-id> "<what this ticket produced>"
 ```
 This flags open dependents and siblings with `review_needed` and adds a context diff comment.
 

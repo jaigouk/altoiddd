@@ -1,1 +1,1 @@
-../../.alto/commands/groom.md
+../../alto-scaffold/commands/groom.md

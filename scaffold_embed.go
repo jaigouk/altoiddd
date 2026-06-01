@@ -26,5 +26,5 @@ import "embed"
 // package; consumers obtain a domain-typed wrapper via
 // internal/bootstrap/infrastructure.NewEmbedScaffoldWriter.
 //
-//go:embed alto-scaffold/CONTEXT.md alto-scaffold/commands alto-scaffold/agents alto-scaffold/templates all:alto-scaffold/skills
+//go:embed alto-scaffold/CONTEXT.md alto-scaffold/README.md alto-scaffold/commands alto-scaffold/agents alto-scaffold/templates alto-scaffold/scripts all:alto-scaffold/skills
 var ScaffoldFS embed.FS
