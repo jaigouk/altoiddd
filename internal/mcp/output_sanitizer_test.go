@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,6 +70,7 @@ func TestSanitizeOutput_StripsSecretPatterns(t *testing.T) {
 		{"openai key", "Using key sk-abcdefghijklmnopqrstuvwxyz1234"},
 		{"password field", "password: hunter2"},
 		{"github pat", "token: ghp_abcdefghijklmnopqrstuvwxyz1234567890"},
+		{"github installation token", "GITHUB_TOKEN=ghs_" + strings.Repeat("A", 510)},
 		{"aws key", "AKIAIOSFODNN7EXAMPLE"},
 		{"bearer token", "bearer = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"},
 	}

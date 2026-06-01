@@ -16,7 +16,7 @@ var secretPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|bearer)\s*[=:]\s*\S+`),
 	regexp.MustCompile(`sk-[a-zA-Z0-9]{20,}`),                                      // OpenAI-style keys
 	regexp.MustCompile(`(?i)(password|passwd|secret)\s*[=:]\s*\S+`),                // password fields
-	regexp.MustCompile(`ghp_[a-zA-Z0-9]{36}`),                                      // GitHub PAT
+	regexp.MustCompile(`gh[pousr]_[A-Za-z0-9]{36,}`),                               // GitHub PAT / installation / OAuth / user / refresh token
 	regexp.MustCompile(`(?i)AKIA[0-9A-Z]{16}`),                                     // AWS access key
 	regexp.MustCompile(`-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END`), // PEM keys
 }
