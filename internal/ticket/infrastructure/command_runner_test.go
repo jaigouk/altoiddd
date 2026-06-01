@@ -65,8 +65,10 @@ func TestShellCommandRunner_TimesOut(t *testing.T) {
 func TestShellCommandRunner_AllowlistPatterns(t *testing.T) {
 	t.Parallel()
 
+	// This test exercises the allowlist predicate only. It must NOT call Run(),
+	// because patterns like `go test ./...` would re-invoke this test binary
+	// and fork-bomb the host (and `rm -rf /` would, well, rm -rf /).
 	runner := infrastructure.NewShellCommandRunner()
-	ctx := context.Background()
 
 	tests := []struct {
 		command string
@@ -87,16 +89,7 @@ func TestShellCommandRunner_AllowlistPatterns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.command, func(t *testing.T) {
-			_, err := runner.Run(ctx, tt.command)
-			if tt.allowed {
-				// Allowed commands may still fail (e.g., file not found), but not with "not in allowlist"
-				if err != nil {
-					assert.NotContains(t, err.Error(), "not in allowlist")
-				}
-			} else {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "not in allowlist")
-			}
+			assert.Equal(t, tt.allowed, runner.IsAllowed(tt.command))
 		})
 	}
 }

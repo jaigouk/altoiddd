@@ -4,6 +4,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -45,8 +46,15 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string) (string, e
 		return "", fmt.Errorf("command cannot be empty")
 	}
 
+	// Recursion guard: when running under a `*.test` binary, refuse to invoke
+	// the Go toolchain. A test that exercises Run() with `go test ./...` would
+	// otherwise fork-bomb the host by re-entering this same package.
+	if strings.HasSuffix(os.Args[0], ".test") && strings.HasPrefix(command, "go ") {
+		return "", fmt.Errorf("blocked recursive go invocation under test binary: %s", truncate(command, 50))
+	}
+
 	// Security: Check allowlist
-	if !r.isAllowed(command) {
+	if !r.IsAllowed(command) {
 		return "", fmt.Errorf("command not in allowlist: %s", truncate(command, 50))
 	}
 
@@ -74,8 +82,8 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string) (string, e
 	return string(output), nil
 }
 
-// isAllowed checks if the command matches any allowlist pattern.
-func (r *ShellCommandRunner) isAllowed(command string) bool {
+// IsAllowed checks if the command matches any allowlist pattern.
+func (r *ShellCommandRunner) IsAllowed(command string) bool {
 	for _, pattern := range r.allowlist {
 		if pattern.MatchString(command) {
 			return true
