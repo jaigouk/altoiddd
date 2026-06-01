@@ -48,7 +48,7 @@ func EventTypeName(event any) string {
 	if t == nil {
 		return ""
 	}
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t.PkgPath()[lastSlash(t.PkgPath())+1:] + "." + t.Name()
