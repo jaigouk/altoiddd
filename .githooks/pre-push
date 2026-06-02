@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Local CI-parity gates run before every `git push`.
+# Mirrors .gitea/workflows/ci.yaml minus the heavy trivy step (opt-in below).
+#
+# Bypass (NOT recommended — also violates .claude/CLAUDE.md):
+#   git push --no-verify
+#
+# Opt into the trivy vuln + secret scans (matches CI's security job):
+#   BD_PUSH_INCLUDE_TRIVY=1 git push
+#
+# Skip on docs-only / non-Go changes:
+#   BD_PUSH_SKIP_ON_DOCS_ONLY=1 git push
+#
+# Reinstall this hook on a fresh clone:
+#   make install-hooks
+set -euo pipefail
+
+# Read stdin per the git pre-push contract: each line is
+# "<local_ref> <local_sha> <remote_ref> <remote_sha>".
+# We only need it for the docs-only shortcut.
+push_refs=""
+if [ ! -t 0 ]; then
+    push_refs="$(cat || true)"
+fi
+
+if [ "${BD_PUSH_SKIP_ON_DOCS_ONLY:-0}" = "1" ] && [ -n "$push_refs" ]; then
+    only_docs=1
+    while read -r _local_ref local_sha _remote_ref remote_sha; do
+        [ -z "$local_sha" ] && continue
+        # New branch (remote_sha is all zeros) -> diff against merge-base with main.
+        if printf '%s' "$remote_sha" | grep -qE '^0+$'; then
+            base="$(git merge-base "$local_sha" origin/main 2>/dev/null || echo "")"
+        else
+            base="$remote_sha"
+        fi
+        [ -z "$base" ] && { only_docs=0; break; }
+        if git diff --name-only "$base..$local_sha" \
+            | grep -qvE '^(docs/|\.notes/|.*\.md$|\.gitignore$|LICENSE$)'; then
+            only_docs=0
+            break
+        fi
+    done <<< "$push_refs"
+    if [ "$only_docs" = "1" ]; then
+        echo "→ pre-push: docs-only diff detected, skipping Go gates."
+        exit 0
+    fi
+fi
+
+echo "→ pre-push: running local CI parity gates (bd preflight --check)..."
+if ! command -v bd >/dev/null; then
+    echo "✗ pre-push: 'bd' binary not on PATH. Install beads v1.0.4+ first."
+    echo "  https://github.com/gastownhall/beads/releases"
+    exit 1
+fi
+
+if ! bd preflight --check; then
+    echo
+    echo "✗ pre-push: bd preflight --check failed. Fix the issues above, then re-push."
+    echo "  To bypass once (NOT recommended): git push --no-verify"
+    exit 1
+fi
+
+if [ "${BD_PUSH_INCLUDE_TRIVY:-0}" = "1" ]; then
+    if ! command -v trivy >/dev/null; then
+        echo "✗ pre-push: BD_PUSH_INCLUDE_TRIVY=1 set but trivy not on PATH."
+        exit 1
+    fi
+    echo "→ pre-push: running trivy vuln scan..."
+    trivy fs . --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 --format table
+    echo "→ pre-push: running trivy secret scan..."
+    trivy fs . --scanners secret --severity CRITICAL,HIGH --exit-code 1 --format table
+fi
+
+echo "✓ pre-push gates passed"

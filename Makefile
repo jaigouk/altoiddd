@@ -1,4 +1,4 @@
-.PHONY: build test smoke lint vet fmt deadcode check ci release release-all clean
+.PHONY: build test smoke lint vet fmt deadcode check ci preflight install-hooks ci-local release release-all clean
 
 # Version injection
 VERSION_PKG := github.com/alto-cli/alto/internal/composition
@@ -62,6 +62,37 @@ release-all:
 
 # CI target (alias for check)
 ci: check
+
+# Local CI-parity gate. Same surface as .githooks/pre-push.
+# Runs `bd preflight --check` which mirrors .gitea/workflows/ci.yaml
+# (tests, lint, gofmt, beads-pollution, nix hash, AGENTS.md sync).
+preflight:
+	bd preflight --check
+
+# Wire the tracked .githooks/ as this clone's hooks directory.
+# Run once per fresh clone. Idempotent.
+install-hooks:
+	@current="$$(git config core.hooksPath || echo '<unset>')"; \
+	if [ "$$current" != ".githooks" ]; then \
+		git config core.hooksPath .githooks; \
+		echo "✓ core.hooksPath set to .githooks (was: $$current)"; \
+	else \
+		echo "✓ core.hooksPath already .githooks"; \
+	fi
+	@chmod +x .githooks/* 2>/dev/null || true
+	@echo "✓ hooks installed: $$(ls .githooks/)"
+
+# Full local CI parity (preflight + trivy, matching the CI security job).
+# Use before risky pushes; trivy adds ~30-90s on cold cache.
+ci-local: preflight
+	@if command -v trivy >/dev/null; then \
+		echo "→ ci-local: running trivy vuln scan..."; \
+		trivy fs . --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 --format table; \
+		echo "→ ci-local: running trivy secret scan..."; \
+		trivy fs . --scanners secret --severity CRITICAL,HIGH --exit-code 1 --format table; \
+	else \
+		echo "⚠ ci-local: trivy not installed; skipping security scans (CI will run them)"; \
+	fi
 
 # Remove build artifacts
 clean:

@@ -208,18 +208,29 @@ Already have a codebase that's become hard to change? `alto init --existing` ana
 - Go 1.26+
 - golangci-lint (for linting)
 - gofumpt (for formatting)
+- [beads](https://github.com/gastownhall/beads/releases) v1.0.4+ (for `bd preflight` and the pre-push hook)
+
+### First-time setup
+
+```bash
+make install-hooks   # Wire .githooks/ as core.hooksPath so pre-push runs CI-parity gates locally
+```
 
 ### Common Commands
 
 ```bash
-make build      # Quick build (no optimization)
-make test       # Run tests with race detector
-make lint       # Run golangci-lint
-make check      # All quality gates: build → vet → test → lint → deadcode
-make ci         # Alias for check (CI-friendly)
-make fmt        # Format code with gofumpt
-make clean      # Remove build artifacts
+make build           # Quick build (no optimization)
+make test            # Run tests with race detector
+make lint            # Run golangci-lint
+make check           # All quality gates: build → vet → test → lint → deadcode
+make ci              # Alias for check (CI-friendly)
+make fmt             # Format code with gofumpt
+make preflight       # CI-parity check via `bd preflight` (mirrors .gitea/workflows/ci.yaml)
+make ci-local        # preflight + trivy scans (full CI parity)
+make clean           # Remove build artifacts
 ```
+
+The `.githooks/pre-push` hook runs `bd preflight --check` before every `git push` and aborts on failure — matching the gates in `.gitea/workflows/ci.yaml`. Bypass (NOT recommended) with `git push --no-verify`. Add the trivy scans with `BD_PUSH_INCLUDE_TRIVY=1 git push`.
 
 ## Status
 
