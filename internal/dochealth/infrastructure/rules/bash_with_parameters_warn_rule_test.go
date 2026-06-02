@@ -28,8 +28,8 @@ func TestBashWithParametersWarnRule_Name(t *testing.T) {
 func TestBashWithParametersWarnRule_BashWithParamsNoProtection_ReturnsWarning(t *testing.T) {
 	t.Parallel()
 	a := bashParamsAsset(t, map[string]any{
-		"tools": "Read, Bash",
-		"parameters":     []any{"x"},
+		"tools":      "Read, Bash",
+		"parameters": []any{"x"},
 	})
 	v := NewBashWithParametersWarnRule().Check(a, nil)
 	require.Len(t, v, 1)
@@ -39,7 +39,7 @@ func TestBashWithParametersWarnRule_BashWithParamsNoProtection_ReturnsWarning(t 
 func TestBashWithParametersWarnRule_BashWithParamsProtected_NoViolation(t *testing.T) {
 	t.Parallel()
 	a := bashParamsAsset(t, map[string]any{
-		"tools":           "Read, Bash",
+		"tools":                    "Read, Bash",
 		"parameters":               []any{"x"},
 		"disable_model_invocation": true,
 	})
@@ -49,8 +49,8 @@ func TestBashWithParametersWarnRule_BashWithParamsProtected_NoViolation(t *testi
 func TestBashWithParametersWarnRule_NoBash_NoViolation(t *testing.T) {
 	t.Parallel()
 	a := bashParamsAsset(t, map[string]any{
-		"tools": "Read, Write",
-		"parameters":     []any{"x"},
+		"tools":      "Read, Write",
+		"parameters": []any{"x"},
 	})
 	assert.Empty(t, NewBashWithParametersWarnRule().Check(a, nil))
 }

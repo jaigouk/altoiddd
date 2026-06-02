@@ -152,5 +152,5 @@ type InteractionPattern string
 
 const (
 	PatternConsultantProposes InteractionPattern = "consultant-proposes"
-	PatternUserNarrates      InteractionPattern = "user-narrates"
+	PatternUserNarrates       InteractionPattern = "user-narrates"
 )
