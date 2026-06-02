@@ -67,7 +67,7 @@ Field reference:
 | `kind` | One of `command`, `agent`, `template`, `skill`. |
 | `phase` | One of `design`, `groom`, `implement`, `review`, `close`. |
 | `when_to_use` | Non-empty trigger phrase describing when to reach for the asset. |
-| `tools` | Non-empty, **inline comma-separated string** (`Read, Grep, Write`). Do NOT use a YAML block list (`- Read`) — the schema check treats a non-string value as a missing field and errors. |
+| `tools` | Non-empty. Two canonical forms are accepted: an inline comma-separated string (`Read, Grep, Write`) or a YAML block list (`- Read` / `- Grep` / `- Write`). The CSV form is terser; the block-list form is what YAML editors auto-format to. Pick one per file; both validate. |
 | `bash_substitution_policy` | One of `none`, `quoted`, `unrestricted`. See the safety section below. |
 | `license` | Non-empty SPDX identifier. Default to `Apache-2.0`. |
 
@@ -88,9 +88,10 @@ at a time, and re-prompt on any failure instead of accepting a bad value.
 4. **`phase`** — Offer `design | groom | implement | review | close`. Reject
    any other value.
 5. **`when_to_use`** — Ask for the trigger phrase. Reject empty.
-6. **`tools`** — Ask for the tool list and record it as an **inline
-   comma-separated string** (`Read, Grep, Write`), never a YAML block list — a
-   non-string value fails the required-field check. Reject an empty list. For
+6. **`tools`** — Ask for the tool list. Either form is canonical: inline
+   CSV string (`Read, Grep, Write`) or YAML block list (`- Read` / `- Grep`
+   / `- Write`). Default to CSV for compactness unless the contributor
+   prefers the block-list shape. Reject an empty list / empty string. For
    each entry outside the common set
    `Read, Grep, Glob, Edit, Write, Bash, Agent`, **warn and ask the contributor
    to confirm** (it may be a typo, an MCP tool, or a less-common native tool).

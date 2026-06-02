@@ -56,7 +56,18 @@ func (r *FrontmatterSchemaRule) Check(asset dochealthdomain.ScaffoldAsset, _ []d
 	fm := asset.Frontmatter()
 	var out []dochealthdomain.ScaffoldViolation
 	for _, field := range canonicalSchemaFields {
-		if _, ok := stringValue(fm, field); !ok {
+		// `tools` is canonically polymorphic: inline-CSV string OR YAML
+		// block-list ([]any). Use fieldPresent so the schema gate and the
+		// downstream toolsList parser agree on which shapes are valid.
+		// All other canonical fields are string-typed by spec — keep them
+		// on stringValue. (alty-cli-tzw)
+		present := false
+		if field == "tools" {
+			present = fieldPresent(fm, field)
+		} else {
+			_, present = stringValue(fm, field)
+		}
+		if !present {
 			out = append(out, makeViolation(
 				pathDisplay(asset.Path()),
 				r.Name(),

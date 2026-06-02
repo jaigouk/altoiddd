@@ -165,3 +165,35 @@ func stringValue(fm map[string]any, key string) (string, bool) {
 	}
 	return s, true
 }
+
+// fieldPresent reports whether a frontmatter field is canonically present
+// and non-empty, accepting BOTH the inline-CSV string form AND the YAML
+// block-list ([]any) form. Used by FrontmatterSchemaRule's presence-loop
+// for polymorphic fields whose downstream parser accepts both shapes
+// (today: `tools` only, via toolsList).
+//
+// Returns true when:
+//   - value is a non-empty (post-TrimSpace) string, OR
+//   - value is a non-empty []any
+//
+// All other shapes (missing key, nil, empty string, empty list, bool, int,
+// map) return false. This is intentionally narrower than "key exists" —
+// frontmatter rules want "present AND non-empty" semantics.
+//
+// Polymorphic carve-out alty-cli-tzw: scope is `tools` today. If a future
+// field needs the same treatment, add it here, do NOT broaden the helper
+// to accept all shapes.
+func fieldPresent(fm map[string]any, key string) bool {
+	raw, ok := fm[key]
+	if !ok || raw == nil {
+		return false
+	}
+	switch v := raw.(type) {
+	case string:
+		return strings.TrimSpace(v) != ""
+	case []any:
+		return len(v) > 0
+	default:
+		return false
+	}
+}
