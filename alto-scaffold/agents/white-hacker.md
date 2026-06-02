@@ -8,8 +8,9 @@ description: >
 kind: agent
 phase: review
 when_to_use: When auditing security, assessing attack surface, or producing hardening recommendations
-tools_required: Read, Grep, Glob, Bash
-bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
+tools: Read, Grep, Glob, Bash
+bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
+secrets_grep_exempt: "security-review agent — domain vocabulary (credentials, secret, password, token) appears in audit checklists and grep examples by design"
 license: Apache-2.0
 model: opus
 permissionMode: default

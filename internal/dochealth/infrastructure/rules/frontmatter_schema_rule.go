@@ -16,7 +16,7 @@ var canonicalSchemaFields = []string{
 	"kind",
 	"phase",
 	"when_to_use",
-	"tools_required",
+	"tools",
 	"bash_substitution_policy",
 	"license",
 }

@@ -99,3 +99,46 @@ func TestSecretsGrepRule_CaseInsensitiveKeywords(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, NewSecretsGrepRule(nil).Check(a, nil))
 }
+
+func TestSecretsGrepRule_ExemptFrontmatter_SkipsKeywordHit(t *testing.T) {
+	t.Parallel()
+	fm := fullFrontmatter()
+	fm["secrets_grep_exempt"] = "security-review agent — domain vocabulary"
+	a, err := dochealthdomain.NewScaffoldAsset("agents/sec.md", fm, "credentials live here", 1, false)
+	require.NoError(t, err)
+	assert.Empty(t, NewSecretsGrepRule(nil).Check(a, nil),
+		"non-empty secrets_grep_exempt must suppress all warnings")
+}
+
+func TestSecretsGrepRule_ExemptFrontmatter_EmptyReason_StillFires(t *testing.T) {
+	t.Parallel()
+	fm := fullFrontmatter()
+	fm["secrets_grep_exempt"] = ""
+	a, err := dochealthdomain.NewScaffoldAsset("agents/sec.md", fm, "credentials inside", 1, false)
+	require.NoError(t, err)
+	assert.NotEmpty(t, NewSecretsGrepRule(nil).Check(a, nil),
+		"empty exempt reason must NOT suppress — the field exists to capture audit decisions, not silence")
+}
+
+func TestSecretsGrepRule_Overlay_InheritsExemptFromPrimary(t *testing.T) {
+	t.Parallel()
+	primaryFM := fullFrontmatter()
+	primaryFM["secrets_grep_exempt"] = "security-review agent"
+	primary, err := dochealthdomain.NewScaffoldAsset("agents/sec.md", primaryFM, "x", 1, false)
+	require.NoError(t, err)
+	overlay, err := dochealthdomain.NewScaffoldAsset("agents/sec.project.md", nil, "credentials here", 1, true)
+	require.NoError(t, err)
+	corpus := []dochealthdomain.ScaffoldAsset{primary, overlay}
+	assert.Empty(t, NewSecretsGrepRule(nil).Check(overlay, corpus),
+		"overlay must inherit secrets_grep_exempt from its primary sibling")
+}
+
+func TestSecretsGrepRule_Overlay_NoPrimaryInCorpus_StillFires(t *testing.T) {
+	t.Parallel()
+	// Defensive: orphan overlay (no primary in corpus) cannot inherit
+	// an exemption — it must still be scanned. Belt + braces with
+	// OrphanOverlayRule, which would flag the orphan separately.
+	overlay, err := dochealthdomain.NewScaffoldAsset("agents/sec.project.md", nil, "credentials here", 1, true)
+	require.NoError(t, err)
+	assert.NotEmpty(t, NewSecretsGrepRule(nil).Check(overlay, nil))
+}

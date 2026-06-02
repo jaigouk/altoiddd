@@ -8,8 +8,8 @@ description: >
 kind: agent
 phase: groom
 when_to_use: When managing beads tickets, grooming backlogs, or coordinating work across teammates
-tools_required: Read, Grep, Glob, Bash, Write, Edit
-bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
+tools: Read, Grep, Glob, Bash, Write, Edit
+bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 model: opus
 permissionMode: default

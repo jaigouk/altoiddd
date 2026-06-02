@@ -4,7 +4,7 @@ description: Guided DDD discovery — turn an idea into PRD, DDD.md, and ARCHITE
 kind: command
 phase: design
 when_to_use: When turning a raw idea into PRD, DDD model, and architecture before any code is written
-tools_required: Read, Write, Edit, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 bash_substitution_policy: none
 license: Apache-2.0
 ---
@@ -172,7 +172,7 @@ questions marked with ★. Otherwise ask all 10.
 
 **Q10** ★
 - **Technical:** "Classify each context: core (competitive advantage), supporting (necessary but not differentiating), or generic (commodity)."
-- **Non-Technical:** "Which parts are your secret sauce, which are necessary plumbing, and which are off-the-shelf?"
+- **Non-Technical:** "Which parts are your core differentiator, which are necessary plumbing, and which are off-the-shelf?"
 - *Produces:* subdomain_classification
 
 For Q10, guide the user through **Khononov's decision tree** for each bounded context:
@@ -194,7 +194,7 @@ For Q10, guide the user through **Khononov's decision tree** for each bounded co
 **🔄 Final playback after Q10:**
 > "Here's the complete picture:
 > - **Bounded contexts:** [list each with classification]
-> - **Core (secret sauce):** [list] — these get full DDD treatment
+> - **Core (your differentiator):** [list] — these get full DDD treatment
 > - **Supporting (necessary plumbing):** [list] — simpler architecture
 > - **Generic (off-the-shelf):** [list] — buy or use existing
 >

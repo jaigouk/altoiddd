@@ -4,7 +4,7 @@ description: Check ticket coverage against PRD capabilities using RLM pattern
 kind: command
 phase: review
 when_to_use: When checking ticket coverage against PRD capabilities (RLM traceability pattern)
-tools_required: Read, Grep, Glob
+tools: Read, Grep, Glob
 bash_substitution_policy: none
 license: Apache-2.0
 ---

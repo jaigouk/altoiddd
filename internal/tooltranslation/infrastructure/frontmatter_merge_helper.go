@@ -41,7 +41,7 @@ type workflowAssetFrontmatter struct {
 	Kind                   string `yaml:"kind"`
 	Phase                  string `yaml:"phase"`
 	WhenToUse              string `yaml:"when_to_use"`
-	ToolsRequired          any    `yaml:"tools_required"`
+	ToolsRequired          any    `yaml:"tools"`
 	BashSubstitutionPolicy string `yaml:"bash_substitution_policy"`
 	License                string `yaml:"license"`
 	Agent                  string `yaml:"agent,omitempty"`

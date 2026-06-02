@@ -81,7 +81,7 @@ grep -rh '^description:' alto-scaffold/{commands,agents,templates,skills} 2>/dev
 ```
 
 Per-asset purpose lives in YAML frontmatter (`name`, `description`, `kind`, `phase`,
-`when_to_use`, `tools_required`). There is no central inventory file — frontmatter is the
+`when_to_use`, `tools`). There is no central inventory file — frontmatter is the
 source of truth.
 
 For the tree layout, see [CONTEXT.md § File-tree contract](CONTEXT.md#file-tree-contract).

@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 
 	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
@@ -59,9 +60,28 @@ func (r *SecretsGrepRule) Name() string { return "secrets_grep" }
 // Check emits one WARNING per matching pattern (deduped per pattern, not
 // per match — keeps the report readable when an asset is shot through
 // with the same kind of secret).
-func (r *SecretsGrepRule) Check(asset dochealthdomain.ScaffoldAsset, _ []dochealthdomain.ScaffoldAsset) []dochealthdomain.ScaffoldViolation {
+//
+// An asset can opt out by declaring `secrets_grep_exempt: "<reason>"`
+// in its frontmatter — intended for security-review agents whose domain
+// vocabulary legitimately overlaps the keyword pattern. The reason
+// string captures the audit decision. Overlays inherit the exemption
+// from their primary sibling.
+func (r *SecretsGrepRule) Check(asset dochealthdomain.ScaffoldAsset, corpus []dochealthdomain.ScaffoldAsset) []dochealthdomain.ScaffoldViolation {
 	body := asset.Body()
 	if body == "" {
+		return nil
+	}
+	fm := asset.Frontmatter()
+	if asset.IsOverlay() {
+		primaryPath := primaryPathOf(asset.Path())
+		for _, c := range corpus {
+			if !c.IsOverlay() && filepath.ToSlash(c.Path()) == primaryPath {
+				fm = c.Frontmatter()
+				break
+			}
+		}
+	}
+	if reason, ok := stringValue(fm, "secrets_grep_exempt"); ok && reason != "" {
 		return nil
 	}
 	var out []dochealthdomain.ScaffoldViolation

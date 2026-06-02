@@ -4,7 +4,7 @@ description: Check documentation health - freshness, broken links, missing metad
 kind: command
 phase: review
 when_to_use: When auditing documentation for freshness, broken links, and missing metadata
-tools_required: Bash, Read
+tools: Bash, Read
 bash_substitution_policy: none
 license: Apache-2.0
 ---

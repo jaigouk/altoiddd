@@ -17,7 +17,7 @@ func fullFrontmatter() map[string]any {
 		"kind":                     "command",
 		"phase":                    "groom",
 		"when_to_use":              "test",
-		"tools_required":           "Read",
+		"tools":           "Read",
 		"bash_substitution_policy": "none",
 		"license":                  "Apache-2.0",
 	}
@@ -38,7 +38,7 @@ func TestFrontmatterSchemaRule_AllEightFieldsRequired(t *testing.T) {
 		"kind",
 		"phase",
 		"when_to_use",
-		"tools_required",
+		"tools",
 		"bash_substitution_policy",
 		"license",
 	}

@@ -23,7 +23,7 @@ description: test command
 kind: command
 phase: groom
 when_to_use: when testing
-tools_required: Read, Bash
+tools: Read, Bash
 bash_substitution_policy: none
 license: Apache-2.0
 ---
@@ -58,7 +58,7 @@ description: x
 kind: command
 phase: groom
 when_to_use: x
-tools_required: Read
+tools: Read
 bash_substitution_policy: none
 license: Apache-2.0
 disable_model_invocation: true
@@ -77,7 +77,7 @@ description: x
 kind: command
 phase: groom
 when_to_use: x
-tools_required: Read
+tools: Read
 bash_substitution_policy: none
 license: Apache-2.0
 agent: ""
@@ -127,7 +127,7 @@ description: x
 kind: command
 phase: groom
 when_to_use: x
-tools_required: Read
+tools: Read
 bash_substitution_policy: none
 license: Apache-2.0
 ---

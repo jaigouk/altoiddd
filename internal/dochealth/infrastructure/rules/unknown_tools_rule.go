@@ -13,7 +13,7 @@ import (
 // snake-style identifiers. RE2 — no backtracking.
 var toolNameRegex = regexp.MustCompile(`^[A-Z][A-Za-z]+$|^mcp__[a-z0-9_]+__[a-z0-9_]+$`)
 
-// UnknownToolsRule warns when `tools_required` contains an entry that
+// UnknownToolsRule warns when `tools` contains an entry that
 // does not match the native PascalCase form or the canonical MCP
 // `mcp__<server>__<tool>` form. Catches author typos before the asset
 // reaches a tool that would silently ignore the unknown name.

@@ -12,7 +12,7 @@ import (
 func toolsAsset(t *testing.T, tools any, isOverlay bool) dochealthdomain.ScaffoldAsset {
 	t.Helper()
 	fm := fullFrontmatter()
-	fm["tools_required"] = tools
+	fm["tools"] = tools
 	a, err := dochealthdomain.NewScaffoldAsset("foo.md", fm, "", 0, isOverlay)
 	require.NoError(t, err)
 	return a
@@ -69,7 +69,7 @@ func TestUnknownToolsRule_MissingTools_NoViolation(t *testing.T) {
 	// FrontmatterSchemaRule reports missing fields; this rule only validates
 	// the values that are present.
 	fm := fullFrontmatter()
-	delete(fm, "tools_required")
+	delete(fm, "tools")
 	a, err := dochealthdomain.NewScaffoldAsset("foo.md", fm, "", 0, false)
 	require.NoError(t, err)
 	assert.Empty(t, NewUnknownToolsRule().Check(a, nil))

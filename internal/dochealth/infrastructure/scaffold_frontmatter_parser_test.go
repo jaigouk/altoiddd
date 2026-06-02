@@ -15,7 +15,7 @@ description: x
 kind: command
 phase: groom
 when_to_use: testing
-tools_required: Read, Bash
+tools: Read, Bash
 bash_substitution_policy: none
 license: Apache-2.0
 ---
@@ -53,13 +53,13 @@ func TestScaffoldFrontmatterParser_UnclosedFrontmatter_TreatedAsNoFrontmatter(t 
 func TestScaffoldFrontmatterParser_ToolsRequiredAsScalar(t *testing.T) {
 	t.Parallel()
 	src := `---
-tools_required: Read
+tools: Read
 ---
 body`
 	p := newScaffoldFrontmatterParser()
 	fm, _, _, _, err := p.Parse(src)
 	require.NoError(t, err)
-	assert.Equal(t, "Read", fm["tools_required"])
+	assert.Equal(t, "Read", fm["tools"])
 }
 
 func TestLineCount(t *testing.T) {

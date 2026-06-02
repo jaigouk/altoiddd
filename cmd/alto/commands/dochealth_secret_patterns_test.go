@@ -26,7 +26,7 @@ description: x
 kind: command
 phase: groom
 when_to_use: test
-tools_required: Read
+tools: Read
 bash_substitution_policy: none
 license: Apache-2.0
 ---

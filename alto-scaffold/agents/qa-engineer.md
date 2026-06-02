@@ -8,7 +8,7 @@ description: >
 kind: agent
 phase: review
 when_to_use: When writing tests, validating coverage, or investigating failures with root-cause analysis
-tools_required: Read, Edit, Write, Grep, Glob, Bash
+tools: Read, Edit, Write, Grep, Glob, Bash
 bash_substitution_policy: none
 license: Apache-2.0
 model: opus

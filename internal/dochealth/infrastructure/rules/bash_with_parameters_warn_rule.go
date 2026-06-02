@@ -5,7 +5,7 @@ import (
 )
 
 // BashWithParametersWarnRule warns when an asset declares both `Bash` in
-// `tools_required` AND `parameters:` AND `disable_model_invocation` is
+// `tools` AND `parameters:` AND `disable_model_invocation` is
 // not `true`. This catches authors who forgot the normative rule from
 // §Frontmatter Schema: parameter-accepting commands that can invoke Bash
 // must opt out of model invocation OR explicitly accept the trust
@@ -50,7 +50,7 @@ func (r *BashWithParametersWarnRule) Check(asset dochealthdomain.ScaffoldAsset, 
 		makeWarning(
 			pathDisplay(asset.Path()),
 			r.Name(),
-			"tools_required contains Bash AND parameters are declared but disable_model_invocation is not true — model could invoke Bash with attacker-controlled parameters",
+			"tools contains Bash AND parameters are declared but disable_model_invocation is not true — model could invoke Bash with attacker-controlled parameters",
 		),
 	}
 }

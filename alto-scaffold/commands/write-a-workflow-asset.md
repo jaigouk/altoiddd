@@ -4,7 +4,7 @@ description: Interactive meta-skill for authoring a new workflow asset (command,
 kind: command
 phase: design
 when_to_use: When a contributor wants to author a new workflow asset (command/agent/template/skill) with valid frontmatter
-tools_required: Read, Glob, Write
+tools: Read, Glob, Write
 bash_substitution_policy: none
 license: Apache-2.0
 ---
@@ -52,7 +52,7 @@ description: <one sentence>
 kind: command | agent | template | skill
 phase: design | groom | implement | review | close
 when_to_use: <trigger phrase or example request>
-tools_required: Read, Grep, Write
+tools: Read, Grep, Write
 bash_substitution_policy: none | quoted | unrestricted
 license: Apache-2.0
 ---
@@ -67,7 +67,7 @@ Field reference:
 | `kind` | One of `command`, `agent`, `template`, `skill`. |
 | `phase` | One of `design`, `groom`, `implement`, `review`, `close`. |
 | `when_to_use` | Non-empty trigger phrase describing when to reach for the asset. |
-| `tools_required` | Non-empty, **inline comma-separated string** (`Read, Grep, Write`). Do NOT use a YAML block list (`- Read`) — the schema check treats a non-string value as a missing field and errors. |
+| `tools` | Non-empty, **inline comma-separated string** (`Read, Grep, Write`). Do NOT use a YAML block list (`- Read`) — the schema check treats a non-string value as a missing field and errors. |
 | `bash_substitution_policy` | One of `none`, `quoted`, `unrestricted`. See the safety section below. |
 | `license` | Non-empty SPDX identifier. Default to `Apache-2.0`. |
 
@@ -88,7 +88,7 @@ at a time, and re-prompt on any failure instead of accepting a bad value.
 4. **`phase`** — Offer `design | groom | implement | review | close`. Reject
    any other value.
 5. **`when_to_use`** — Ask for the trigger phrase. Reject empty.
-6. **`tools_required`** — Ask for the tool list and record it as an **inline
+6. **`tools`** — Ask for the tool list and record it as an **inline
    comma-separated string** (`Read, Grep, Write`), never a YAML block list — a
    non-string value fails the required-field check. Reject an empty list. For
    each entry outside the common set
@@ -134,7 +134,7 @@ Run these checks in order. Stop and report on the first failure.
    **direct child** of `alto-scaffold/lifecycle/in-progress/` — it contains no
    `..` segments and its parent directory is exactly that folder. If not, abort.
 
-4. **Bash + parameters safety review.** If `tools_required` contains `Bash`:
+4. **Bash + parameters safety review.** If `tools` contains `Bash`:
    - With `bash_substitution_policy: none`, the body may contain **no** bash
      fence at all. That covers fenced blocks tagged bash, sh, zsh, shell, or
      console; a fence tagged with an exclamation mark; and the inline
@@ -151,7 +151,7 @@ Run these checks in order. Stop and report on the first failure.
 
 1. Compose the YAML frontmatter from the 8 validated fields, in canonical
    order: `name`, `description`, `kind`, `phase`, `when_to_use`,
-   `tools_required`, `bash_substitution_policy`, `license`.
+   `tools`, `bash_substitution_policy`, `license`.
 2. Append a skeleton body with these sections (so the draft is editable, not
    empty):
    - `# /<name>` (or the asset title) and a one-line summary.
@@ -173,7 +173,7 @@ description: One-sentence description of what this command does
 kind: command
 phase: implement
 when_to_use: When a contributor needs to do the thing this command automates
-tools_required: Read, Write
+tools: Read, Write
 bash_substitution_policy: none
 license: Apache-2.0
 ---

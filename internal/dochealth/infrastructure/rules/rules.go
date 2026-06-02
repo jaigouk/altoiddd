@@ -102,10 +102,10 @@ func hasAnyBashBlock(body string) bool {
 		fencedShellBlockRegex.MatchString(body)
 }
 
-// toolsList parses the `tools_required` frontmatter value (string or
+// toolsList parses the `tools` frontmatter value (string or
 // []any) into a normalised []string of trimmed entries.
 func toolsList(fm map[string]any) []string {
-	raw, ok := fm["tools_required"]
+	raw, ok := fm["tools"]
 	if !ok {
 		return nil
 	}

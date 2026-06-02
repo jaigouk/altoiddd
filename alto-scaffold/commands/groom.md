@@ -4,8 +4,8 @@ description: Deep-groom a ticket — enforced implementation simulation, scope c
 kind: command
 phase: groom
 when_to_use: When deep-grooming a ticket before claiming — implementation simulation, scope check, split detection
-tools_required: Read, Grep, Glob, Bash
-bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
+tools: Read, Grep, Glob, Bash
+bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 ---
 

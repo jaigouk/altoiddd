@@ -4,8 +4,8 @@ description: Generate a team launch prompt from one or more beads tickets
 kind: command
 phase: implement
 when_to_use: When launching a multi-agent team to work on one or more beads tickets
-tools_required: Agent, Bash, Read, Grep, Glob
-bash_substitution_policy: unrestricted  # documentation bash fences (not Claude-Code exec surface)
+tools: Agent, Bash, Read, Grep, Glob
+bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 ---
 

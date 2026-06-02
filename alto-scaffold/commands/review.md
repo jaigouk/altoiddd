@@ -4,7 +4,7 @@ description: Structured code review based on Hartwork methodology — bugs, clar
 kind: command
 phase: review
 when_to_use: When performing a structured code review (Hartwork methodology — bugs, clarity, DDD/SOLID, tests)
-tools_required: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash
 bash_substitution_policy: none
 license: Apache-2.0
 ---
@@ -111,7 +111,7 @@ Evaluate every change against these categories. Report findings per file.
 
 #### H. Security (lightweight)
 
-- [ ] No secrets, credentials, or PII in code or comments
+- [ ] No hardcoded sensitive material (auth material, PII) in code or comments
 - [ ] No `exec.Command` with unsanitized input
 - [ ] File paths are validated/sanitized before use
 - [ ] Serialization/deserialization handles malformed input gracefully
