@@ -18,8 +18,14 @@ var _ application.BeadsWriter = (*infrastructure.BeadsCLIWriter)(nil)
 func TestBeadsCLIWriter_WriteEpic(t *testing.T) {
 	t.Parallel()
 
-	// This test requires bd CLI to be installed
-	// Skip if not available
+	// Integration test: shells out to the real `bd` CLI and creates a live
+	// issue in the host project's beads database. Skip under -short (CI
+	// gates use -short via `bd preflight --check`, and the pre-push hook
+	// inherits that). Run explicitly with `go test ./internal/ticket/...
+	// -run TestBeadsCLIWriter` when validating the adapter.
+	if testing.Short() {
+		t.Skip("skipping bd-CLI integration test under -short (pollutes host beads DB)")
+	}
 	writer := infrastructure.NewBeadsCLIWriter(t.TempDir())
 	epic := ticketdomain.NewGeneratedEpic(
 		"test-id", "Test Epic", "Test description", "TestContext", "core",
@@ -39,6 +45,9 @@ func TestBeadsCLIWriter_WriteEpic(t *testing.T) {
 func TestBeadsCLIWriter_WriteTicket_Task(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		t.Skip("skipping bd-CLI integration test under -short (pollutes host beads DB)")
+	}
 	writer := infrastructure.NewBeadsCLIWriter(t.TempDir())
 	ticket := ticketdomain.NewGeneratedTicket(
 		"test-id", "Test Task", "Task description",
@@ -56,6 +65,9 @@ func TestBeadsCLIWriter_WriteTicket_Task(t *testing.T) {
 func TestBeadsCLIWriter_WriteTicket_Spike(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		t.Skip("skipping bd-CLI integration test under -short (pollutes host beads DB)")
+	}
 	writer := infrastructure.NewBeadsCLIWriter(t.TempDir())
 	ticket := ticketdomain.NewGeneratedSpikeTicket(
 		"test-id", "Spike: Test Research", "Research question",
