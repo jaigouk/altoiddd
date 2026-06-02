@@ -128,6 +128,7 @@ func TestDocHealthHandler_Handle(t *testing.T) {
 		assert.Contains(t, excludeDirs, "beads_templates")
 		assert.Contains(t, excludeDirs, "research")
 		assert.Contains(t, excludeDirs, "plans")
+		assert.Contains(t, excludeDirs, "bugs")
 	})
 
 	t.Run("combines registered and unregistered", func(t *testing.T) {

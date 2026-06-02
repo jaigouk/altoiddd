@@ -30,8 +30,10 @@ var _ bootstrapapp.ScaffoldWriter = (*EmbedScaffoldWriter)(nil)
 // in the same change as the underlying file edit so the test catches
 // drift. Tech-lead Phase 1 contract locked at 24; current scaffold
 // state (post .gitkeep + overlay filter, + README.md, + scripts/bd-ripple,
-// + commands/write-a-workflow-asset.md per alty-cli-766.6) yields 26.
-const ExpectedEmbedFileCount = 26
+// + commands/write-a-workflow-asset.md per alty-cli-766.6, + commands/rca.md
+// + templates/beads-bug-template.md + templates/bug-rca-template.md for the
+// bug-fix flow) yields 29.
+const ExpectedEmbedFileCount = 29
 
 // scriptsPrefix marks files that must be written with the executable bit
 // set. Any embed path under alto-scaffold/scripts/ ships as a shell script

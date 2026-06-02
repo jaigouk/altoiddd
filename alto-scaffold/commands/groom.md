@@ -42,7 +42,7 @@ bd label list <ticket-id>
 |-------|------|--------|
 | Freshness | `bd label list <id>` | If `review_needed` → read ripple comments, resolve before proceeding |
 | PRD traceability | `/prd-traceability <id>` | Cross-reference ticket AC against PRD capabilities |
-| Template compliance | Manual | Compare description against `alto-scaffold/templates/beads-ticket-template.md` |
+| Template compliance | Manual | Compare description against the matching template: `beads-ticket-template.md` (task), `beads-epic-template.md` (epic), `beads-spike-template.md` (spike), `beads-bug-template.md` (bug — see also `/rca`). All under `alto-scaffold/templates/`. |
 
 If template sections are missing → draft them before proceeding.
 

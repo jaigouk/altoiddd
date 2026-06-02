@@ -78,6 +78,7 @@ bd export                             # Export Dolt DB → JSONL (manual sync)
 - Epic: `alto-scaffold/templates/beads-epic-template.md`
 - Task: `alto-scaffold/templates/beads-ticket-template.md`
 - Spike: `alto-scaffold/templates/beads-spike-template.md`
+- Bug:  `alto-scaffold/templates/beads-bug-template.md` (pairs with `/rca` and `docs/bugs/`)
 
 ## Quality Gates Reference
 
