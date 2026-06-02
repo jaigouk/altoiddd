@@ -113,141 +113,397 @@ From the tickets and code read in Step 2, extract settled design decisions:
 - Bounded context boundaries (which package owns what)
 - Constraints (what NOT to do — especially DDD layer rules)
 
-### Step 6 — Generate the Prompt
+### Step 6 — Generate Per-Agent Prompt Blocks
 
-Output the following prompt as a fenced code block the user can copy-paste.
-Fill in ALL placeholders with actual data from Steps 1-5.
+**Each agent gets ONLY its slice.** Pasting the full team plan into every
+spawned agent (the old single-block emission) wastes context, dilutes audit
+lenses, and risks role confusion (e.g. a dev acting on Phase 1 instructions
+that belong to the TL). Emit one fenced markdown block per agent below,
+labelled with the agent's name. The user copies each block into the
+corresponding spawned subagent's prompt.
+
+For one wave the output is **N+1 fenced blocks**:
+1. Orchestrator preamble (the session you paste into; tells it how to spawn
+   the team and how to route messages)
+2. tech-lead block
+3. one developer block per dev (1 or 2)
+4. qa-engineer block
+5. white-hacker block
+
+Use the templates below. Fill ALL placeholders with actual data from
+Steps 1-5.
+
+#### 6.0 — Orchestrator preamble
+
+This goes to the Claude Code session that will spawn the team. It is NOT a
+subagent prompt; it tells the receiving session how to fan out.
 
 ````markdown
-Create a team for: <ticket titles, comma-separated>
+# Orchestrator: launch team for <ticket titles, comma-separated>
 
-## Reference Files (read before starting)
+You are the team orchestrator for this wave. Your job is to spawn the
+subagents below using the Agent tool, route messages between them per the
+Communication Rules, and confirm wave completion. Do NOT implement code
+yourself — your role is fan-out + routing.
 
-- `.claude/CLAUDE.md` — project conventions, enforced principles (DDD/TDD/SOLID/CQRS-lite), quality gates
-- `docs/DDD.md` — domain model, bounded contexts, ubiquitous language (canonical terms)
+## Wave summary
+
+- Tickets: <comma-separated ids>
+- Team size: <N> agents (TL + <N-2> dev + QA + WH) — must be ≤ 5
+- Files touched: <N>
+- Conflicts: <none | list>
+
+## Spawn instructions
+
+Use the Agent tool with these `subagent_type` + `name` + `prompt` settings:
+
+| Agent name | subagent_type | Prompt block |
+|------------|---------------|--------------|
+| tech-lead | tech-lead | block "TECH-LEAD" below |
+| dev-<ticket-id> | developer | block "DEVELOPER: dev-<ticket-id>" below |
+| qa-engineer | qa-engineer | block "QA-ENGINEER" below |
+| white-hacker | white-hacker | block "WHITE-HACKER" below |
+
+Spawn in this order: tech-lead first (so Phase 1 can begin), then dev(s),
+then QA + WH in parallel. Dev(s) will WAIT for the tech-lead's contract
+broadcast before starting Phase 2 — that is by design; do not nudge them.
+
+## Communication routing
+
+- Devs report Phase 2 completion → qa-engineer + white-hacker
+- QA + WH report Phase 3 findings → tech-lead
+- Tech-lead assigns Phase 4 fixes → specific dev
+- Peer-to-peer clarifications (dev ↔ QA/WH) flow directly
+- Max 3 fix rounds per issue — TL escalates to YOU if exceeded
+- All communication via SendMessage; plain text output is invisible
+
+## Wave-end
+
+Tech-lead will signal completion after Phase 7 writes
+`.notes/handoff-<slug>.md`. Print that path and confirm the wave is done.
+Do not commit / push — that requires explicit user permission per CLAUDE.md.
+````
+
+#### 6.1 — tech-lead block
+
+The TL is the orchestrator inside the wave. It gets the broadest view.
+
+````markdown
+# TECH-LEAD — <wave title or ticket ids>
+
+You are the technical lead for this wave. Your authority: interface
+contracts, triage of QA + WH findings, fix assignment, final quality gates,
+close + ripple + handoff. Do NOT write production code yourself unless a
+finding cannot be safely delegated.
+
+## Reference files (read before Phase 1)
+
+- `.claude/CLAUDE.md` — project conventions, enforced principles, quality gates, After-Close Protocol
+- `docs/DDD.md` — domain model, bounded contexts, ubiquitous language
 - `docs/ARCHITECTURE.md` — technical architecture, port/adapter layout
-- `docs/PRD.md` — product requirements (for capability traceability)
+- `docs/PRD.md` — product requirements (capability traceability)
+- The ownership table below — read EVERY file you assign to dev(s) before broadcasting contracts
 
-## Tickets
+## Tickets in this wave
 
-<For each ticket, include:>
-### <ticket-id> — <title>
+<For each ticket: id, title, type, priority, and the FULL bd show description>
 
-<Full ticket description from bd show>
+## Design decisions (settled — do not re-litigate)
 
-## Team Roster (max 5 agents — OOM cap)
+<Decisions extracted from Step 5: types, port signatures, constraints, what NOT to do>
 
-This wave runs at most 5 agents in parallel. TL + QA + WH = 3 slots fixed;
-that leaves 2 dev slots. Do NOT exceed.
-
-| Name | Agent | Ticket | Key Files |
-|------|-------|--------|-----------|
-| tech-lead | tech-lead | (coordinator) | reviews all |
-| qa-engineer | qa-engineer | (reviewer) | tests + reports |
-| white-hacker | white-hacker | (security) | security review |
-| dev-<ticket-id> | developer | <ticket-id> | <files from ownership map> |
-
-## Execution Phases
-
-Phase 1 — TL reads all tickets, publishes interface contracts
-          (Go port interface signatures, struct shapes, sentinel error types,
-          context-arg conventions, domain events emitted/consumed, bounded
-          context ownership). Devs WAIT until TL broadcasts contracts.
-Phase 2 — Devs implement in parallel using Red/Green/Refactor TDD.
-          Self-verify quality gates before reporting.
-          Report completion to qa-engineer + white-hacker (NOT tech-lead).
-Phase 3 — QA + White Hacker review independently.
-          Report findings to tech-lead (NOT devs).
-Phase 4 — TL triages findings, assigns fixes to specific devs.
-Phase 5 — Fix cycle: dev fixes → re-verify with QA + WH → TL confirms.
-          Max 3 rounds per issue — TL escalates to user after that.
-Phase 6 — TL runs final quality gates, closes tickets via `bd close`,
-          then runs the After-Close Protocol from CLAUDE.md:
-            a) `alto-scaffold/scripts/bd-ripple <closed-id> "<what shipped>"` to flag dependents
-            b) `bd query label=review_needed` and review each flagged ticket
-            c) Compatibility check (read sources + dependent design, cite file:line)
-            d) Present any suggested updates to the user — never auto-apply
-Phase 7 — TL invokes the `/handoff` skill to write a session-summary doc to
-          `<repo-root>/.notes/handoff-<wave-or-ticket-id>.md`. Include: tickets
-          closed, files changed (paths + line counts), unresolved findings,
-          newly-discovered follow-up issues filed via `bd create`, and
-          suggested next-session entry points. Print the absolute path of the
-          saved file so the user can open it.
-
-## Communication Rules
-
-- ALL communication via SendMessage — text output is invisible to teammates
-- Devs report completion to QA + White Hacker (not TL)
-- QA + WH report findings to TL (not devs)
-- TL assigns fixes to devs (authority over triage)
-- Peer-to-peer for clarifications (devs ↔ QA/WH directly)
-- Acknowledge messages before starting work
-- Escalate blockers to TL immediately — no silent waiting
-- Max 3 fix rounds per issue — TL escalates to user after that
-
-## Quality Gates (must pass at every checkpoint)
-
-Project-specific. See the `.project.md` sibling for this project's quality gate commands.
-
-## Enforced Principles (non-negotiable)
-
-These must hold in every PR. If any change weakens them, escalate before merging:
-
-- **Ubiquitous Language** — names match `docs/DDD.md` glossary; do NOT introduce synonyms.
-- **Value Objects first** — default to immutable VOs; entities only when identity is needed.
-- **One aggregate per transaction** — reference other aggregates by ID, not by pointer.
-- **Port/Adapter** — handlers depend on port interfaces in the application layer,
-  never on concrete adapters from infrastructure.
-- **TDD required** — RED (failing test) → GREEN (minimal code) → REFACTOR.
-- **Wrapped errors** — `fmt.Errorf("doing X: %w", err)`; lowercase, no punctuation.
-- **No git commit/push** without explicit user permission (CLAUDE.md Git Rules).
-- **No GitHub CLI** — repo is on private Git server; don't use `gh`.
-
-## Design Decisions
-
-<Settled decisions extracted from tickets and code — concrete, not placeholder>
-
-## File Ownership (no conflicts)
+## File ownership map
 
 | File | Owner | Ticket |
 |------|-------|--------|
-| <file> | dev-<ticket-id> | <ticket-id> |
+| <path> | dev-<id> | <ticket-id> |
 
-DO NOT modify files not in your ownership table.
+No conflicts (verified in Step 3). If a dev asks to touch a file not in
+their column, REFUSE and route the work to the owning dev.
 
-## Existing Code (DO NOT recreate)
+## Existing code (DO NOT let any dev recreate)
 
-<List files/packages that already exist and must not be overwritten>
+<List from Step 2 with file:line>
+
+## Phases YOU drive
+
+**Phase 1 — Contract broadcast.** Before any dev starts:
+- Read every file in the ownership map
+- Send each dev a contract message via SendMessage containing:
+  - Exact port/function signatures they must implement
+  - Struct + value-object shapes (with field names + types)
+  - Sentinel error types they must use
+  - Context-arg convention (`ctx context.Context` always first)
+  - Domain events emitted or consumed
+  - DDD layer constraint: which package the dev owns + which they may import
+- Wait for each dev's ACK before treating Phase 1 complete
+
+**Phase 4 — Triage.** When QA + WH report findings:
+- Categorise: blocker / nice-to-have / out-of-scope
+- Assign blockers to the owning dev with a clear repro + acceptance line
+- Defer nice-to-haves to a follow-up ticket (you file it via `bd create`)
+- Reject out-of-scope with a one-line explanation routed back to QA/WH
+
+**Phase 5 — Fix cycle.** Each issue gets ≤ 3 fix rounds:
+- Round n: dev sends fix → QA + WH re-verify → you confirm
+- After round 3 if still failing: escalate to the orchestrator (user); do not loop forever
+
+**Phase 6 — Close + ripple.** Once all blockers cleared and gates green:
+- Run the project's quality gates (see Quality Gates below)
+- `bd close <ticket-id> --reason "..."` for each ticket
+- Run the After-Close Protocol from CLAUDE.md:
+  - `alto-scaffold/scripts/bd-ripple <closed-id> "<what shipped>"`
+  - `bd query label=review_needed` → for each flagged: read ripple comments, do a compatibility check citing file:line evidence, present suggestions to the orchestrator (never auto-apply)
+
+**Phase 7 — Handoff.** Invoke `/handoff` to write `.notes/handoff-<slug>.md` covering tickets closed, files changed + line counts, unresolved findings, follow-up tickets filed, next-session entry points. Print the absolute path.
+
+## Quality gates
+
+Project-specific. See `.project.md` sibling.
+
+## Enforced principles (every fix you assign must hold these)
+
+- **Ubiquitous Language** — names match `docs/DDD.md` glossary; reject synonyms
+- **Value Objects first** — default to immutable VOs; entities only when identity is needed
+- **One aggregate per transaction** — reference other aggregates by ID, not pointer
+- **Port/Adapter** — handlers depend on port interfaces in application layer, never on concrete adapters
+- **TDD required** — RED test BEFORE production code; REFACTOR keeps suite green
+- **Wrapped errors** — `fmt.Errorf("doing X: %w", err)`; lowercase, no punctuation
+- **No git commit/push** without explicit orchestrator permission (CLAUDE.md Git Rules)
+- **No GitHub CLI** — repo is on private Git server
+
+## Communication
+
+All inter-agent traffic uses SendMessage. You receive Phase 3 findings from QA + WH (and acknowledge), assign Phase 4 fixes to devs, report wave completion to the orchestrator after Phase 7. No silent waiting — if blocked, escalate up.
+````
+
+#### 6.2 — developer block (one per dev)
+
+````markdown
+# DEVELOPER: dev-<ticket-id>
+
+You are a developer for one ticket in this wave. Your job: TDD
+implementation of <ticket-id> per the contracts your tech-lead will
+publish. Do NOT touch files outside your ownership.
+
+## Phase 1 — WAIT
+
+Do NOT begin implementation. The tech-lead will SendMessage you a contract
+broadcast containing the exact signatures, struct shapes, sentinel errors,
+context conventions, and DDD layer constraints for your ticket. Read it,
+acknowledge receipt via SendMessage, then begin Phase 2.
+
+## Your ticket
+
+### <ticket-id> — <title> · <priority> · <type>
+
+<Full ticket description from bd show: Goal, Background, DDD Alignment, Design (sequence + signatures + SOLID), TDD Workflow (RED tests by name, GREEN steps, REFACTOR), Steps, Acceptance Criteria, Edge Cases, Quality Gates, Pre-Implementation Validation, Risks>
+
+## Phase 2 — Implement (Red → Green → Refactor)
+
+1. Add the RED tests named in the TDD section. Run them — they must FAIL.
+   Capture the FAIL output.
+2. Add the minimum production code that turns RED to GREEN. Resist
+   refactoring; the next phase is for cleanup.
+3. REFACTOR: clean naming, comments only where the WHY isn't obvious from
+   identifiers, verify all existing tests still pass, run the full local
+   quality gate (see Quality Gates below).
+4. Self-verify the AC checklist. Tick each one in your head; if any can't
+   be ticked, fix before reporting.
+5. Report completion via SendMessage to BOTH qa-engineer AND white-hacker
+   with: the commit (or working-tree) diff stat, the new test names, and
+   any deviations from the published contracts (with justification).
+
+## Your files (ownership — do NOT touch others)
+
+| File | Action |
+|------|--------|
+| <path> | NEW / MODIFY / RENAME |
+
+If you need to modify a file outside your column, STOP and ask the
+tech-lead. Do not touch it speculatively.
+
+## Existing code (REUSE, do NOT recreate)
+
+<List from Step 2 specific to this dev's ticket>
+
+## Quality gates (self-verify before reporting)
+
+Project-specific. See the `.project.md` overlay for the build / vet / lint
+/ test commands and the local CI parity gate. Minimum: build clean, lint
+clean, all existing tests pass, full local CI gate green.
+
+## Enforced principles (your code must hold these)
+
+- **Ubiquitous Language** — names match `docs/DDD.md` glossary; do NOT introduce synonyms
+- **Value Objects first** — default to immutable VOs; entities only when identity is needed
+- **One aggregate per transaction** — reference other aggregates by ID, not pointer
+- **Port/Adapter** — depend on the port interface published by the TL, never on a concrete adapter
+- **TDD required** — RED test must exist in the diff BEFORE the production code that turns it green
+- **Wrapped errors** — `fmt.Errorf("doing X: %w", err)`; lowercase, no punctuation
+- **No git commit/push** — the tech-lead handles close + push at wave end
+
+## Phase 5 — Fix rounds
+
+If the tech-lead assigns you a fix, you have ≤ 3 rounds. Each round:
+re-implement → re-verify locally → report back. After round 3, the TL
+escalates; do not loop silently.
+
+## Communication
+
+Use SendMessage. Phase 2 done-report goes to BOTH qa-engineer AND white-hacker (not the tech-lead). Phase 4 fix assignments come FROM the tech-lead. Peer-to-peer clarifications with QA + WH are fine. Acknowledge every message before deriving work; if blocked, message the tech-lead.
+````
+
+#### 6.3 — qa-engineer block
+
+````markdown
+# QA-ENGINEER — <wave title or ticket ids>
+
+You are the QA reviewer for this wave. Your job: independent verification
+of every ticket's Acceptance Criteria + Edge Cases + RED-test contract,
+producing findings the tech-lead can triage. Do NOT write production code.
+
+## Reference files
+
+- `.claude/CLAUDE.md` — quality gates section
+- `docs/DDD.md` — for ubiquitous-language checks
+- Each ticket's Edge Cases table (below)
+- The dev's diff (you'll receive it via SendMessage in Phase 3)
+
+## Tickets in this wave
+
+<For each ticket, the COMPRESSED slice:
+  - id + title + priority
+  - Acceptance Criteria (full list)
+  - Edge Cases (full table)
+  - TDD Workflow's RED-tests-by-name list — these must EXIST in the dev's diff and stay in the suite as regression guards>
+
+## What QA focuses on (independent of WH)
+
+1. **AC coverage** — every AC item exercised by a test in the diff
+2. **Edge-case coverage** — the Edge Cases table is your checklist
+3. **RED tests stay in the suite** — flag any regression-guard deletion
+4. **No silent test skips** — any skip mechanism must carry a stated reason
+5. **Regression check** — pre-existing tests must not newly fail
+6. **Ubiquitous Language** — new names match the project's DDD glossary; synonyms are a finding
+
+## Phase 3 — Review
+
+Wait for the dev's done-report. Then: pull the diff, run AC + Edge Cases checklist with file:line evidence, verify RED tests present, run the full local quality gate, then SendMessage findings to the tech-lead in this format:
+
+  ```
+  AC-<n>: ✓ | ✗ + evidence
+  Edge-<n>: ✓ | ✗ + evidence
+  RED tests present: <test names that ARE in the diff>
+  Regressions: <list any newly-failing existing tests>
+  Recommended: blocker | nice-to-have | none
+  ```
+
+## Quality gates
+
+Project-specific. See the `.project.md` overlay for the build / vet / lint
+/ test commands. Run the full local CI parity gate after each fix round.
+
+## Communication
+
+SendMessage. Receive Phase 2 done-reports from devs; send Phase 3 findings TO the tech-lead (NOT to devs). Peer-to-peer clarifications with devs / white-hacker are fine. Phase 5 re-verify follows the same flow on the fix-round diff.
+````
+
+#### 6.4 — white-hacker block
+
+````markdown
+# WHITE-HACKER — <wave title or ticket ids>
+
+You are the security reviewer for this wave. Your job: independent
+security review of every ticket's diff with a focus tailored to the
+ticket's surface. Do NOT write production code unless approved by the
+tech-lead for a critical finding.
+
+## Reference files
+
+- `.claude/CLAUDE.md` — privacy rules, error-handling conventions
+- Each ticket's Background / Design sections (for the security surface)
+- The dev's diff (you'll receive it via SendMessage in Phase 3)
+
+## Tickets in this wave
+
+<For each ticket, the SECURITY slice:
+  - id + title + priority
+  - The 1-2 paragraph Background that frames the bug or feature
+  - The Design (sequence + signatures) — to understand trust boundaries
+  - A ticket-specific security lens — derived in Step 5, e.g.
+    "README-read path: bounded? ReDoS-free? path-traversal-safe?"
+    "stack-detection regex/Contains: case folding, locale, Unicode edge cases?"
+    "error suppression: does any new branch swallow an error that should propagate?">
+
+## What WH focuses on (independent of QA)
+
+1. **Trust boundaries** — any new input crossing one (CLI arg, file read, network call, MCP msg) validated + bounded?
+2. **Path safety** — any constructed path: `..` traversal? Absolute when it shouldn't be?
+3. **Resource bounds** — reads / loops / regexes bounded in size, time, depth?
+4. **Error suppression** — does any silent `exit 0` / swallowed error mask a failure class?
+5. **Logging** — no leaks of secrets / PII / home paths / contributor identifiers (see project Privacy Rules)
+6. **Dependency hygiene** — lock-file changes carry 0 CRITICAL/HIGH from the project security scanner
+
+## Phase 3 — Review
+
+Wait for the dev's done-report. Then: pull the diff, apply each focus above with file:line evidence, run the project's preflight check, then SendMessage findings to the tech-lead in this format:
+
+  ```
+  Trust-boundary: ✓ | ✗ + evidence
+  Path-safety: ✓ | ✗ + evidence
+  Resource-bounds: ✓ | ✗ + evidence
+  Error-suppression: ✓ | ✗ + evidence
+  Logging-privacy: ✓ | ✗ + evidence
+  Dependency-trivy: ✓ | ✗ + evidence
+  Severity (if ✗): S0 | S1 | S2 | S3
+  Recommended: blocker | nice-to-have | none
+  ```
+
+## Communication
+
+SendMessage. Receive Phase 2 done-reports from devs; send Phase 3 findings TO the tech-lead (NOT to devs). Peer-to-peer clarifications with devs / QA are fine. Phase 5 re-verify follows the same flow on the fix-round diff.
 ````
 
 ### Step 7 — Present to User
 
-Show the generated prompt(s) inside fenced code blocks. If Step 4 split the
-input into multiple waves, output ONE block per wave, in order.
+Output the blocks in this order, separated by a one-line header per block.
+For each wave produce: **1 orchestrator preamble + N agent blocks**.
 
-Prefix each wave with:
+Prefix the wave with this header (single-wave: drop `WAVE <n> of <total>`
+and `Next wave entry point`):
 
 ```
-TEAM LAUNCH PROMPT — WAVE <n> of <total>
+TEAM LAUNCH — WAVE <n> of <total>
 Tickets: <ids in this wave>
-Team size: <N> (TL + <N> devs + QA + WH)   ← must be ≤ 5
+Team size: <N> (TL + <devs> + QA + WH)   — must be ≤ 5
 Files touched: <N>
 Conflicts: <none | list>
-Next wave entry point: .notes/handoff-<slug>.md  (omit on final wave)
+Next wave entry point: .notes/handoff-<slug>.md   (omit on final wave)
 
-Copy the prompt below and paste it into a new session to launch this wave.
+Paste the ORCHESTRATOR PREAMBLE into the Claude Code session that will run
+the team. Then paste each subsequent block into the corresponding spawned
+subagent's prompt — do NOT paste the full set into any single agent.
 ```
 
-For a single-wave run drop the `WAVE <n> of <total>` suffix and the
-`Next wave entry point` line.
+Then emit:
+
+1. `--- ORCHESTRATOR PREAMBLE ---` followed by the fenced 6.0 block
+2. `--- TECH-LEAD ---` followed by the fenced 6.1 block
+3. `--- DEVELOPER: dev-<ticket-id> ---` followed by the fenced 6.2 block (repeat per dev)
+4. `--- QA-ENGINEER ---` followed by the fenced 6.3 block
+5. `--- WHITE-HACKER ---` followed by the fenced 6.4 block
+
+For multi-wave runs, repeat the header + N+1 blocks per wave, in dep order.
 
 ## Rules
 
-1. **Never launch the team yourself.** Only generate the prompt — the user decides when and where to paste it.
-2. **Read actual code.** Every file reference in the prompt must be verified by reading the file.
+1. **Never launch the team yourself.** Only generate the prompt blocks — the user spawns agents.
+2. **Read actual code.** Every file reference must be verified by reading the file.
 3. **Flag undergroomed tickets.** Warn if a ticket lacks acceptance criteria or file paths.
 4. **Resolve file conflicts.** If two tickets own the same file, stop and ask the user.
-5. **No placeholders in output.** Every `<placeholder>` must be filled with real data. If you can't fill it, say what's missing.
-6. **Always cite the Enforced Principles in the prompt.** Teams that don't see them will accidentally break DDD/TDD/SOLID guarantees.
-7. **End every wave with `/handoff`.** Phase 7 in the generated prompt mandates a `.notes/handoff-<slug>.md` write-up. The handoff slug should be the ticket ID for a single-ticket wave (e.g., `handoff-<wave-or-ticket-id>.md`), or a short wave name (`handoff-wave-1.md`, `handoff-discovery-redesign.md`) for a multi-ticket wave.
-8. **Hard cap: 5 active agents per wave.** Running 10–11 in parallel has frozen the host (OOM). TL + QA + WH = 3 fixed slots, leaving 2 dev slots. More tickets → more waves. This is a host constraint, not a preference — never override it.
+5. **No placeholders.** Every `<placeholder>` in the emitted blocks must be filled with real data. If a slot can't be filled, say what's missing in the wave header before the blocks.
+6. **Cite Enforced Principles in the slice that needs them.** The TL block gets the full list (TL enforces them). The dev block gets the list (the code must hold them). QA + WH blocks reference them by topic, not the full list. Don't repeat the same paragraph four times.
+7. **End every wave with `/handoff`.** Phase 7 in the TL block mandates `.notes/handoff-<slug>.md`. Slug = ticket ID for single-ticket, short wave name for multi-ticket.
+8. **Hard cap: 5 active agents per wave.** TL + QA + WH = 3 fixed; 2 dev slots max. More tickets → more waves. Host constraint, not a preference.
+9. **Slice per agent — never paste the full team plan into a non-TL agent.** The dev sees their ticket + DDD + TDD + AC + edges + their files + quality gates + Phase 1-2-5 instructions only. QA sees AC + edges + RED tests + Phase 3 lens. WH sees the security surface + Phase 3 security lens. The TL alone sees the broad view because the TL coordinates. This is the structural fix for the "dev got the entire team prompt" failure mode.
