@@ -56,6 +56,12 @@ dolt-server.activity
 
 # Corrupt backup directories (created by bd doctor --fix recovery)
 *.corrupt.backup/
+# Manual corruption-quarantine + broken-state forensic dumps (renamed via the
+# bd v1.0.4 recovery recipe, e.g. mv .beads/dolt .beads/dolt.corrupt.<ts>)
+dolt.corrupt*
+dolt.broken*
+# Local metadata snapshots taken before mode-switches or other risky edits
+*.bak
 
 # Backup data (auto-exported JSONL, local-only)
 backup/
