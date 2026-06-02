@@ -62,6 +62,9 @@ dolt.corrupt*
 dolt.broken*
 # Local metadata snapshots taken before mode-switches or other risky edits
 *.bak
+# Beads atomic-write temp files (e.g. .~issues.jsonl.<rand> left behind
+# when a bd process is killed mid-write before the rename(2) into place)
+.~*
 
 # Backup data (auto-exported JSONL, local-only)
 backup/
