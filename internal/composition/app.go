@@ -16,6 +16,7 @@ import (
 	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
 	challengeinfra "github.com/alto-cli/alto/internal/challenge/infrastructure"
 	discoveryapp "github.com/alto-cli/alto/internal/discovery/application"
+	discoverydomain "github.com/alto-cli/alto/internal/discovery/domain"
 	discoveryinfra "github.com/alto-cli/alto/internal/discovery/infrastructure"
 	dochealthapp "github.com/alto-cli/alto/internal/dochealth/application"
 	dochealthdomain "github.com/alto-cli/alto/internal/dochealth/domain"
@@ -131,6 +132,19 @@ func NewApp() (*App, error) {
 
 	// 3. Stack detection (shared by discovery + fitness)
 	stackProfile := stack.DetectProfile("")
+	// README fallback: if no manifest-based stack was detected (GenericProfile),
+	// try parsing README.md for stack-language signals. This handles new-project
+	// bootstrap (PRD Scenario 1: docs/PRD.md:29) where source files do not yet
+	// exist but the README already describes the intended stack. Errors reading
+	// the README are intentionally swallowed — we retain GenericProfile silently.
+	if _, isGeneric := stackProfile.(valueobjects.GenericProfile); isGeneric {
+		if readme, err := os.ReadFile("README.md"); err == nil {
+			if lang := stack.ExtractLanguageFromText(string(readme)); lang != "" {
+				ts := valueobjects.NewTechStack(lang, "")
+				stackProfile = discoverydomain.ResolveProfile(&ts)
+			}
+		}
+	}
 
 	// 4. Discovery infrastructure
 	toolScanner := discoveryinfra.NewFilesystemToolScanner("")

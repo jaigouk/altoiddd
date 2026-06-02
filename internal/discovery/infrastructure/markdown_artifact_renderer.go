@@ -60,10 +60,10 @@ func renderContextFromProfile(profile vo.StackProfile) renderContext {
 }
 
 // sourceLayoutBlock returns a fenced code block showing the source layout.
-// Falls back to a generic Python layout if dirs is nil or empty.
+// Falls back to a generic source layout if dirs is nil or empty.
 func sourceLayoutBlock(dirs []string) []string {
 	if len(dirs) == 0 {
-		return pythonSourceLayout()
+		return genericSourceLayout()
 	}
 
 	lines := []string{"```"}
@@ -73,8 +73,8 @@ func sourceLayoutBlock(dirs []string) []string {
 	return lines
 }
 
-// pythonSourceLayout returns the default Python source tree.
-func pythonSourceLayout() []string {
+// genericSourceLayout returns the default generic source tree.
+func genericSourceLayout() []string {
 	return []string{
 		"```",
 		"src/",

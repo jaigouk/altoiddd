@@ -73,3 +73,58 @@ func TestDetectProfile_EmptyStringFallsBackToCwd(t *testing.T) {
 	profile := stack.DetectProfile("")
 	assert.NotEmpty(t, profile.StackID())
 }
+
+// ExtractLanguageFromText — keyword-based language detection for the README fallback.
+// Precedence: Go keywords (go.mod, golang, " go ", "package main") are checked
+// before Python keywords (python, pyproject, pip install, .py). First match wins,
+// returning "go" or "python" respectively, or "" for empty or unrecognized input.
+
+func TestExtractLanguageFromText_WhenGoModMentioned_ExpectGo(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("This project uses go.mod for module management.")
+	assert.Equal(t, "go", got)
+}
+
+func TestExtractLanguageFromText_WhenGolangMentioned_ExpectGo(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("A small CLI tool written in Golang.")
+	assert.Equal(t, "go", got)
+}
+
+func TestExtractLanguageFromText_WhenPythonMentioned_ExpectPython(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("This is a Python service using FastAPI.")
+	assert.Equal(t, "python", got)
+}
+
+func TestExtractLanguageFromText_WhenPyprojectMentioned_ExpectPython(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("Configured via pyproject.toml at the repo root.")
+	assert.Equal(t, "python", got)
+}
+
+func TestExtractLanguageFromText_WhenEmptyText_ExpectEmptyString(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("")
+	assert.Empty(t, got)
+}
+
+func TestExtractLanguageFromText_WhenUnrecognizedLanguage_ExpectEmptyString(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("A Rust workspace with Cargo and tokio.")
+	assert.Empty(t, got)
+}
+
+func TestExtractLanguageFromText_WhenBothGoAndPython_ExpectGo(t *testing.T) {
+	t.Parallel()
+	// Go group is checked first; "golang" appears before any python keyword in
+	// precedence, so a mixed mention must yield "go".
+	got := stack.ExtractLanguageFromText("Polyglot repo: golang services and python scripts.")
+	assert.Equal(t, "go", got)
+}
+
+func TestExtractLanguageFromText_WhenCaseInsensitiveGolang_ExpectGo(t *testing.T) {
+	t.Parallel()
+	got := stack.ExtractLanguageFromText("Built with GOLANG and gRPC.")
+	assert.Equal(t, "go", got)
+}
