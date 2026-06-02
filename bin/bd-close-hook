@@ -45,13 +45,20 @@ if [[ ${#IDS[@]} -eq 0 ]]; then
     exit 0
 fi
 
-# Find the project root (where bin/bd-ripple lives).
+# Find the project root (where alto-scaffold/ lives).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-RIPPLE="$PROJECT_ROOT/bin/bd-ripple"
+RIPPLE="$PROJECT_ROOT/alto-scaffold/scripts/bd-ripple"
 
+# Fail loud, not silent, when the ripple script is missing. The previous
+# `exit 0` here masked alty-cli-6n4 for ~3 weeks after the .alto/ →
+# alto-scaffold/ rename in 56fdd29 — every `bd close` skipped ripple
+# without any error surfacing in Claude Code. The After-Close Protocol
+# in CLAUDE.md is load-bearing on this hook; if the path drifts again,
+# the next operator should see it instantly.
 if [[ ! -x "$RIPPLE" ]]; then
-    exit 0
+    echo "bd-close-hook: ripple script not at $RIPPLE" >&2
+    exit 1
 fi
 
 # Run ripple for each closed ticket (small delay to let bd close finish writing).
