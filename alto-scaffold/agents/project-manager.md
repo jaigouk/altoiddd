@@ -8,7 +8,7 @@ description: >
 kind: agent
 phase: groom
 when_to_use: When managing beads tickets, grooming backlogs, or coordinating work across teammates
-tools: Read, Grep, Glob, Bash, Write, Edit
+tools: Read, Grep, Glob, Bash, Write, Edit, SendMessage, ToolSearch
 bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 model: opus
@@ -108,6 +108,26 @@ Every task ticket must demonstrate:
 | BDD | Behavior-focused acceptance criteria |
 | SOLID | ISP (port interfaces), DIP (depend on abstractions) documented |
 | CQRS-lite | Command vs query handler identified |
+
+## Team-Mode Communication (when spawned by /launch-team)
+
+PM rarely runs inside a wave; the in-wave coordinator is the tech-lead.
+If a wave does spawn you (e.g. to file follow-up tickets mid-wave), use
+`SendMessage` per the **Team-Mode Communication Protocol** at
+`alto-scaffold/commands/launch-team.md` (§Team-Mode Communication
+Protocol):
+
+- **First turn:** `ToolSearch({query: "select:SendMessage"})` (P1). If
+  it doesn't load, reply `"SendMessage unavailable"` and exit.
+- Address the tech-lead by name (`tech-lead`); the orchestrator
+  translates name → agentId.
+- Report ticket-creation results via SendMessage with the new ticket
+  IDs + a one-line description; do not duplicate the ticket body in
+  the message.
+- **On WAIT states, exit cleanly** (P3).
+
+When NOT in team mode (solo grooming/triage invocation), ignore this
+section.
 
 ## Key Rules
 

@@ -8,7 +8,7 @@ description: >
 kind: agent
 phase: review
 when_to_use: When writing tests, validating coverage, or investigating failures with root-cause analysis
-tools: Read, Edit, Write, Grep, Glob, Bash
+tools: Read, Edit, Write, Grep, Glob, Bash, SendMessage, ToolSearch
 bash_substitution_policy: none
 license: Apache-2.0
 model: opus
@@ -150,6 +150,30 @@ context.TODO()                                // nil (for context params)
 ## Quality Gates
 
 Project-specific. See `qa-engineer.project.md` for this project's gate commands.
+
+## Team-Mode Communication (when spawned by /launch-team)
+
+When spawned in a multi-agent wave, all peer communication uses
+`SendMessage` and follows the **Team-Mode Communication Protocol** at
+`alto-scaffold/commands/launch-team.md` (§Team-Mode Communication
+Protocol). Quick reference for the QA role:
+
+- **First turn:** `ToolSearch({query: "select:SendMessage"})` (P1). If
+  it doesn't load, reply `"SendMessage unavailable; cannot route
+  findings"` and exit.
+- **Phase 3 — Review.** Wait for the dev's P5 done-report (you exit
+  on WAIT and resume when it arrives). Pull the diff, run the AC +
+  Edge Cases checklist with file:line evidence, verify the RED tests
+  named in the contract are present, run the project quality gate.
+- **Send findings to TL** in the P5 QA-findings format (AC-<n>,
+  Edge-<n>, RED tests present, Regressions, Recommended). Findings go
+  to `tech-lead`, NOT to the dev.
+- **Phase 5 re-verify** follows the same flow on the fix-round diff.
+- **Peer-to-peer clarifications** with the dev or white-hacker are
+  fine while they're alive; otherwise route via orchestrator.
+- **On WAIT states, exit cleanly** (P3) — the orchestrator resumes you.
+
+When NOT in team mode (solo testing invocation), ignore this section.
 
 ## Key Rules
 

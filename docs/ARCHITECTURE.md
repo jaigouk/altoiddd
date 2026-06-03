@@ -84,7 +84,7 @@ status: draft
   │                          │  │                                 │
   │  Business rules,         │  │  Implements port interfaces:    │
   │  value objects,          │  │                                 │
-  │  aggregates,             │  │  File I/O    ── alto-scaffold/ state    │
+  │  aggregates,             │  │  File I/O    ── alto-scaffold/  │
   │  domain services.        │  │  LLM Client  ── Anthropic API   │
   │                          │  │  Git         ── exec.Command    │
   │  10 Bounded Contexts:    │  │  Templates   ── text/template   │
@@ -93,7 +93,7 @@ status: draft
   │   · Architecture Testing │  │  Web Search  ── HTTP client     │
   │   · Ticket Pipeline      │  │  Prompters   ── stdin/huh/MCP   │
   │   · Ticket Freshness     │  │                                 │
-  │   · Tool Translation     │  │  alto-scaffold/ Project State:          │
+  │   · Tool Translation     │  │  alto-scaffold/ Project State:  │
   │   · Knowledge Base       │  │   · config.toml                 │
   │   · Bootstrap            │  │   · stories/*.story.yaml        │
   │   · Rescue               │  │   · glossary.yaml               │

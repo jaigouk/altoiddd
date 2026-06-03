@@ -9,7 +9,7 @@ description: >
 kind: agent
 phase: design
 when_to_use: When investigating libraries, comparing options, or producing a research report for a spike
-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch, SendMessage, ToolSearch
 bash_substitution_policy: none
 license: Apache-2.0
 model: opus
@@ -129,6 +129,30 @@ Before closing a spike, verify:
 - [ ] Go module compatibility checked (CGO, min version)
 - [ ] Recommendation stated with rationale
 - [ ] Follow-up tickets created if implementation is needed
+
+## Team-Mode Communication (when spawned by /launch-team in a spike wave)
+
+When spawned in a multi-agent wave (typically a spike-variant where
+`developer` is replaced by `researcher`), peer communication uses
+`SendMessage` and follows the **Team-Mode Communication Protocol** at
+`alto-scaffold/commands/launch-team.md` (§Team-Mode Communication
+Protocol). Quick reference for the researcher role:
+
+- **First turn:** `ToolSearch({query: "select:SendMessage"})` (P1). If
+  it doesn't load, reply `"SendMessage unavailable; cannot ACK
+  tech-lead"` and exit.
+- **Phase 1:** ACK the tech-lead with `"researcher-<spike-id> ready"`
+  (P5 ACK pattern), then exit.
+- **Phase 2:** Conduct the research per the TL's published scope. The
+  Phase 2 done-report goes to BOTH `qa-engineer` AND `white-hacker` in
+  the P5 done-report format — but for a spike, the "diff" is the
+  report path, "new tests" is N/A, and AC self-check covers the
+  research questions instead.
+- **Phase 5:** Fix-requests on a spike are usually scope adjustments
+  or follow-up-ticket creation requests — handle in ≤ 3 rounds.
+- **On WAIT states, exit cleanly** (P3).
+
+When NOT in team mode (solo spike invocation), ignore this section.
 
 ## Key Rules
 

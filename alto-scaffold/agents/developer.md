@@ -8,7 +8,7 @@ description: >
 kind: agent
 phase: implement
 when_to_use: When writing code or fixing bugs on a claimed ticket via TDD red-green-refactor
-tools: Read, Edit, Write, Grep, Glob, Bash
+tools: Read, Edit, Write, Grep, Glob, Bash, SendMessage, ToolSearch
 bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 model: opus
@@ -179,6 +179,30 @@ var _ ports.LLMClient = (*AnthropicClient)(nil)
 3. COPY function signatures from port interface files — don't type from memory
 4. If `go build` fails, FIX IT before any message to teammates
 5. Use `var _ Port = (*Adapter)(nil)` for every adapter
+
+## Team-Mode Communication (when spawned by /launch-team)
+
+When you are spawned as part of a multi-agent wave, all peer
+communication uses `SendMessage` and follows the **Team-Mode
+Communication Protocol** at `alto-scaffold/commands/launch-team.md`
+(§Team-Mode Communication Protocol). Quick reference for the dev role:
+
+- **First turn:** `ToolSearch({query: "select:SendMessage"})` (P1). If
+  it doesn't load, reply `"SendMessage unavailable; cannot ACK
+  tech-lead"` and exit.
+- **Phase 1:** ACK the tech-lead with `"dev-<ticket-id> ready"` (P5
+  ACK format), then exit. Do NOT begin implementation until the TL
+  sends you a contract.
+- **Phase 2:** After implementation, send the P5 done-report format to
+  BOTH `qa-engineer` AND `white-hacker` (not the TL). Include diff
+  stat, new test names, AC self-check, and any contract deviations.
+- **Phase 5:** Fix-requests arrive FROM the TL in the P5 fix-request
+  format. ≤ 3 rounds per finding; re-report to qa + wh when done.
+- **On WAIT states, exit cleanly** (P3) — the orchestrator resumes you
+  with SendMessage. Do not loop or poll.
+
+When NOT in team mode (solo invocation), ignore this section and
+operate per the normal ticket-implementation flow.
 
 ## Key Rules
 

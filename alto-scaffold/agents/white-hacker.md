@@ -8,7 +8,7 @@ description: >
 kind: agent
 phase: review
 when_to_use: When auditing security, assessing attack surface, or producing hardening recommendations
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, SendMessage, ToolSearch
 bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 secrets_grep_exempt: "security-review agent — domain vocabulary (credentials, secret, password, token) appears in audit checklists and grep examples by design"
 license: Apache-2.0
@@ -112,6 +112,31 @@ When security issues are found:
 2. **Document the vulnerability** — attack vector, impact, PoC if safe
 3. **Propose fix** — specific code changes with security rationale
 4. **Do NOT push vulnerable code** — fix first
+
+## Team-Mode Communication (when spawned by /launch-team)
+
+When spawned in a multi-agent wave, all peer communication uses
+`SendMessage` and follows the **Team-Mode Communication Protocol** at
+`alto-scaffold/commands/launch-team.md` (§Team-Mode Communication
+Protocol). Quick reference for the WH role:
+
+- **First turn:** `ToolSearch({query: "select:SendMessage"})` (P1). If
+  it doesn't load, reply `"SendMessage unavailable; cannot route
+  findings"` and exit.
+- **Phase 3 — Review.** Wait for the dev's P5 done-report (exit on
+  WAIT; resume when it arrives). Pull the diff, apply the security
+  lens (trust boundaries, path safety, resource bounds, error
+  suppression, logging privacy, dependency hygiene), cite file:line
+  evidence.
+- **Send findings to TL** in the P5 WH-findings format (each lens
+  ✓/✗ + evidence, Severity S0/S1/S2/S3, Recommended). Findings go to
+  `tech-lead`, NOT to the dev.
+- **Phase 5 re-verify** follows the same flow on the fix-round diff.
+- **Peer-to-peer clarifications** with the dev or qa-engineer are
+  fine while they're alive; otherwise route via orchestrator.
+- **On WAIT states, exit cleanly** (P3).
+
+When NOT in team mode (solo audit invocation), ignore this section.
 
 ## Key Rules
 

@@ -53,6 +53,179 @@ If any of these assumptions break for a given target project, the
 "Failure modes & fallback" section at the bottom of this skill
 describes the escape hatch (single-agent execution by the TL).
 
+## Team-Mode Communication Protocol
+
+> **Canonical spec.** Every persona under `alto-scaffold/agents/`, every
+> emitted wave prompt, and every orchestrator preamble references THIS
+> section. Do not re-state the protocol elsewhere in shorter or
+> diverging form. If the protocol changes, change it here and let the
+> references catch the update.
+
+### P1 — Loading the transport (first turn, before any other action)
+
+`SendMessage` is a deferred tool. On its first turn, every spawned
+subagent MUST call:
+
+```
+ToolSearch({query: "select:SendMessage"})
+```
+
+If `SendMessage` does not appear in the result, the agent MUST reply
+with plain-text `"SendMessage unavailable; cannot participate in team
+mode"` and exit. The orchestrator surfaces the harness mismatch and
+falls back per Failure Mode 1.
+
+The orchestrator additionally loads `TaskList` and `TaskStop` for
+routing; persona agents need only `SendMessage`.
+
+### P2 — Addressing peers
+
+- **While the peer is alive** — address by display name: `SendMessage({to: "qa-engineer", message: "..."})`.
+- **After the peer has exited** (status: completed) — address by `agentId` (format `a...-...`), NOT display name. The orchestrator maintains the name → agentId map.
+- **Agents address peers by name** in their own SendMessage calls; the orchestrator translates name → agentId at resume time.
+
+### P3 — One-shot exit semantics
+
+Spawned agents are one-shot. When you reach a WAIT state (no contract
+yet, no fix-assignment yet, no fresh finding yet), you EXIT cleanly.
+There is no suspended process; the orchestrator resumes you with
+SendMessage when the next message arrives. Do NOT loop, sleep, or poll.
+
+### P4 — Routing chart (who → who, when, via whom)
+
+```
+                                  ┌──────────────────┐
+                                  │   ORCHESTRATOR   │
+                                  │ (session you run)│
+                                  └────────┬─────────┘
+                                           │ translates name→agentId
+                                           │ for every cross-agent hop
+                  ┌────────────────────────┼────────────────────────┐
+                  ▼                        ▼                        ▼
+           ┌──────────┐             ┌──────────┐            ┌──────────────┐
+           │ TECH-LEAD│ ──────────▶ │   DEV(s) │            │ QA + WH      │
+           │          │  P1 contract│          │            │              │
+           │          │ ◀────────── │ Phase 1  │            │              │
+           │          │   ACK       │ ACK then │            │              │
+           │          │             │ exit     │            │              │
+           │          │             │          │            │              │
+           │          │             │ Phase 2  │ ─P2 done─▶ │ Phase 3      │
+           │          │             │ implement│   report   │ review       │
+           │          │             │          │            │              │
+           │ P4 fix   │ ◀──────────────────────────P3 ──────│ findings     │
+           │ assign   │ ──────────▶ │ Phase 5  │            │              │
+           │          │   fix req   │ fix      │ ─P5 done─▶ │ re-verify    │
+           │ P6 close │             │          │            │              │
+           │ + ripple │             │          │            │              │
+           │ P7 handoff             │          │            │              │
+           └──────────┘             └──────────┘            └──────────────┘
+```
+
+Rules:
+- Dev → QA + WH ONLY for Phase 2 done-report and Phase 5 re-verify request.
+- QA + WH → TL ONLY (never directly to dev with a finding).
+- TL → dev for Phase 1 contract + Phase 4 fix assignment.
+- Peer-to-peer clarifications (dev ↔ QA/WH) flow directly while both are alive.
+- Plain-text output goes ONLY to the orchestrator. Peers receive nothing unless addressed via SendMessage.
+
+### P5 — Message format reference
+
+Use these formats verbatim where possible — QA/WH findings and TL fix
+assignments are parsed by the orchestrator (and by you, on resume) to
+make routing deterministic.
+
+**ACK (dev → TL, Phase 1):**
+
+```
+dev-<ticket-id> ready
+```
+
+One line. No prose. Triggers TL to send the contract.
+
+**Contract broadcast (TL → dev, Phase 1):**
+
+```
+Contract for dev-<ticket-id>:
+- Port/function signatures: <list with exact Go signatures>
+- Struct/VO shapes: <list with field names + types>
+- Sentinel errors: <list>
+- Context convention: ctx context.Context first arg for I/O
+- Domain events: <emitted | consumed | none>
+- DDD layer constraint: owns <path>; may import <path>; MUST NOT import <path>
+- Ownership: <files this dev owns>
+- ACK with "dev-<ticket-id> contract-acked" then begin Phase 2.
+```
+
+**Done-report (dev → QA + WH, Phase 2):**
+
+```
+dev-<ticket-id> done-report
+- Diff stat: <files changed, +/- lines>
+- New tests: <test names, RED→GREEN evidence>
+- AC self-check: <each AC ✓/✗ with file:line>
+- Deviations from contract: <none | list with justification>
+- Ready for review.
+```
+
+**Findings (QA → TL, Phase 3):**
+
+```
+QA-findings for <ticket-id>
+- AC-<n>: ✓ | ✗ + evidence (file:line)
+- Edge-<n>: ✓ | ✗ + evidence
+- RED tests present: <names in diff>
+- Regressions: <newly-failing existing tests | none>
+- Recommended: blocker | nice-to-have | none
+```
+
+**Findings (WH → TL, Phase 3):**
+
+```
+WH-findings for <ticket-id>
+- Trust-boundary: ✓ | ✗ + evidence
+- Path-safety: ✓ | ✗ + evidence
+- Resource-bounds: ✓ | ✗ + evidence
+- Error-suppression: ✓ | ✗ + evidence
+- Logging-privacy: ✓ | ✗ + evidence
+- Dependency-hygiene: ✓ | ✗ + evidence
+- Severity (if ✗): S0 | S1 | S2 | S3
+- Recommended: blocker | nice-to-have | none
+```
+
+**Fix assignment (TL → dev, Phase 4):**
+
+```
+Fix-request for dev-<ticket-id>, round <n>/3
+- Finding: <one-line summary>
+- Repro: <command or test that demonstrates>
+- Acceptance: <how we know it's fixed>
+- Re-report to qa-engineer + white-hacker when done.
+```
+
+**Escalation (TL → orchestrator):**
+
+```
+Escalation: <reason>
+- Ticket: <id>
+- What failed: <one line>
+- Rounds attempted: <n>
+- Recommended next step: <abandon | new ticket | user decision>
+```
+
+### P6 — What NOT to do
+
+- Do NOT reply with prose like "I'll start working on this" — either ACK in the canonical format and exit, or proceed to the next phase.
+- Do NOT broadcast contracts as a single dump to all agents — TL sends individually to each dev.
+- Do NOT include diff bodies in SendMessage payloads. Send filename + line ranges; peers Read the actual diff.
+- Do NOT auto-retry a SendMessage that returned an error — the orchestrator handles failed deliveries.
+- Do NOT cite `.notes/handoff-*.md` paths from messages that will be quoted in committable artefacts (commit messages, ticket bodies, `bd close --reason`). `.notes/` is the gitignored scratchpad.
+
+### P7 — Failure handling
+
+- `SendMessage` returns an error → exit; the orchestrator will resume you with diagnostic context.
+- A peer address fails (display name no longer alive AND no agentId given to you) → SendMessage the orchestrator with `routing-help: <peer name> unreachable, last message: <one line>` and exit.
+- After 3 fix rounds on the same finding with no convergence, TL escalates via the P5 Escalation format. Devs do NOT loop silently.
+
 ## Usage
 
 ```
@@ -139,9 +312,10 @@ If the input list has more tickets than slots, split into **waves**:
 Wave-split rules:
 1. **Respect `bd dep` order.** A blocked ticket must land in a wave AFTER its blocker.
 2. **Keep tickets that share files in the same wave** (the file-ownership map in Step 3 catches this).
-3. **Generate ONE prompt per wave.** Each wave gets its own fenced code block; label them `WAVE 1`, `WAVE 2`, … with the ticket IDs included in the wave's `Tickets:` header.
-4. **Hand-off between waves runs through `/handoff`.** Phase 7's `.notes/handoff-<slug>.md` is the entry point the next wave reads first.
-5. **Tell the user about the split** in the Step 7 preamble (e.g. `"3 tickets → 2 waves; paste wave 1 first, then wave 2 after the handoff lands"`).
+3. **One file per wave, not one file per launch.** Emit each wave to its own `.notes/next-wave-<N><suffix>.md` file (e.g. `next-wave-7a.md`, `next-wave-7b.md`). A single file that contains all waves reads as "do them together" and obscures the user gate between waves. If the user requests inline output instead of files, still separate waves with a `========== WAVE BOUNDARY ==========` line and the `WAVE <n> of <total>` header from Step 7.
+4. **Per-wave user gate is non-negotiable.** Project CLAUDE.md ("Do not proceed to next ticket without explicit user permission") makes wave N+1 launch a user decision, not an orchestrator decision. The orchestrator MUST stop after Phase 7 of wave N (handoff written, ripple done, gates green) and surface the wave N+1 launch as an offer. Do NOT auto-chain even if the wave file lists both waves. This rule overrides any "spawn the next wave" wording elsewhere in the emitted prompt.
+5. **Hand-off between waves runs through `/handoff`.** Phase 7's `.notes/handoff-<slug>.md` is the entry point the next wave reads first. `.notes/` is the gitignored scratchpad — see Rule 10 for the privacy constraint on this path.
+6. **Tell the user about the split** in the Step 7 preamble (e.g. `"3 tickets → 2 waves; wave 1 lands first, then I'll stop and ask before launching wave 2"`).
 
 ### Step 5 — Extract Design Decisions
 
@@ -188,11 +362,21 @@ code yourself — your role is fan-out + routing.
 
 ## Tool-loading preamble (run this FIRST, before anything else)
 
-Call `ToolSearch({query: "select:SendMessage,TaskList,TaskStop"})` to load
-the inter-agent transport. If `SendMessage` does not appear in the result,
-abort: print "team-launch infrastructure unavailable in this harness;
-falling back to single-agent execution" and proceed per the "Failure
-modes & fallback" section of `alto-scaffold/commands/launch-team.md`.
+Step 1 — Call `ToolSearch({query: "select:SendMessage,TaskList,TaskStop"})`
+to load the inter-agent transport. If `SendMessage` does not appear in the
+result, abort: print "team-launch infrastructure unavailable in this
+harness; falling back to single-agent execution" and proceed per the
+"Failure modes & fallback" section of `alto-scaffold/commands/launch-team.md`.
+
+Step 2 — **Canary pre-flight.** ToolSearch loading SendMessage in YOUR
+session does NOT guarantee that a spawned subagent can also load it (the
+deferred-tool set per spawned agent can differ from the orchestrator's).
+Before fanning out the full N-agent team, spawn ONE canary agent with a
+trivial prompt: "Run `ToolSearch({query: \"select:SendMessage\"})`, then
+SendMessage `orchestrator` with the literal string `canary-ok`, then
+exit." If the canary either fails to load SendMessage OR fails to deliver
+the `canary-ok` message, abort and fall back to single-agent execution.
+This costs one cheap spawn and saves ~140k tokens on a degraded fanout.
 
 ## Wave summary
 
@@ -221,8 +405,13 @@ table you keep for the duration of the wave** — you will need it to
 resume agents after they exit on Phase boundaries (see "One-shot agent
 semantics" below).
 
-Spawn in this order: tech-lead first (so Phase 1 can begin), then dev(s),
-then QA + WH in parallel.
+**Spawn all agents in one batched tool call (parallel).** Don't serialize
+"TL first, then dev, then QA+WH" — all four/five agents are one-shot and
+exit on WAIT, so the dev/QA/WH spawn order has no effect on what the TL
+does in Phase 1 (the TL exits and gets resumed when the orchestrator
+delivers Phase-1 messages anyway). Parallel spawn cuts wall-clock and
+produces identical behavior. The serial-order hint was folklore from a
+stateful-agent model that does not apply here.
 
 ## One-shot agent semantics — read carefully
 
@@ -261,8 +450,20 @@ you (the orchestrator) translate name → agentId when relaying.
 ## Wave-end
 
 Tech-lead will signal completion after Phase 7 writes
-`.notes/handoff-<slug>.md`. Print that path and confirm the wave is done.
-Do not commit / push — that requires explicit user permission per CLAUDE.md.
+`.notes/handoff-<slug>.md`. Print that path locally and confirm the wave
+is done. Do not commit / push — that requires explicit user permission
+per CLAUDE.md.
+
+**Privacy:** `.notes/` is the project's gitignored scratchpad. Do NOT cite
+the handoff path from anything that gets committed (commit messages,
+ticket bodies, PR descriptions, code comments, `bd close --reason` text).
+Print it to the user; keep it out of the repo's public surface.
+
+**Do NOT auto-launch the next wave.** Even if the wave file lists wave
+N+1, the per-wave user gate from Step 4 (Wave-split rule #4) applies:
+stop, surface the offer, wait. See also "Failure mode 4 — team mode
+degraded mid-chain" for the cross-wave consequence of single-agent
+fallback.
 ````
 
 #### 6.1 — tech-lead block
@@ -356,7 +557,7 @@ their column, REFUSE and route the work to the owning dev.
   - `alto-scaffold/scripts/bd-ripple <closed-id> "<what shipped>"`
   - `bd query label=review_needed` → for each flagged: read ripple comments, do a compatibility check citing file:line evidence, present suggestions to the orchestrator (never auto-apply)
 
-**Phase 7 — Handoff.** Invoke `/handoff` to write `.notes/handoff-<slug>.md` covering tickets closed, files changed + line counts, unresolved findings, follow-up tickets filed, next-session entry points. Print the absolute path.
+**Phase 7 — Handoff.** Invoke `/handoff` to write `.notes/handoff-<slug>.md` covering tickets closed, files changed + line counts, unresolved findings, follow-up tickets filed, next-session entry points. Print the path to the user. **Do NOT cite this path from any committable artefact** — `.notes/` is the gitignored scratchpad; mentioning it in commit messages, ticket bodies, PR descriptions, code comments, or `bd close --reason` leaks a local scratchpad path into the OSS repo's permanent surface. Reference shipped artefacts (repo-relative paths under `internal/`, `docs/`, etc.) in those committable surfaces, not the handoff scratch.
 
 ## Quality gates
 
@@ -608,8 +809,16 @@ SendMessage. Receive Phase 2 done-reports from devs; send Phase 3 findings TO th
 
 ### Step 7 — Present to User
 
-Output the blocks in this order, separated by a one-line header per block.
-For each wave produce: **1 orchestrator preamble + N agent blocks**.
+**One file per wave.** Write each wave's full block set to its own
+`.notes/next-wave-<N><suffix>.md` (e.g. `next-wave-7a.md` for wave 7
+solo, `next-wave-7b.md` for wave 7 paired). A single file containing
+multiple waves obscures the user gate between them; sibling files make
+the "launch each separately" intent unambiguous. Print each path to the
+user.
+
+Within each wave file, output the blocks in this order, separated by a
+one-line header per block. Each wave file contains: **1 orchestrator
+preamble + N agent blocks**.
 
 Prefix the wave with this header (single-wave: drop `WAVE <n> of <total>`
 and `Next wave entry point`):
@@ -621,6 +830,7 @@ Team size: <N> (TL + <devs> + QA + WH)   — must be ≤ 5
 Files touched: <N>
 Conflicts: <none | list>
 Next wave entry point: .notes/handoff-<slug>.md   (omit on final wave)
+User-gate: orchestrator stops after Phase 7 and asks before wave <n+1>   (omit on final wave)
 
 Paste the ORCHESTRATOR PREAMBLE into the Claude Code session that will run
 the team. Then paste each subsequent block into the corresponding spawned
@@ -635,7 +845,9 @@ Then emit:
 4. `--- QA-ENGINEER ---` followed by the fenced 6.3 block
 5. `--- WHITE-HACKER ---` followed by the fenced 6.4 block
 
-For multi-wave runs, repeat the header + N+1 blocks per wave, in dep order.
+For multi-wave runs, write one `.notes/next-wave-<N><suffix>.md` per
+wave (in dep order) and print all paths. Do NOT concatenate waves into a
+single file — the user reads each one independently between launches.
 
 ## Rules
 
@@ -648,6 +860,8 @@ For multi-wave runs, repeat the header + N+1 blocks per wave, in dep order.
 7. **End every wave with `/handoff`.** Phase 7 in the TL block mandates `.notes/handoff-<slug>.md`. Slug = ticket ID for single-ticket, short wave name for multi-ticket.
 8. **Hard cap: 5 active agents per wave.** TL + QA + WH = 3 fixed; 2 dev slots max. More tickets → more waves. Host constraint, not a preference.
 9. **Slice per agent — never paste the full team plan into a non-TL agent.** The dev sees their ticket + DDD + TDD + AC + edges + their files + quality gates + Phase 1-2-5 instructions only. QA sees AC + edges + RED tests + Phase 3 lens. WH sees the security surface + Phase 3 security lens. The TL alone sees the broad view because the TL coordinates. This is the structural fix for the "dev got the entire team prompt" failure mode.
+10. **Handoff paths stay out of committable artefacts.** `.notes/handoff-<slug>.md` lives in the gitignored scratchpad. The TL prints the path to the user but must NOT cite it from `bd close --reason`, commit messages, ticket bodies, PR descriptions, or code comments. Reference shipped repo-relative paths (`internal/...`, `docs/...`) in those committable surfaces. Bake this into the Phase 7 instruction the TL block emits.
+11. **Per-wave user gate (cross-wave control flow).** Project CLAUDE.md says "Do not proceed to next ticket without explicit user permission." The launch-team flow inherits that: after Phase 7 of wave N, the orchestrator stops and offers wave N+1 — it never auto-chains, even when the wave file lists multiple waves. See Wave-split rule #4 in Step 4 and Failure Mode 4 below for the degraded-mode caveat.
 
 ## Failure modes & fallback
 
@@ -687,6 +901,30 @@ skill). The persona content is already embedded in the prompt; the
 catch-all type is functionally equivalent for prompt-driven roles. The
 emitted blocks already default to `claude` per the Prerequisites
 section.
+
+### Failure mode 4 — team mode degraded between waves
+
+Symptom: wave N fell through to single-agent execution (Failure mode 1 or
+3). Wave N+1 is queued behind it in the same `.notes/next-wave-<N>.md`
+(or in a sibling `next-wave-<N>b.md` file) and was designed for a 5-agent
+paired execution.
+
+Cause: the harness can't sustain team mode this session, but the wave
+N+1 design assumes it.
+
+Action: **STOP before launching wave N+1.** Surface the choice to the
+user:
+- The wave N+1 design's value proposition (parallel paired execution,
+  separate review lenses) collapses under single-agent fallback. Wave
+  N+1 becomes "one agent does both tickets serially" — equivalent to a
+  single bigger prompt with no orchestration benefit.
+- Options: (a) defer wave N+1 to a session where team mode works,
+  (b) launch wave N+1 in single-agent mode now and accept the lost
+  signal, (c) abandon the multi-wave plan and re-groom as solo tickets.
+
+The orchestrator MUST NOT silently launch wave N+1 in degraded mode —
+that spends tokens on a degraded design without telling the user the
+design's value prop is gone.
 
 ### Failure mode 3 — agent exits without ACKing
 
