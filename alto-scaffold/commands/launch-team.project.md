@@ -50,3 +50,20 @@ go test ./... -race                              # all pass, >=80% coverage on n
 
 Single-ticket waves: `.notes/handoff-alty-cli-<id>.md` (e.g. `handoff-alty-cli-1wu.md`).
 Multi-ticket waves: `.notes/handoff-wave-<n>.md` or `.notes/handoff-<short-name>.md`.
+
+## Subagent type — alto-specific
+
+The agent personas (`tech-lead.md`, `developer.md`, `qa-engineer.md`,
+`white-hacker.md`, `researcher.md`, `project-manager.md`) live in
+`alto-scaffold/agents/` as templates. They are NOT installed into
+`.claude/agents/` on this project yet — there is no `make install-agents`
+step. Until that exists, the orchestrator MUST spawn every role with
+`subagent_type: claude` (the catch-all) and rely on the embedded persona
+in each prompt block. The generator already defaults to `claude` per
+the parent skill's Prerequisites section; do NOT change it to
+`tech-lead`/`developer`/etc. without first verifying
+`ls .claude/agents/` lists the persona files.
+
+Follow-up bead worth filing if this trips someone again: an install
+step that symlinks (or copies) `alto-scaffold/agents/*.md` into
+`.claude/agents/` during `alto init` so the harness picks them up.

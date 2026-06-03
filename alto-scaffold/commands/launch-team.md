@@ -4,7 +4,7 @@ description: Generate a team launch prompt from one or more beads tickets
 kind: command
 phase: implement
 when_to_use: When launching a multi-agent team to work on one or more beads tickets
-tools: Agent, Bash, Read, Grep, Glob
+tools: Agent, Bash, Read, Grep, Glob, SendMessage, ToolSearch
 bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
 license: Apache-2.0
 ---
@@ -12,6 +12,46 @@ license: Apache-2.0
 # /launch-team <ticket-id> [ticket-id...]
 
 Generate a ready-to-paste prompt for launching a multi-agent team from one or more tickets.
+
+## Prerequisites — harness facts every emitted prompt must respect
+
+Three Claude Code harness behaviors break the team model unless the emitted
+prompts explicitly account for them. The templates below already do — do
+NOT remove these guardrails when generating the prompt.
+
+1. **`SendMessage` is a deferred tool.** A spawned agent's tool list does
+   NOT include `SendMessage` by default. The agent must load it on its
+   first turn by calling `ToolSearch({query: "select:SendMessage"})`.
+   Without this, the agent will conclude "no inter-agent transport in
+   this harness" and bail. Every emitted block opens with a tool-loading
+   preamble for this reason.
+
+2. **Spawned agents are one-shot.** A spawned agent runs its reasoning
+   loop, then **exits** when it has no more actions to take. A `Phase 1
+   WAIT` instruction terminates the agent cleanly — there is no
+   suspended process waiting for a later message. To resume a completed
+   agent, the orchestrator (or TL) must call `SendMessage` against the
+   agent's `agentId` (format `a...`), NOT its display name. Names work
+   only while an agent is alive; `agentId`s work for resume.
+
+   The orchestrator MUST record each agentId returned by the `Agent`
+   tool call and keep it for the wave's lifetime. Don't rely on
+   addressing by name for resume.
+
+3. **Custom `subagent_type` values are not auto-registered.** The
+   personas in `alto-scaffold/agents/*.md` (tech-lead, developer,
+   qa-engineer, white-hacker, researcher, project-manager) are
+   templates; they are NOT installed into `.claude/agents/` for the
+   target project unless a separate setup step has run. Until that
+   install step exists, the emitted blocks use `subagent_type: claude`
+   (the catch-all) and embed the persona inline in the prompt. The
+   per-block `subagent_type` cell in Step 6.0's spawn table reflects
+   this default; flag the user only if they've explicitly installed
+   the custom personas (check `ls .claude/agents/`).
+
+If any of these assumptions break for a given target project, the
+"Failure modes & fallback" section at the bottom of this skill
+describes the escape hatch (single-agent execution by the TL).
 
 ## Usage
 
@@ -142,9 +182,17 @@ subagent prompt; it tells the receiving session how to fan out.
 # Orchestrator: launch team for <ticket titles, comma-separated>
 
 You are the team orchestrator for this wave. Your job is to spawn the
-subagents below using the Agent tool, route messages between them per the
-Communication Rules, and confirm wave completion. Do NOT implement code
-yourself — your role is fan-out + routing.
+subagents below using the Agent tool, route resume-messages to them when
+they hit Phase boundaries, and confirm wave completion. Do NOT implement
+code yourself — your role is fan-out + routing.
+
+## Tool-loading preamble (run this FIRST, before anything else)
+
+Call `ToolSearch({query: "select:SendMessage,TaskList,TaskStop"})` to load
+the inter-agent transport. If `SendMessage` does not appear in the result,
+abort: print "team-launch infrastructure unavailable in this harness;
+falling back to single-agent execution" and proceed per the "Failure
+modes & fallback" section of `alto-scaffold/commands/launch-team.md`.
 
 ## Wave summary
 
@@ -155,27 +203,60 @@ yourself — your role is fan-out + routing.
 
 ## Spawn instructions
 
-Use the Agent tool with these `subagent_type` + `name` + `prompt` settings:
+Use the Agent tool with these `subagent_type` + `name` + `prompt` settings.
+Default `subagent_type` is `claude` (catch-all) because the persona-typed
+agents are not registered in `.claude/agents/` for most projects; the
+persona content is embedded in each prompt block.
 
 | Agent name | subagent_type | Prompt block |
 |------------|---------------|--------------|
-| tech-lead | tech-lead | block "TECH-LEAD" below |
-| dev-<ticket-id> | developer | block "DEVELOPER: dev-<ticket-id>" below |
-| qa-engineer | qa-engineer | block "QA-ENGINEER" below |
-| white-hacker | white-hacker | block "WHITE-HACKER" below |
+| tech-lead | claude | block "TECH-LEAD" below |
+| dev-<ticket-id> | claude | block "DEVELOPER: dev-<ticket-id>" below |
+| qa-engineer | claude | block "QA-ENGINEER" below |
+| white-hacker | claude | block "WHITE-HACKER" below |
+
+Spawn each agent with `run_in_background: true`. The `Agent` tool returns
+an `agentId` (format `a...-...`) for each. **Record every agentId in a
+table you keep for the duration of the wave** — you will need it to
+resume agents after they exit on Phase boundaries (see "One-shot agent
+semantics" below).
 
 Spawn in this order: tech-lead first (so Phase 1 can begin), then dev(s),
-then QA + WH in parallel. Dev(s) will WAIT for the tech-lead's contract
-broadcast before starting Phase 2 — that is by design; do not nudge them.
+then QA + WH in parallel.
+
+## One-shot agent semantics — read carefully
+
+Spawned agents run their reasoning loop and EXIT when they have no more
+actions to take. A "Phase WAIT" in a dev block means the dev will
+complete-and-exit immediately after acknowledging readiness — there is
+no suspended process. This is expected; do not retry the spawn.
+
+To wake a completed agent and feed it a new turn, call
+`SendMessage({to: "<agentId>", message: "..."})`. Addressing by display
+name (`to: "dev-alty-cli-2f9"`) only works while the agent is alive.
+After an agent has emitted a `<task-notification>` with `status:
+completed`, you MUST use its `agentId` to resume it.
+
+Therefore: keep the agentId table from the spawn step. You will:
+- Resume the TL with each Phase 3 finding from QA/WH (TL exits after
+  broadcasting contracts).
+- Resume each dev with the TL's contract message (the dev exits after
+  ACKing readiness or after a fix-cycle iteration).
+- Resume QA/WH with each dev's Phase 2 done-report.
+
+The agents themselves address peers by name in their SendMessage calls;
+you (the orchestrator) translate name → agentId when relaying.
 
 ## Communication routing
 
-- Devs report Phase 2 completion → qa-engineer + white-hacker
-- QA + WH report Phase 3 findings → tech-lead
-- Tech-lead assigns Phase 4 fixes → specific dev
-- Peer-to-peer clarifications (dev ↔ QA/WH) flow directly
+- Devs report Phase 2 completion → qa-engineer + white-hacker (via you)
+- QA + WH report Phase 3 findings → tech-lead (via you)
+- Tech-lead assigns Phase 4 fixes → specific dev (via you)
+- Peer-to-peer clarifications (dev ↔ QA/WH) flow directly while both alive;
+  otherwise via you
 - Max 3 fix rounds per issue — TL escalates to YOU if exceeded
-- All communication via SendMessage; plain text output is invisible
+- All inter-agent communication via SendMessage; plain text output is
+  invisible to peers (it goes only to you, the orchestrator)
 
 ## Wave-end
 
@@ -195,6 +276,26 @@ You are the technical lead for this wave. Your authority: interface
 contracts, triage of QA + WH findings, fix assignment, final quality gates,
 close + ripple + handoff. Do NOT write production code yourself unless a
 finding cannot be safely delegated.
+
+## Tool-loading preamble (run this FIRST, before reading any file)
+
+Call `ToolSearch({query: "select:SendMessage"})` to load the inter-agent
+transport. If `SendMessage` does not appear in the result, abort: send a
+single plain-text reply "SendMessage unavailable; team-mode broken — need
+orchestrator decision" and exit. Do NOT attempt to compensate by writing
+code yourself unless the orchestrator explicitly switches you to
+single-agent execution mode.
+
+## One-shot agent semantics
+
+You are a one-shot agent: when you run out of actions you exit. If you are
+WAITING for a dev's ACK or a QA/WH finding, just exit — the orchestrator
+will resume you with a SendMessage when the message arrives. Do not loop
+or sleep waiting for input.
+
+When you address peers in SendMessage, use their display name
+(`dev-<ticket-id>`, `qa-engineer`, `white-hacker`). The orchestrator
+translates names to agentIds for resume.
 
 ## Reference files (read before Phase 1)
 
@@ -286,12 +387,28 @@ You are a developer for one ticket in this wave. Your job: TDD
 implementation of <ticket-id> per the contracts your tech-lead will
 publish. Do NOT touch files outside your ownership.
 
-## Phase 1 — WAIT
+## Tool-loading preamble (run this FIRST, before anything else)
 
-Do NOT begin implementation. The tech-lead will SendMessage you a contract
-broadcast containing the exact signatures, struct shapes, sentinel errors,
-context conventions, and DDD layer constraints for your ticket. Read it,
-acknowledge receipt via SendMessage, then begin Phase 2.
+Call `ToolSearch({query: "select:SendMessage"})` to load the inter-agent
+transport. If `SendMessage` does not appear, send a plain-text reply
+"SendMessage unavailable; cannot ACK tech-lead" and exit — the
+orchestrator will surface the harness mismatch.
+
+## One-shot agent semantics
+
+You are a one-shot agent. When you reach a WAIT state (no contract yet,
+or no fix assignment yet) you EXIT cleanly — the orchestrator will resume
+you with a SendMessage when the next message arrives. This is normal;
+do not loop, sleep, or poll. Your context and tool state are restored
+on resume.
+
+## Phase 1 — Acknowledge readiness, then exit
+
+Do NOT begin implementation. SendMessage to `tech-lead` with a one-line
+ACK ("dev-<ticket-id> ready"), then exit. The tech-lead will SendMessage
+you a contract broadcast containing the exact signatures, struct shapes,
+sentinel errors, context conventions, and DDD layer constraints for your
+ticket. Reading it (on resume) is your trigger for Phase 2.
 
 ## Your ticket
 
@@ -363,6 +480,18 @@ You are the QA reviewer for this wave. Your job: independent verification
 of every ticket's Acceptance Criteria + Edge Cases + RED-test contract,
 producing findings the tech-lead can triage. Do NOT write production code.
 
+## Tool-loading preamble (run this FIRST, before anything else)
+
+Call `ToolSearch({query: "select:SendMessage"})` to load the inter-agent
+transport. If `SendMessage` does not appear, send a plain-text reply
+"SendMessage unavailable; cannot route findings" and exit.
+
+## One-shot agent semantics
+
+You are a one-shot agent: exit cleanly while waiting for a dev's
+done-report or a re-review request. The orchestrator resumes you when
+the next message arrives.
+
 ## Reference files
 
 - `.claude/CLAUDE.md` — quality gates section
@@ -418,6 +547,18 @@ You are the security reviewer for this wave. Your job: independent
 security review of every ticket's diff with a focus tailored to the
 ticket's surface. Do NOT write production code unless approved by the
 tech-lead for a critical finding.
+
+## Tool-loading preamble (run this FIRST, before anything else)
+
+Call `ToolSearch({query: "select:SendMessage"})` to load the inter-agent
+transport. If `SendMessage` does not appear, send a plain-text reply
+"SendMessage unavailable; cannot route findings" and exit.
+
+## One-shot agent semantics
+
+You are a one-shot agent: exit cleanly while waiting for a dev's
+done-report or a re-review request. The orchestrator resumes you when
+the next message arrives.
 
 ## Reference files
 
@@ -507,3 +648,69 @@ For multi-wave runs, repeat the header + N+1 blocks per wave, in dep order.
 7. **End every wave with `/handoff`.** Phase 7 in the TL block mandates `.notes/handoff-<slug>.md`. Slug = ticket ID for single-ticket, short wave name for multi-ticket.
 8. **Hard cap: 5 active agents per wave.** TL + QA + WH = 3 fixed; 2 dev slots max. More tickets → more waves. Host constraint, not a preference.
 9. **Slice per agent — never paste the full team plan into a non-TL agent.** The dev sees their ticket + DDD + TDD + AC + edges + their files + quality gates + Phase 1-2-5 instructions only. QA sees AC + edges + RED tests + Phase 3 lens. WH sees the security surface + Phase 3 security lens. The TL alone sees the broad view because the TL coordinates. This is the structural fix for the "dev got the entire team prompt" failure mode.
+
+## Failure modes & fallback
+
+### Failure mode 1 — `SendMessage` not loadable
+
+Symptom: the orchestrator's tool-loading preamble (`ToolSearch
+select:SendMessage`) returns no match, or the TL's first run reports
+"SendMessage unavailable."
+
+Cause: harness build does not expose `SendMessage` as a deferred tool.
+
+Action: **abort team mode immediately.** Switch to single-agent
+execution: keep the TL alive, send it a follow-up SendMessage (after
+loading it — if even the orchestrator can't, fall through to the user's
+own session) that drops the routing role and instructs the TL to
+implement every ticket sequentially itself. The TL is the most
+context-rich persona; it has already read the ownership-map files.
+
+Example resume message:
+```
+Single-agent execution mode. Drop the dev/QA/WH personas. Implement
+<ticket-1> first, then <ticket-2>. RED tests before production. Run
+the full quality gate after each ticket. Do not commit, do not bd close
+— report back with a diff stat, AC self-check, and suggested commit
+messages.
+```
+
+### Failure mode 2 — custom `subagent_type` rejected
+
+Symptom: `Agent` tool call with `subagent_type: tech-lead` (or other
+custom persona) errors with "unknown agent type."
+
+Cause: `.claude/agents/` is empty or missing the persona file.
+
+Action: re-spawn with `subagent_type: claude` (the default in this
+skill). The persona content is already embedded in the prompt; the
+catch-all type is functionally equivalent for prompt-driven roles. The
+emitted blocks already default to `claude` per the Prerequisites
+section.
+
+### Failure mode 3 — agent exits without ACKing
+
+Symptom: a dev or TL spawn completes (`status: completed`) but the
+result is "needs input" or an apology without a SendMessage ACK.
+
+Cause: the agent didn't run the tool-loading preamble (older prompt
+template) or the preamble failed silently.
+
+Action: send a resume message via `SendMessage({to: "<agentId>",
+message: "Re-run your tool-loading preamble: ToolSearch
+select:SendMessage, then ACK readiness."})`. If two consecutive resumes
+fail to produce an ACK, fall back to single-agent execution per Failure
+mode 1.
+
+### When to escalate to the user
+
+Escalate if:
+- Two of the five agents have failed to ACK after a resume cycle.
+- The TL has issued > 3 fix rounds for the same finding without
+  convergence.
+- Any agent reports a security finding rated S0 or S1.
+- The harness probe at orchestrator-startup fails.
+
+Print a one-line summary of what went wrong and ask the user whether to
+fall back to single-agent execution, retry team mode after fixing the
+harness, or abandon the wave.
