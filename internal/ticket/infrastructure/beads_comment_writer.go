@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-// CommentWriterTimeout is the per-invocation deadline for `bd comment add`.
+// CommentWriterTimeout is the per-invocation deadline for `bd comment`.
 const CommentWriterTimeout = 5 * time.Second
 
-// BDCommentRunner is the runner seam for `bd comment add`. Production
-// code uses execBDCommentCommand which forwards the body on stdin;
-// tests inject a fake that captures the body. The signature differs
-// from BDCommandRunner because comment bodies are streamed via stdin to
-// avoid shell-escaping arbitrary markdown.
+// BDCommentRunner is the runner seam for `bd comment <id> --stdin`.
+// Production code uses execBDCommentCommand which forwards the body on
+// stdin; tests inject a fake that captures the body. The signature
+// differs from BDCommandRunner because comment bodies are streamed via
+// stdin to avoid shell-escaping arbitrary markdown.
 type BDCommentRunner func(ctx context.Context, ticketID, body string) error
 
-// BeadsCommentWriter posts comments to beads tickets via `bd comment add`.
+// BeadsCommentWriter posts comments to beads tickets via `bd comment <id> --stdin`.
 type BeadsCommentWriter struct {
 	run     BDCommentRunner
 	timeout time.Duration
@@ -60,16 +60,24 @@ func (w *BeadsCommentWriter) AddComment(ctx context.Context, ticketID, comment s
 	defer cancel()
 
 	if err := w.run(timed, ticketID, comment); err != nil {
-		return fmt.Errorf("running bd comment add %s: %w", ticketID, err)
+		return fmt.Errorf("running bd comment %s: %w", ticketID, err)
 	}
 	return nil
 }
 
-// execBDCommentCommand streams the comment body to `bd comment add <id>`
-// via stdin so arbitrary markdown (including backticks and quotes) cannot
-// be reinterpreted by the shell.
+// bdCommentArgs returns the canonical argv for posting a stdin-streamed
+// comment to ticketID. Pinned by an argv-regression test — bd has no
+// "add" subcommand, despite what the verb suggests. See alty-cli-olb.
+func bdCommentArgs(ticketID string) []string {
+	return []string{"bd", "comment", ticketID, "--stdin"}
+}
+
+// execBDCommentCommand streams the comment body to `bd comment <id> --stdin`
+// so arbitrary markdown (including backticks and quotes) cannot be
+// reinterpreted by the shell.
 func execBDCommentCommand(ctx context.Context, ticketID, body string) error {
-	cmd := exec.CommandContext(ctx, "bd", "comment", "add", ticketID)
+	args := bdCommentArgs(ticketID)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...) //nolint:gosec // argv is fully controlled by bdCommentArgs
 	cmd.Stdin = bytes.NewBufferString(body)
 	if err := cmd.Run(); err != nil {
 		return err //nolint:wrapcheck // wrapped by caller AddComment

@@ -108,5 +108,5 @@ func TestBeadsCommentWriter_AddComment_WrapsRunnerError(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, sentinel)
-	assert.Contains(t, err.Error(), "running bd comment add alty-cli-bf7")
+	assert.Contains(t, err.Error(), "running bd comment alty-cli-bf7")
 }
