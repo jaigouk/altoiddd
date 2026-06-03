@@ -18,6 +18,10 @@ type ScaffoldParams struct {
 	IssueTracker    string
 	BoundedContexts []string
 	PrimaryTool     string
+	// IncludeHooks toggles the post-close beads hook scaffold. Defaults
+	// to true at constructor entry so new projects get the auto-ripple
+	// wiring without any extra flag. Operators opt out via --no-hooks.
+	IncludeHooks bool
 }
 
 // knownIssueTrackers enumerates the supported --issue-tracker values.
@@ -71,7 +75,17 @@ func NewScaffoldParams(
 		IssueTracker:    issueTracker,
 		BoundedContexts: contextsCopy,
 		PrimaryTool:     primaryTool,
+		IncludeHooks:    true,
 	}, nil
+}
+
+// WithIncludeHooks returns a copy of params with the IncludeHooks toggle
+// set to the supplied value. Used by the CLI to thread the --no-hooks
+// flag without mutating the value object.
+func (p ScaffoldParams) WithIncludeHooks(include bool) ScaffoldParams {
+	cp := p
+	cp.IncludeHooks = include
+	return cp
 }
 
 // validateProjectName rejects empty values, path-traversal characters,

@@ -80,6 +80,7 @@ type App struct {
 	TicketGenerationHandler *ticketapp.TicketGenerationHandler
 	TicketHealthHandler     *ticketapp.TicketHealthHandler
 	TicketVerifyHandler     *ticketapp.TicketVerifyHandler
+	RippleHandler           *ticketapp.RippleHandler
 
 	// --- ToolTranslation ---
 	ConfigGenerationHandler        *ttapp.ConfigGenerationHandler
@@ -173,6 +174,9 @@ func NewApp() (*App, error) {
 	ticketReader := ticketinfra.NewBeadsTicketReader(".beads")
 	ticketContentReader := ticketinfra.NewBeadsTicketContentReader(".beads")
 	commandRunner := ticketinfra.NewShellCommandRunner()
+	beadsGraphReader := ticketinfra.NewBeadsGraphReader()
+	beadsLabelWriter := ticketinfra.NewBeadsLabelWriter()
+	beadsCommentWriter := ticketinfra.NewBeadsCommentWriter()
 
 	// 9. Challenge infrastructure
 	challenger := &challengeinfra.RuleBasedChallengerAdapter{}
@@ -266,6 +270,7 @@ func NewApp() (*App, error) {
 	ticketGenerationHandler.SetPortScanner(portScannerBridge, "")
 	ticketHealthHandler := ticketapp.NewTicketHealthHandler(&ticketReaderAdapter{reader: ticketReader})
 	ticketVerifyHandler := ticketapp.NewTicketVerifyHandler(ticketContentReader, commandRunner)
+	rippleHandler := ticketapp.NewRippleHandler(beadsGraphReader, beadsLabelWriter, beadsCommentWriter)
 	configGenerationHandler := ttapp.NewConfigGenerationHandler(fileWriter, publisher)
 	personaHandler := ttapp.NewPersonaHandler(fileWriter)
 	openCodeCommandAdapter := ttinfra.NewOpenCodeCommandAdapter()
@@ -281,12 +286,14 @@ func NewApp() (*App, error) {
 	// port to the tooltranslation handler — bootstrap must not depend on
 	// tooltranslation directly (arch-go boundary).
 	embedScaffoldWriter := bootstrapinfra.NewEmbedScaffoldWriter()
+	beadsHookWriter := bootstrapinfra.NewFilesystemBeadsHookWriter()
 	workflowAssetBridge := &bootstrapWorkflowAssetAdapter{handler: workflowAssetGenerationHandler}
 	bootstrapHandler := bootstrapapp.NewBootstrapHandler(
 		toolDetector, fileChecker, publisher, fileWriter, contentProvider,
 		bootstrapapp.WithGitCommitter(gitCommitter),
 		bootstrapapp.WithScaffoldWriter(embedScaffoldWriter),
 		bootstrapapp.WithWorkflowAssetGenerator(workflowAssetBridge),
+		bootstrapapp.WithBeadsHookWriter(beadsHookWriter),
 	)
 	docHealthHandler := dochealthapp.NewDocHealthHandler(&docScannerAdapter{scanner: docScanner})
 	docReviewHandler := dochealthapp.NewDocReviewHandler(docReviewAdapter)
@@ -331,6 +338,7 @@ func NewApp() (*App, error) {
 		TicketGenerationHandler:        ticketGenerationHandler,
 		TicketHealthHandler:            ticketHealthHandler,
 		TicketVerifyHandler:            ticketVerifyHandler,
+		RippleHandler:                  rippleHandler,
 		ConfigGenerationHandler:        configGenerationHandler,
 		PersonaHandler:                 personaHandler,
 		WorkflowAssetGenerationHandler: workflowAssetGenerationHandler,

@@ -55,9 +55,11 @@ type BootstrapHandler struct {
 	gitCommitter     GitCommitter
 	scaffoldWriter   ScaffoldWriter
 	workflowAssetGen WorkflowAssetGenerator
+	beadsHookWriter  BeadsHookWriter
 	mu               sync.Mutex
 	sessions         map[string]*domain.BootstrapSession
 	configs          map[string]domain.ProjectConfig
+	forceHooks       bool
 }
 
 // BootstrapOption configures optional dependencies for BootstrapHandler.
@@ -90,6 +92,17 @@ func WithScaffoldWriter(sw ScaffoldWriter) BootstrapOption {
 func WithWorkflowAssetGenerator(wag WorkflowAssetGenerator) BootstrapOption {
 	return func(h *BootstrapHandler) {
 		h.workflowAssetGen = wag
+	}
+}
+
+// WithBeadsHookWriter injects the writer used to scaffold
+// .beads/hooks/post-close so `bd close` automatically triggers
+// `alto ticket-ripple`. Nil is permitted — when unwired and
+// ScaffoldParams.IncludeHooks is true, WriteScaffold returns a wrapped
+// ErrInvariantViolation so the CLI surfaces a configuration error.
+func WithBeadsHookWriter(hw BeadsHookWriter) BootstrapOption {
+	return func(h *BootstrapHandler) {
+		h.beadsHookWriter = hw
 	}
 }
 
@@ -302,5 +315,21 @@ func (h *BootstrapHandler) WriteScaffold(ctx context.Context, targetDir string, 
 			return fmt.Errorf("generating opencode workflow assets: %w", err)
 		}
 	}
+
+	if params.IncludeHooks {
+		if h.beadsHookWriter == nil {
+			return fmt.Errorf("beads hook writer not configured: %w", domainerrors.ErrInvariantViolation)
+		}
+		if err := h.beadsHookWriter.WriteBeadsPostCloseHook(ctx, targetDir, params.PrimaryTool, h.forceHooks); err != nil {
+			return fmt.Errorf("writing beads post-close hook: %w", err)
+		}
+	}
 	return nil
+}
+
+// SetForceHooks toggles the force flag passed to BeadsHookWriter.
+// The CLI calls this when --force-hooks is set so an existing
+// differing hook is overwritten instead of aborting the scaffold.
+func (h *BootstrapHandler) SetForceHooks(force bool) {
+	h.forceHooks = force
 }

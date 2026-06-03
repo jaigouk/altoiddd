@@ -30,6 +30,8 @@ func NewInitCmd(app *composition.App) *cobra.Command {
 		issueTracker string
 		boundedCtxs  []string
 		primaryTool  string
+		noHooks      bool
+		forceHooks   bool
 	)
 
 	cmd := &cobra.Command{
@@ -51,6 +53,9 @@ emitted before any write occurs).`,
 			// strictly an "extract the embedded alto-scaffold/" operation. The
 			// --existing rescue integration is out of scope for this ticket.
 			if withScaffold {
+				if noHooks && forceHooks {
+					return fmt.Errorf("--no-hooks and --force-hooks are mutually exclusive")
+				}
 				return runWithScaffold(cmd, app, withScaffoldArgs{
 					projectName:  projectName,
 					ticketPrefix: ticketPrefix,
@@ -58,6 +63,8 @@ emitted before any write occurs).`,
 					boundedCtxs:  boundedCtxs,
 					primaryTool:  primaryTool,
 					force:        force,
+					noHooks:      noHooks,
+					forceHooks:   forceHooks,
 				})
 			}
 
@@ -111,6 +118,8 @@ emitted before any write occurs).`,
 	cmd.Flags().StringVar(&issueTracker, "issue-tracker", "beads", "With --with-scaffold: one of {beads, github, linear}")
 	cmd.Flags().StringSliceVar(&boundedCtxs, "bounded-contexts", nil, "With --with-scaffold: comma-separated PascalCase context names, e.g. Orders,Catalog")
 	cmd.Flags().StringVar(&primaryTool, "primary-tool", "claude", "With --with-scaffold: one of {claude, opencode}")
+	cmd.Flags().BoolVar(&noHooks, "no-hooks", false, "With --with-scaffold: skip writing .beads/hooks/post-close (advanced opt-out)")
+	cmd.Flags().BoolVar(&forceHooks, "force-hooks", false, "With --with-scaffold: overwrite an existing .beads/hooks/post-close hook")
 
 	return cmd
 }
@@ -125,6 +134,8 @@ type withScaffoldArgs struct {
 	boundedCtxs  []string
 	primaryTool  string
 	force        bool
+	noHooks      bool
+	forceHooks   bool
 }
 
 // runWithScaffold builds the ScaffoldParams VO from CLI flags and asks
@@ -141,6 +152,10 @@ func runWithScaffold(cmd *cobra.Command, app *composition.App, args withScaffold
 	if err != nil {
 		return fmt.Errorf("scaffold parameters: %w", err)
 	}
+	if args.noHooks {
+		params = params.WithIncludeHooks(false)
+	}
+	app.BootstrapHandler.SetForceHooks(args.forceHooks)
 
 	if err := app.BootstrapHandler.WriteScaffold(cmd.Context(), ".", params, args.force); err != nil {
 		return fmt.Errorf("writing scaffold: %w", err)

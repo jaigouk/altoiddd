@@ -145,6 +145,33 @@ Each stage previews its output before writing. You approve or adjust at every st
 
 **Beads tickets** — Dependency-ordered implementation tickets. Core subdomain tickets include full acceptance criteria, TDD phases, and SOLID mapping. Supporting tickets get standard detail. Generic tickets are stubs.
 
+## Step 4b: Beads post-close hook (auto-ripple)
+
+When you run `alto init --with-scaffold`, alto also writes
+`.beads/hooks/post-close` (POSIX) and `.beads/hooks/post-close.bat` (Windows).
+The POSIX file is `0o755` and contains:
+
+```bash
+#!/usr/bin/env bash
+exec alto ticket-ripple "$@"
+```
+
+This makes every `bd close <id>` automatically trigger
+`alto ticket-ripple <id>`, which walks the closed ticket's siblings,
+dependents, and related neighbours and applies the `review_needed` label
+plus a structured ripple comment to each open one. The hook fires
+regardless of which session / tool issued the close (CLI, MCP, agent, or
+human), so freshness flagging is no longer dependent on remembering to
+run a script.
+
+Flags:
+
+| Flag | Effect |
+|------|--------|
+| `--no-hooks` | Skip the hook write. Use when you maintain a custom hook. |
+| `--force-hooks` | Overwrite an existing differing hook. Mutually exclusive with `--no-hooks`. |
+| (default) | Write the hook; abort if a differing one is already present. |
+
 ## Step 5: Start building
 
 With your project seeded, hand it to your AI coding tool. The generated agent personas understand your domain model, enforce quality gates, and follow TDD.

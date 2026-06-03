@@ -51,6 +51,23 @@ type ScaffoldWriter interface {
 	WriteScaffold(ctx context.Context, targetDir string, params domain.ScaffoldParams, force bool) error
 }
 
+// BeadsHookWriter renders the beads `.beads/hooks/post-close` hook (plus
+// a Windows .bat shim) into a target project so `bd close` automatically
+// fires `alto ticket-ripple` regardless of which session / tool issued
+// the close. The hook body is a fixed template constant — primaryTool
+// is forwarded for future per-tool overrides but is unused by the
+// current adapter.
+type BeadsHookWriter interface {
+	// WriteBeadsPostCloseHook writes <targetDir>/.beads/hooks/post-close
+	// (POSIX, 0o755) and <targetDir>/.beads/hooks/post-close.bat
+	// (Windows shim, 0o644). When force is false the call fails with a
+	// wrapped ErrAlreadyExists if either hook exists with non-matching
+	// content; identical existing content is a no-op. When force is true
+	// the existing files are announced via [OVERWRITE] lines on stderr
+	// and then truncated and rewritten.
+	WriteBeadsPostCloseHook(ctx context.Context, targetDir string, primaryTool string, force bool) error
+}
+
 // WorkflowAssetGenerator translates a freshly written alto-scaffold/commands/ tree
 // into a tool-native view directory for the given primary tool (e.g.
 // "opencode" -> `<targetDir>/.opencode/commands/...`). Defined in the

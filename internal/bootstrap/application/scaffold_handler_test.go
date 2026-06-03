@@ -74,7 +74,10 @@ func newParams(t *testing.T) domain.ScaffoldParams {
 	t.Helper()
 	p, err := domain.NewScaffoldParams("demo", "demo-", "beads", []string{"Orders"}, "claude")
 	require.NoError(t, err)
-	return p
+	// Default tests for scaffold-writer wiring do NOT exercise hook
+	// scaffolding — those have their own test file. Opt out so the
+	// handler does not require a BeadsHookWriter to be wired.
+	return p.WithIncludeHooks(false)
 }
 
 func TestBootstrapHandler_WriteScaffold_CallsScaffoldWriterOnce(t *testing.T) {

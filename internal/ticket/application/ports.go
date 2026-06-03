@@ -63,3 +63,60 @@ type PortScanner interface {
 	// ScanPorts scans a directory for Go interface definitions and returns them keyed by name.
 	ScanPorts(portsDir string) map[string]ticketdomain.ScannedPort
 }
+
+// BeadsGraphTicket is the minimal projection of a beads ticket the ripple
+// flow needs: just the identifier and its open/closed status. Adapters
+// translate the raw bd JSON shape into this VO so the handler stays
+// ignorant of beads field names.
+type BeadsGraphTicket struct {
+	ID     string
+	Status string
+}
+
+// IsOpen reports whether the ticket is in an actionable, not-yet-closed
+// state. "open" and "in_progress" both qualify, mirroring the legacy bash
+// ripple semantics at alto-scaffold/scripts/bd-ripple.
+func (t BeadsGraphTicket) IsOpen() bool {
+	return t.Status == "open" || t.Status == "in_progress"
+}
+
+// BeadsGraphReader reads dependency-graph data for a beads ticket. It is
+// the narrow port the ripple-review handler depends on; adapters wrap
+// `bd show --json` and `bd children --json` and translate the raw beads
+// JSON to BeadsGraphTicket VOs. Returned slices include both open and
+// closed tickets — the handler is responsible for filtering open ones and
+// deduplicating across siblings/dependents/related.
+type BeadsGraphReader interface {
+	// ReadParent returns the parent ticket ID, or "" when the ticket has
+	// no parent-child dependency. Adapters MUST NOT return an error for
+	// the "no parent" case — only for transport / parse failures.
+	ReadParent(ctx context.Context, ticketID string) (string, error)
+
+	// ReadSiblings returns the children of parentID excluding selfID.
+	// The raw list (open + closed) is returned; the handler filters.
+	ReadSiblings(ctx context.Context, parentID, selfID string) ([]BeadsGraphTicket, error)
+
+	// ReadDependents returns tickets that have a `blocks` dependency on
+	// ticketID — i.e. tickets that ticketID blocks. The raw list (open +
+	// closed) is returned; the handler filters.
+	ReadDependents(ctx context.Context, ticketID string) ([]BeadsGraphTicket, error)
+
+	// ReadRelated returns tickets linked by bidirectional `related`
+	// edges (either direction). The raw list (open + closed) is returned;
+	// the handler filters.
+	ReadRelated(ctx context.Context, ticketID string) ([]BeadsGraphTicket, error)
+
+	// ReadCloseContext returns the ticket's close_reason field, used as
+	// the ContextDiff summary when no explicit override is supplied.
+	// Returns "" when no close_reason is present.
+	ReadCloseContext(ctx context.Context, ticketID string) (string, error)
+}
+
+// BeadsCommentWriter posts a free-form comment to a beads ticket. Used by
+// the ripple-review handler to attach the structured "Ripple review
+// needed" message produced by RippleReview.BuildRippleComment().
+type BeadsCommentWriter interface {
+	// AddComment posts comment as a new comment on ticketID. Adapters
+	// MUST enforce a per-invocation timeout and refuse empty inputs.
+	AddComment(ctx context.Context, ticketID, comment string) error
+}
