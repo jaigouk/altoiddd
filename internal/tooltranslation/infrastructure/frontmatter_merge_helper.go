@@ -29,6 +29,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/alto-cli/alto/internal/shared/infrastructure/markdown"
 	ttdomain "github.com/alto-cli/alto/internal/tooltranslation/domain"
 )
 
@@ -115,22 +116,24 @@ func loadAssetSource(sourceDir, name string) (workflowAssetSource, error) {
 
 // parseFrontmatter splits `---\n…\n---\n<body>`. Empty/no-frontmatter input
 // returns ErrInvalidFrontmatter — workflow assets always carry frontmatter.
+//
+// The split + generic unmarshal pass run through the shared markdown kernel
+// (alty-cli-1r0). The TYPED second pass STAYS local — workflowAssetFrontmatter
+// is context-specific and the HasAgent presence-detection trick (compare
+// generic map keys against typed struct) is a tooltranslation invariant.
 func parseFrontmatter(content string) (workflowAssetFrontmatter, string, error) {
-	if !strings.HasPrefix(content, "---") {
+	rawFM, body, hasFrontmatter, err := markdown.ExtractFrontmatter(content)
+	if err != nil {
+		return workflowAssetFrontmatter{}, "", fmt.Errorf("extracting frontmatter: %w", ttdomain.ErrInvalidFrontmatter)
+	}
+	if !hasFrontmatter {
 		return workflowAssetFrontmatter{}, "", fmt.Errorf("missing frontmatter delimiter: %w", ttdomain.ErrInvalidFrontmatter)
 	}
-	rest := content[3:]
-	idx := strings.Index(rest, "\n---")
-	if idx == -1 {
-		return workflowAssetFrontmatter{}, "", fmt.Errorf("unclosed frontmatter: %w", ttdomain.ErrInvalidFrontmatter)
-	}
-	rawFM := strings.TrimSpace(rest[:idx])
-	body := strings.TrimPrefix(rest[idx+4:], "\n")
 
 	// Marshal into a generic map first so HasAgent can be detected even when
 	// the value is the empty string.
-	generic := map[string]any{}
-	if err := yaml.Unmarshal([]byte(rawFM), &generic); err != nil {
+	generic, err := markdown.ParseGeneric(rawFM)
+	if err != nil {
 		return workflowAssetFrontmatter{}, "", fmt.Errorf("yaml unmarshal: %w", ttdomain.ErrInvalidFrontmatter)
 	}
 

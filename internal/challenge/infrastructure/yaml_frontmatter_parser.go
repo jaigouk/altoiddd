@@ -1,13 +1,14 @@
 package infrastructure
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
 	challengeapp "github.com/alto-cli/alto/internal/challenge/application"
 	"github.com/alto-cli/alto/internal/challenge/domain"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/markdown"
 )
 
 // frontmatterData is used for YAML parsing/serialization.
@@ -41,19 +42,27 @@ func (p *YAMLFrontmatterParser) ApplyVersion(content string, version domain.DDDV
 }
 
 // ParseDDDVersionFromContent extracts version metadata from DDD.md content.
-// If no frontmatter is present or it's invalid, returns a zero-version.
+// If no frontmatter is present or it's unclosed, returns a zero-version
+// without error — matches pre-Wave-2 lenient behaviour used by the
+// challenge round-trip flow.
 func ParseDDDVersionFromContent(content string) (domain.DDDVersion, error) {
-	frontmatter, err := extractFrontmatter(content)
+	raw, _, hasFrontmatter, err := markdown.ExtractFrontmatter(content)
 	if err != nil {
+		// Unclosed frontmatter is treated as "no frontmatter" here — author
+		// typos surface elsewhere via the schema rule, not via panic on
+		// version parsing.
+		if errors.Is(err, markdown.ErrMissingClosingDelimiter) {
+			return domain.DDDVersion{}, nil
+		}
 		return domain.DDDVersion{}, fmt.Errorf("extracting frontmatter: %w", err)
 	}
 
-	if frontmatter == "" {
+	if !hasFrontmatter || raw == "" {
 		return domain.DDDVersion{}, nil
 	}
 
-	var data frontmatterData
-	if err := yaml.Unmarshal([]byte(frontmatter), &data); err != nil {
+	data, err := markdown.ParseTyped[frontmatterData](raw)
+	if err != nil {
 		return domain.DDDVersion{}, fmt.Errorf("parsing frontmatter YAML: %w", err)
 	}
 
@@ -88,41 +97,13 @@ func ApplyVersionToContent(content string, version domain.DDDVersion) string {
 	return newFrontmatter + "\n" + body
 }
 
-// extractFrontmatter extracts YAML frontmatter from content.
-// Returns empty string if no valid frontmatter is found.
-func extractFrontmatter(content string) (string, error) {
-	if !strings.HasPrefix(content, "---") {
-		return "", nil
-	}
-
-	// Find the closing ---
-	rest := content[3:]
-	idx := strings.Index(rest, "\n---")
-	if idx == -1 {
-		// Unclosed frontmatter
-		return "", nil
-	}
-
-	// Extract frontmatter content (after first ---, before closing ---)
-	frontmatter := strings.TrimSpace(rest[:idx])
-	return frontmatter, nil
-}
-
-// extractBody returns the content after frontmatter (or all content if no frontmatter).
+// extractBody returns the content after frontmatter (or all content if no
+// frontmatter / unclosed). Used by ApplyVersionToContent to preserve the
+// document body when rewriting the frontmatter block.
 func extractBody(content string) string {
-	if !strings.HasPrefix(content, "---") {
+	_, body, hasFrontmatter, err := markdown.ExtractFrontmatter(content)
+	if err != nil || !hasFrontmatter {
 		return content
 	}
-
-	// Find the closing ---
-	rest := content[3:]
-	idx := strings.Index(rest, "\n---")
-	if idx == -1 {
-		// No closing delimiter, treat as no frontmatter
-		return content
-	}
-
-	// Return everything after the closing ---
-	afterClosing := rest[idx+4:] // +4 for "\n---"
-	return strings.TrimPrefix(afterClosing, "\n")
+	return body
 }

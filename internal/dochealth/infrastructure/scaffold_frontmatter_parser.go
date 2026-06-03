@@ -1,17 +1,17 @@
 package infrastructure
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/alto-cli/alto/internal/shared/infrastructure/markdown"
 )
 
 // scaffoldFrontmatterParser extracts YAML frontmatter from a scaffold
-// asset. Duplicates a small subset of internal/challenge/infrastructure/
-// yaml_frontmatter_parser.go — arch-go blocks cross-context imports; the
-// shared-kernel refactor stub (filed at 766.7 close) hoists both into
-// internal/shared/infrastructure/markdown/.
+// asset. Delegates the split + generic unmarshal to the shared markdown
+// kernel (alty-cli-1r0); the (raw, body, lineCount, hasFrontmatter, err)
+// shape is dochealth-specific and stays here.
 type scaffoldFrontmatterParser struct{}
 
 func newScaffoldFrontmatterParser() *scaffoldFrontmatterParser {
@@ -28,24 +28,21 @@ func newScaffoldFrontmatterParser() *scaffoldFrontmatterParser {
 // — defensive parsing keeps the walker resilient to author typos; the
 // FrontmatterSchemaRule will then flag the missing required fields.
 func (p *scaffoldFrontmatterParser) Parse(content string) (map[string]any, string, int, bool, error) {
-	if !strings.HasPrefix(content, "---") {
+	rawFM, body, hasFrontmatter, err := markdown.ExtractFrontmatter(content)
+	if err != nil {
+		if errors.Is(err, markdown.ErrMissingClosingDelimiter) {
+			// Treat unclosed frontmatter as no frontmatter; the walker
+			// surfaces schema violations elsewhere.
+			return map[string]any{}, content, lineCount(content), false, nil
+		}
+		return nil, "", 0, false, fmt.Errorf("extracting frontmatter: %w", err)
+	}
+	if !hasFrontmatter {
 		return map[string]any{}, content, lineCount(content), false, nil
 	}
-	rest := content[3:]
-	end, ok := strings.CutPrefix(rest, "\n")
-	if !ok {
-		end = rest // tolerate `---\n...` without leading newline
-	}
-	closeIdx := strings.Index(end, "\n---")
-	if closeIdx == -1 {
-		// Unclosed — treat as no frontmatter.
-		return map[string]any{}, content, lineCount(content), false, nil
-	}
-	rawFM := strings.TrimSpace(end[:closeIdx])
-	body := strings.TrimPrefix(end[closeIdx+len("\n---"):], "\n")
 
-	fm := map[string]any{}
-	if err := yaml.Unmarshal([]byte(rawFM), &fm); err != nil {
+	fm, err := markdown.ParseGeneric(rawFM)
+	if err != nil {
 		return nil, "", 0, false, fmt.Errorf("yaml unmarshal: %w", err)
 	}
 	return fm, body, lineCount(body), true, nil
