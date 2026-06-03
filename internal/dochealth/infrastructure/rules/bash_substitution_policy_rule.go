@@ -30,7 +30,7 @@ const (
 // visually but does not substitute under bash and is not flagged here
 // (WH-LOW-2 — accepted as a documented gap).
 var unquotedSubstitutionRegex = regexp.MustCompile(
-	`\$(?:\{(?:ARGUMENTS(?:\[[0-9]+\])?|[0-9]+|[A-Za-z_][A-Za-z0-9_]*)\}` +
+	`\$(?:\{(?:ARGUMENTS(?:\[[0-9]+\])?|[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(?:[^}]*)?\}` +
 		`|(?:ARGUMENTS(?:\[[0-9]+\])?|[0-9]+|[A-Za-z_][A-Za-z0-9_]*))`,
 )
 

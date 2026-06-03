@@ -56,6 +56,7 @@ var (
 	_ dochealthapp.ValidationRule = (*BashArgumentsRule)(nil)
 	_ dochealthapp.ValidationRule = (*BashWithParametersWarnRule)(nil)
 	_ dochealthapp.ValidationRule = (*PathSubstitutionDepthRule)(nil)
+	_ dochealthapp.ValidationRule = (*TemplateRenderabilityRule)(nil)
 )
 
 // bashBlocks extracts every bash-execution block from a body. Returns:

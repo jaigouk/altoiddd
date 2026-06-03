@@ -185,3 +185,21 @@ func TestBashSubstitutionPolicyRule_QuotedPolicy_GapBetweenQuotes_Error(t *testi
 	require.Len(t, v, 1)
 	assert.Equal(t, dochealthdomain.SeverityError, v[0].Severity())
 }
+
+// WH SUB-FINDING-1 (alty-cli-l8r) — parameter-expansion forms inside braces
+// (`${VAR:-d}`, `${VAR#prefix}`, `${VAR//pat/repl}`, etc.) must be flagged
+// when unquoted, and pass when quoted.
+
+func TestBashSubstitutionPolicyRule_WhenUnquotedParameterExpansion_FlagsViolation(t *testing.T) {
+	t.Parallel()
+	body := "```!\necho ${ARGUMENTS:-d}\n```"
+	v := NewBashSubstitutionPolicyRule().Check(policyAsset(t, "quoted", body), nil)
+	require.Len(t, v, 1)
+	assert.Equal(t, dochealthdomain.SeverityError, v[0].Severity())
+}
+
+func TestBashSubstitutionPolicyRule_WhenQuotedParameterExpansion_NoViolation(t *testing.T) {
+	t.Parallel()
+	body := "```!\necho \"${ARGUMENTS:-d}\"\n```"
+	assert.Empty(t, NewBashSubstitutionPolicyRule().Check(policyAsset(t, "quoted", body), nil))
+}

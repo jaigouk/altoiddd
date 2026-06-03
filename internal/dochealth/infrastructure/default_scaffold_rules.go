@@ -40,5 +40,11 @@ func DefaultScaffoldRules(params dochealthdomain.ScaffoldParams) []dochealthapp.
 		rules.NewUnknownToolsRule(),
 		rules.NewBashWithParametersWarnRule(),
 		rules.NewLifecycleStalenessRule(params.DefaultStalenessDays()),
+
+		// ERROR rule — slot 13 (alty-cli-zc9). Appended after slot 12 to
+		// preserve Contract-5 ordering from alty-cli-ihk. Catches author
+		// typos like {{.UnknownField}} in embedded scaffold assets BEFORE
+		// they DoS the operator at `alto init --with-scaffold` time.
+		rules.NewTemplateRenderabilityRule(),
 	}
 }
