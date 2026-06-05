@@ -41,13 +41,13 @@ cannot:
 /design-ticket StorytellingFlow domain strategy for RAPID/THOROUGH modes
 
 # Standalone spike (researches a question; output is a decision + artefact)
-/design-ticket --type=spike Evaluate Watermill GoChannel vs NATS for local event bus
+/design-ticket --type=spike Evaluate in-process vs broker-based event bus for our async dispatch
 
 # Standalone bug (with repro context)
 /design-ticket --type=bug doc-health crashes when README.md is empty
 
 # Child of an existing epic — places it in the right wave
-/design-ticket --epic=alto-cli-abc --type=task Implement HuhStorytellingPrompter CLI adapter
+/design-ticket --epic=<epic-id> --type=task Implement CLI adapter for the prompter port
 ```
 
 If `--type` is omitted, default is `task`. If `--epic` is omitted, no wave

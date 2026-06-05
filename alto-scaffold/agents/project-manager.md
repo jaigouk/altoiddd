@@ -104,7 +104,7 @@ Project-specific. See `<asset>.project.md` for this project's gate commands (bui
 
 ## Project Structure
 
-The generic DDD layout looks like this; replace `{lang-src}` with the project's source root (`src/`, `internal/`, `lib/`, `app/`, …) per `<asset>.project.md`:
+The generic DDD layout looks like this; replace `{lang-src}` with the project's source root (`src/`, `lib/`, `app/`, `pkg/`, … or your language's idiomatic equivalent) per `<asset>.project.md`:
 
 ```
 {lang-src}/

@@ -150,8 +150,8 @@ from `<asset>.project.md`:
   (threads, goroutines, async / await, fibers, the project's actor /
   channel system) match what the project already uses?
 - **Cancellation / deadlines** — does it accept the project's
-  cancellation primitive (a context object, an abort signal, a future
-  cancellation token) for clean shutdown?
+  cancellation primitive (a context object, an abort signal, a cancel
+  scope, a future) for clean shutdown?
 - **Thread / goroutine safety** — is the public API safe to call
   concurrently? Does it require external synchronisation?
 - **Interface design** — does the library expose its surface area

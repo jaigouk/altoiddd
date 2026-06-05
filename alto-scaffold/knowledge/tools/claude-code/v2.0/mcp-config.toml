@@ -51,7 +51,7 @@ content = """
     "custom-server": {
       "command": "uvx",
       "args": ["my-mcp-server", "--port", "3000"],
-      "cwd": "/home/user/servers"
+      "cwd": "<your-server-path>"
     }
   }
 }
