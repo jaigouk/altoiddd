@@ -71,6 +71,21 @@ Field reference:
 | `bash_substitution_policy` | One of `none`, `quoted`, `unrestricted`. See the safety section below. |
 | `license` | Non-empty SPDX identifier. Default to `Apache-2.0`. |
 
+### Agent-only optional fields
+
+`kind: agent` assets may declare these extra fields after the 8 required ones. They are NOT part of the canonical schema (so no validation gate fires on them), but they are accepted and documented here so contributors authoring agent personas know the contract:
+
+| Field | Allowed values | Purpose |
+|-------|----------------|---------|
+| `model` | `opus` / `sonnet` / `haiku` (or unset) | Pin the persona to a specific Claude model tier. Omit to inherit the parent's resolved model. |
+| `permissionMode` | `default` / `acceptEdits` / `plan` / `bypassPermissions` / `dontAsk` | Initial permission mode for the spawned persona. |
+| `memory` | `project` / `user` / `none` (or unset) | Which auto-memory scope the persona writes to. |
+| `mcpServers` | YAML list of MCP server names | Restrict the persona to a subset of session-connected MCP servers (e.g. `- context7`). |
+
+### `.project.md` overlay siblings
+
+`<asset>.project.md` overlay files (e.g. `developer.project.md`, `groom.project.md`) MUST NOT carry YAML frontmatter. They are merge content, not standalone assets — the generic sibling's frontmatter governs both files. Adding frontmatter to an overlay is a validation error in `bd doctor` / `bd lint`.
+
 ## Process
 
 ### Phase 1 — Gather Inputs
@@ -93,7 +108,8 @@ at a time, and re-prompt on any failure instead of accepting a bad value.
    / `- Write`). Default to CSV for compactness unless the contributor
    prefers the block-list shape. Reject an empty list / empty string. For
    each entry outside the common set
-   `Read, Grep, Glob, Edit, Write, Bash, Agent`, **warn and ask the contributor
+   `Read, Grep, Glob, Edit, Write, Bash, Agent, WebFetch, WebSearch, SendMessage, ToolSearch, NotebookEdit, TodoWrite`,
+   **warn and ask the contributor
    to confirm** (it may be a typo, an MCP tool, or a less-common native tool).
    Tool names should look like PascalCase (`Read`, `WebFetch`) or the MCP form
    `mcp__<server>__<tool>`; flag anything that does not.

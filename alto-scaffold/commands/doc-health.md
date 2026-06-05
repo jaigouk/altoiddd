@@ -77,7 +77,7 @@ status: current
 
 ### Missing Document
 
-Create from the appropriate template in `docs/templates/`.
+Create from the matching template in `alto-scaffold/templates/` (`PRD_TEMPLATE.md` / `DDD_STORY_TEMPLATE.md` / `ARCHITECTURE_TEMPLATE.md`).
 
 ## When to Run
 

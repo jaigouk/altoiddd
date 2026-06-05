@@ -44,6 +44,18 @@ Use `/architecture-docs <topic>` to verify alignment.
 |-------|------|---------|
 | `ModelName` | Entity / Value Object / Aggregate | Description |
 
+### Port / Function Signatures
+
+| Symbol | Signature | Layer |
+|--------|-----------|-------|
+| `PortName.method` | `method(<args>) -> <return>` (use the project's language syntax — see `<asset>.project.md` overlay for examples) | application |
+
+### Sentinel Errors / Domain Failure Modes
+
+| Failure | Identifier | When raised |
+|---------|-----------|-------------|
+| `<Name>` | `<language-specific declaration>` (e.g. Go `var ErrXxx = errors.New(...)`, Python `class XxxError(DomainError): ...`, TypeScript `class XxxError extends DomainError {}`) | invariant violation / not-found / etc. |
+
 ### Sequence / Flow
 
 ```
@@ -97,9 +109,44 @@ Run: `<test-runner> <test-dir>/domain/test_feature.<ext>` → should PASS
 2. Step 2 - What will be changed and why.
 3. Step 3 - What will be changed and why.
 
+## Files in Scope
+
+Source of truth for what this ticket owns. `/design-ticket --epic` reads
+this block during wave placement; a single-agent `developer` spawn
+refuses to touch any file not listed here.
+
+| Path | Action | Owner / Notes |
+|------|--------|---------------|
+| `<path>` | NEW \| MODIFY \| RENAME \| DELETE | optional context (e.g. "follows pattern in `<other-path>`") |
+
+## Prerequisites
+
+Checked at the start of Phase 2. Missing prereq → block, do not guess.
+
+- [ ] Required tooling / runtime installed (per `<asset>.project.md`)
+- [ ] Dependency tickets closed (cross-link with `bd dep add`)
+- [ ] Required environment variables / secrets present
+- [ ] Test fixtures or data available
+
+## Verification
+
+Self-executable commands the developer runs to confirm the work is
+correct. These must succeed without the developer needing to ask a
+clarifying question — see "Self-contained-execution" gate in
+`/design-ticket`.
+
+```bash
+<command 1>     # what it verifies
+<command 2>     # what it verifies
+```
+
 ## Acceptance Criteria
 
-- [ ] Criterion 1 (testable, measurable)
+Each AC item must be checkable by a command (preferred) or a one-line
+file:line assertion. Vague AC ("works correctly", "looks good") will
+fail the self-contained-execution gate.
+
+- [ ] Criterion 1 (testable, measurable — cite the verification command or file:line)
 - [ ] Criterion 2
 - [ ] Criterion 3
 

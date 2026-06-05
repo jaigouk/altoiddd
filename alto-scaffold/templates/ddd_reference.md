@@ -95,7 +95,7 @@ For cross-aggregate and cross-context workflows:
 
 ## 6. Domain Storytelling Workflow (Recommended Discovery Path)
 
-Use `docs/templates/DDD_STORY_TEMPLATE.md` to run workshops.
+Use `alto-scaffold/templates/DDD_STORY_TEMPLATE.md` to run workshops.
 
 1. Capture as-is stories with domain experts.
 2. Visualize actor -> activity -> work object sequences.

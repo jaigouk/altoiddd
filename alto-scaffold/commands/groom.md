@@ -5,7 +5,7 @@ kind: command
 phase: groom
 when_to_use: When deep-grooming a ticket before claiming — implementation simulation, scope check, split detection
 tools: Read, Grep, Glob, Bash
-bash_substitution_policy: quoted  # documentation bash fences — all substitutions are double-quoted
+bash_substitution_policy: quoted
 license: Apache-2.0
 ---
 
@@ -16,6 +16,10 @@ Deep-groom a single ticket before claiming it. Delegates to existing tools where
 ## Why This Exists
 
 The grooming checklist in CLAUDE.md has 8 steps. Steps 1-7 are mechanical checks. Step 8 (Implementation Simulation) is the one that gets skipped and catches every real gap: missing adapters, signature mismatches, scope overload. This command makes Step 8 rigorous and unavoidable.
+
+## Relation to `/design-ticket`
+
+`/design-ticket` produces a verified ticket BEFORE creation. `/groom` is what you run AFTER creation but BEFORE claiming the work — it re-validates the ticket against the **current** state of the code, which may have drifted since the ticket was designed. For freshly-designed tickets, Phases 1-3 are usually no-ops; Phase 4 (Implementation Simulation) earns its keep by catching code drift since design. For older tickets, the full grooming pass matters. See [`design-ticket.md`](design-ticket.md) for the upstream design flow.
 
 ## Usage
 

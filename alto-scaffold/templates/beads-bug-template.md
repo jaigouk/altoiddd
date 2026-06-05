@@ -60,7 +60,7 @@ fail to do that it should?
 
 | Field | Value |
 |-------|-------|
-| **OS / runtime** | e.g. Linux 6.8.0-111-generic / Go 1.26 |
+| **OS / runtime** | e.g. Linux 6.8.0-111-generic / `<language-runtime>` (Go 1.26, Node 22, Python 3.12, Ruby 3.3, …) |
 | **alto version** | `git describe --tags --always --dirty` or commit hash |
 | **Tool surface** | CLI / MCP / dochealth rule / scaffold writer / etc. |
 | **First-seen commit** | The commit on which this bug was first observed (or "unknown") |
@@ -130,6 +130,26 @@ How was this bug discovered? Pick one:
 
 If the bug crosses bounded contexts, list both and call out the boundary
 where the contract breaks.
+
+## Suspected Root Cause
+
+One-paragraph hypothesis with file:line citations. State **what you
+believe is broken**, **why you believe it**, and **what evidence would
+prove or refute the hypothesis**. The post-fix Five Whys in the **Root
+Cause** section below validates or refutes this hypothesis once the
+investigation is complete.
+
+If the hypothesis is "we don't know yet", write that explicitly with a
+plan for narrowing it down (logging, bisection, instrumentation).
+
+## Files in Scope
+
+Source of truth for what files this fix will touch. A single-agent
+`developer` spawn refuses to touch any file not listed here.
+
+| Path | Action | Owner / Notes |
+|------|--------|---------------|
+| `<path>` | MODIFY \| NEW (test) \| DELETE | role in the fix |
 
 ## Root Cause
 

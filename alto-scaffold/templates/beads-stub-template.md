@@ -12,7 +12,7 @@ bd dep add <this-ticket> <depends-on>
 
 > **Stub ticket.** Full specification will be added when blockers are resolved.
 > Do not start work on this ticket until it has been promoted to full detail
-> using `docs/beads_templates/beads-ticket-template.md`.
+> using [`beads-ticket-template.md`](beads-ticket-template.md) (sibling in this directory).
 
 ## Goal / Problem
 

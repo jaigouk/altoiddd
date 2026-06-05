@@ -16,16 +16,37 @@ bd create "Spike: <Research question>" --parent <epic-id>
 > **Before Starting:** Always groom the ticket first. Ensure the research question
 > is clear, the timebox is realistic, and the expected deliverables are defined.
 
+## Problem Statement
+
+One paragraph: **what decision is blocked**, **why now**, and **what
+breaks if we guess instead of researching**. The decision the spike
+unblocks is the spike's reason to exist — name it explicitly.
+
 ## Research Question
 
-What specific question(s) need to be answered?
+What specific question(s) need to be answered? A good spike has a sharp
+Yes/No question, not "learn about X".
 
 - Question 1
 - Question 2
 
+## Exit Criteria
+
+We will know the spike is done when:
+
+- [ ] Each research question has a documented answer with citations.
+- [ ] A recommendation (or "no-go" decision) is recorded with rationale.
+- [ ] The follow-up artefact (ADR, design doc, follow-up tickets) is
+      written — even when the answer is "we shouldn't do this", a no-go
+      artefact still ships.
+- [ ] Timebox respected, OR a written justification + new estimate has
+      been added to this ticket before the original timebox elapsed.
+
 ## Timebox
 
 Maximum time allocated for this investigation (e.g., 2 hours, 1 day).
+Tight timeboxes are a feature — a spike that grows into work should
+become a task instead.
 
 **Timebox:** \_\_\_ hours/days
 
@@ -34,6 +55,20 @@ Maximum time allocated for this investigation (e.g., 2 hours, 1 day).
 - Why is this research needed?
 - What decisions are blocked by this uncertainty?
 - Links to related issues, docs, or prior discussions.
+
+## Likely Outcomes
+
+What does each plausible outcome look like, and what work does each
+outcome unlock?
+
+| Outcome | Probability | Follow-up |
+|---------|-------------|-----------|
+| Recommendation A (e.g. "adopt library X") | <est> | Follow-up tickets for adoption: ... |
+| Recommendation B (e.g. "extend in-house implementation") | <est> | Follow-up tickets for extension: ... |
+| No-go (e.g. "neither option fits — defer") | <est> | ADR + revisit-trigger documented |
+
+Naming the outcomes up front prevents "we learned something" closes —
+each outcome maps to concrete next work.
 
 ## Investigation Approach
 
@@ -93,8 +128,8 @@ What is the recommended path forward and why?
 
 ## References
 
-- [Link 1](url) - Description
-- [Link 2](url) - Description
+- Link 1 — `<url>` — Description
+- Link 2 — `<url>` — Description
 
 ## Follow-up Tasks
 
@@ -108,4 +143,4 @@ What is the recommended path forward and why?
 - [ ] Findings documented
 - [ ] Recommendation provided (if applicable)
 - [ ] Follow-up tickets created (if implementation needed)
-- [ ] Timebox respected (or extended with justification)
+- [ ] Exit criteria met (see Exit Criteria section above — including timebox handling)

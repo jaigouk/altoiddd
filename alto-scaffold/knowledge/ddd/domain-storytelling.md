@@ -70,7 +70,7 @@ From each story:
 
 ## How alto Uses Domain Storytelling
 
-1. **DDD Story Template:** `docs/templates/DDD_STORY_TEMPLATE.md` guides users through story recording
+1. **DDD Story Template:** `alto-scaffold/templates/DDD_STORY_TEMPLATE.md` guides users through story recording
    - Each story captures one workflow end-to-end
    - Template prompts for actors, work objects, activities, and rules
 
